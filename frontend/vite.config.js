@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // @lovable.dev/vite-tanstack-config already includes the following — do NOT add them manually
 // or the app will break with duplicate plugins:
 //   - tanstackStart, viteReact, tailwindcss, tsConfigPaths, cloudflare (build-only),
@@ -18,3 +19,12 @@ export default defineConfig({
     server: { entry: "server" },
   },
 });
+=======
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react()],
+})
+>>>>>>> 2600abb0b1f646965b5313a3be94d8f598154194
