@@ -1,0 +1,9 @@
+{
+  "name": "waitless-backend",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node src/index.js"
+  }
+}

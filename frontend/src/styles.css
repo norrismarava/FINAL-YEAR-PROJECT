@@ -1,0 +1,389 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-display: "Sora", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Triage priority tokens */
+  --color-priority-red: var(--priority-red);
+  --color-priority-red-foreground: var(--priority-red-foreground);
+  --color-priority-yellow: var(--priority-yellow);
+  --color-priority-yellow-foreground: var(--priority-yellow-foreground);
+  --color-priority-green: var(--priority-green);
+  --color-priority-green-foreground: var(--priority-green-foreground);
+  --color-priority-black: var(--priority-black);
+  --color-priority-black-foreground: var(--priority-black-foreground);
+
+  --shadow-elegant:
+    0 20px 44px -26px color-mix(in oklab, var(--primary) 36%, transparent),
+    0 8px 18px -14px color-mix(in oklab, var(--accent) 22%, transparent);
+  --shadow-card:
+    0 1px 2px oklch(0 0 0 / 0.05),
+    0 18px 42px -28px oklch(0 0 0 / 0.18);
+}
+
+:root {
+  --radius: 0.75rem;
+
+  --background: oklch(0.982 0.006 195);
+  --foreground: oklch(0.2 0.03 206);
+
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.03 200);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.03 200);
+
+  /* Deep medical teal */
+  --primary: oklch(0.42 0.08 195);
+  --primary-foreground: oklch(0.98 0.01 180);
+  --primary-soft: oklch(0.94 0.03 190);
+
+  --secondary: oklch(0.95 0.02 190);
+  --secondary-foreground: oklch(0.25 0.05 200);
+
+  --muted: oklch(0.96 0.01 200);
+  --muted-foreground: oklch(0.5 0.02 210);
+
+  --accent: oklch(0.72 0.13 175);
+  --accent-foreground: oklch(0.15 0.03 200);
+
+  --destructive: oklch(0.58 0.22 27);
+  --destructive-foreground: oklch(0.98 0 0);
+
+  --border: oklch(0.9 0.01 200);
+  --input: oklch(0.91 0.012 200);
+  --ring: oklch(0.42 0.08 195);
+
+  /* Priority colours (Zim hospital triage) */
+  --priority-red: oklch(0.58 0.22 25);
+  --priority-red-foreground: oklch(0.99 0 0);
+  --priority-yellow: oklch(0.83 0.17 88);
+  --priority-yellow-foreground: oklch(0.25 0.05 80);
+  --priority-green: oklch(0.68 0.16 150);
+  --priority-green-foreground: oklch(0.15 0.05 150);
+  --priority-black: oklch(0.22 0.01 200);
+  --priority-black-foreground: oklch(0.98 0 0);
+}
+
+.dark {
+  --background: oklch(0.16 0.02 210);
+  --foreground: oklch(0.96 0.01 190);
+  --card: oklch(0.22 0.02 210);
+  --card-foreground: oklch(0.96 0.01 190);
+  --popover: oklch(0.22 0.02 210);
+  --popover-foreground: oklch(0.96 0.01 190);
+  --primary: oklch(0.72 0.13 180);
+  --primary-foreground: oklch(0.15 0.03 200);
+  --primary-soft: oklch(0.28 0.05 195);
+  --secondary: oklch(0.27 0.03 210);
+  --secondary-foreground: oklch(0.96 0.01 190);
+  --muted: oklch(0.25 0.02 210);
+  --muted-foreground: oklch(0.7 0.02 200);
+  --accent: oklch(0.72 0.13 175);
+  --accent-foreground: oklch(0.15 0.03 200);
+  --destructive: oklch(0.62 0.22 27);
+  --destructive-foreground: oklch(0.98 0 0);
+  --border: oklch(1 0 0 / 0.08);
+  --input: oklch(1 0 0 / 0.12);
+  --ring: oklch(0.72 0.13 180);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+  html {
+    font-family: var(--font-sans);
+    scroll-behavior: smooth;
+  }
+  body {
+    position: relative;
+    min-height: 100vh;
+    background-color: var(--color-background);
+    background-image:
+      radial-gradient(circle at top left, color-mix(in oklab, var(--primary) 10%, transparent), transparent 34%),
+      radial-gradient(circle at 82% 0%, color-mix(in oklab, var(--accent) 12%, transparent), transparent 26%),
+      linear-gradient(180deg, color-mix(in oklab, white 72%, var(--background)), var(--background) 22rem);
+    color: var(--color-foreground);
+    font-feature-settings: "cv11", "ss01";
+    text-rendering: optimizeLegibility;
+  }
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(180deg, color-mix(in oklab, var(--primary) 6%, transparent), transparent 34%),
+      linear-gradient(color-mix(in oklab, var(--border) 55%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklab, var(--border) 55%, transparent) 1px, transparent 1px);
+    background-size: 100% 100%, 76px 76px, 76px 76px;
+    background-position: 0 0, -1px -1px, -1px -1px;
+    mask-image: radial-gradient(circle at top, black, transparent 78%);
+    opacity: 0.55;
+  }
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--accent) 28%, white);
+  }
+}
+
+@layer utilities {
+  .gradient-hero {
+    background:
+      radial-gradient(ellipse at top left, color-mix(in oklab, var(--primary) 16%, transparent), transparent 58%),
+      radial-gradient(ellipse at bottom right, color-mix(in oklab, var(--accent) 18%, transparent), transparent 52%),
+      linear-gradient(180deg, color-mix(in oklab, white 68%, var(--background)), var(--background));
+  }
+  .gradient-primary {
+    background: linear-gradient(135deg, var(--primary), color-mix(in oklab, var(--accent) 70%, var(--primary)));
+  }
+  .surface-panel {
+    position: relative;
+    overflow: hidden;
+    border-radius: calc(var(--radius) + 0.75rem);
+    border: 1px solid color-mix(in oklab, var(--border) 88%, white 12%);
+    background:
+      linear-gradient(180deg, color-mix(in oklab, white 84%, var(--card)), color-mix(in oklab, white 28%, var(--card)));
+    box-shadow: var(--shadow-card);
+    backdrop-filter: blur(16px);
+  }
+  .surface-panel::before {
+    content: "";
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--primary) 26%, white), transparent);
+    pointer-events: none;
+  }
+  .surface-panel-dark {
+    position: relative;
+    overflow: hidden;
+    border-radius: calc(var(--radius) + 0.75rem);
+    border: 1px solid color-mix(in oklab, var(--primary) 30%, white 70%);
+    background:
+      radial-gradient(circle at top right, color-mix(in oklab, var(--accent) 18%, transparent), transparent 42%),
+      linear-gradient(160deg, color-mix(in oklab, var(--primary) 88%, oklch(0.2 0.03 210)), color-mix(in oklab, var(--primary) 74%, oklch(0.14 0.02 210)));
+    color: var(--color-primary-foreground);
+    box-shadow: var(--shadow-elegant);
+  }
+  .surface-panel-muted {
+    position: relative;
+    overflow: hidden;
+    border-radius: calc(var(--radius) + 0.5rem);
+    border: 1px solid color-mix(in oklab, var(--border) 78%, white 22%);
+    background: color-mix(in oklab, white 68%, var(--muted));
+  }
+  .eyebrow {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--color-muted-foreground);
+  }
+  .input-base {
+    width: 100%;
+    border: 1px solid var(--color-input);
+    background: color-mix(in oklab, white 72%, var(--color-background));
+    border-radius: calc(var(--radius) + 0.1rem);
+    padding: 0.8rem 0.95rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    outline: none;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease,
+      background-color 0.15s ease,
+      transform 0.15s ease;
+  }
+  .input-base:hover {
+    border-color: color-mix(in oklab, var(--primary) 18%, var(--color-input));
+  }
+  .input-base:focus {
+    border-color: var(--color-ring);
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-ring) 16%, transparent);
+    background: var(--color-card);
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@layer components {
+  .system-loader {
+    --loader-size: 26px;
+    --loader-duration: 900ms;
+    display: block;
+    height: calc(var(--loader-size) * 2.35);
+    position: relative;
+    transform: rotateX(60deg) rotateZ(45deg) rotateY(0deg) translateZ(0);
+    transform-origin: 50% 50%;
+    transform-style: preserve-3d;
+    width: calc(var(--loader-size) * 3);
+  }
+
+  .system-loader__box {
+    height: var(--loader-size);
+    left: 0;
+    position: absolute;
+    top: calc(var(--loader-size) * 0.35);
+    transform-style: preserve-3d;
+    width: var(--loader-size);
+  }
+
+  .system-loader__box:nth-child(1) {
+    animation: system-loader-box-1 var(--loader-duration) linear infinite;
+    transform: translate(100%, 0);
+  }
+
+  .system-loader__box:nth-child(2) {
+    animation: system-loader-box-2 var(--loader-duration) linear infinite;
+    transform: translate(0, 100%);
+  }
+
+  .system-loader__box:nth-child(3) {
+    animation: system-loader-box-3 var(--loader-duration) linear infinite;
+    transform: translate(100%, 100%);
+  }
+
+  .system-loader__box:nth-child(4) {
+    animation: system-loader-box-4 var(--loader-duration) linear infinite;
+    transform: translate(200%, 0);
+  }
+
+  .system-loader__face {
+    --loader-face-background: color-mix(in oklab, var(--primary) 76%, var(--accent));
+    --loader-face-bottom: auto;
+    --loader-face-left: auto;
+    --loader-face-right: auto;
+    --loader-face-rotate-x: 0deg;
+    --loader-face-rotate-y: 0deg;
+    --loader-face-top: auto;
+    --loader-face-translate-z: calc(var(--loader-size) / 2);
+    background: var(--loader-face-background);
+    bottom: var(--loader-face-bottom);
+    display: block;
+    height: 100%;
+    left: var(--loader-face-left);
+    position: absolute;
+    right: var(--loader-face-right);
+    top: var(--loader-face-top);
+    transform:
+      rotateY(var(--loader-face-rotate-y))
+      rotateX(var(--loader-face-rotate-x))
+      translateZ(var(--loader-face-translate-z));
+    width: 100%;
+  }
+
+  .system-loader__face:nth-child(1) {
+    --loader-face-left: 0;
+    --loader-face-top: 0;
+  }
+
+  .system-loader__face:nth-child(2) {
+    --loader-face-background: color-mix(in oklab, var(--primary) 88%, black);
+    --loader-face-right: 0;
+    --loader-face-rotate-y: 90deg;
+  }
+
+  .system-loader__face:nth-child(3) {
+    --loader-face-background: color-mix(in oklab, var(--accent) 74%, var(--primary));
+    --loader-face-rotate-x: -90deg;
+  }
+
+  .system-loader__face:nth-child(4) {
+    --loader-face-background: color-mix(in oklab, var(--primary-soft) 82%, var(--background));
+    --loader-face-left: 0;
+    --loader-face-top: 0;
+    --loader-face-translate-z: calc(var(--loader-size) * -3);
+  }
+}
+
+@keyframes system-loader-box-1 {
+  0%, 50% {
+    transform: translate(100%, 0);
+  }
+
+  100% {
+    transform: translate(200%, 0);
+  }
+}
+
+@keyframes system-loader-box-2 {
+  0% {
+    transform: translate(0, 100%);
+  }
+
+  50% {
+    transform: translate(0, 0);
+  }
+
+  100% {
+    transform: translate(100%, 0);
+  }
+}
+
+@keyframes system-loader-box-3 {
+  0%, 50% {
+    transform: translate(100%, 100%);
+  }
+
+  100% {
+    transform: translate(0, 100%);
+  }
+}
+
+@keyframes system-loader-box-4 {
+  0% {
+    transform: translate(200%, 0);
+  }
+
+  50% {
+    transform: translate(200%, 100%);
+  }
+
+  100% {
+    transform: translate(100%, 100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .system-loader__box {
+    animation: none;
+  }
+}

@@ -1,0 +1,4 @@
+data/queue-state.json
+data/queue-state.json.tmp
+data/queue-state.json.corrupt-*
+data/*.smoke.json
