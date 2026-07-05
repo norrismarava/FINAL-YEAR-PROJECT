@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS patients (
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
     date_of_birth DATE NOT NULL,
-    gender ENUM('Male', 'Female', 'Other') NOT NULL,
+    gender ENUM('Male', 'Female') NOT NULL,
     contact_number VARCHAR(15) NOT NULL, -- Primary for WhatsApp notifications
     
     -- Registration details
