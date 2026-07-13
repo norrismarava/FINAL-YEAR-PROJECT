@@ -6,7 +6,7 @@ const cors = require("cors");
 const { pool, useMySQL } = require('./src/config/database'); // Import database connection
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = 4242;
 
 // Middleware
 app.use(cors());
@@ -44,6 +44,7 @@ app.get("/api/test-db", async (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-    console.log(` Server running on http://localhost:${PORT}`);
+const server = app.listen(PORT, () => {
+    const actualPort = server.address().port;
+    console.log(` Server running on http://localhost:${actualPort}`);
 });

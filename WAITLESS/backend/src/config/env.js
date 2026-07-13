@@ -1,5 +1,8 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { config } from "dotenv";
+
+config({ path: fileURLToPath(new URL("../../.env", import.meta.url)) });
 
 const defaultStateFilePath = fileURLToPath(
   new URL("../../data/queue-state.json", import.meta.url),

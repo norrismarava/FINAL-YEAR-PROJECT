@@ -1,6 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Clock3,
   MessageCircle,
@@ -17,6 +15,7 @@ import {
 } from "@/services/queueMeta";
 import { fetchQueueBoard } from "@/services/queueApi";
 import { useQueueRealtime } from "@/sockets/QueueRealtimeProvider";
+import { useApiResource } from "@/hooks/useApiResource";
 
 const isBrowser = typeof window !== "undefined";
 const LIVE_STATUS_META = {
@@ -41,32 +40,45 @@ const LIVE_STATUS_META = {
     className: "bg-muted text-muted-foreground",
   },
 };
+const QUEUE_BACKDROP_ICONS = [
+  {
+    Icon: Wifi,
+    className:
+      "left-[6%] top-20 text-primary/16 [animation:medical-float_18s_ease-in-out_infinite] motion-reduce:animate-none",
+    size: "h-11 w-11",
+  },
+  {
+    Icon: MonitorSmartphone,
+    className:
+      "right-[7%] top-24 text-accent/16 [animation:medical-drift_22s_ease-in-out_infinite] motion-reduce:animate-none",
+    size: "h-11 w-11",
+  },
+  {
+    Icon: Users,
+    className:
+      "left-[14%] top-[46%] text-primary/12 [animation:medical-spin_28s_linear_infinite] motion-reduce:animate-none",
+    size: "h-10 w-10",
+  },
+  {
+    Icon: Clock3,
+    className:
+      "right-[11%] top-[52%] text-accent/12 [animation:medical-float_20s_ease-in-out_infinite] motion-reduce:animate-none",
+    size: "h-10 w-10",
+  },
+  {
+    Icon: MessageCircle,
+    className:
+      "left-[48%] top-14 text-primary/10 [animation:medical-drift_20s_ease-in-out_infinite] motion-reduce:animate-none",
+    size: "h-10 w-10",
+  },
+];
 
-export const Route = createFileRoute("/queue")({
-  head: () => ({
-    meta: [
-      {
-        title: "Live Queue Board - WaitLess",
-      },
-      {
-        name: "description",
-        content:
-          "Public queue display board for patient waiting areas, backed by the live system.",
-      },
-    ],
-  }),
-  component: QueuePage,
-});
-
-function QueuePage() {
+export default function QueuePage() {
   const [now, setNow] = useState(new Date());
   const realtime = useQueueRealtime();
 
-  const queueQuery = useQuery({
-    queryKey: ["queue", "board"],
-    queryFn: fetchQueueBoard,
-    enabled: isBrowser,
-  });
+  const loadQueueBoard = useCallback(() => fetchQueueBoard(), []);
+  const queueQuery = useApiResource(loadQueueBoard, { enabled: isBrowser });
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
@@ -75,13 +87,18 @@ function QueuePage() {
 
   const serving = queueQuery.data?.nowServing ?? [];
   const waiting = queueQuery.data?.waiting ?? [];
+  const missed = queueQuery.data?.missed ?? [];
   const liveMeta = LIVE_STATUS_META[realtime.status] ?? LIVE_STATUS_META.connecting;
-  const whatsAppEnabled = waiting.filter((ticket) => ticket.whatsApp).length;
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <header className="surface-panel p-6 sm:p-8">
+    <section className="relative isolate overflow-hidden px-4 py-8 sm:px-6 lg:px-8">
+      <QueueBackdrop />
+
+      <div className="relative mx-auto max-w-7xl">
+        <header className="surface-panel page-section-rise p-6 sm:p-8">
+        <div className="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(135deg,rgba(255,255,255,0.82),rgba(240,253,250,0.62)_42%,rgba(219,234,254,0.56))]" />
         <div className="absolute left-0 top-0 h-48 w-48 rounded-full bg-primary-soft/80 blur-3xl" />
+        <div className="absolute inset-x-0 bottom-0 h-20 bg-[linear-gradient(180deg,transparent,rgba(240,253,250,0.26))]" />
         <div className="relative grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
           <div>
             <div className="eyebrow">Public display</div>
@@ -131,7 +148,7 @@ function QueuePage() {
             <div className="mt-6 grid grid-cols-3 gap-3">
               <QueueStat label="Now serving" value={serving.length} />
               <QueueStat label="Waiting" value={waiting.length} />
-              <QueueStat label="WhatsApp" value={whatsAppEnabled} />
+              <QueueStat label="Missed" value={missed.length} />
             </div>
 
             <div className="mt-5 rounded-2xl border border-white/12 bg-white/10 p-4">
@@ -150,9 +167,9 @@ function QueuePage() {
             </div>
           </div>
         </div>
-      </header>
+        </header>
 
-      <div className="mt-6">
+        <div className="mt-6 page-section-rise page-section-rise-delay-1">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
             <div className="eyebrow">Now serving</div>
@@ -181,7 +198,7 @@ function QueuePage() {
             {serving.map((ticket) => (
               <article
                 key={ticket.id}
-                className={`rounded-[1.75rem] p-6 shadow-elegant ${priorityChipClass[ticket.priority]}`}
+                className={`surface-hover-card rounded-[1.75rem] border border-current/12 p-6 shadow-elegant ${priorityChipClass[ticket.priority]}`}
               >
                 <div className="text-[11px] font-bold uppercase tracking-[0.28em] opacity-80">
                   {PRIORITY_META[ticket.priority].short} priority
@@ -189,7 +206,7 @@ function QueuePage() {
                 <div className="mt-2 font-display text-6xl font-bold tracking-tight sm:text-7xl">
                   {ticket.ticket}
                 </div>
-                <div className="mt-4 text-sm opacity-90">{ticket.patientName}</div>
+                <div className="mt-4 text-sm opacity-90">Token {ticket.ticket}</div>
                 <div className="mt-1 text-xs opacity-80">{ticket.department}</div>
                 <div className="mt-5 flex items-center justify-between gap-3 text-xs font-semibold">
                   <span className="rounded-full border border-current/15 px-2.5 py-1 uppercase tracking-[0.18em]">
@@ -205,9 +222,9 @@ function QueuePage() {
             No patient is currently being served.
           </div>
         )}
-      </div>
+        </div>
 
-      <article className="surface-panel mt-6 overflow-hidden">
+        <article className="surface-panel page-section-rise page-section-rise-delay-2 mt-6 overflow-hidden">
         <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border/70 px-5 py-5 sm:px-6">
           <div>
             <div className="eyebrow">Up next</div>
@@ -243,7 +260,7 @@ function QueuePage() {
               {waiting.map((ticket) => (
                 <article
                   key={ticket.id}
-                  className="rounded-2xl border border-border/70 bg-background/80 px-4 py-4"
+                  className="surface-hover-card rounded-2xl border border-border/70 bg-background/80 px-4 py-4"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3">
@@ -253,7 +270,7 @@ function QueuePage() {
                         {ticket.ticket}
                       </span>
                       <div>
-                        <div className="font-semibold">{ticket.patientName}</div>
+                        <div className="font-semibold">Token {ticket.ticket}</div>
                         <div className="text-xs text-muted-foreground">
                           {ticket.department}
                         </div>
@@ -293,7 +310,7 @@ function QueuePage() {
                   {waiting.map((ticket) => (
                     <tr
                       key={ticket.id}
-                      className="bg-background/70 transition-colors hover:bg-primary-soft/25"
+                      className="bg-background/70 transition-[background-color,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-primary-soft/25"
                     >
                       <td className="px-6 py-4">
                         <span
@@ -303,7 +320,7 @@ function QueuePage() {
                         </span>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="font-medium">{ticket.patientName}</div>
+                        <div className="font-medium">Token {ticket.ticket}</div>
                         {ticket.whatsApp && (
                           <div className="mt-1 inline-flex items-center gap-1 text-[11px] text-accent">
                             <MessageCircle className="h-3 w-3" />
@@ -338,8 +355,64 @@ function QueuePage() {
             Nobody is waiting in the queue right now.
           </div>
         )}
-      </article>
+        </article>
+
+      {missed.length > 0 && (
+        <article className="surface-panel page-section-rise page-section-rise-delay-3 mt-6 px-5 py-5 sm:px-6">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <div className="eyebrow">Missed turns</div>
+              <h2 className="mt-2 font-display text-2xl font-bold tracking-tight">
+                Return to the department desk
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                These token numbers were called but not present. Staff can recall them
+                fairly from the department console.
+              </p>
+            </div>
+            <span className="rounded-full bg-priority-yellow/20 px-3 py-1.5 text-xs font-semibold text-foreground">
+              {missed.length} missed
+            </span>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-3">
+            {missed.map((ticket) => (
+              <div
+                key={ticket.id}
+                className="surface-hover-card rounded-2xl border border-priority-yellow/30 bg-priority-yellow/10 px-4 py-3"
+              >
+                <div className="font-display text-2xl font-bold tracking-tight">
+                  {ticket.ticket}
+                </div>
+                <div className="mt-1 text-xs text-muted-foreground">{ticket.department}</div>
+              </div>
+            ))}
+          </div>
+        </article>
+        )}
+      </div>
     </section>
+  );
+}
+
+function QueueBackdrop() {
+  return (
+    <>
+      <div className="absolute inset-0 -z-30 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.94)_18%,rgba(240,253,250,0.94)_58%,rgba(239,246,255,0.98))]" />
+      <div className="absolute inset-0 -z-20 overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 portal-surface-stripes opacity-72" />
+        <div className="absolute inset-0 portal-hero-texture opacity-34" />
+        <div className="absolute inset-0 hero-dots-soft opacity-32" />
+        <div className="absolute inset-x-[-14%] top-[-6rem] h-48 rounded-[100%] bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.98),rgba(204,251,241,0.72)_36%,rgba(219,234,254,0.5)_62%,rgba(255,255,255,0)_78%)] blur-3xl" />
+        <div className="absolute inset-x-[-12%] bottom-[-7rem] h-64 rounded-[100%] bg-[radial-gradient(ellipse_at_center,rgba(20,184,166,0.18),rgba(37,99,235,0.16)_44%,rgba(248,250,252,0)_76%)] blur-3xl" />
+        <div className="absolute left-[-6%] top-28 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute right-[-5%] top-32 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
+        {QUEUE_BACKDROP_ICONS.map(({ Icon, className, size }, index) => (
+          <span key={`queue-backdrop-${index}`} className={`absolute ${className}`}>
+            <Icon className={size} strokeWidth={2} />
+          </span>
+        ))}
+      </div>
+    </>
   );
 }
 

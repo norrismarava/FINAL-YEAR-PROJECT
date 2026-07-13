@@ -1,111 +1,734 @@
+@import "tailwindcss";
+
+/* =========================================================
+   WAITLESS GLOBAL THEME
+   Digital Queue Management System
+   ========================================================= */
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+  --waitless-bg: #f4f8fb;
+  --waitless-card: rgba(255, 255, 255, 0.92);
+  --waitless-card-soft: rgba(248, 250, 252, 0.88);
+  --waitless-border: rgba(15, 23, 42, 0.08);
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
+  --waitless-primary: #0f766e;
+  --waitless-primary-dark: #064e3b;
+  --waitless-primary-soft: rgba(20, 184, 166, 0.12);
+  --waitless-accent: #14b8a6;
+  --waitless-navy: #062b3a;
 
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
+  --waitless-text: #0f172a;
+  --waitless-muted: #64748b;
+
+  --priority-red: #dc2626;
+  --priority-yellow: #f59e0b;
+  --priority-green: #16a34a;
+  --priority-black: #020617;
+
+  --destructive: #dc2626;
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+  --border: rgba(15, 23, 42, 0.1);
+  --card: #ffffff;
+  --primary: #0f766e;
+  --primary-foreground: #ffffff;
+  --accent: #14b8a6;
+
+  --font-sans: Inter, Manrope, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  --font-display: Manrope, Inter, system-ui, sans-serif;
+
+  font-family: var(--font-sans);
+  color: var(--waitless-text);
+  background: var(--waitless-bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
+* {
+  box-sizing: border-box;
+}
 
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
+html {
+  width: 100%;
+  min-height: 100%;
+  scroll-behavior: smooth;
 }
 
 body {
   margin: 0;
+  width: 100%;
+  min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(20, 184, 166, 0.18), transparent 32rem),
+    radial-gradient(circle at top right, rgba(14, 165, 233, 0.14), transparent 34rem),
+    var(--waitless-bg);
+  color: var(--waitless-text);
 }
 
 #root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+  width: 100%;
+  min-height: 100vh;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
 }
 
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
+button {
+  cursor: pointer;
 }
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
+
+button:disabled {
+  cursor: not-allowed;
 }
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img,
+svg,
+video {
+  display: block;
+}
+
 p {
   margin: 0;
 }
 
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
-  border-radius: 4px;
-  color: var(--text-h);
+h1,
+h2,
+h3,
+h4 {
+  margin: 0;
+  color: inherit;
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+.font-display {
+  font-family: var(--font-display);
+}
+
+/* =========================================================
+   CORE WAITLESS COMPONENT CLASSES
+   ========================================================= */
+
+.surface-panel {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--waitless-border);
+  background: var(--waitless-card);
+  border-radius: 28px;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(18px);
+}
+
+.surface-panel-muted {
+  border: 1px solid rgba(15, 23, 42, 0.07);
+  background: var(--waitless-card-soft);
+  border-radius: 22px;
+}
+
+.surface-panel-dark {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top right, rgba(45, 212, 191, 0.24), transparent 18rem),
+    linear-gradient(135deg, #062b3a, #064e3b 58%, #0f766e);
+  color: white;
+  border-radius: 28px;
+  box-shadow: 0 26px 80px rgba(6, 43, 58, 0.28);
+}
+
+.gradient-primary {
+  background: linear-gradient(135deg, #0f766e, #14b8a6);
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--waitless-primary);
+}
+
+.input-base {
+  width: 100%;
+  border-radius: 16px;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  background: white;
+  padding: 0.85rem 1rem;
+  font-size: 0.9rem;
+  color: var(--waitless-text);
+  outline: none;
+  transition: 0.2s ease;
+}
+
+.input-base:focus {
+  border-color: rgba(15, 118, 110, 0.45);
+  box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.12);
+}
+
+.shadow-card {
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.1);
+}
+
+.shadow-elegant {
+  box-shadow: 0 18px 50px rgba(15, 118, 110, 0.22);
+}
+
+.page-section-rise {
+  animation: pageSectionRise 0.55s ease both;
+}
+
+.page-section-rise-delay-1 {
+  animation-delay: 0.08s;
+}
+
+@keyframes pageSectionRise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =========================================================
+   PRIORITY / TRIAGE CLASSES
+   ========================================================= */
+
+.bg-priority-red,
+.triage-red {
+  background: rgba(220, 38, 38, 0.12);
+  color: #991b1b;
+}
+
+.bg-priority-yellow,
+.triage-yellow {
+  background: rgba(245, 158, 11, 0.18);
+  color: #92400e;
+}
+
+.bg-priority-green,
+.triage-green {
+  background: rgba(22, 163, 74, 0.12);
+  color: #166534;
+}
+
+.bg-priority-black,
+.triage-black {
+  background: rgba(15, 23, 42, 0.14);
+  color: #020617;
+}
+
+.text-priority-red {
+  color: #dc2626;
+}
+
+.text-priority-yellow {
+  color: #f59e0b;
+}
+
+.text-priority-green {
+  color: #16a34a;
+}
+
+.text-priority-black {
+  color: #020617;
+}
+
+.bg-priority-red\/12 {
+  background: rgba(220, 38, 38, 0.12);
+}
+
+.bg-priority-yellow\/15 {
+  background: rgba(245, 158, 11, 0.15);
+}
+
+.bg-priority-green\/15 {
+  background: rgba(22, 163, 74, 0.15);
+}
+
+/* =========================================================
+   WAITLESS PREMIUM VISUAL BACKGROUNDS
+   ========================================================= */
+
+.waitless-visual-bg {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, rgba(2, 6, 23, 0.96), rgba(8, 47, 73, 0.94)),
+    radial-gradient(circle at 15% 10%, rgba(20, 184, 166, 0.28), transparent 34rem),
+    radial-gradient(circle at 90% 15%, rgba(37, 99, 235, 0.24), transparent 36rem),
+    radial-gradient(circle at 50% 100%, rgba(14, 165, 233, 0.16), transparent 34rem);
+}
+
+.waitless-visual-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -4;
+  opacity: 0.08;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.8) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.8) 1px, transparent 1px);
+  background-size: 72px 72px;
+}
+
+.waitless-visual-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -3;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 24%),
+    radial-gradient(circle at center, transparent 0%, rgba(2, 6, 23, 0.3) 100%);
+  pointer-events: none;
+}
+
+.waitless-hospital-bg {
+  position: relative;
+  isolation: isolate;
+  min-height: 100vh;
+  overflow: hidden;
+  background-image:
+    linear-gradient(
+      90deg,
+      rgba(2, 6, 23, 0.88),
+      rgba(8, 47, 73, 0.6),
+      rgba(255, 255, 255, 0.08)
+    ),
+    url("/images/waitless-hospital-bg.png");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.waitless-hospital-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(20, 184, 166, 0.22), transparent 28rem),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(2, 6, 23, 0.34));
+}
+
+.waitless-glass {
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 30px 90px rgba(2, 6, 23, 0.32);
+  backdrop-filter: blur(22px);
+}
+
+.waitless-light-glass {
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 26px 80px rgba(15, 23, 42, 0.16);
+  backdrop-filter: blur(18px);
+}
+
+.waitless-particles {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  opacity: 0.28;
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.9) 1px, transparent 1.8px),
+    radial-gradient(circle, rgba(45, 212, 191, 0.9) 1px, transparent 1.8px);
+  background-size: 56px 56px, 94px 94px;
+  background-position: 0 0, 28px 22px;
+  animation: particleDrift 26s linear infinite;
+}
+
+.waitless-orb {
+  position: absolute;
+  z-index: -2;
+  border-radius: 999px;
+  filter: blur(42px);
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.waitless-orb-one {
+  width: 22rem;
+  height: 22rem;
+  left: -7rem;
+  top: 8rem;
+  background: rgba(20, 184, 166, 0.34);
+  animation: waitlessFloat 12s ease-in-out infinite;
+}
+
+.waitless-orb-two {
+  width: 26rem;
+  height: 26rem;
+  right: -8rem;
+  top: 14rem;
+  background: rgba(59, 130, 246, 0.28);
+  animation: waitlessFloat 14s ease-in-out infinite reverse;
+}
+
+.waitless-orb-three {
+  width: 20rem;
+  height: 20rem;
+  left: 42%;
+  bottom: -8rem;
+  background: rgba(14, 165, 233, 0.22);
+  animation: waitlessFloat 16s ease-in-out infinite;
+}
+
+.waitless-ecg-line {
+  height: 44px;
+  width: 100%;
+  opacity: 0.24;
+  background-image: url("data:image/svg+xml,%3Csvg width='900' height='44' viewBox='0 0 900 44' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 24H145L160 24L171 8L185 36L198 24H340L352 24L363 14L377 31L391 24H900' fill='none' stroke='%232dd4bf' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-size: 900px 44px;
+  background-repeat: repeat-x;
+  animation: ecgMove 18s linear infinite;
+}
+
+.waitless-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.waitless-shine::before {
+  content: "";
+  position: absolute;
+  inset: -120% auto auto -40%;
+  width: 42%;
+  height: 300%;
+  transform: rotate(25deg);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.28),
+    transparent
+  );
+  animation: shineSweep 7s ease-in-out infinite;
+}
+
+.triage-ribbon {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: 5px;
+  background: linear-gradient(
+    90deg,
+    #dc2626 0 25%,
+    #f59e0b 25% 50%,
+    #16a34a 50% 75%,
+    #020617 75% 100%
+  );
+}
+
+/* =========================================================
+   LEGACY BACKGROUND HELPERS FROM YOUR PROJECT
+   These prevent older components from breaking.
+   ========================================================= */
+
+.portal-surface-stripes {
+  background-image:
+    linear-gradient(135deg, rgba(20, 184, 166, 0.1) 25%, transparent 25%),
+    linear-gradient(225deg, rgba(20, 184, 166, 0.08) 25%, transparent 25%);
+  background-size: 54px 54px;
+}
+
+.portal-hero-texture {
+  background:
+    radial-gradient(circle at 20% 20%, rgba(20, 184, 166, 0.16), transparent 26rem),
+    radial-gradient(circle at 80% 10%, rgba(59, 130, 246, 0.12), transparent 28rem);
+}
+
+.hero-dots-soft {
+  background-image: radial-gradient(circle, rgba(15, 118, 110, 0.3) 1px, transparent 1.5px);
+  background-size: 32px 32px;
+}
+
+/* =========================================================
+   STATUS / UTILITY COLOR HELPERS
+   ========================================================= */
+
+.bg-primary-soft {
+  background: rgba(20, 184, 166, 0.12);
+}
+
+.text-primary {
+  color: #0f766e;
+}
+
+.text-accent {
+  color: #14b8a6;
+}
+
+.bg-accent\/15 {
+  background: rgba(20, 184, 166, 0.15);
+}
+
+.bg-accent\/12 {
+  background: rgba(20, 184, 166, 0.12);
+}
+
+.bg-muted {
+  background: #f1f5f9;
+}
+
+.text-muted-foreground {
+  color: #64748b;
+}
+
+.text-foreground {
+  color: #0f172a;
+}
+
+.bg-background {
+  background: #ffffff;
+}
+
+.bg-card {
+  background: #ffffff;
+}
+
+.border-border {
+  border-color: rgba(15, 23, 42, 0.1);
+}
+
+.text-destructive {
+  color: #dc2626;
+}
+
+.bg-destructive\/10 {
+  background: rgba(220, 38, 38, 0.1);
+}
+
+.border-destructive\/30 {
+  border-color: rgba(220, 38, 38, 0.3);
+}
+
+/* =========================================================
+   PAGE TRANSITIONS AND ANIMATIONS
+   ========================================================= */
+
+.page-transition {
+  animation-duration: 0.3s;
+  animation-timing-function: ease-in-out;
+  animation-fill-mode: both;
+}
+
+.page-transition.fadeIn {
+  animation-name: fadeIn;
+}
+
+.page-transition.fadeOut {
+  animation-name: fadeOut;
+}
+
+.slide-in-left {
+  animation: slideInLeft 0.5s ease-out;
+}
+
+.slide-in-right {
+  animation: slideInRight 0.5s ease-out;
+}
+
+.slide-in-up {
+  animation: slideInUp 0.5s ease-out;
+}
+
+.slide-in-down {
+  animation: slideInDown 0.5s ease-out;
+}
+
+.float-animation {
+  animation: float 3s ease-in-out infinite;
+}
+
+.pulse-animation {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* =========================================================
+   KEYFRAMES
+   ========================================================= */
+
+@keyframes waitlessFloat {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+
+  50% {
+    transform: translate3d(20px, -24px, 0) scale(1.08);
+  }
+}
+
+@keyframes particleDrift {
+  from {
+    background-position: 0 0, 28px 22px;
+  }
+
+  to {
+    background-position: 220px 140px, -160px 210px;
+  }
+}
+
+@keyframes ecgMove {
+  from {
+    background-position-x: 0;
+  }
+
+  to {
+    background-position-x: 900px;
+  }
+}
+
+@keyframes shineSweep {
+  0%,
+  55% {
+    transform: translateX(-220%) rotate(25deg);
+  }
+
+  80%,
+  100% {
+    transform: translateX(420%) rotate(25deg);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  to {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideInDown {
+  from {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* =========================================================
+   RESPONSIVE POLISH
+   ========================================================= */
+
+@media (max-width: 768px) {
+  .surface-panel,
+  .surface-panel-dark {
+    border-radius: 22px;
+  }
+
+  .waitless-visual-bg::before {
+    background-size: 48px 48px;
+  }
+
+  .waitless-orb {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
 }

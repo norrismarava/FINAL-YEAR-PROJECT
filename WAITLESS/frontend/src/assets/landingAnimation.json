@@ -1,0 +1,22 @@
+{
+  "name": "WaitLess Hospital Reception Animation",
+  "type": "video",
+  "src": "/animations/hospital-reception.mp4",
+  "alt": "Hospital reception animation for WaitLess queue management system",
+  "autoplay": true,
+  "loop": true,
+  "muted": true,
+  "playsInline": true,
+  "controls": false,
+  "layout": {
+    "width": "100%",
+    "maxWidth": "620px",
+    "borderRadius": "32px",
+    "shadow": "0 30px 90px rgba(15, 118, 110, 0.25)"
+  },
+  "branding": {
+    "title": "WaitLess",
+    "subtitle": "Digital Queue Management for Public Hospitals",
+    "motto": "Smarter Queues. Better Care."
+  }
+}

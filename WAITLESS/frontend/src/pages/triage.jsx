@@ -1,6 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   Clock3,
@@ -14,11 +12,14 @@ import {
 } from "lucide-react";
 
 import { LoadingPanel } from "@/components/ui/system-loader";
+import { useLiveRefresh } from "@/context/LiveRefreshContext";
+import { useApiAction, useApiResource } from "@/hooks/useApiResource";
 import { PRIORITY_META, priorityChipClass } from "@/services/queueMeta";
 import { assignTicketPriority, fetchTickets } from "@/services/queueApi";
 import { useQueueRealtime } from "@/sockets/QueueRealtimeProvider";
 
 const isBrowser = typeof window !== "undefined";
+const EMPTY_TICKETS = [];
 const TRIAGE_PRIORITIES = ["red", "yellow", "green", "black"];
 const LIVE_STATUS_META = {
   connected: {
@@ -42,45 +43,56 @@ const LIVE_STATUS_META = {
     className: "bg-muted text-muted-foreground",
   },
 };
+const TRIAGE_BACKDROP_ICONS = [
+  {
+    Icon: ShieldAlert,
+    className:
+      "left-[5%] top-20 text-primary/16 [animation:medical-float_18s_ease-in-out_infinite] motion-reduce:animate-none",
+    size: "h-11 w-11",
+  },
+  {
+    Icon: Stethoscope,
+    className:
+      "right-[7%] top-24 text-accent/16 [animation:medical-drift_22s_ease-in-out_infinite] motion-reduce:animate-none",
+    size: "h-11 w-11",
+  },
+  {
+    Icon: Search,
+    className:
+      "left-[14%] top-[48%] text-primary/12 [animation:medical-spin_28s_linear_infinite] motion-reduce:animate-none",
+    size: "h-10 w-10",
+  },
+  {
+    Icon: Timer,
+    className:
+      "right-[11%] top-[52%] text-accent/12 [animation:medical-float_20s_ease-in-out_infinite] motion-reduce:animate-none",
+    size: "h-10 w-10",
+  },
+  {
+    Icon: Wifi,
+    className:
+      "left-[46%] top-14 text-primary/10 [animation:medical-drift_20s_ease-in-out_infinite] motion-reduce:animate-none",
+    size: "h-10 w-10",
+  },
+];
 
-export const Route = createFileRoute("/triage")({
-  head: () => ({
-    meta: [
-      {
-        title: "Triage Console - WaitLess",
-      },
-      {
-        name: "description",
-        content:
-          "Assign red, yellow, green or black priority to incoming patients and keep the queue in sync.",
-      },
-    ],
-  }),
-  component: TriagePage,
-});
-
-function TriagePage() {
-  const queryClient = useQueryClient();
+export default function TriagePage() {
+  const { refreshLiveData } = useLiveRefresh();
   const realtime = useQueueRealtime();
   const [selectedId, setSelectedId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const ticketsQuery = useQuery({
-    queryKey: ["triage", "tickets"],
-    queryFn: () => fetchTickets({ status: "waiting" }),
-    enabled: isBrowser,
-  });
+  const loadWaitingTickets = useCallback(() => fetchTickets({ status: "waiting" }), []);
+  const ticketsQuery = useApiResource(loadWaitingTickets, { enabled: isBrowser });
 
-  const assignMutation = useMutation({
-    mutationFn: ({ id, priority }) => assignTicketPriority(id, priority),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["triage", "tickets"] });
-      queryClient.invalidateQueries({ queryKey: ["queue", "board"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard", "summary"] });
+  const assignMutation = useApiAction(
+    ({ id, priority }) => assignTicketPriority(id, priority),
+    {
+      onSuccess: refreshLiveData,
     },
-  });
+  );
 
-  const tickets = ticketsQuery.data ?? [];
+  const tickets = ticketsQuery.data ?? EMPTY_TICKETS;
   const filteredTickets = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
 
@@ -150,9 +162,14 @@ function TriagePage() {
   }
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <header className="surface-panel p-6 sm:p-8">
+    <section className="relative isolate overflow-hidden px-4 py-8 sm:px-6 lg:px-8">
+      <TriageBackdrop />
+
+      <div className="relative mx-auto max-w-7xl">
+        <header className="surface-panel page-section-rise p-6 sm:p-8">
+        <div className="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(135deg,rgba(255,255,255,0.82),rgba(240,253,250,0.62)_42%,rgba(219,234,254,0.56))]" />
         <div className="absolute right-0 top-0 h-44 w-44 rounded-full bg-accent/10 blur-3xl" />
+        <div className="absolute inset-x-0 bottom-0 h-20 bg-[linear-gradient(180deg,transparent,rgba(240,253,250,0.26))]" />
         <div className="relative grid gap-6 xl:grid-cols-[1.2fr_0.85fr]">
           <div>
             <div className="eyebrow">Clinical intake</div>
@@ -243,10 +260,10 @@ function TriagePage() {
             </div>
           </div>
         </div>
-      </header>
+        </header>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
-        <div className="space-y-6">
+        <div className="mt-6 grid gap-6 xl:grid-cols-[0.9fr_1.1fr] page-section-rise page-section-rise-delay-1">
+          <div className="space-y-6">
           <article className="surface-panel overflow-hidden">
             <div className="border-b border-border/70 px-5 py-5 sm:px-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
@@ -298,7 +315,7 @@ function TriagePage() {
                     key={ticket.id}
                     type="button"
                     onClick={() => setSelectedId(ticket.id)}
-                    className={`w-full rounded-2xl border px-4 py-4 text-left transition-all ${
+                    className={`surface-hover-card group w-full rounded-2xl border px-4 py-4 text-left ${
                       selectedId === ticket.id
                         ? "border-primary/20 bg-primary-soft/55 shadow-card"
                         : "border-border/70 bg-background/80 hover:border-primary/15 hover:bg-primary-soft/25"
@@ -318,7 +335,7 @@ function TriagePage() {
                           </div>
                         </div>
                       </div>
-                      <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                      <ArrowRight className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:translate-x-1" />
                     </div>
 
                     <div className="mt-3 flex flex-wrap gap-2">
@@ -344,7 +361,7 @@ function TriagePage() {
             )}
           </article>
 
-          <article className="surface-panel p-6">
+            <article className="surface-panel page-section-rise page-section-rise-delay-2 p-6">
             <div className="eyebrow">Protocol guide</div>
             <h2 className="mt-2 font-display text-2xl font-bold tracking-tight">
               Colour lanes at a glance
@@ -354,10 +371,10 @@ function TriagePage() {
                 <ProtocolGuideCard key={priority} priority={priority} />
               ))}
             </div>
-          </article>
-        </div>
+            </article>
+          </div>
 
-        <article className="surface-panel p-6 sm:p-8">
+          <article className="surface-panel page-section-rise page-section-rise-delay-2 p-6 sm:p-8">
           {selected ? (
             <>
               <div className="flex flex-wrap items-start justify-between gap-4">
@@ -429,7 +446,7 @@ function TriagePage() {
                         type="button"
                         onClick={() => assign(priority)}
                         disabled={assignMutation.isPending}
-                        className={`group rounded-3xl border-2 p-5 text-left transition-all hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-70 ${
+                        className={`surface-hover-card group rounded-3xl border-2 p-5 text-left disabled:translate-y-0 disabled:opacity-70 ${
                           isCurrent ? "border-foreground/40" : "border-transparent"
                         } ${priorityChipClass[priority]}`}
                       >
@@ -513,9 +530,32 @@ function TriagePage() {
               </div>
             </div>
           )}
-        </article>
+          </article>
+        </div>
       </div>
     </section>
+  );
+}
+
+function TriageBackdrop() {
+  return (
+    <>
+      <div className="absolute inset-0 -z-30 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.94)_18%,rgba(240,253,250,0.94)_58%,rgba(239,246,255,0.98))]" />
+      <div className="absolute inset-0 -z-20 overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 portal-surface-stripes opacity-72" />
+        <div className="absolute inset-0 portal-hero-texture opacity-34" />
+        <div className="absolute inset-0 hero-dots-soft opacity-32" />
+        <div className="absolute inset-x-[-14%] top-[-6rem] h-48 rounded-[100%] bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.98),rgba(204,251,241,0.72)_36%,rgba(219,234,254,0.5)_62%,rgba(255,255,255,0)_78%)] blur-3xl" />
+        <div className="absolute inset-x-[-12%] bottom-[-7rem] h-64 rounded-[100%] bg-[radial-gradient(ellipse_at_center,rgba(20,184,166,0.18),rgba(37,99,235,0.16)_44%,rgba(248,250,252,0)_76%)] blur-3xl" />
+        <div className="absolute left-[-6%] top-28 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute right-[-5%] top-32 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
+        {TRIAGE_BACKDROP_ICONS.map(({ Icon, className, size }, index) => (
+          <span key={`triage-backdrop-${index}`} className={`absolute ${className}`}>
+            <Icon className={size} strokeWidth={2} />
+          </span>
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -562,7 +602,7 @@ function ProtocolGuideCard({ priority }) {
   const meta = PRIORITY_META[priority];
 
   return (
-    <div className="surface-panel-muted px-4 py-4">
+    <div className="surface-panel-muted surface-hover-card px-4 py-4">
       <div
         className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.22em] ${priorityChipClass[priority]}`}
       >

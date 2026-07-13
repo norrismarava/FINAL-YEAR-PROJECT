@@ -70,7 +70,16 @@ function normalizeTicket(ticket) {
     triagedAt: ticket.triagedAt ?? null,
     calledAt: ticket.calledAt ?? null,
     serviceStartedAt: ticket.serviceStartedAt ?? null,
+    missedAt: ticket.missedAt ?? null,
+    recalledAt: ticket.recalledAt ?? null,
+    transferredAt: ticket.transferredAt ?? null,
+    previousDepartment: ticket.previousDepartment ?? "",
+    recallCount: Number(ticket.recallCount ?? 0),
     completedAt: ticket.completedAt ?? null,
+    patientCategory: ticket.patientCategory ?? "walk-in",
+    nextOfKinName: ticket.nextOfKinName ?? "",
+    nextOfKinPhone: ticket.nextOfKinPhone ?? "",
+    notificationConsent: Boolean(ticket.notificationConsent),
     whatsApp: Boolean(ticket.whatsApp),
   };
 }

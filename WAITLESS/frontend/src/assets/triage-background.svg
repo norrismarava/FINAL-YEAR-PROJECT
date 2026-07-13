@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="triagePrimary" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0d7a7a;stop-opacity:0.16" />
+      <stop offset="100%" style="stop-color:#0a5f5f;stop-opacity:0.05" />
+    </linearGradient>
+    <linearGradient id="triageAccent" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4a9ea8;stop-opacity:0.14" />
+      <stop offset="100%" style="stop-color:#3d8a94;stop-opacity:0.04" />
+    </linearGradient>
+    <pattern id="triageGrid" width="70" height="70" patternUnits="userSpaceOnUse">
+      <rect width="70" height="70" fill="none" stroke="#0d7a7a" stroke-width="0.5" stroke-opacity="0.08"/>
+    </pattern>
+  </defs>
+  
+  <rect width="1920" height="1080" fill="#f8f9fa"/>
+  
+  <ellipse cx="150" cy="100" rx="800" ry="600" fill="url(#triagePrimary)"/>
+  <ellipse cx="1770" cy="150" rx="750" ry="550" fill="url(#triageAccent)"/>
+  
+  <rect width="1920" height="1080" fill="url(#triageGrid)" opacity="0.55"/>
+  
+  <g opacity="0.05" fill="#0d7a7a">
+    <path d="M 200 300 L 220 300 L 220 280 L 240 280 L 240 300 L 260 300 L 260 320 L 240 320 L 240 340 L 220 340 L 220 320 L 200 320 Z"/>
+    <path d="M 1600 250 L 1620 250 L 1620 230 L 1640 230 L 1640 250 L 1660 250 L 1660 270 L 1640 270 L 1640 290 L 1620 290 L 1620 270 L 1600 270 Z"/>
+    <path d="M 350 750 L 370 750 L 370 730 L 390 730 L 390 750 L 410 750 L 410 770 L 390 770 L 390 790 L 370 790 L 370 770 L 350 770 Z"/>
+    <path d="M 1450 800 L 1470 800 L 1470 780 L 1490 780 L 1490 800 L 1510 800 L 1510 820 L 1490 820 L 1490 840 L 1470 840 L 1470 820 L 1450 820 Z"/>
+  </g>
+  
+  <g opacity="0.03" stroke="#0d7a7a" stroke-width="1.5" fill="none">
+    <path d="M 100 500 Q 350 420 600 500 T 1100 500 T 1600 500"/>
+    <path d="M 500 750 Q 750 670 1000 750 T 1500 750"/>
+  </g>
+  
+  <linearGradient id="triageFade" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" style="stop-color:#f8f9fa;stop-opacity:0" />
+    <stop offset="100%" style="stop-color:#f8f9fa;stop-opacity:1" />
+  </linearGradient>
+  <rect x="0" y="680" width="1920" height="400" fill="url(#triageFade)"/>
+</svg>

@@ -1,4 +1,4 @@
-import { getSessionFromRequest, loginStaff } from "../services/authService.js";
+import { getSessionFromRequest, loginStaff, registerStaff, requestPasswordReset, resetPassword } from "../services/authService.js";
 import { HttpError } from "../utils/http.js";
 
 export async function loginController({ body }) {
@@ -21,5 +21,39 @@ export async function meController({ req }) {
   return {
     status: 200,
     body: session,
+  };
+}
+
+export async function forgotPasswordController({ body }) {
+  return {
+    status: 200,
+    body: requestPasswordReset({
+      email: body?.email,
+    }),
+  };
+}
+
+export async function resetPasswordController({ body }) {
+  return {
+    status: 200,
+    body: resetPassword({
+      token: body?.token,
+      password: body?.password,
+    }),
+  };
+}
+
+export async function staffRegisterController({ body }) {
+  return {
+    status: 201,
+    body: registerStaff({
+      fullName: body?.fullName,
+      email: body?.email,
+      phone: body?.phone,
+      department: body?.department,
+      role: body?.role,
+      employeeId: body?.employeeId,
+      password: body?.password,
+    }),
   };
 }

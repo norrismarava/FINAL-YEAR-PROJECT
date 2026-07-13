@@ -358,6 +358,56 @@ export async function dispatchCallNotifications(ticket) {
   return notifications;
 }
 
+export async function dispatchMissedTurnNotification(ticket) {
+  const notifications = [];
+
+  notifications.push(
+    await createDisplayBoardNotification(ticket, {
+      type: "queue-missed",
+      title: `${ticket.ticket} missed turn in ${ticket.department}`,
+      message: `${ticket.ticket} has been marked absent and can be recalled by staff.`,
+      recipient: "Staff queue console",
+    }),
+  );
+
+  if (ticket.whatsApp) {
+    notifications.push(
+      await createWhatsAppNotification(ticket, {
+        type: "queue-missed",
+        title: `Missed turn alert queued for ${ticket.ticket}`,
+        message: `Hello ${ticket.patientName}, your ticket ${ticket.ticket} was called in ${ticket.department} but you were not present. Please return to the department desk for recall.`,
+      }),
+    );
+  }
+
+  return notifications;
+}
+
+export async function dispatchTransferNotification(ticket, previousDepartment) {
+  const notifications = [];
+
+  notifications.push(
+    await createDisplayBoardNotification(ticket, {
+      type: "queue-transfer",
+      title: `${ticket.ticket} transferred to ${ticket.department}`,
+      message: `${ticket.ticket} moved from ${previousDepartment} to ${ticket.department}.`,
+      recipient: "Department display",
+    }),
+  );
+
+  if (ticket.whatsApp) {
+    notifications.push(
+      await createWhatsAppNotification(ticket, {
+        type: "queue-transfer",
+        title: `${ticket.ticket} routed to ${ticket.department}`,
+        message: `Hello ${ticket.patientName}, please proceed to ${ticket.department}. Your ticket ${ticket.ticket} has been transferred from ${previousDepartment}.`,
+      }),
+    );
+  }
+
+  return notifications;
+}
+
 export async function dispatchTurnReadinessNotifications(tickets) {
   const notifications = [];
   const alreadyNotified = new Set(

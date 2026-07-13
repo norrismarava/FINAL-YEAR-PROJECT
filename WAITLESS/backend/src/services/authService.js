@@ -1,12 +1,46 @@
 import crypto from "node:crypto";
+import fs from "node:fs";
+import path from "node:path";
 
 import { env } from "../config/env.js";
 import { HttpError } from "../utils/http.js";
 
 const sessions = new Map();
+const passwordResetTokens = new Map();
+
+// Load staff users from file or use env for demo
+let staffUsers = [...env.staffUsers];
+
+const usersFilePath = path.join(process.cwd(), "data", "staff-users.json");
+
+// Load users from file if exists
+if (fs.existsSync(usersFilePath)) {
+  try {
+    const data = fs.readFileSync(usersFilePath, "utf8");
+    staffUsers = JSON.parse(data);
+  } catch (error) {
+    console.error("Failed to load staff users from file:", error);
+  }
+}
+
+function saveStaffUsers() {
+  try {
+    const dataDir = path.dirname(usersFilePath);
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+    fs.writeFileSync(usersFilePath, JSON.stringify(staffUsers, null, 2));
+  } catch (error) {
+    console.error("Failed to save staff users:", error);
+  }
+}
 
 function normalizeUsername(username) {
   return username?.trim().toLowerCase() ?? "";
+}
+
+function normalizeEmail(email) {
+  return email?.trim().toLowerCase() ?? "";
 }
 
 function publicStaffUser(user) {
@@ -14,14 +48,23 @@ function publicStaffUser(user) {
     id: user.id,
     username: user.username,
     name: user.name,
+    email: user.email,
     role: user.role,
+    department: user.department,
   };
 }
 
 function findStaffUser(username) {
   const normalizedUsername = normalizeUsername(username);
-  return env.staffUsers.find(
+  return staffUsers.find(
     (user) => normalizeUsername(user.username) === normalizedUsername,
+  );
+}
+
+function findStaffUserByEmail(email) {
+  const normalizedEmail = normalizeEmail(email);
+  return staffUsers.find(
+    (user) => normalizeEmail(user.email) === normalizedEmail,
   );
 }
 
@@ -70,6 +113,110 @@ export function loginStaff({ username, password }) {
   }
 
   return createSession(user);
+}
+
+export function registerStaff({
+  fullName,
+  email,
+  phone,
+  department,
+  role,
+  employeeId,
+  password,
+}) {
+  // Check if email already exists
+  const existingUser = findStaffUserByEmail(email);
+  if (existingUser) {
+    throw new HttpError(400, "A user with this email already exists.");
+  }
+
+  // Check if employee ID already exists
+  const existingEmployeeId = staffUsers.find(
+    (user) => user.employeeId === employeeId,
+  );
+  if (existingEmployeeId) {
+    throw new HttpError(400, "A user with this employee ID already exists.");
+  }
+
+  // Generate username from email
+  const username = email.split("@")[0];
+
+  // Create new user
+  const newUser = {
+    id: crypto.randomUUID(),
+    username,
+    name: fullName,
+    email,
+    phone,
+    department,
+    role,
+    employeeId,
+    password, // In production, this should be hashed
+    createdAt: new Date().toISOString(),
+  };
+
+  staffUsers.push(newUser);
+  saveStaffUsers();
+
+  return {
+    message: "Staff member registered successfully",
+    user: publicStaffUser(newUser),
+  };
+}
+
+export function requestPasswordReset({ email }) {
+  const user = findStaffUserByEmail(email);
+  if (!user) {
+    // For security, don't reveal if email exists
+    return {
+      message: "If an account with this email exists, a password reset link has been sent.",
+    };
+  }
+
+  // Generate reset token
+  const token = crypto.randomBytes(32).toString("hex");
+  const expiresAt = new Date(Date.now() + 3600000).toISOString(); // 1 hour
+
+  passwordResetTokens.set(token, {
+    email,
+    expiresAt,
+  });
+
+  // In production, send email with reset link
+  console.log(`Password reset link for ${email}: http://localhost:3000/reset-password?token=${token}`);
+
+  return {
+    message: "If an account with this email exists, a password reset link has been sent.",
+  };
+}
+
+export function resetPassword({ token, password }) {
+  const resetData = passwordResetTokens.get(token);
+  
+  if (!resetData) {
+    throw new HttpError(400, "Invalid or expired reset token.");
+  }
+
+  if (new Date(resetData.expiresAt).getTime() < Date.now()) {
+    passwordResetTokens.delete(token);
+    throw new HttpError(400, "Invalid or expired reset token.");
+  }
+
+  const user = findStaffUserByEmail(resetData.email);
+  if (!user) {
+    throw new HttpError(400, "User not found.");
+  }
+
+  // Update password
+  user.password = password; // In production, this should be hashed
+  saveStaffUsers();
+
+  // Remove used token
+  passwordResetTokens.delete(token);
+
+  return {
+    message: "Password reset successfully",
+  };
 }
 
 export function getSessionFromRequest(req) {

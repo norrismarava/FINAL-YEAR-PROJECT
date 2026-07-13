@@ -1,6 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   BellRing,
   CheckCircle2,
@@ -22,6 +21,7 @@ import {
 } from "@/services/queueMeta";
 import { fetchTicketTracking } from "@/services/queueApi";
 import { useQueueRealtime } from "@/sockets/QueueRealtimeProvider";
+import { useApiResource } from "@/hooks/useApiResource";
 
 const isBrowser = typeof window !== "undefined";
 const LIVE_STATUS_META = {
@@ -47,61 +47,82 @@ const LIVE_STATUS_META = {
   },
 };
 const TRACK_STEPS = ["registered", "waiting", "called", "in-service", "completed"];
+const TRACK_BACKDROP_ICONS = [
+  {
+    Icon: Ticket,
+    className:
+      "left-[4%] top-20 text-primary/18 [animation:medical-float_18s_ease-in-out_infinite] motion-reduce:animate-none",
+    size: "h-12 w-12",
+  },
+  {
+    Icon: BellRing,
+    className:
+      "right-[6%] top-24 text-accent/18 [animation:medical-drift_23s_ease-in-out_infinite] motion-reduce:animate-none",
+    size: "h-11 w-11",
+  },
+  {
+    Icon: MessageCircle,
+    className:
+      "left-[12%] top-[42%] text-primary/14 [animation:medical-spin_28s_linear_infinite] motion-reduce:animate-none",
+    size: "h-10 w-10",
+  },
+  {
+    Icon: Timer,
+    className:
+      "right-[10%] top-[48%] text-accent/14 [animation:medical-float_20s_ease-in-out_infinite] motion-reduce:animate-none",
+    size: "h-10 w-10",
+  },
+  {
+    Icon: Wifi,
+    className:
+      "left-[46%] top-14 text-primary/12 [animation:medical-drift_21s_ease-in-out_infinite] motion-reduce:animate-none",
+    size: "h-10 w-10",
+  },
+  {
+    Icon: UserRound,
+    className:
+      "right-[24%] bottom-[14%] text-accent/12 [animation:medical-float_19s_ease-in-out_infinite] motion-reduce:animate-none",
+    size: "h-10 w-10",
+  },
+];
 
-export const Route = createFileRoute("/track")({
-  validateSearch: (search) => ({
-    ticket:
-      typeof search.ticket === "string" && search.ticket.trim()
-        ? search.ticket.trim().toUpperCase()
-        : undefined,
-  }),
-  head: () => ({
-    meta: [
-      {
-        title: "Track Your Ticket - WaitLess",
-      },
-      {
-        name: "description",
-        content:
-          "Patients can check live queue status, recent alerts, and estimated wait time using their ticket code.",
-      },
-    ],
-  }),
-  component: TrackPage,
-});
-
-function TrackPage() {
-  const navigate = Route.useNavigate();
-  const search = Route.useSearch();
+export default function TrackPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const realtime = useQueueRealtime();
-  const [ticketInput, setTicketInput] = useState(search.ticket ?? "");
-  const ticketCode = search.ticket ?? "";
+  const ticketCode = (searchParams.get("ticket") ?? "").trim().toUpperCase();
+  const [ticketInput, setTicketInput] = useState(ticketCode);
   const liveMeta = LIVE_STATUS_META[realtime.status] ?? LIVE_STATUS_META.connecting;
-  const trackingQuery = useQuery({
-    queryKey: ["track", ticketCode],
-    queryFn: () => fetchTicketTracking(ticketCode),
+  const loadTicketTracking = useCallback(
+    () => fetchTicketTracking(ticketCode),
+    [ticketCode],
+  );
+  const trackingQuery = useApiResource(loadTicketTracking, {
     enabled: isBrowser && Boolean(ticketCode),
   });
 
   useEffect(() => {
-    setTicketInput(search.ticket ?? "");
-  }, [search.ticket]);
+    setTicketInput(ticketCode);
+  }, [ticketCode]);
 
   function submit(event) {
     event.preventDefault();
     const nextTicket = ticketInput.trim().toUpperCase();
 
-    navigate({
-      to: "/track",
-      search: nextTicket ? { ticket: nextTicket } : {},
-    });
+    navigate(nextTicket ? `/track?ticket=${encodeURIComponent(nextTicket)}` : "/track");
   }
 
   return (
-    <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <header className="surface-panel p-6 sm:p-8">
-        <div className="absolute right-0 top-0 h-44 w-44 rounded-full bg-accent/10 blur-3xl" />
-        <div className="relative grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+    <section className="relative isolate overflow-hidden px-4 py-8 sm:px-6 lg:px-8">
+      <TrackBackdrop />
+
+      <div className="relative mx-auto max-w-7xl">
+        <header className="surface-panel page-section-rise p-6 sm:p-8">
+          <div className="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(135deg,rgba(255,255,255,0.84),rgba(240,253,250,0.66)_42%,rgba(219,234,254,0.56))]" />
+          <div className="absolute -left-8 top-8 h-36 w-36 rounded-full bg-primary/10 blur-3xl" />
+          <div className="absolute right-0 top-0 h-44 w-44 rounded-full bg-accent/10 blur-3xl" />
+          <div className="absolute inset-x-0 bottom-0 h-24 bg-[linear-gradient(180deg,transparent,rgba(240,253,250,0.36))]" />
+          <div className="relative grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
           <div>
             <div className="eyebrow">Patient experience</div>
             <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
@@ -141,7 +162,7 @@ function TrackPage() {
             </div>
           </div>
 
-          <div className="surface-panel-dark p-5 sm:p-6">
+            <div className="surface-panel-dark p-5 sm:p-6">
             <div className="text-[11px] font-bold uppercase tracking-[0.28em] text-primary-foreground/70">
               Ticket lookup
             </div>
@@ -186,39 +207,106 @@ function TrackPage() {
               </div>
             </div>
           </div>
-        </div>
-      </header>
+          </div>
+        </header>
 
-      <div className="mt-6">
-        {!ticketCode ? (
-          <EmptyTrackingState />
-        ) : trackingQuery.isLoading ? (
-          <LoadingState />
-        ) : trackingQuery.isError ? (
-          <ErrorState message={trackingQuery.error.message} />
-        ) : (
-          <TrackingResults data={trackingQuery.data} />
-        )}
+        <div className="mt-6 page-section-rise page-section-rise-delay-1">
+          {!ticketCode ? (
+            <EmptyTrackingState />
+          ) : trackingQuery.isLoading ? (
+            <LoadingState />
+          ) : trackingQuery.isError ? (
+            <ErrorState message={trackingQuery.error.message} />
+          ) : (
+            <TrackingResults data={trackingQuery.data} />
+          )}
+        </div>
       </div>
     </section>
   );
 }
 
+function TrackBackdrop() {
+  return (
+    <>
+      <div className="absolute inset-0 -z-30 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.94)_18%,rgba(240,253,250,0.94)_56%,rgba(239,246,255,0.98))]" />
+      <div className="absolute inset-0 -z-20 overflow-hidden pointer-events-none">
+        <div className="absolute inset-0 portal-surface-stripes opacity-70" />
+        <div className="absolute inset-0 portal-hero-texture opacity-40" />
+        <div className="absolute inset-0 hero-dots-soft opacity-35" />
+        <div className="absolute inset-0 opacity-80 [background-image:linear-gradient(rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.08)_1px,transparent_1px)] [background-size:86px_86px]" />
+        <div className="absolute inset-x-[-14%] top-[-6rem] h-48 rounded-[100%] bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.98),rgba(204,251,241,0.72)_36%,rgba(219,234,254,0.5)_62%,rgba(255,255,255,0)_78%)] blur-3xl" />
+        <div className="absolute inset-x-[-12%] bottom-[-7rem] h-64 rounded-[100%] bg-[radial-gradient(ellipse_at_center,rgba(20,184,166,0.18),rgba(37,99,235,0.16)_44%,rgba(248,250,252,0)_76%)] blur-3xl" />
+        <div className="absolute left-[-6%] top-24 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
+        <div className="absolute right-[-5%] top-28 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
+        <div className="absolute left-[12%] top-14 h-[34rem] w-32 bg-[linear-gradient(180deg,rgba(20,184,166,0.14),rgba(255,255,255,0.0)_40%,rgba(37,99,235,0.10)_84%,rgba(255,255,255,0))] blur-3xl" />
+        <div className="absolute right-[12%] top-20 h-[40rem] w-40 bg-[linear-gradient(180deg,rgba(37,99,235,0.16),rgba(255,255,255,0.0)_38%,rgba(20,184,166,0.12)_82%,rgba(255,255,255,0))] blur-3xl" />
+        {TRACK_BACKDROP_ICONS.map(({ Icon, className, size }, index) => (
+          <span key={`track-backdrop-${index}`} className={`absolute ${className}`}>
+            <Icon className={size} strokeWidth={2} />
+          </span>
+        ))}
+      </div>
+    </>
+  );
+}
+
 function EmptyTrackingState() {
+  const previewItems = [
+    {
+      label: "Code format",
+      value: "G-105",
+      detail: "Use the exact ticket printed at registration.",
+    },
+    {
+      label: "Updates",
+      value: "Live",
+      detail: "Queue movement and call-up changes refresh here automatically.",
+    },
+    {
+      label: "Alerts",
+      value: "WhatsApp",
+      detail: "Near-turn and final call notices can mirror what staff send.",
+    },
+  ];
+
   return (
     <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
-      <div className="surface-panel grid place-items-center border-dashed p-10 text-center">
-        <div className="max-w-md">
-          <div className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-primary-soft text-primary">
-            <BellRing className="h-6 w-6" />
-          </div>
-          <h2 className="mt-4 font-display text-2xl font-bold">
-            Your updates will appear here
+      <div className="surface-panel relative overflow-hidden p-6 sm:p-8">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(20,184,166,0.12),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(37,99,235,0.10),transparent_30%)]" />
+        <div className="relative">
+          <div className="eyebrow">Ready to search</div>
+          <h2 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">
+            Your live queue updates start with one ticket code
           </h2>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Use your ticket code to open a live patient view with queue status,
-            department activity, and recent notifications.
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
+            Enter the code printed on your registration slip to open a live patient
+            view with queue status, department activity, and recent alerts.
           </p>
+
+          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            {previewItems.map((item) => (
+              <HeroTile
+                key={item.label}
+                label={item.label}
+                value={item.value}
+                detail={item.detail}
+              />
+            ))}
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-primary/15 bg-[linear-gradient(135deg,rgba(204,251,241,0.52),rgba(255,255,255,0.58)_44%,rgba(219,234,254,0.48))] px-4 py-4 shadow-[0_20px_50px_-38px_rgba(37,99,235,0.26)] backdrop-blur">
+            <div className="flex items-start gap-3">
+              <BellRing className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+              <div>
+                <div className="font-semibold text-foreground">What appears in this view</div>
+                <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                  We will show your position in the queue, what stage you are in,
+                  whether a message was sent, and what is likely to happen next.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -306,7 +394,7 @@ function TrackingResults({ data }) {
         : "waiting";
 
   return (
-    <div className="grid gap-6">
+    <div className="grid gap-6 page-section-rise page-section-rise-delay-2">
       <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <article className="surface-panel p-6 sm:p-8">
           <div className="flex flex-wrap items-start justify-between gap-4">
@@ -553,7 +641,7 @@ function TrackingResults({ data }) {
 
 function HeroTile({ label, value, detail }) {
   return (
-    <div className="surface-panel-muted px-4 py-4">
+    <div className="rounded-2xl border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.82),rgba(248,250,252,0.78))] px-4 py-4 shadow-[0_18px_40px_-32px_rgba(15,23,42,0.18)] backdrop-blur">
       <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
         {label}
       </div>
@@ -664,7 +752,7 @@ function NotificationTimelineItem({ notification, isLast }) {
 
 function MiniStat({ label, value }) {
   return (
-    <div className="surface-panel-muted rounded-xl px-4 py-3">
+    <div className="rounded-xl border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.8),rgba(248,250,252,0.76))] px-4 py-3 shadow-[0_14px_36px_-34px_rgba(15,23,42,0.18)] backdrop-blur">
       <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
         {label}
       </div>
@@ -810,8 +898,8 @@ function getStepState(currentStatus, stepKey) {
 
 function summaryToneClass(tone) {
   return {
-    stable: "border-priority-green/25 bg-priority-green/10 text-priority-green",
-    active: "border-accent/25 bg-accent/10 text-accent-foreground",
+    stable: "border-priority-green/25 bg-priority-green/10 text-foreground",
+    active: "border-accent/25 bg-accent/10 text-foreground",
     waiting: "border-primary/20 bg-primary-soft/55 text-foreground",
   }[tone];
 }

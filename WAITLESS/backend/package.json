@@ -2,10 +2,11 @@
   "name": "waitless-backend",
   "version": "1.0.0",
   "description": "Backend API for WaitLess Queue Management System",
+  "type": "module",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js"
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
   },
   "keywords": [
     "queue",

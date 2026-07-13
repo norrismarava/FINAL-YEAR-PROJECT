@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import {
   createTicketCode,
   DEPARTMENTS,
+  PATIENT_CATEGORIES,
   PRIORITY_META,
   priorityRank,
   TICKET_STATUSES,
@@ -19,10 +20,17 @@ import { broadcastQueueEvent } from "../sockets/queueEvents.js";
 import { HttpError } from "../utils/http.js";
 import {
   dispatchCallNotifications,
+  dispatchMissedTurnNotification,
   dispatchRegistrationNotification,
   dispatchTurnReadinessNotifications,
+  dispatchTransferNotification,
   getNotificationsForTicket,
 } from "./notificationService.js";
+
+const TRIAGE_REASSESSMENT_THRESHOLDS_MINUTES = {
+  red: 10,
+  yellow: 30,
+};
 
 function enrichTicket(ticket) {
   return {
@@ -48,7 +56,8 @@ function sortAllTickets(tickets) {
     called: 0,
     "in-service": 1,
     waiting: 2,
-    completed: 3,
+    missed: 3,
+    completed: 4,
   };
 
   return [...tickets].sort(
@@ -75,6 +84,12 @@ function ensureDepartment(department) {
   }
 }
 
+function ensurePatientCategory(category) {
+  if (!PATIENT_CATEGORIES.includes(category)) {
+    throw new HttpError(400, "Invalid patient category value.");
+  }
+}
+
 function ensureStatus(status) {
   if (!TICKET_STATUSES.includes(status)) {
     throw new HttpError(400, "Invalid status value.");
@@ -89,6 +104,33 @@ function createTicketEventPayload(ticket) {
     priority: ticket.priority,
     status: ticket.status,
   };
+}
+
+function buildReassessmentAlerts(tickets) {
+  return tickets
+    .filter((ticket) => {
+      const threshold = TRIAGE_REASSESSMENT_THRESHOLDS_MINUTES[ticket.priority];
+      return (
+        ticket.status === "waiting" &&
+        threshold &&
+        ticket.waitMinutes >= threshold
+      );
+    })
+    .map((ticket) => ({
+      id: ticket.id,
+      ticket: ticket.ticket,
+      patientName: ticket.patientName,
+      department: ticket.department,
+      priority: ticket.priority,
+      waitMinutes: ticket.waitMinutes,
+      thresholdMinutes: TRIAGE_REASSESSMENT_THRESHOLDS_MINUTES[ticket.priority],
+      message: `${ticket.ticket} needs triage reassessment after ${ticket.waitMinutes} minutes waiting.`,
+    }))
+    .sort(
+      (left, right) =>
+        priorityRank(left.priority) - priorityRank(right.priority) ||
+        right.waitMinutes - left.waitMinutes,
+    );
 }
 
 function normalizeTicketCode(ticketCode) {
@@ -289,6 +331,7 @@ function applyStatusTransition(ticket, status) {
         status,
         calledAt: null,
         serviceStartedAt: null,
+        missedAt: null,
         completedAt: null,
       };
     case "called":
@@ -297,6 +340,7 @@ function applyStatusTransition(ticket, status) {
         status,
         calledAt: now,
         serviceStartedAt: null,
+        missedAt: null,
         completedAt: null,
       };
     case "in-service":
@@ -305,6 +349,15 @@ function applyStatusTransition(ticket, status) {
         status,
         calledAt: ticket.calledAt ?? now,
         serviceStartedAt: now,
+        missedAt: null,
+        completedAt: null,
+      };
+    case "missed":
+      return {
+        ...ticket,
+        status,
+        missedAt: now,
+        serviceStartedAt: null,
         completedAt: null,
       };
     case "completed":
@@ -323,8 +376,9 @@ function applyStatusTransition(ticket, status) {
 function ensureStatusTransition(currentStatus, nextStatus) {
   const allowedTransitions = {
     waiting: ["called", "in-service"],
-    called: ["waiting", "in-service", "completed"],
+    called: ["waiting", "in-service", "missed", "completed"],
     "in-service": ["completed"],
+    missed: ["waiting", "called"],
     completed: [],
   };
 
@@ -343,6 +397,7 @@ function ensureStatusTransition(currentStatus, nextStatus) {
 export function getMeta() {
   return {
     departments: DEPARTMENTS,
+    patientCategories: PATIENT_CATEGORIES,
     priorities: PRIORITY_META,
     statuses: TICKET_STATUSES,
   };
@@ -361,14 +416,17 @@ export async function getTickets(filters = {}) {
 export async function registerPatient(payload) {
   const patientName = payload.fullName?.trim();
   const department = payload.dept ?? payload.department ?? "OPD";
+  const patientCategory = payload.patientCategory ?? "walk-in";
 
   if (!patientName) {
     throw new HttpError(400, "Full name is required.");
   }
 
   ensureDepartment(department);
+  ensurePatientCategory(patientCategory);
 
   const sequence = await getNextSequence();
+  const notificationConsent = Boolean(payload.notificationConsent);
   const ticket = {
     id: crypto.randomUUID(),
     ticket: createTicketCode("green", sequence),
@@ -378,6 +436,10 @@ export async function registerPatient(payload) {
     gender: payload.gender ?? "unknown",
     phone: payload.phone?.trim() ?? "",
     address: payload.address?.trim() ?? "",
+    patientCategory,
+    nextOfKinName: payload.nextOfKinName?.trim() ?? "",
+    nextOfKinPhone: payload.nextOfKinPhone?.trim() ?? "",
+    notificationConsent,
     department,
     chiefComplaint: payload.chiefComplaint?.trim() ?? "",
     priority: "green",
@@ -387,7 +449,12 @@ export async function registerPatient(payload) {
     calledAt: null,
     serviceStartedAt: null,
     completedAt: null,
-    whatsApp: Boolean(payload.whatsApp),
+    missedAt: null,
+    recalledAt: null,
+    transferredAt: null,
+    previousDepartment: "",
+    recallCount: 0,
+    whatsApp: notificationConsent && Boolean(payload.whatsApp),
   };
 
   const createdTicket = enrichTicket(await createTicket(ticket));
@@ -420,6 +487,71 @@ export async function assignPriority(id, priority) {
     "ticket.priority-updated",
     createTicketEventPayload(updatedTicket),
   );
+  await dispatchTurnReadinessNotifications(await getLiveTickets());
+
+  return updatedTicket;
+}
+
+export async function recallMissedPatient(id) {
+  const existing = await findTicketById(id);
+  if (!existing) {
+    throw new HttpError(404, "Ticket not found.");
+  }
+
+  if (existing.status !== "missed") {
+    throw new HttpError(400, "Only missed tickets can be recalled.");
+  }
+
+  const recalledAt = new Date().toISOString();
+  const updatedTicket = enrichTicket(
+    await updateTicket(id, (ticket) => ({
+      ...applyStatusTransition(ticket, "waiting"),
+      recalledAt,
+      registeredAt: recalledAt,
+      recallCount: Number(ticket.recallCount ?? 0) + 1,
+    })),
+  );
+
+  broadcastQueueEvent("ticket.recalled", createTicketEventPayload(updatedTicket));
+  await dispatchTurnReadinessNotifications(await getLiveTickets());
+
+  return updatedTicket;
+}
+
+export async function transferPatient(id, department) {
+  ensureDepartment(department);
+
+  const existing = await findTicketById(id);
+  if (!existing) {
+    throw new HttpError(404, "Ticket not found.");
+  }
+
+  if (existing.status === "completed") {
+    throw new HttpError(400, "Completed tickets cannot be transferred.");
+  }
+
+  if (existing.department === department) {
+    throw new HttpError(400, "Ticket is already in that department.");
+  }
+
+  const transferredAt = new Date().toISOString();
+  const previousDepartment = existing.department;
+  const updatedTicket = enrichTicket(
+    await updateTicket(id, (ticket) => ({
+      ...ticket,
+      department,
+      previousDepartment,
+      transferredAt,
+      status: "waiting",
+      calledAt: null,
+      serviceStartedAt: null,
+      missedAt: null,
+      completedAt: null,
+    })),
+  );
+
+  broadcastQueueEvent("ticket.transferred", createTicketEventPayload(updatedTicket));
+  await dispatchTransferNotification(updatedTicket, previousDepartment);
   await dispatchTurnReadinessNotifications(await getLiveTickets());
 
   return updatedTicket;
@@ -486,6 +618,10 @@ export async function updatePatientStatus(id, status) {
     await dispatchCallNotifications(updatedTicket);
   }
 
+  if (status === "missed") {
+    await dispatchMissedTurnNotification(updatedTicket);
+  }
+
   await dispatchTurnReadinessNotifications(await getLiveTickets());
 
   return updatedTicket;
@@ -501,10 +637,12 @@ export async function getQueueBoard() {
   const waiting = sortWaitingTickets(
     tickets.filter((ticket) => ticket.status === "waiting"),
   );
+  const missed = sortAllTickets(tickets.filter((ticket) => ticket.status === "missed"));
 
   return {
     nowServing,
     waiting,
+    missed,
     totalWaiting: waiting.length,
     lastUpdatedAt: new Date().toISOString(),
   };
@@ -546,6 +684,7 @@ export async function getDashboardSummary() {
       waiting: 0,
       called: 0,
       "in-service": 0,
+      missed: 0,
       completed: 0,
     },
     notificationChannels: {
@@ -593,6 +732,9 @@ export async function getDashboardSummary() {
     metrics,
     notifications,
     notificationAnalytics,
+    safetyAlerts: {
+      reassessment: buildReassessmentAlerts(tickets),
+    },
     lastUpdatedAt: new Date().toISOString(),
   };
 }
@@ -649,6 +791,9 @@ export async function getTicketTracking(ticketCode) {
       totalWaitingInDepartment: departmentWaiting.length,
       totalWaitingOverall: tickets.filter((entry) => entry.status === "waiting")
         .length,
+      missedInDepartment: tickets.filter(
+        (entry) => entry.department === ticket.department && entry.status === "missed",
+      ).length,
       activeInDepartment: activeInDepartment.map((entry) => ({
         id: entry.id,
         ticket: entry.ticket,

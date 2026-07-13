@@ -1,6 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { lazy, Suspense, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   ArrowRight,
@@ -18,12 +16,16 @@ import {
 } from "lucide-react";
 
 import { LoadingPanel } from "@/components/ui/system-loader";
+import { useLiveRefresh } from "@/context/LiveRefreshContext";
+import { useApiAction, useApiResource } from "@/hooks/useApiResource";
 import { DEPARTMENTS, PRIORITY_META, STATUS_META, priorityChipClass } from "@/services/queueMeta";
 import {
   callNextPatient,
   fetchDashboardSummary,
+  recallTicket,
   retryNotificationDelivery,
   retryNotificationDeliveries,
+  transferTicket,
   updateTicketStatus,
 } from "@/services/queueApi";
 import { useQueueRealtime } from "@/sockets/QueueRealtimeProvider";
@@ -31,7 +33,7 @@ import { useQueueRealtime } from "@/sockets/QueueRealtimeProvider";
 const isBrowser = typeof window !== "undefined";
 const EMPTY_LIST = [];
 const PRIORITY_ORDER = ["red", "yellow", "green", "black"];
-const STATUS_ORDER = ["waiting", "called", "in-service", "completed"];
+const STATUS_ORDER = ["waiting", "called", "in-service", "missed", "completed"];
 const LIVE_STATUS_META = {
   connected: {
     label: "Live sync",
@@ -70,6 +72,7 @@ const EMPTY_METRICS = {
     waiting: 0,
     called: 0,
     "in-service": 0,
+    missed: 0,
     completed: 0,
   },
   notificationChannels: {
@@ -105,49 +108,34 @@ const NotificationAnalyticsPanels = lazy(
   () => import("@/components/dashboard/NotificationAnalyticsPanels"),
 );
 
-export const Route = createFileRoute("/dashboard")({
-  head: () => ({
-    meta: [
-      {
-        title: "Staff Dashboard - WaitLess",
-      },
-      {
-        name: "description",
-        content:
-          "Real-time queue, bottleneck and notification metrics for hospital staff and administrators.",
-      },
-    ],
-  }),
-  component: DashboardPage,
-});
-
-function DashboardPage() {
-  const queryClient = useQueryClient();
+export default function DashboardPage() {
+  const { refreshLiveData } = useLiveRefresh();
   const realtime = useQueueRealtime();
   const [selectedDepartment, setSelectedDepartment] = useState(DEPARTMENTS[0]);
   const [notificationFilter, setNotificationFilter] = useState("attention");
   const [notificationSearch, setNotificationSearch] = useState("");
   const [selectedNotificationId, setSelectedNotificationId] = useState(null);
-  const dashboardQuery = useQuery({
-    queryKey: ["dashboard", "summary"],
-    queryFn: fetchDashboardSummary,
-    enabled: isBrowser,
+  const loadDashboardSummary = useCallback(() => fetchDashboardSummary(), []);
+  const dashboardQuery = useApiResource(loadDashboardSummary, { enabled: isBrowser });
+  const callNextMutation = useApiAction(callNextPatient, {
+    onSuccess: refreshLiveData,
   });
-  const callNextMutation = useMutation({
-    mutationFn: callNextPatient,
-    onSuccess: () => invalidateQueueViews(queryClient),
+  const updateStatusMutation = useApiAction(
+    ({ id, status }) => updateTicketStatus(id, status),
+    { onSuccess: refreshLiveData },
+  );
+  const recallTicketMutation = useApiAction(recallTicket, {
+    onSuccess: refreshLiveData,
   });
-  const updateStatusMutation = useMutation({
-    mutationFn: ({ id, status }) => updateTicketStatus(id, status),
-    onSuccess: () => invalidateQueueViews(queryClient),
+  const transferTicketMutation = useApiAction(
+    ({ id, department }) => transferTicket(id, department),
+    { onSuccess: refreshLiveData },
+  );
+  const retryNotificationMutation = useApiAction(retryNotificationDelivery, {
+    onSuccess: refreshLiveData,
   });
-  const retryNotificationMutation = useMutation({
-    mutationFn: retryNotificationDelivery,
-    onSuccess: () => invalidateQueueViews(queryClient),
-  });
-  const bulkRetryNotificationMutation = useMutation({
-    mutationFn: retryNotificationDeliveries,
-    onSuccess: () => invalidateQueueViews(queryClient),
+  const bulkRetryNotificationMutation = useApiAction(retryNotificationDeliveries, {
+    onSuccess: refreshLiveData,
   });
 
   const tickets = dashboardQuery.data?.tickets ?? EMPTY_LIST;
@@ -155,6 +143,7 @@ function DashboardPage() {
   const metrics = dashboardQuery.data?.metrics ?? EMPTY_METRICS;
   const notificationAnalytics =
     dashboardQuery.data?.notificationAnalytics ?? EMPTY_NOTIFICATION_ANALYTICS;
+  const reassessmentAlerts = dashboardQuery.data?.safetyAlerts?.reassessment ?? EMPTY_LIST;
 
   const departmentSummaries = DEPARTMENTS.map((department) => {
     const scopedTickets = tickets.filter((ticket) => ticket.department === department);
@@ -162,6 +151,7 @@ function DashboardPage() {
     const active = scopedTickets.filter(
       (ticket) => ticket.status === "called" || ticket.status === "in-service",
     ).length;
+    const missed = scopedTickets.filter((ticket) => ticket.status === "missed").length;
     const completed = scopedTickets.filter((ticket) => ticket.status === "completed").length;
 
     return {
@@ -169,6 +159,7 @@ function DashboardPage() {
       count: scopedTickets.length,
       waiting,
       active,
+      missed,
       completed,
     };
   }).sort(
@@ -185,6 +176,7 @@ function DashboardPage() {
     count: 0,
     waiting: 0,
     active: 0,
+    missed: 0,
     completed: 0,
   };
   const busiestDepartment = departmentSummaries[0] ?? selectedSummary;
@@ -201,6 +193,9 @@ function DashboardPage() {
       (ticket.status === "called" || ticket.status === "in-service") &&
       ticket.department === selectedDepartment,
   );
+  const departmentMissed = tickets.filter(
+    (ticket) => ticket.status === "missed" && ticket.department === selectedDepartment,
+  );
   const nextPatient = departmentWaiting[0] ?? null;
   const deliveredNotifications =
     metrics.notificationStatuses.delivered + metrics.notificationStatuses.read;
@@ -214,6 +209,8 @@ function DashboardPage() {
     : 0;
   const queuePressure = metrics.total ? Math.round((metrics.waiting / metrics.total) * 100) : 0;
   const activeMutationTicketId = updateStatusMutation.variables?.id ?? null;
+  const activeRecallTicketId = recallTicketMutation.variables ?? null;
+  const activeTransferTicketId = transferTicketMutation.variables?.id ?? null;
   const activeRetryNotificationId = retryNotificationMutation.variables ?? null;
   const notificationIssues = useMemo(
     () =>
@@ -431,6 +428,8 @@ function DashboardPage() {
             />
           </div>
 
+          <ReassessmentAlertsPanel alerts={reassessmentAlerts} />
+
           <div className="mt-6 grid gap-6 xl:grid-cols-[1.2fr_0.85fr_1fr]">
             <article className="surface-panel p-6">
               <div className="flex flex-wrap items-start justify-between gap-4">
@@ -609,9 +608,10 @@ function DashboardPage() {
                   </select>
                 </label>
 
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
                   <MiniStat label="Waiting here" value={selectedSummary.waiting} />
                   <MiniStat label="Active here" value={selectedSummary.active} />
+                  <MiniStat label="Missed here" value={selectedSummary.missed} />
                 </div>
 
                 <button
@@ -706,6 +706,58 @@ function DashboardPage() {
                   ) : (
                     <div className="mt-3 rounded-2xl border border-dashed border-border bg-background/70 px-4 py-4 text-sm text-muted-foreground">
                       No patient is currently being served in this department.
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-5">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="font-display text-lg font-bold tracking-tight">
+                      Missed turns
+                    </h3>
+                    <span className="rounded-full bg-priority-yellow/15 px-2.5 py-1 text-[10px] font-semibold text-foreground">
+                      Recall lane
+                    </span>
+                  </div>
+
+                  {departmentMissed.length ? (
+                    <ul className="mt-3 space-y-2">
+                      {departmentMissed.map((ticket) => (
+                        <li
+                          key={ticket.id}
+                          className="rounded-2xl border border-priority-yellow/30 bg-priority-yellow/10 px-4 py-3"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <span
+                              className={`inline-grid h-9 w-16 place-items-center rounded-xl font-display text-xs font-bold ${priorityChipClass[ticket.priority]}`}
+                            >
+                              {ticket.ticket}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => recallTicketMutation.mutate(ticket.id)}
+                              disabled={recallTicketMutation.isPending}
+                              className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-60"
+                            >
+                              {recallTicketMutation.isPending &&
+                              activeRecallTicketId === ticket.id ? (
+                                <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+                              ) : (
+                                <RefreshCw className="h-3.5 w-3.5" />
+                              )}
+                              Recall
+                            </button>
+                          </div>
+                          <div className="mt-2 font-medium">{ticket.patientName}</div>
+                          <div className="mt-1 text-xs text-muted-foreground">
+                            Missed after {ticket.waitMinutes}m in flow
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="mt-3 rounded-2xl border border-dashed border-border bg-background/70 px-4 py-4 text-sm text-muted-foreground">
+                      No missed patients are waiting for recall in this department.
                     </div>
                   )}
                 </div>
@@ -1056,12 +1108,30 @@ function DashboardPage() {
                       <div className="mt-4">
                         <TicketActionButton
                           ticket={ticket}
-                          disabled={updateStatusMutation.isPending}
+                          disabled={
+                            updateStatusMutation.isPending || recallTicketMutation.isPending
+                          }
                           loading={
                             updateStatusMutation.isPending && activeMutationTicketId === ticket.id
                           }
+                          recallLoading={
+                            recallTicketMutation.isPending && activeRecallTicketId === ticket.id
+                          }
                           onAction={(status) =>
                             updateStatusMutation.mutate({ id: ticket.id, status })
+                          }
+                          onRecall={() => recallTicketMutation.mutate(ticket.id)}
+                        />
+                        <TransferTicketControl
+                          ticket={ticket}
+                          departments={DEPARTMENTS}
+                          disabled={transferTicketMutation.isPending}
+                          loading={
+                            transferTicketMutation.isPending &&
+                            activeTransferTicketId === ticket.id
+                          }
+                          onTransfer={(department) =>
+                            transferTicketMutation.mutate({ id: ticket.id, department })
                           }
                         />
                       </div>
@@ -1118,17 +1188,39 @@ function DashboardPage() {
                             {ticket.waitMinutes}m
                           </td>
                           <td className="px-6 py-4 text-right">
-                            <TicketActionButton
-                              ticket={ticket}
-                              disabled={updateStatusMutation.isPending}
-                              loading={
-                                updateStatusMutation.isPending &&
-                                activeMutationTicketId === ticket.id
-                              }
-                              onAction={(status) =>
-                                updateStatusMutation.mutate({ id: ticket.id, status })
-                              }
-                            />
+                            <div className="flex flex-col items-end gap-2">
+                              <TicketActionButton
+                                ticket={ticket}
+                                disabled={
+                                  updateStatusMutation.isPending ||
+                                  recallTicketMutation.isPending
+                                }
+                                loading={
+                                  updateStatusMutation.isPending &&
+                                  activeMutationTicketId === ticket.id
+                                }
+                                recallLoading={
+                                  recallTicketMutation.isPending &&
+                                  activeRecallTicketId === ticket.id
+                                }
+                                onAction={(status) =>
+                                  updateStatusMutation.mutate({ id: ticket.id, status })
+                                }
+                                onRecall={() => recallTicketMutation.mutate(ticket.id)}
+                              />
+                              <TransferTicketControl
+                                ticket={ticket}
+                                departments={DEPARTMENTS}
+                                disabled={transferTicketMutation.isPending}
+                                loading={
+                                  transferTicketMutation.isPending &&
+                                  activeTransferTicketId === ticket.id
+                                }
+                                onTransfer={(department) =>
+                                  transferTicketMutation.mutate({ id: ticket.id, department })
+                                }
+                              />
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -1145,6 +1237,18 @@ function DashboardPage() {
             {updateStatusMutation.isError && (
               <div className="border-t border-destructive/20 bg-destructive/5 px-5 py-4 text-sm text-destructive sm:px-6">
                 {updateStatusMutation.error.message}
+              </div>
+            )}
+
+            {recallTicketMutation.isError && (
+              <div className="border-t border-destructive/20 bg-destructive/5 px-5 py-4 text-sm text-destructive sm:px-6">
+                {recallTicketMutation.error.message}
+              </div>
+            )}
+
+            {transferTicketMutation.isError && (
+              <div className="border-t border-destructive/20 bg-destructive/5 px-5 py-4 text-sm text-destructive sm:px-6">
+                {transferTicketMutation.error.message}
               </div>
             )}
           </article>
@@ -1257,8 +1361,76 @@ function NotificationAnalyticsFallback() {
   );
 }
 
-function TicketActionButton({ ticket, disabled, loading, onAction }) {
-  const actionMeta = {
+function ReassessmentAlertsPanel({ alerts }) {
+  if (!alerts.length) {
+    return (
+      <div className="surface-panel-muted mt-6 flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+        <div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+            Safety watch
+          </div>
+          <div className="mt-1 font-semibold text-foreground">
+            No triage reassessments are overdue
+          </div>
+        </div>
+        <CheckCircle2 className="h-5 w-5 text-priority-green" />
+      </div>
+    );
+  }
+
+  return (
+    <article className="surface-panel mt-6 border-priority-yellow/30 p-5">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="eyebrow">Safety watch</div>
+          <h2 className="mt-2 font-display text-xl font-bold tracking-tight">
+            Triage reassessment needed
+          </h2>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            Red and yellow patients who wait beyond the safe threshold should be checked
+            again before their condition changes unnoticed.
+          </p>
+        </div>
+        <span className="rounded-full bg-priority-yellow/20 px-3 py-1.5 text-xs font-semibold text-foreground">
+          {alerts.length} alert{alerts.length === 1 ? "" : "s"}
+        </span>
+      </div>
+      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        {alerts.slice(0, 6).map((alert) => (
+          <div
+            key={alert.id}
+            className="rounded-2xl border border-priority-yellow/30 bg-priority-yellow/10 px-4 py-4"
+          >
+            <div className="flex items-center justify-between gap-3">
+              <span
+                className={`inline-grid h-9 w-16 place-items-center rounded-xl font-display text-xs font-bold ${priorityChipClass[alert.priority]}`}
+              >
+                {alert.ticket}
+              </span>
+              <span className="text-xs font-semibold text-muted-foreground">
+                {alert.waitMinutes}m wait
+              </span>
+            </div>
+            <div className="mt-2 font-semibold">{alert.patientName}</div>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">
+              {alert.department} threshold is {alert.thresholdMinutes} minutes.
+            </p>
+          </div>
+        ))}
+      </div>
+    </article>
+  );
+}
+
+function TicketActionButton({
+  ticket,
+  disabled,
+  loading,
+  recallLoading,
+  onAction,
+  onRecall,
+}) {
+  const primaryActionMeta = {
     waiting: {
       label: "Call now",
       nextStatus: "called",
@@ -1277,7 +1449,24 @@ function TicketActionButton({ ticket, disabled, loading, onAction }) {
     },
   }[ticket.status];
 
-  if (!actionMeta) {
+  if (ticket.status === "missed") {
+    return (
+      <button
+        onClick={onRecall}
+        disabled={disabled}
+        className="inline-flex items-center gap-2 rounded-xl border border-priority-yellow/30 bg-priority-yellow/10 px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-priority-yellow/15 disabled:opacity-60"
+      >
+        {recallLoading ? (
+          <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <RefreshCw className="h-3.5 w-3.5" />
+        )}
+        Recall
+      </button>
+    );
+  }
+
+  if (!primaryActionMeta) {
     return (
       <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
         <CheckCircle2 className="h-3.5 w-3.5" />
@@ -1287,25 +1476,74 @@ function TicketActionButton({ ticket, disabled, loading, onAction }) {
   }
 
   return (
-    <button
-      onClick={() => onAction(actionMeta.nextStatus)}
-      disabled={disabled}
-      className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition-colors disabled:opacity-60 ${actionMeta.className}`}
-    >
-      {loading ? (
-        <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
-      ) : (
-        <ArrowRight className="h-3.5 w-3.5" />
+    <div className="flex flex-wrap justify-end gap-2">
+      <button
+        onClick={() => onAction(primaryActionMeta.nextStatus)}
+        disabled={disabled}
+        className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition-colors disabled:opacity-60 ${primaryActionMeta.className}`}
+      >
+        {loading ? (
+          <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <ArrowRight className="h-3.5 w-3.5" />
+        )}
+        {primaryActionMeta.label}
+      </button>
+      {ticket.status === "called" && (
+        <button
+          onClick={() => onAction("missed")}
+          disabled={disabled}
+          className="inline-flex items-center gap-2 rounded-xl border border-priority-yellow/30 bg-priority-yellow/10 px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-priority-yellow/15 disabled:opacity-60"
+        >
+          <AlertTriangle className="h-3.5 w-3.5" />
+          Missed
+        </button>
       )}
-      {actionMeta.label}
-    </button>
+    </div>
   );
 }
 
-function invalidateQueueViews(queryClient) {
-  queryClient.invalidateQueries({ queryKey: ["triage"] });
-  queryClient.invalidateQueries({ queryKey: ["queue"] });
-  queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+function TransferTicketControl({ ticket, departments, disabled, loading, onTransfer }) {
+  const [department, setDepartment] = useState(ticket.department);
+  const canTransfer = ticket.status !== "completed";
+  const isChanged = department !== ticket.department;
+
+  useEffect(() => {
+    setDepartment(ticket.department);
+  }, [ticket.department]);
+
+  if (!canTransfer) {
+    return null;
+  }
+
+  return (
+    <div className="flex flex-wrap justify-end gap-2">
+      <select
+        value={department}
+        onChange={(event) => setDepartment(event.target.value)}
+        className="rounded-xl border border-border bg-background px-2.5 py-2 text-xs font-semibold text-foreground outline-none transition-colors focus:border-primary"
+      >
+        {departments.map((entry) => (
+          <option key={entry} value={entry}>
+            {entry}
+          </option>
+        ))}
+      </select>
+      <button
+        type="button"
+        onClick={() => onTransfer(department)}
+        disabled={disabled || !isChanged}
+        className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-60"
+      >
+        {loading ? (
+          <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <ArrowRight className="h-3.5 w-3.5" />
+        )}
+        Transfer
+      </button>
+    </div>
+  );
 }
 
 function NotificationChannelBadge({ channel }) {

@@ -1,6 +1,6 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { createContext, useContext, useEffect, useState } from "react";
 
+import { useLiveRefresh } from "@/context/LiveRefreshContext";
 import { buildApiUrl } from "@/services/api";
 
 const QueueRealtimeContext = createContext({
@@ -10,13 +10,6 @@ const QueueRealtimeContext = createContext({
 
 const WAIT_TIME_REFRESH_MS = 60000;
 const POLLING_FALLBACK_MS = 10000;
-const LIVE_QUERY_KEYS = [["triage"], ["queue"], ["dashboard"], ["track"]];
-
-function invalidateLiveQueries(queryClient) {
-  for (const queryKey of LIVE_QUERY_KEYS) {
-    queryClient.invalidateQueries({ queryKey });
-  }
-}
 
 function connectQueueEventStream({ onStatusChange, onEvent }) {
   const eventSource = new EventSource(buildApiUrl("/api/events"));
@@ -49,7 +42,7 @@ function connectQueueEventStream({ onStatusChange, onEvent }) {
 }
 
 export function QueueRealtimeProvider({ children }) {
-  const queryClient = useQueryClient();
+  const { refreshLiveData } = useLiveRefresh();
   const [status, setStatus] = useState("connecting");
   const [lastEventAt, setLastEventAt] = useState(null);
 
@@ -65,13 +58,13 @@ export function QueueRealtimeProvider({ children }) {
         onStatusChange: setStatus,
         onEvent: (payload) => {
           setLastEventAt(payload.timestamp ?? new Date().toISOString());
-          invalidateLiveQueries(queryClient);
+          refreshLiveData();
         },
       });
     } else {
       setStatus("polling");
       const pollingId = window.setInterval(() => {
-        invalidateLiveQueries(queryClient);
+        refreshLiveData();
       }, POLLING_FALLBACK_MS);
 
       stopRealtime = () => {
@@ -80,14 +73,14 @@ export function QueueRealtimeProvider({ children }) {
     }
 
     const waitTimerId = window.setInterval(() => {
-      invalidateLiveQueries(queryClient);
+      refreshLiveData();
     }, WAIT_TIME_REFRESH_MS);
 
     return () => {
       stopRealtime();
       window.clearInterval(waitTimerId);
     };
-  }, [queryClient]);
+  }, [refreshLiveData]);
 
   return (
     <QueueRealtimeContext.Provider value={{ status, lastEventAt }}>

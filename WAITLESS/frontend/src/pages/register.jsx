@@ -1,6 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   CheckCircle2,
   ClipboardPlus,
@@ -10,8 +9,10 @@ import {
   User,
 } from "lucide-react";
 
-import { DEPARTMENTS } from "@/services/queueMeta";
+import { DEPARTMENTS, PATIENT_CATEGORIES } from "@/services/queueMeta";
 import { fetchQueueMeta, registerPatient } from "@/services/queueApi";
+import { useLiveRefresh } from "@/context/LiveRefreshContext";
+import { useApiAction, useApiResource } from "@/hooks/useApiResource";
 
 const isBrowser = typeof window !== "undefined";
 const INITIAL_FORM = {
@@ -21,49 +22,36 @@ const INITIAL_FORM = {
   gender: "female",
   phone: "",
   address: "",
+  patientCategory: "walk-in",
+  nextOfKinName: "",
+  nextOfKinPhone: "",
   dept: "OPD",
   chiefComplaint: "",
+  notificationConsent: true,
   whatsApp: true,
 };
 
-export const Route = createFileRoute("/register")({
-  head: () => ({
-    meta: [
-      {
-        title: "Patient Registration - WaitLess",
-      },
-      {
-        name: "description",
-        content:
-          "Register a new patient in under a minute. Generates a digital ticket and opens a notification channel.",
-      },
-    ],
-  }),
-  component: RegisterPage,
-});
-
-function RegisterPage() {
-  const queryClient = useQueryClient();
+export default function RegisterPage() {
+  const { refreshLiveData } = useLiveRefresh();
   const [submitted, setSubmitted] = useState(null);
   const [form, setForm] = useState(INITIAL_FORM);
 
-  const metaQuery = useQuery({
-    queryKey: ["meta"],
-    queryFn: fetchQueueMeta,
-    enabled: isBrowser,
-  });
+  const loadMeta = useCallback(() => fetchQueueMeta(), []);
+  const metaQuery = useApiResource(loadMeta, { enabled: isBrowser });
 
-  const registerMutation = useMutation({
-    mutationFn: registerPatient,
+  const registerMutation = useApiAction(registerPatient, {
     onSuccess: (ticket) => {
       setSubmitted(ticket);
-      queryClient.invalidateQueries({ queryKey: ["triage", "tickets"] });
-      queryClient.invalidateQueries({ queryKey: ["queue", "board"] });
-      queryClient.invalidateQueries({ queryKey: ["dashboard", "summary"] });
+      refreshLiveData();
     },
   });
 
   const departments = metaQuery.data?.departments ?? DEPARTMENTS;
+  const patientCategories =
+    metaQuery.data?.patientCategories?.map((category) => ({
+      value: category,
+      label: PATIENT_CATEGORIES.find((entry) => entry.value === category)?.label ?? category,
+    })) ?? PATIENT_CATEGORIES;
 
   function submit(event) {
     event.preventDefault();
@@ -147,8 +135,7 @@ function RegisterPage() {
               Register another
             </button>
             <Link
-              to="/track"
-              search={{ ticket: submitted.ticket }}
+              to={`/track?ticket=${encodeURIComponent(submitted.ticket)}`}
               className="rounded-xl gradient-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-elegant"
             >
               Track my ticket
@@ -279,6 +266,22 @@ function RegisterPage() {
               </select>
             </Field>
 
+            <Field label="Patient category">
+              <select
+                value={form.patientCategory}
+                onChange={(event) =>
+                  setForm({ ...form, patientCategory: event.target.value })
+                }
+                className="input-base"
+              >
+                {patientCategories.map((category) => (
+                  <option key={category.value} value={category.value}>
+                    {category.label}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
             <Field label="Mobile / WhatsApp">
               <input
                 value={form.phone}
@@ -294,6 +297,28 @@ function RegisterPage() {
                 onChange={(event) => setForm({ ...form, address: event.target.value })}
                 className="input-base"
                 placeholder="e.g. Chinhoyi, Cold Stream"
+              />
+            </Field>
+
+            <Field label="Next of kin name">
+              <input
+                value={form.nextOfKinName}
+                onChange={(event) =>
+                  setForm({ ...form, nextOfKinName: event.target.value })
+                }
+                className="input-base"
+                placeholder="Emergency contact full name"
+              />
+            </Field>
+
+            <Field label="Next of kin phone">
+              <input
+                value={form.nextOfKinPhone}
+                onChange={(event) =>
+                  setForm({ ...form, nextOfKinPhone: event.target.value })
+                }
+                className="input-base"
+                placeholder="+263 77 000 0000"
               />
             </Field>
 
@@ -327,17 +352,44 @@ function RegisterPage() {
           <label className="surface-panel-muted mt-6 flex items-start gap-3 px-4 py-4 text-sm">
             <input
               type="checkbox"
+              checked={form.notificationConsent}
+              onChange={(event) =>
+                setForm({
+                  ...form,
+                  notificationConsent: event.target.checked,
+                  whatsApp: event.target.checked ? form.whatsApp : false,
+                })
+              }
+              className="mt-0.5 h-4 w-4 accent-primary"
+            />
+            <span>
+              <span className="font-semibold">Patient consents to queue notifications</span>
+              <span className="mt-1 block text-muted-foreground">
+                Capture consent before sending WhatsApp or web queue updates to the
+                patient phone number.
+              </span>
+            </span>
+          </label>
+
+          <label
+            className={`surface-panel-muted mt-3 flex items-start gap-3 px-4 py-4 text-sm ${
+              form.notificationConsent ? "" : "opacity-60"
+            }`}
+          >
+            <input
+              type="checkbox"
               checked={form.whatsApp}
+              disabled={!form.notificationConsent}
               onChange={(event) =>
                 setForm({ ...form, whatsApp: event.target.checked })
               }
               className="mt-0.5 h-4 w-4 accent-primary"
             />
             <span>
-              <span className="font-semibold">Notify the patient on WhatsApp</span>
+              <span className="font-semibold">Use WhatsApp for queue alerts</span>
               <span className="mt-1 block text-muted-foreground">
-                Registration, near-turn, and call-up alerts help patients wait more
-                comfortably and reduce crowding around the service point.
+                Registration, near-turn, missed-turn, and call-up alerts help patients
+                wait more comfortably and reduce crowding around the service point.
               </span>
             </span>
           </label>

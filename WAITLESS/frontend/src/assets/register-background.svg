@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="regPrimary" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0d7a7a;stop-opacity:0.18" />
+      <stop offset="100%" style="stop-color:#0a5f5f;stop-opacity:0.06" />
+    </linearGradient>
+    <linearGradient id="regAccent" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4a9ea8;stop-opacity:0.15" />
+      <stop offset="100%" style="stop-color:#3d8a94;stop-opacity:0.05" />
+    </linearGradient>
+    <pattern id="regGrid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <circle cx="30" cy="30" r="1" fill="#0d7a7a" opacity="0.08"/>
+    </pattern>
+  </defs>
+  
+  <rect width="1920" height="1080" fill="#f8f9fa"/>
+  
+  <ellipse cx="0" cy="200" rx="900" ry="700" fill="url(#regPrimary)"/>
+  <ellipse cx="1920" cy="100" rx="800" ry="600" fill="url(#regAccent)"/>
+  
+  <rect width="1920" height="1080" fill="url(#regGrid)" opacity="0.5"/>
+  
+  <g opacity="0.04" fill="#0d7a7a">
+    <path d="M 150 150 L 170 150 L 170 130 L 190 130 L 190 150 L 210 150 L 210 170 L 190 170 L 190 190 L 170 190 L 170 170 L 150 170 Z"/>
+    <path d="M 1650 200 L 1670 200 L 1670 180 L 1690 180 L 1690 200 L 1710 200 L 1710 220 L 1690 220 L 1690 240 L 1670 240 L 1670 220 L 1650 220 Z"/>
+    <path d="M 300 850 L 320 850 L 320 830 L 340 830 L 340 850 L 360 850 L 360 870 L 340 870 L 340 890 L 320 890 L 320 870 L 300 870 Z"/>
+  </g>
+  
+  <g opacity="0.03" stroke="#0d7a7a" stroke-width="1.5" fill="none">
+    <path d="M 100 500 Q 400 400 700 500 T 1300 500"/>
+    <path d="M 600 700 Q 900 600 1200 700 T 1800 700"/>
+  </g>
+  
+  <linearGradient id="regFade" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" style="stop-color:#f8f9fa;stop-opacity:0" />
+    <stop offset="100%" style="stop-color:#f8f9fa;stop-opacity:1" />
+  </linearGradient>
+  <rect x="0" y="650" width="1920" height="430" fill="url(#regFade)"/>
+</svg>

@@ -1,7 +1,14 @@
+import "dotenv/config";
 import http from "node:http";
 
 import { env } from "./config/env.js";
-import { loginController, meController } from "./controllers/authController.js";
+import {
+  forgotPasswordController,
+  loginController,
+  meController,
+  resetPasswordController,
+  staffRegisterController,
+} from "./controllers/authController.js";
 import {
   assignPriorityController,
   callNextController,
@@ -9,13 +16,15 @@ import {
   healthController,
   metaController,
   notificationsController,
-  queueEventsController,
   queueBoardController,
+  queueEventsController,
+  recallTicketController,
   registerController,
   retryNotificationController,
   retryNotificationsBulkController,
   ticketTrackingController,
   ticketsController,
+  transferTicketController,
   updateTicketStatusController,
   whatsAppWebhookEventController,
   whatsAppWebhookVerificationController,
@@ -32,6 +41,9 @@ const router = createRouter();
 router.register("GET", "/api/health", healthController);
 router.register("POST", "/api/auth/login", loginController);
 router.register("GET", "/api/auth/me", meController);
+router.register("POST", "/api/auth/forgot-password", forgotPasswordController);
+router.register("POST", "/api/auth/reset-password", resetPasswordController);
+router.register("POST", "/api/auth/staff-register", staffRegisterController);
 router.register("GET", "/api/meta", metaController);
 router.register(
   "GET",
@@ -52,6 +64,16 @@ router.register(
   "PATCH",
   "/api/tickets/:id/status",
   withStaffAuth(["triage", "clinician"], updateTicketStatusController),
+);
+router.register(
+  "POST",
+  "/api/tickets/:id/recall",
+  withStaffAuth(["triage", "clinician"], recallTicketController),
+);
+router.register(
+  "PATCH",
+  "/api/tickets/:id/transfer",
+  withStaffAuth(["triage", "clinician"], transferTicketController),
 );
 router.register(
   "POST",

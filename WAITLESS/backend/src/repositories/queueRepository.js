@@ -1,8 +1,10 @@
 import { env } from "../config/env.js";
 import * as fileRepository from "./fileQueueRepository.js";
+import * as mysqlRepository from "./mysqlQueueRepository.js";
 
 const repositories = {
   file: fileRepository,
+  mysql: mysqlRepository,
 };
 
 function getRepository() {
@@ -10,7 +12,7 @@ function getRepository() {
 
   if (!repository) {
     throw new Error(
-      `Unsupported DB_PROVIDER "${env.databaseProvider}". Use "file" for now. MySQL is parked until the database is created.`,
+      `Unsupported DB_PROVIDER "${env.databaseProvider}". Use "file" or "mysql".`,
     );
   }
 

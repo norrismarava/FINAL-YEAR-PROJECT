@@ -1,0 +1,61 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="primaryGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0d7a7a;stop-opacity:0.15" />
+      <stop offset="100%" style="stop-color:#0a5f5f;stop-opacity:0.05" />
+    </linearGradient>
+    <linearGradient id="accentGradient" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4a9ea8;stop-opacity:0.12" />
+      <stop offset="100%" style="stop-color:#3d8a94;stop-opacity:0.04" />
+    </linearGradient>
+    <pattern id="gridPattern" width="76" height="76" patternUnits="userSpaceOnUse">
+      <path d="M 76 0 L 0 0 0 76" fill="none" stroke="#0d7a7a" stroke-width="0.5" stroke-opacity="0.08"/>
+    </pattern>
+    <filter id="blurFilter">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2" />
+    </filter>
+  </defs>
+  
+  <!-- Base background -->
+  <rect width="1920" height="1080" fill="#f8f9fa"/>
+  
+  <!-- Primary gradient overlay - top left -->
+  <ellipse cx="0" cy="0" rx="800" ry="600" fill="url(#primaryGradient)"/>
+  
+  <!-- Accent gradient overlay - top right -->
+  <ellipse cx="1920" cy="0" rx="700" ry="500" fill="url(#accentGradient)"/>
+  
+  <!-- Subtle grid pattern -->
+  <rect width="1920" height="1080" fill="url(#gridPattern)" opacity="0.4"/>
+  
+  <!-- Medical cross pattern - subtle -->
+  <g opacity="0.03" fill="#0d7a7a">
+    <path d="M 100 200 L 120 200 L 120 180 L 140 180 L 140 200 L 160 200 L 160 220 L 140 220 L 140 240 L 120 240 L 120 220 L 100 220 Z"/>
+    <path d="M 1700 150 L 1720 150 L 1720 130 L 1740 130 L 1740 150 L 1760 150 L 1760 170 L 1740 170 L 1740 190 L 1720 190 L 1720 170 L 1700 170 Z"/>
+    <path d="M 200 800 L 220 800 L 220 780 L 240 780 L 240 800 L 260 800 L 260 820 L 240 820 L 240 840 L 220 840 L 220 820 L 200 820 Z"/>
+    <path d="M 1600 750 L 1620 750 L 1620 730 L 1640 730 L 1640 750 L 1660 750 L 1660 770 L 1640 770 L 1640 790 L 1620 790 L 1620 770 L 1600 770 Z"/>
+  </g>
+  
+  <!-- Heartbeat line pattern - subtle -->
+  <g opacity="0.04" stroke="#0d7a7a" stroke-width="2" fill="none">
+    <path d="M 0 400 L 300 400 L 350 350 L 400 450 L 450 400 L 800 400"/>
+    <path d="M 1120 400 L 1470 400 L 1520 350 L 1570 450 L 1620 400 L 1920 400"/>
+    <path d="M 0 600 L 250 600 L 300 550 L 350 650 L 400 600 L 700 600"/>
+    <path d="M 1220 600 L 1570 600 L 1620 550 L 1670 650 L 1720 600 L 1920 600"/>
+  </g>
+  
+  <!-- Abstract medical circles -->
+  <g opacity="0.05" fill="none" stroke="#0d7a7a" stroke-width="1">
+    <circle cx="200" cy="300" r="150"/>
+    <circle cx="1720" cy="250" r="120"/>
+    <circle cx="300" cy="700" r="100"/>
+    <circle cx="1650" cy="680" r="130"/>
+  </g>
+  
+  <!-- Bottom fade to white -->
+  <linearGradient id="bottomFade" x1="0%" y1="0%" x2="0%" y2="100%">
+    <stop offset="0%" style="stop-color:#f8f9fa;stop-opacity:0" />
+    <stop offset="100%" style="stop-color:#f8f9fa;stop-opacity:1" />
+  </linearGradient>
+  <rect x="0" y="700" width="1920" height="380" fill="url(#bottomFade)"/>
+</svg>

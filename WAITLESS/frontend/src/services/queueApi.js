@@ -45,6 +45,23 @@ export async function updateTicketStatus(id, status) {
   return response.ticket;
 }
 
+export async function recallTicket(id) {
+  const response = await apiRequest(`/api/tickets/${id}/recall`, {
+    method: "POST",
+  });
+
+  return response.ticket;
+}
+
+export async function transferTicket(id, department) {
+  const response = await apiRequest(`/api/tickets/${id}/transfer`, {
+    method: "PATCH",
+    body: { department },
+  });
+
+  return response.ticket;
+}
+
 export async function fetchQueueBoard() {
   return apiRequest("/api/queue/board");
 }

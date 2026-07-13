@@ -7,7 +7,9 @@ import {
   getTicketTracking,
   getQueueBoard,
   getTickets,
+  recallMissedPatient,
   registerPatient,
+  transferPatient,
   updatePatientStatus,
 } from "../services/queueService.js";
 import { openQueueEventsStream } from "../sockets/queueEvents.js";
@@ -68,6 +70,24 @@ export async function updateTicketStatusController({ params, body }) {
     status: 200,
     body: {
       ticket: await updatePatientStatus(params.id, body?.status),
+    },
+  };
+}
+
+export async function recallTicketController({ params }) {
+  return {
+    status: 200,
+    body: {
+      ticket: await recallMissedPatient(params.id),
+    },
+  };
+}
+
+export async function transferTicketController({ params, body }) {
+  return {
+    status: 200,
+    body: {
+      ticket: await transferPatient(params.id, body?.department),
     },
   };
 }

@@ -34,6 +34,17 @@ export const DEPARTMENTS = [
   "OI Clinic",
 ];
 
+export const PATIENT_CATEGORIES = [
+  { value: "walk-in", label: "Walk-in patient" },
+  { value: "referred", label: "Referred patient" },
+  { value: "emergency", label: "Emergency patient" },
+  { value: "elderly", label: "Elderly patient" },
+  { value: "pregnant", label: "Pregnant patient" },
+  { value: "child", label: "Child patient" },
+  { value: "disabled", label: "Disabled patient" },
+  { value: "chronic-care", label: "Chronic care patient" },
+];
+
 export function priorityRank(priority) {
   return { red: 0, yellow: 1, green: 2, black: 3 }[priority];
 }
@@ -57,6 +68,10 @@ export const STATUS_META = {
   "in-service": {
     label: "In service",
     className: "bg-primary text-primary-foreground",
+  },
+  missed: {
+    label: "Missed turn",
+    className: "bg-priority-yellow/20 text-foreground",
   },
   completed: {
     label: "Completed",

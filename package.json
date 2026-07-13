@@ -1,0 +1,15 @@
+{
+  "name": "waitless",
+  "version": "1.0.0",
+  "description": "WaitLess: A Digital Queue Management System for Zimbabwean Public Hospitals",
+  "scripts": {
+    "install:all": "npm install --prefix WAITLESS/backend && npm install --prefix WAITLESS/frontend",
+    "dev:backend": "npm run dev --prefix WAITLESS/backend",
+    "dev:frontend": "npm run dev --prefix WAITLESS/frontend",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "build:frontend": "npm run build --prefix WAITLESS/frontend"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

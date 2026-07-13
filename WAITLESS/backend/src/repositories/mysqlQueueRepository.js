@@ -9,6 +9,35 @@ const INITIAL_NOTIFICATION_SEQUENCE = 1;
 const schemaPath = fileURLToPath(new URL("../db/schema.sql", import.meta.url));
 
 let pool = null;
+let databaseReady = false;
+
+function quoteIdentifier(identifier) {
+  return `\`${String(identifier).replaceAll("`", "``")}\``;
+}
+
+async function ensureDatabaseExists() {
+  if (databaseReady) {
+    return;
+  }
+
+  const mysql = await import("mysql2/promise");
+  const setupConnection = await mysql.createConnection({
+    host: env.databaseHost,
+    port: env.databasePort,
+    user: env.databaseUser,
+    password: env.databasePassword,
+  });
+
+  try {
+    await setupConnection.query(
+      `CREATE DATABASE IF NOT EXISTS ${quoteIdentifier(env.databaseName)}
+       CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`,
+    );
+    databaseReady = true;
+  } finally {
+    await setupConnection.end();
+  }
+}
 
 function cloneTicket(ticket) {
   return { ...ticket };
@@ -27,6 +56,8 @@ async function getPool() {
   }
 
   const mysql = await import("mysql2/promise");
+  await ensureDatabaseExists();
+
   pool = mysql.createPool({
     host: env.databaseHost,
     port: env.databasePort,
@@ -124,6 +155,10 @@ function mapTicketRow(row) {
     gender: row.gender ?? "unknown",
     phone: row.phone ?? "",
     address: row.address ?? "",
+    patientCategory: row.patient_category ?? "walk-in",
+    nextOfKinName: row.next_of_kin_name ?? "",
+    nextOfKinPhone: row.next_of_kin_phone ?? "",
+    notificationConsent: Boolean(row.notification_consent),
     department: row.department,
     chiefComplaint: row.chief_complaint ?? "",
     priority: row.priority,
@@ -132,6 +167,11 @@ function mapTicketRow(row) {
     triagedAt: fromSqlDateTime(row.triaged_at),
     calledAt: fromSqlDateTime(row.called_at),
     serviceStartedAt: fromSqlDateTime(row.service_started_at),
+    missedAt: fromSqlDateTime(row.missed_at),
+    recalledAt: fromSqlDateTime(row.recalled_at),
+    transferredAt: fromSqlDateTime(row.transferred_at),
+    previousDepartment: row.previous_department ?? "",
+    recallCount: Number(row.recall_count ?? 0),
     completedAt: fromSqlDateTime(row.completed_at),
     whatsApp: Boolean(row.whatsapp_enabled),
   };
@@ -199,6 +239,77 @@ async function insertCounters(connection) {
   );
 }
 
+async function ensureColumn(connection, tableName, columnName, definition) {
+  const [rows] = await connection.execute(
+    `SELECT COLUMN_NAME
+     FROM INFORMATION_SCHEMA.COLUMNS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME = ?
+     LIMIT 1`,
+    [env.databaseName, tableName, columnName],
+  );
+
+  if (!rows.length) {
+    await connection.query(`ALTER TABLE ${tableName} ADD COLUMN ${definition}`);
+  }
+}
+
+async function ensureTicketSchema(connection) {
+  await ensureColumn(
+    connection,
+    "tickets",
+    "patient_category",
+    "patient_category VARCHAR(80) NOT NULL DEFAULT 'walk-in' AFTER address",
+  );
+  await ensureColumn(
+    connection,
+    "tickets",
+    "next_of_kin_name",
+    "next_of_kin_name VARCHAR(160) NOT NULL DEFAULT '' AFTER patient_category",
+  );
+  await ensureColumn(
+    connection,
+    "tickets",
+    "next_of_kin_phone",
+    "next_of_kin_phone VARCHAR(80) NOT NULL DEFAULT '' AFTER next_of_kin_name",
+  );
+  await ensureColumn(
+    connection,
+    "tickets",
+    "notification_consent",
+    "notification_consent BOOLEAN NOT NULL DEFAULT FALSE AFTER next_of_kin_phone",
+  );
+  await ensureColumn(
+    connection,
+    "tickets",
+    "missed_at",
+    "missed_at DATETIME(3) NULL AFTER service_started_at",
+  );
+  await ensureColumn(
+    connection,
+    "tickets",
+    "recalled_at",
+    "recalled_at DATETIME(3) NULL AFTER missed_at",
+  );
+  await ensureColumn(
+    connection,
+    "tickets",
+    "transferred_at",
+    "transferred_at DATETIME(3) NULL AFTER recalled_at",
+  );
+  await ensureColumn(
+    connection,
+    "tickets",
+    "previous_department",
+    "previous_department VARCHAR(80) NOT NULL DEFAULT '' AFTER transferred_at",
+  );
+  await ensureColumn(
+    connection,
+    "tickets",
+    "recall_count",
+    "recall_count INT NOT NULL DEFAULT 0 AFTER previous_department",
+  );
+}
+
 async function insertTicket(connection, ticket) {
   await connection.execute(
     `INSERT INTO tickets (
@@ -211,6 +322,10 @@ async function insertTicket(connection, ticket) {
       gender,
       phone,
       address,
+      patient_category,
+      next_of_kin_name,
+      next_of_kin_phone,
+      notification_consent,
       department,
       chief_complaint,
       priority,
@@ -219,9 +334,14 @@ async function insertTicket(connection, ticket) {
       triaged_at,
       called_at,
       service_started_at,
+      missed_at,
+      recalled_at,
+      transferred_at,
+      previous_department,
+      recall_count,
       completed_at,
       whatsapp_enabled
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       ticket.id,
       ticket.ticket,
@@ -232,6 +352,10 @@ async function insertTicket(connection, ticket) {
       ticket.gender ?? "unknown",
       ticket.phone ?? "",
       ticket.address ?? "",
+      ticket.patientCategory ?? "walk-in",
+      ticket.nextOfKinName ?? "",
+      ticket.nextOfKinPhone ?? "",
+      Boolean(ticket.notificationConsent),
       ticket.department,
       ticket.chiefComplaint ?? "",
       ticket.priority,
@@ -240,6 +364,11 @@ async function insertTicket(connection, ticket) {
       toSqlDateTime(ticket.triagedAt),
       toSqlDateTime(ticket.calledAt),
       toSqlDateTime(ticket.serviceStartedAt),
+      toSqlDateTime(ticket.missedAt),
+      toSqlDateTime(ticket.recalledAt),
+      toSqlDateTime(ticket.transferredAt),
+      ticket.previousDepartment ?? "",
+      Number(ticket.recallCount ?? 0),
       toSqlDateTime(ticket.completedAt),
       Boolean(ticket.whatsApp),
     ],
@@ -257,6 +386,10 @@ async function replaceTicket(connection, ticket) {
       gender = ?,
       phone = ?,
       address = ?,
+      patient_category = ?,
+      next_of_kin_name = ?,
+      next_of_kin_phone = ?,
+      notification_consent = ?,
       department = ?,
       chief_complaint = ?,
       priority = ?,
@@ -265,6 +398,11 @@ async function replaceTicket(connection, ticket) {
       triaged_at = ?,
       called_at = ?,
       service_started_at = ?,
+      missed_at = ?,
+      recalled_at = ?,
+      transferred_at = ?,
+      previous_department = ?,
+      recall_count = ?,
       completed_at = ?,
       whatsapp_enabled = ?
     WHERE id = ?`,
@@ -277,6 +415,10 @@ async function replaceTicket(connection, ticket) {
       ticket.gender ?? "unknown",
       ticket.phone ?? "",
       ticket.address ?? "",
+      ticket.patientCategory ?? "walk-in",
+      ticket.nextOfKinName ?? "",
+      ticket.nextOfKinPhone ?? "",
+      Boolean(ticket.notificationConsent),
       ticket.department,
       ticket.chiefComplaint ?? "",
       ticket.priority,
@@ -285,6 +427,11 @@ async function replaceTicket(connection, ticket) {
       toSqlDateTime(ticket.triagedAt),
       toSqlDateTime(ticket.calledAt),
       toSqlDateTime(ticket.serviceStartedAt),
+      toSqlDateTime(ticket.missedAt),
+      toSqlDateTime(ticket.recalledAt),
+      toSqlDateTime(ticket.transferredAt),
+      ticket.previousDepartment ?? "",
+      Number(ticket.recallCount ?? 0),
       toSqlDateTime(ticket.completedAt),
       Boolean(ticket.whatsApp),
       ticket.id,
@@ -506,6 +653,7 @@ export async function initializeQueueRepository() {
 
     await insertDepartments(connection);
     await insertCounters(connection);
+    await ensureTicketSchema(connection);
 
     const [rows] = await connection.execute("SELECT COUNT(*) AS total FROM tickets");
     const hasTickets = Number(rows[0]?.total ?? 0) > 0;

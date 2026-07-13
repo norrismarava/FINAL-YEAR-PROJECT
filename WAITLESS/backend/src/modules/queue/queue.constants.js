@@ -36,8 +36,25 @@ export const DEPARTMENTS = [
   "OI Clinic",
 ];
 
+export const PATIENT_CATEGORIES = [
+  "walk-in",
+  "referred",
+  "emergency",
+  "elderly",
+  "pregnant",
+  "child",
+  "disabled",
+  "chronic-care",
+];
+
 export const PRIORITY_ORDER = ["red", "yellow", "green", "black"];
-export const TICKET_STATUSES = ["waiting", "called", "in-service", "completed"];
+export const TICKET_STATUSES = [
+  "waiting",
+  "called",
+  "in-service",
+  "missed",
+  "completed",
+];
 
 const TICKET_PREFIX = {
   red: "R",
@@ -202,6 +219,10 @@ export function createSeedTickets() {
       gender: "unknown",
       phone: "",
       address: "",
+      patientCategory: "walk-in",
+      nextOfKinName: "",
+      nextOfKinPhone: "",
+      notificationConsent: row.whatsApp,
       department: row.department,
       chiefComplaint: row.chiefComplaint,
       priority: row.priority,
@@ -210,6 +231,11 @@ export function createSeedTickets() {
       triagedAt,
       calledAt,
       serviceStartedAt,
+      missedAt: null,
+      recalledAt: null,
+      transferredAt: null,
+      previousDepartment: "",
+      recallCount: 0,
       completedAt: null,
       whatsApp: row.whatsApp,
     };
