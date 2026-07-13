@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { AlertCircle, Lock, Mail, ShieldCheck } from "lucide-react";
+import { AlertCircle, Lock, User, ShieldCheck } from "lucide-react";
+
 
 import {
   AuthButton,
@@ -14,7 +15,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [formData, setFormData] = useState({
-    email: "",
+    username: "",
     password: "",
   });
   const [error, setError] = useState("");
@@ -26,8 +27,7 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const username = formData.email.trim().split("@")[0];
-      await login({ username, password: formData.password });
+      await login({ username: formData.username, password: formData.password });
       navigate("/dashboard");
     } catch (err) {
       setError(err.message);
@@ -54,16 +54,16 @@ export default function LoginPage() {
         <AuthError icon={AlertCircle} message={error} />
 
         <AuthInput
-          icon={Mail}
-          label="Email address"
-          name="email"
-          type="email"
-          autoComplete="email"
+          icon={User}
+          label="Username"
+          name="username"
+          type="text"
+          autoComplete="username"
           required
-          placeholder="name@hospital.gov.zw"
-          value={formData.email}
+          placeholder="e.g. admin"
+          value={formData.username}
           onChange={(event) =>
-            setFormData({ ...formData, email: event.target.value })
+            setFormData({ ...formData, username: event.target.value })
           }
         />
 
@@ -105,10 +105,10 @@ export default function LoginPage() {
               <div className="font-semibold text-cyan-50">Demo staff accounts</div>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {[
-                  "admin@waitless.local",
-                  "reception@waitless.local",
-                  "triage@waitless.local",
-                  "clinician@waitless.local",
+                  "admin",
+                  "reception",
+                  "triage",
+                  "clinician",
                 ].map((account) => (
                   <span
                     key={account}

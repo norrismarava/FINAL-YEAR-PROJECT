@@ -16,6 +16,7 @@ USE waitless_db;
 CREATE TABLE IF NOT EXISTS staff_users (
     staff_id INT AUTO_INCREMENT PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
+    email VARCHAR(120) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL, -- Store BCrypt hash here
     full_name VARCHAR(100) NOT NULL,
     role ENUM('admin', 'triage_officer', 'nurse', 'doctor', 'pharmacist', 'lab_technician') NOT NULL,
@@ -26,11 +27,11 @@ CREATE TABLE IF NOT EXISTS staff_users (
 -- Insert a default admin user (password: 'admin123').
 -- IMPORTANT: In a real deployment, use PHP's password_hash().
 -- For this demo, we use a generic BCrypt hash for 'admin123'.
-INSERT INTO staff_users (username, password_hash, full_name, role, department) 
+INSERT INTO staff_users (username, email, password_hash, full_name, role, department) 
 VALUES 
-('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Admin', 'admin', 'Administration'),
-('triage1', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Nurse Triage', 'triage_officer', 'Casualty'),
-('doctor1', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Dr. Smith', 'doctor', 'OPD');
+('admin', 'admin@waitless.local', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Admin', 'admin', 'Administration'),
+('triage1', 'triage@waitless.local', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Nurse Triage', 'triage_officer', 'Casualty'),
+('doctor1', 'doctor@waitless.local', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Dr. Smith', 'doctor', 'OPD');
 
 -- =============================================
 -- TABLE: patients

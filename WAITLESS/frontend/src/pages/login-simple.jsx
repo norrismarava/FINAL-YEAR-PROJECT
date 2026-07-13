@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
 
   return (
@@ -37,10 +37,16 @@ export default function LoginPage() {
             Welcome back to WaitLess
           </p>
         </div>
-        <form style={{ marginTop: '2rem', animationDelay: '0.4s' }} className="slide-in-up">
+        <form
+          style={{ marginTop: '2rem', animationDelay: '0.4s' }}
+          className="slide-in-up"
+          onSubmit={(e) => {
+            e.preventDefault();
+          }}
+        >
           <div style={{ marginBottom: '1rem' }}>
             <input
-              type="email"
+              type="text"
               style={{
                 appearance: 'none',
                 borderRadius: '0.375rem',
@@ -52,9 +58,9 @@ export default function LoginPage() {
                 outline: 'none',
                 transition: 'all 0.3s'
               }}
-              placeholder="Email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              placeholder="Username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
             />
           </div>
           <div style={{ marginBottom: '1rem' }}>
