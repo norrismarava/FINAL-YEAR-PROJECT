@@ -2,9 +2,9 @@ import axios from "axios";
 
 import { getStoredAuthToken } from "./authSession";
 
-const API_BASE_URL = (
-  import.meta.env.VITE_API_BASE_URL ?? "http://localhost:4242"
-).replace(/\/$/, "");
+// Prefer same-origin + Vite proxy (`/api` -> http://localhost:4242) to avoid browser Network/CORS issues.
+// If you explicitly set VITE_API_BASE_URL, we’ll use it.
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "").replace(/\/$/, "");
 
 export const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -21,6 +21,11 @@ apiClient.interceptors.request.use((config) => {
 });
 
 export function buildApiUrl(path) {
+  // Prefer `/api/...` (same-origin) when API_BASE_URL is not set.
+  if (!API_BASE_URL) {
+    return path;
+  }
+
   return `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
