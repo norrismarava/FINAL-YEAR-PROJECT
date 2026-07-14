@@ -9,6 +9,13 @@ import {
   resetPasswordController,
   staffRegisterController,
 } from "./controllers/authController.js";
+
+import {
+  getMeController,
+  saveAvatarController,
+  saveProfileController,
+} from "./controllers/profileController.js";
+
 import {
   assignPriorityController,
   callNextController,
@@ -40,7 +47,10 @@ const router = createRouter();
 
 router.register("GET", "/api/health", healthController);
 router.register("POST", "/api/auth/login", loginController);
-router.register("GET", "/api/auth/me", meController);
+router.register("GET", "/api/auth/me", getMeController);
+router.register("POST", "/api/profile", saveProfileController);
+router.register("POST", "/api/profile/avatar", saveAvatarController);
+
 router.register("POST", "/api/auth/forgot-password", forgotPasswordController);
 router.register("POST", "/api/auth/reset-password", resetPasswordController);
 router.register("POST", "/api/auth/staff-register", staffRegisterController);

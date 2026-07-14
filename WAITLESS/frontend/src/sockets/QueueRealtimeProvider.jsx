@@ -11,6 +11,23 @@ const QueueRealtimeContext = createContext({
 const WAIT_TIME_REFRESH_MS = 60000;
 const POLLING_FALLBACK_MS = 10000;
 
+const STORAGE_KEY = "waitless_system_settings_v1";
+
+function loadSystemSettings() {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+
 function connectQueueEventStream({ onStatusChange, onEvent }) {
   const eventSource = new EventSource(buildApiUrl("/api/events"));
 
@@ -51,6 +68,18 @@ export function QueueRealtimeProvider({ children }) {
       return undefined;
     }
 
+    const systemSettings = loadSystemSettings() ?? {};
+    const liveSyncEnabled = systemSettings.liveSyncEnabled ?? true;
+    const pollingFallbackEnabled = systemSettings.queuePollingFallbackEnabled ?? true;
+    const autoRefreshIntervalSec = systemSettings.autoRefreshIntervalSec ?? 10;
+
+    if (!liveSyncEnabled) {
+      setStatus("closed");
+      return () => {
+        // no-op
+      };
+    }
+
     let stopRealtime = () => {};
 
     if (typeof EventSource === "function") {
@@ -61,7 +90,7 @@ export function QueueRealtimeProvider({ children }) {
           refreshLiveData();
         },
       });
-    } else {
+    } else if (pollingFallbackEnabled) {
       setStatus("polling");
       const pollingId = window.setInterval(() => {
         refreshLiveData();
@@ -70,17 +99,21 @@ export function QueueRealtimeProvider({ children }) {
       stopRealtime = () => {
         window.clearInterval(pollingId);
       };
+    } else {
+      setStatus("closed");
     }
 
+    const autoRefreshIntervalMs = Math.max(2_000, Math.min(30_000, autoRefreshIntervalSec * 1000));
     const waitTimerId = window.setInterval(() => {
       refreshLiveData();
-    }, WAIT_TIME_REFRESH_MS);
+    }, autoRefreshIntervalMs);
 
     return () => {
       stopRealtime();
       window.clearInterval(waitTimerId);
     };
   }, [refreshLiveData]);
+
 
   return (
     <QueueRealtimeContext.Provider value={{ status, lastEventAt }}>

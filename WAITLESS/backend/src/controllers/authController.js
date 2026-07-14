@@ -18,11 +18,38 @@ export async function meController({ req }) {
     throw new HttpError(401, "Staff login is required.");
   }
 
-  return {
-    status: 200,
-    body: session,
-  };
+  // Merge persisted profile/avatar details for this user.
+  // profileController already implements a richer /api/auth/me, but keep this
+  // controller consistent for any existing callers.
+  try {
+    const { getStoredStaffUsers } = await import("../services/profileService.js");
+    const users = getStoredStaffUsers();
+    const stored = users.find((u) => u.id === session.user.id) ?? null;
+
+    return {
+      status: 200,
+      body: {
+        ...session,
+        user: {
+          ...session.user,
+          ...(stored?.name ? { name: stored.name } : {}),
+          ...(stored?.phone ? { phone: stored.phone } : {}),
+          ...(stored?.department ? { department: stored.department } : {}),
+          ...(stored?.email ? { email: stored.email } : {}),
+          ...(stored?.role ? { role: stored.role } : {}),
+          avatarUrl: stored?.avatarUrl ?? null,
+        },
+      },
+    };
+  } catch {
+    // Fallback to raw session if profile storage isn't available.
+    return {
+      status: 200,
+      body: session,
+    };
+  }
 }
+
 
 export async function forgotPasswordController({ body }) {
   return {

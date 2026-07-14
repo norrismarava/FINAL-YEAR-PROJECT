@@ -39,16 +39,21 @@ export function DashboardLayout({ children }) {
             <h1 className="text-2xl font-bold text-gray-900">WaitLess</h1>
             <span className="text-sm text-gray-500">Queue Management System</span>
           </div>
-          <div className="flex items-center space-x-4">
-            <div className="flex items-center space-x-2">
-              <div className="flex items-center justify-center h-8 w-8 rounded-full bg-indigo-100">
-                <User className="h-5 w-5 text-indigo-600" />
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
+                <div className="flex items-center justify-center h-8 w-8 overflow-hidden rounded-full bg-indigo-100">
+                  {user?.avatarUrl ? (
+                    <img src={user.avatarUrl} alt="User avatar" className="h-full w-full object-cover" />
+                  ) : (
+                    <User className="h-5 w-5 text-indigo-600" />
+                  )}
+                </div>
+                <div className="text-sm">
+                  <p className="font-medium text-gray-900">{user?.name}</p>
+                  <p className="text-gray-500">{user?.role}</p>
+                </div>
               </div>
-              <div className="text-sm">
-                <p className="font-medium text-gray-900">{user?.name}</p>
-                <p className="text-gray-500">{user?.role}</p>
-              </div>
-            </div>
+
             <button
               onClick={handleLogout}
               className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md"

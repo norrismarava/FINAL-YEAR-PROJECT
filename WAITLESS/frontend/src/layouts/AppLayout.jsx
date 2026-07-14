@@ -1,9 +1,11 @@
-import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
-import { ArrowUpRight, LogOut, ShieldCheck, Stethoscope } from "lucide-react";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { ArrowUpRight, LogOut, ShieldCheck, Stethoscope, Settings, HelpCircle, UserRound } from "lucide-react";
 import { AuthProvider, useAuth } from "@/auth/AuthProvider";
 import { WaitLessLogo } from "@/components/WaitLessLogo";
 import { LiveRefreshProvider } from "@/context/LiveRefreshContext";
 import { QueueRealtimeProvider } from "@/sockets/QueueRealtimeProvider";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+
 
 const navItems = [
   { to: "/", label: "Home" },
@@ -87,6 +89,58 @@ export function AppLayout() {
   );
 }
 
+function AccountMenu({ userName, onLogout, className }) {
+  const navigate = useNavigate();
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button type="button" className={className} aria-label="Account menu">
+          <UserRound className="h-3.5 w-3.5" />
+          {userName}
+        </button>
+      </DropdownMenuTrigger>
+
+        <DropdownMenuContent align="end" className="w-48">
+        <DropdownMenuLabel>Account</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem
+          onSelect={() => {
+            navigate("/settings");
+          }}
+        >
+          <Settings className="mr-2 h-4 w-4" />
+          Settings
+        </DropdownMenuItem>
+
+        <DropdownMenuItem
+          onSelect={() => {
+            navigate("/profile");
+          }}
+        >
+          <UserRound className="mr-2 h-4 w-4" />
+          Profile
+        </DropdownMenuItem>
+
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem
+          onSelect={() => {
+            onLogout();
+            navigate("/login");
+          }}
+          className="text-destructive focus:text-destructive"
+        >
+          <LogOut className="mr-2 h-4 w-4" />
+          Logout
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 function Header() {
   const auth = useAuth();
   const location = useLocation();
@@ -155,18 +209,15 @@ function Header() {
 
             <div className="flex items-center gap-3 lg:justify-self-end">
               {auth.isAuthenticated ? (
-                <button
-                  type="button"
-                  onClick={auth.logout}
+                <AccountMenu
+                  userName={auth.user?.name}
+                  onLogout={auth.logout}
                   className={`hidden h-11 items-center gap-2 rounded-full px-4 text-xs font-semibold transition-colors md:inline-flex ${
                     isHomeRoute && !isAuthRoute
                       ? "bg-white/58 text-slate-600 shadow-[inset_0_1px_0_rgba(255,255,255,0.42)] backdrop-blur hover:bg-white/72"
                       : "border border-border/70 bg-background/75 text-muted-foreground hover:bg-muted"
                   }`}
-                >
-                  <LogOut className="h-3.5 w-3.5" />
-                  {auth.user?.name}
-                </button>
+                />
               ) : !isAuthRoute ? (
                 <Link
                   to="/login"

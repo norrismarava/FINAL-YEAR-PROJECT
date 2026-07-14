@@ -1,13 +1,27 @@
-# TODO
+# TODO - WaitLess Profile & Settings with Avatar
 
-## WaitLess: staff login via username + add email column
+## Step 1 (Frontend)
+- [x] Create `src/pages/settings.jsx` and `src/pages/profile.jsx`.
+- [x] Implement profile form (details) with debounced real-time save.
+- [x] Implement avatar upload with client-side crop/resize (canvas-based).
+- [ ] Wire UI to backend endpoints (backend not implemented yet).
 
-- [x] Update `WAITLESS/backend/src/db/waitless_db.sql`: add `email` column to `staff_users` and seed default staff rows.
-- [x] Update `WAITLESS/backend/src/db/waitless_tables.sql`: add `email` column to `staff_users` and seed default staff rows.
-- [x] Update `WAITLESS/frontend/src/pages/login.jsx`: change login form from email to username and remove email→username splitting.
+## Step 2 (Backend)
+- [ ] Add persistence fields to staff user records (profile details + avatar reference).
+- [ ] Implement endpoints:
+  - `GET /api/auth/me` includes avatar/profile
+  - `POST /api/profile` saves details
+  - `POST /api/profile/avatar` saves uploaded cropped image
+- [ ] Persist avatar files under `backend/data/avatars/`.
 
-- [x] Update `WAITLESS/frontend/src/pages/login-simple.jsx`: change to username input + payload.
+## Step 3 (Dashboard)
+- [ ] Update dashboard “User tab” to show avatar from `/api/auth/me`.
 
-- [x] Update demo accounts text on login UI.
-- [x] Run quick smoke checks (build/lint if available, or start dev servers).
+## Step 4 (Wiring)
+- [x] Ensure React Router routes exist for `/settings` and profile page.
+
+
+## Step 5 (Testing)
+- Start backend + frontend.
+- Verify save + avatar upload + crop + dashboard avatar update.
 

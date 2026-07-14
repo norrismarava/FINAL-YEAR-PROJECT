@@ -11,6 +11,9 @@ import ResetPasswordPage from "@/pages/reset-password";
 import StaffRegisterPage from "@/pages/staff-register";
 import TrackPage from "@/pages/track";
 import TriagePage from "@/pages/triage";
+import ProfilePage from "@/pages/profile";
+import SettingsPage from "@/pages/settings";
+
 
 export default function App() {
   return (
@@ -18,6 +21,9 @@ export default function App() {
       <Route element={<AppLayout />}>
         <Route index element={<Home />} />
         <Route path="dashboard" element={<DashboardPage />} />
+        <Route path="profile" element={<ProfilePage />} />
+        <Route path="settings" element={<SettingsPage />} />
+
         <Route path="forgot-password" element={<ForgotPasswordPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="queue" element={<QueuePage />} />
