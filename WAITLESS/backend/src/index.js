@@ -23,6 +23,7 @@ import {
   healthController,
   metaController,
   notificationsController,
+  patientSearchController,
   queueBoardController,
   queueEventsController,
   recallTicketController,
@@ -64,6 +65,11 @@ router.register(
   "POST",
   "/api/tickets/register",
   withStaffAuth(["reception"], registerController),
+);
+router.register(
+  "GET",
+  "/api/patients/search",
+  withStaffAuth(["reception"], patientSearchController),
 );
 router.register(
   "PATCH",

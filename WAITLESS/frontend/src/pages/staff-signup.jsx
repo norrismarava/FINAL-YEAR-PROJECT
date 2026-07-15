@@ -9,7 +9,7 @@ import {
   User,
 } from "lucide-react";
 
-import staffSignupBackground from "@/assets/staff-signup-background.svg";
+import staffSignupBackground from "@/assets/try2.png";
 
 const INITIAL_FORM = {
   fullName: "",

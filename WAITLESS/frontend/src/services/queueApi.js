@@ -27,6 +27,12 @@ export async function registerPatient(payload) {
   return response.ticket;
 }
 
+export async function fetchPatientMatches(query) {
+  const search = new URLSearchParams({ query });
+  const response = await apiRequest(`/api/patients/search?${search.toString()}`);
+  return response.patients;
+}
+
 export async function assignTicketPriority(id, priority) {
   const response = await apiRequest(`/api/tickets/${id}/priority`, {
     method: "PATCH",

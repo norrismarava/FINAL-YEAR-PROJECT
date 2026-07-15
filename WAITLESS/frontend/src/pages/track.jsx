@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   BellRing,
   CheckCircle2,
-  ChevronRight,
   Clock3,
   MessageCircle,
   Search,
@@ -14,6 +13,7 @@ import {
 } from "lucide-react";
 
 import { LoadingPanel } from "@/components/ui/system-loader";
+import trackBackground from "@/assets/track-background.svg";
 import {
   PRIORITY_META,
   STATUS_META,
@@ -85,6 +85,23 @@ const TRACK_BACKDROP_ICONS = [
     size: "h-10 w-10",
   },
 ];
+const LOOKUP_SUPPORT_ITEMS = [
+  {
+    icon: Ticket,
+    label: "Exact ticket code",
+    detail: "Use the code printed at registration with the same letters and numbers.",
+  },
+  {
+    icon: Wifi,
+    label: "Live refresh",
+    detail: "The page keeps listening for queue movement while the service board is active.",
+  },
+  {
+    icon: MessageCircle,
+    label: "Alert mirror",
+    detail: "WhatsApp notifications and board updates appear together in one patient view.",
+  },
+];
 
 export default function TrackPage() {
   const navigate = useNavigate();
@@ -117,96 +134,108 @@ export default function TrackPage() {
       <TrackBackdrop />
 
       <div className="relative mx-auto max-w-7xl">
-        <header className="surface-panel page-section-rise p-6 sm:p-8">
+        <header className="surface-panel page-section-rise overflow-hidden p-6 sm:p-8">
           <div className="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(135deg,rgba(255,255,255,0.84),rgba(240,253,250,0.66)_42%,rgba(219,234,254,0.56))]" />
           <div className="absolute -left-8 top-8 h-36 w-36 rounded-full bg-primary/10 blur-3xl" />
           <div className="absolute right-0 top-0 h-44 w-44 rounded-full bg-accent/10 blur-3xl" />
           <div className="absolute inset-x-0 bottom-0 h-24 bg-[linear-gradient(180deg,transparent,rgba(240,253,250,0.36))]" />
-          <div className="relative grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-          <div>
-            <div className="eyebrow">Patient experience</div>
-            <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
-              <div className="max-w-2xl">
-                <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
-                  Track your ticket
-                </h1>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-                  Follow your place in the queue, understand what happens next, and
-                  review the alerts sent to your phone in one live patient view.
-                </p>
+          <div className="relative grid gap-6 xl:grid-cols-[1.08fr_0.92fr]">
+            <div>
+              <div className="eyebrow">Patient experience</div>
+              <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
+                <div className="max-w-2xl">
+                  <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
+                    Track your ticket
+                  </h1>
+                  <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
+                    Follow your place in the queue, understand what happens next, and
+                    review the alerts sent to your phone in one live patient view.
+                  </p>
+                </div>
+                <span
+                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${liveMeta.className}`}
+                >
+                  <Wifi className="h-3.5 w-3.5" />
+                  {liveMeta.label}
+                </span>
               </div>
-              <span
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${liveMeta.className}`}
-              >
-                <Wifi className="h-3.5 w-3.5" />
-                {liveMeta.label}
-              </span>
-            </div>
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              <HeroTile
-                label="Ticket lookup"
-                value={ticketCode || "Ready"}
-                detail="Use the code printed on the registration ticket."
-              />
-              <HeroTile
-                label="Notification lane"
-                value="WhatsApp"
-                detail="Registration, near-turn, and final call alerts can appear here."
-              />
-              <HeroTile
-                label="Refresh behaviour"
-                value="Live"
-                detail="This page updates automatically while the queue is active."
-              />
-            </div>
-          </div>
+              <div className="mt-5 flex flex-wrap gap-2">
+                <HeaderHintPill icon={Ticket} label="Printed ticket code" />
+                <HeaderHintPill icon={BellRing} label="Near-turn alerts" />
+                <HeaderHintPill icon={Wifi} label="Live status updates" />
+              </div>
 
-            <div className="surface-panel-dark p-5 sm:p-6">
-            <div className="text-[11px] font-bold uppercase tracking-[0.28em] text-primary-foreground/70">
-              Ticket lookup
-            </div>
-            <h2 className="mt-3 font-display text-2xl font-bold tracking-tight text-primary-foreground">
-              Open your live patient view
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-primary-foreground/80">
-              Enter the exact code from your digital ticket to see queue movement and
-              recent communication history.
-            </p>
-
-            <form onSubmit={submit} className="mt-5 flex flex-col gap-3 sm:flex-row">
-              <div className="relative flex-1">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary-foreground/60" />
-                <input
-                  value={ticketInput}
-                  onChange={(event) => setTicketInput(event.target.value.toUpperCase())}
-                  placeholder="e.g. G-105"
-                  className="w-full rounded-xl border border-white/15 bg-white/10 px-10 py-3 text-sm text-primary-foreground outline-none transition-colors placeholder:text-primary-foreground/50 focus:border-white/30"
+              <div className="mt-6 grid gap-3 sm:grid-cols-3">
+                <HeroTile
+                  label="Ticket lookup"
+                  value={ticketCode || "Ready"}
+                  detail="Use the exact code printed on the registration ticket."
+                />
+                <HeroTile
+                  label="Notification lane"
+                  value="WhatsApp"
+                  detail="Registration, near-turn, and final call alerts can appear here."
+                />
+                <HeroTile
+                  label="Refresh behaviour"
+                  value="Live"
+                  detail="This page updates automatically while the queue is active."
                 />
               </div>
-              <button
-                type="submit"
-                className="rounded-xl bg-background px-4 py-3 text-sm font-semibold text-foreground transition-transform hover:-translate-y-0.5"
-              >
-                Check ticket
-              </button>
-            </form>
+            </div>
 
-            <div className="mt-5 rounded-2xl border border-white/12 bg-white/10 p-4">
-              <div className="flex items-start gap-3">
-                <MessageCircle className="mt-0.5 h-5 w-5 shrink-0 text-primary-foreground/80" />
-                <div>
-                  <div className="font-semibold text-primary-foreground">
-                    Patient notifications
+            <div className="surface-panel-dark overflow-hidden p-5 shadow-[0_28px_66px_-42px_rgba(2,6,23,0.56)] sm:p-6">
+              <div className="text-[11px] font-bold uppercase tracking-[0.28em] text-primary-foreground/70">
+                Ticket lookup
+              </div>
+              <h2 className="mt-3 font-display text-2xl font-bold tracking-tight text-primary-foreground">
+                Open your live patient view
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-primary-foreground/80">
+                Enter the exact code from your digital ticket to see queue movement and
+                recent communication history.
+              </p>
+
+              <form onSubmit={submit} className="mt-5 flex flex-col gap-3 sm:flex-row">
+                <div className="relative flex-1">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-primary-foreground/60" />
+                  <input
+                    value={ticketInput}
+                    onChange={(event) => setTicketInput(event.target.value.toUpperCase())}
+                    placeholder="e.g. G-105"
+                    className="w-full rounded-xl border border-white/15 bg-[linear-gradient(180deg,rgba(255,255,255,0.12),rgba(255,255,255,0.08))] px-10 py-3 text-sm text-primary-foreground outline-none shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] transition-colors placeholder:text-primary-foreground/50 focus:border-white/30"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="rounded-xl bg-background px-4 py-3 text-sm font-semibold text-foreground shadow-[0_14px_30px_-24px_rgba(255,255,255,0.28)] transition-transform hover:-translate-y-0.5"
+                >
+                  Check ticket
+                </button>
+              </form>
+
+              <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                {LOOKUP_SUPPORT_ITEMS.map((item) => (
+                  <LookupSupportCard key={item.label} {...item} />
+                ))}
+              </div>
+
+              <div className="mt-5 rounded-2xl border border-white/12 bg-white/10 p-4">
+                <div className="flex items-start gap-3">
+                  <MessageCircle className="mt-0.5 h-5 w-5 shrink-0 text-primary-foreground/80" />
+                  <div>
+                    <div className="font-semibold text-primary-foreground">
+                      Patient notifications
+                    </div>
+                    <p className="mt-1 text-sm leading-6 text-primary-foreground/80">
+                      If WhatsApp is enabled for your ticket, this page will mirror the
+                      registration confirmation, the queue warning, and the final call-up.
+                    </p>
                   </div>
-                  <p className="mt-1 text-sm leading-6 text-primary-foreground/80">
-                    If WhatsApp is enabled for your ticket, this page will mirror the
-                    registration confirmation, the queue warning, and the final call-up.
-                  </p>
                 </div>
               </div>
             </div>
-          </div>
           </div>
         </header>
 
@@ -230,6 +259,10 @@ function TrackBackdrop() {
   return (
     <>
       <div className="absolute inset-0 -z-30 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.94)_18%,rgba(240,253,250,0.94)_56%,rgba(239,246,255,0.98))]" />
+      <div
+        className="absolute inset-0 -z-20 bg-cover bg-center opacity-55"
+        style={{ backgroundImage: `url(${trackBackground})` }}
+      />
       <div className="absolute inset-0 -z-20 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 portal-surface-stripes opacity-70" />
         <div className="absolute inset-0 portal-hero-texture opacity-40" />
@@ -252,24 +285,6 @@ function TrackBackdrop() {
 }
 
 function EmptyTrackingState() {
-  const previewItems = [
-    {
-      label: "Code format",
-      value: "G-105",
-      detail: "Use the exact ticket printed at registration.",
-    },
-    {
-      label: "Updates",
-      value: "Live",
-      detail: "Queue movement and call-up changes refresh here automatically.",
-    },
-    {
-      label: "Alerts",
-      value: "WhatsApp",
-      detail: "Near-turn and final call notices can mirror what staff send.",
-    },
-  ];
-
   return (
     <div className="grid gap-6 xl:grid-cols-[1fr_1fr]">
       <div className="surface-panel relative overflow-hidden p-6 sm:p-8">
@@ -285,14 +300,21 @@ function EmptyTrackingState() {
           </p>
 
           <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            {previewItems.map((item) => (
-              <HeroTile
-                key={item.label}
-                label={item.label}
-                value={item.value}
-                detail={item.detail}
-              />
-            ))}
+            <HeroTile
+              label="Code format"
+              value="G-105"
+              detail="Use the exact ticket printed at registration."
+            />
+            <HeroTile
+              label="Updates"
+              value="Live"
+              detail="Queue movement and call-up changes refresh here automatically."
+            />
+            <HeroTile
+              label="Alerts"
+              value="WhatsApp"
+              detail="Near-turn and final call notices can mirror what staff send."
+            />
           </div>
 
           <div className="mt-6 rounded-2xl border border-primary/15 bg-[linear-gradient(135deg,rgba(204,251,241,0.52),rgba(255,255,255,0.58)_44%,rgba(219,234,254,0.48))] px-4 py-4 shadow-[0_20px_50px_-38px_rgba(37,99,235,0.26)] backdrop-blur">
@@ -315,6 +337,10 @@ function EmptyTrackingState() {
         <h2 className="mt-2 font-display text-2xl font-bold tracking-tight">
           Your queue journey
         </h2>
+        <div className="mt-4 rounded-2xl border border-primary/12 bg-[linear-gradient(135deg,rgba(20,184,166,0.08),rgba(255,255,255,0.04)_42%,rgba(37,99,235,0.08))] px-4 py-4 text-sm leading-6 text-muted-foreground shadow-[0_20px_44px_-34px_rgba(37,99,235,0.18)]">
+          Once your code is entered, this page becomes a patient-facing mirror of the
+          live operations board for your department.
+        </div>
         <div className="mt-5 space-y-4">
           {[
             {
@@ -386,6 +412,14 @@ function TrackingResults({ data }) {
   const activeTicketCount = queue.activeInDepartment.length;
   const progressStep = getCurrentProgressStep(ticket.status);
   const progressSteps = buildProgressSteps(ticket, queue);
+  const lanePositionValue =
+    ticket.status === "waiting"
+      ? `${queue.departmentPosition}`
+      : ticket.status === "called"
+        ? "Next"
+        : ticket.status === "in-service"
+          ? "Active"
+          : "Done";
   const statusTone =
     ticket.status === "completed"
       ? "stable"
@@ -415,6 +449,17 @@ function TrackingResults({ data }) {
                   </div>
                 </div>
               </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <ContextBadge>{PRIORITY_META[ticket.priority].label}</ContextBadge>
+                <ContextBadge>
+                  {ticket.whatsApp ? "WhatsApp linked" : "Board-only updates"}
+                </ContextBadge>
+                <ContextBadge>
+                  {ticket.status === "waiting"
+                    ? `Lane position ${queue.departmentPosition}`
+                    : `${statusLabel} in ${ticket.department}`}
+                </ContextBadge>
+              </div>
             </div>
 
             <div className="text-right">
@@ -429,11 +474,12 @@ function TrackingResults({ data }) {
             </div>
           </div>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <MiniStat
               label="People ahead"
               value={ticket.status === "waiting" ? queue.patientsAhead : "-"}
             />
+            <MiniStat label="Lane position" value={lanePositionValue} />
             <MiniStat
               label="Rough wait"
               value={ticket.status === "waiting" ? `${queue.estimatedWaitMinutes}m` : "Now"}
@@ -441,7 +487,7 @@ function TrackingResults({ data }) {
             <MiniStat label="Last update" value={formatTime(latestStatusTimestamp)} />
           </div>
 
-          <div className={`mt-6 rounded-3xl border px-5 py-5 ${summaryToneClass(statusTone)}`}>
+          <div className={`mt-6 rounded-3xl border px-5 py-5 shadow-[0_20px_48px_-36px_rgba(37,99,235,0.22)] ${summaryToneClass(statusTone)}`}>
             <div className="flex items-start gap-3">
               <Clock3 className="mt-0.5 h-5 w-5 shrink-0" />
               <div>
@@ -641,7 +687,7 @@ function TrackingResults({ data }) {
 
 function HeroTile({ label, value, detail }) {
   return (
-    <div className="rounded-2xl border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.82),rgba(248,250,252,0.78))] px-4 py-4 shadow-[0_18px_40px_-32px_rgba(15,23,42,0.18)] backdrop-blur">
+    <div className="rounded-2xl border border-border/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.82),rgba(248,250,252,0.78))] px-4 py-4 shadow-[0_18px_40px_-32px_rgba(15,23,42,0.18)] backdrop-blur transition-[transform,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-0.5 hover:border-primary/15 hover:shadow-[0_22px_48px_-34px_rgba(37,99,235,0.22)]">
       <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
         {label}
       </div>
@@ -675,6 +721,15 @@ function JourneyStepCard({ step, index, isCurrent }) {
             : "border-border/70 bg-background/80"
       }`}
     >
+      <div
+        className={`mb-3 h-1.5 rounded-full ${
+          step.state === "complete"
+            ? "bg-priority-green"
+            : step.state === "current"
+              ? "gradient-primary"
+              : "bg-muted"
+        }`}
+      />
       <div className="flex items-center justify-between gap-3">
         <span
           className={`inline-grid h-8 w-8 place-items-center rounded-full text-xs font-bold ${
@@ -704,13 +759,17 @@ function JourneyStepCard({ step, index, isCurrent }) {
 }
 
 function NotificationTimelineItem({ notification, isLast }) {
+  const tone = notificationTone(notification.status);
+
   return (
-    <article className="relative rounded-2xl border border-border/70 bg-background/80 px-4 py-4">
+    <article
+      className={`relative rounded-2xl border bg-[linear-gradient(180deg,rgba(255,255,255,0.84),rgba(248,250,252,0.78))] px-4 py-4 shadow-[0_18px_40px_-34px_rgba(15,23,42,0.14)] ${tone.frame}`}
+    >
       {!isLast && (
         <span className="absolute left-[1.625rem] top-[3.4rem] h-[calc(100%-2.35rem)] w-px bg-border/80" />
       )}
       <div className="flex items-start gap-4">
-        <span className="mt-0.5 inline-grid h-9 w-9 shrink-0 place-items-center rounded-full bg-primary-soft text-primary">
+        <span className={`mt-0.5 inline-grid h-9 w-9 shrink-0 place-items-center rounded-full ${tone.icon}`}>
           <BellRing className="h-4 w-4" />
         </span>
         <div className="min-w-0 flex-1">
@@ -758,6 +817,35 @@ function MiniStat({ label, value }) {
       </div>
       <div className="mt-1 font-display text-2xl font-bold tracking-tight">{value}</div>
     </div>
+  );
+}
+
+function HeaderHintPill({ icon: Icon, label }) {
+  return (
+    <span className="inline-flex items-center gap-2 rounded-full border border-primary/12 bg-[linear-gradient(135deg,rgba(255,255,255,0.7),rgba(240,253,250,0.72)_46%,rgba(219,234,254,0.62))] px-3 py-1.5 text-xs font-semibold text-primary shadow-[0_16px_34px_-28px_rgba(15,118,110,0.24)] backdrop-blur">
+      <Icon className="h-3.5 w-3.5" />
+      {label}
+    </span>
+  );
+}
+
+function LookupSupportCard({ icon: Icon, label, detail }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.04))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+      <span className="grid h-10 w-10 place-items-center rounded-xl bg-white/10 text-primary-foreground">
+        <Icon className="h-4 w-4" />
+      </span>
+      <div className="mt-3 text-sm font-semibold text-primary-foreground">{label}</div>
+      <p className="mt-1 text-xs leading-5 text-primary-foreground/72">{detail}</p>
+    </div>
+  );
+}
+
+function ContextBadge({ children }) {
+  return (
+    <span className="rounded-full border border-border/70 bg-background/80 px-3 py-1.5 text-xs font-semibold text-muted-foreground shadow-[0_10px_26px_-24px_rgba(15,23,42,0.18)]">
+      {children}
+    </span>
   );
 }
 
@@ -902,6 +990,34 @@ function summaryToneClass(tone) {
     active: "border-accent/25 bg-accent/10 text-foreground",
     waiting: "border-primary/20 bg-primary-soft/55 text-foreground",
   }[tone];
+}
+
+function notificationTone(status) {
+  if (status === "failed") {
+    return {
+      frame: "border-destructive/20",
+      icon: "bg-destructive/12 text-destructive",
+    };
+  }
+
+  if (status === "retrying") {
+    return {
+      frame: "border-priority-yellow/24",
+      icon: "bg-priority-yellow/18 text-foreground",
+    };
+  }
+
+  if (status === "delivered" || status === "read") {
+    return {
+      frame: "border-priority-green/18",
+      icon: "bg-priority-green/14 text-priority-green",
+    };
+  }
+
+  return {
+    frame: "border-border/70",
+    icon: "bg-primary-soft text-primary",
+  };
 }
 
 function getNextStepCopy(ticket, queue) {

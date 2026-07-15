@@ -1,0 +1,942 @@
+WAITLESS                                                                        WORLD-CLASS SYSTEM DEVELOPMENT
+
+DOCUMENT OVERVIEW
+
+A complete blueprint for the WaitLess
+
+platform
+
+This designed specification organises the proposed capabilities into a clear, implementation-ready
+structure. It covers the complete patient journey - from registration and triage to departmental routing,
+notifications, reporting, privacy, offline operation and advanced intelligence.
+
+ 21                                       82                  4                     3
+
+CORE MODULES                            DETAILED FEATURES  TRIAGE PRIORITIES    DEPLOYMENT OPTIONS
+
+DESIGN PILLARS
+
+01 Patient-centred access                    02 Clinical prioritisation         03 Real-time operations
+                                                                                Live queues, routing, alerts and
+Digital registration, self-service and       Colour-coded triage, reassessment  department dashboards.
+clear patient guidance.                      and emergency fast-tracking.
+                                                                                06 Intelligent improvement
+04 Secure governance                         05 Resilient deployment            Analytics, prediction, bottleneck
+                                                                                detection and AI support.
+Role-based access, confidentiality and       Local, offline, low-bandwidth and
+complete audit trails.                       hybrid operation.
+
+SCOPE & INTENT
+
+WaitLess is envisioned as a configurable digital patient-flow platform for public and private health facilities.
+The design prioritises shorter waiting times, fair clinical prioritisation, transparent queues, better patient
+communication, operational visibility and dependable use in resource-constrained environments.
+
+DESIGN PRINCIPLE Technology should support clinical judgement and hospital policy - not replace qualified
+healthcare decision-making.
+
+Detailed Feature Requirements · Version 1.0                                                                        PAGE 1
+WAITLESS                                     WORLD-CLASS SYSTEM DEVELOPMENT
+DOCUMENT MAP
+
+Contents at a glance
+
+01 Patient Registration Module               12 Privacy and Patient Confidentiality
+02 Patient Self-Service Module               13 Offline and Low-Bandwidth Operation
+03 Triage Module                             14 Appointment Scheduling
+04 Queue Management Module                   15 OI Clinic Features
+05 Department Routing Module                 16 Pharmacy Features
+06 Real-Time Staff Dashboard                 17 Laboratory and Radiology Features
+07 Patient Notification Module               18 Staff Management Features
+08 Queue Display Screens                     19 Patient Experience Features
+09 Reporting Module                          20 Global / World-Class Features
+10 Analytics and Decision Support            21 AI and Advanced Features
+11 Security and Access Control
+
+Reading guide: Each numbered feature contains a functional description followed by the operational value it delivers. Tables
+summarise rules, routing and access responsibilities.
+
+Detailed Feature Requirements · Version 1.0                                          PAGE 2
+WAITLESS                                                                               WORLD-CLASS SYSTEM DEVELOPMENT
+
+          01                                 PART I
+
+                                             Patient Access & Clinical Flow
+
+                                             Modules 1-4: registration, self-service, triage and queue
+                                             management
+
+MODULE 01
+
+Patient Registration
+
+1.1 Electronic Patient Registration
+
+This feature allows hospital reception staff to capture patient details digitally instead of writing them manually
+in books or paper forms. The receptionist enters information such as patient name, age, gender, national ID
+number, contact number, address, next of kin, and reason for visit. Once the patient is registered, the system
+automatically creates a visit record and assigns the patient to the correct hospital workflow.
+
+   WHY IT MATTERS This feature reduces paperwork, prevents loss of records, improves patient identification, and
+   allows the hospital to track every patient from entry to exit.
+
+1.2 Returning Patient Search
+
+This feature allows staff to search for patients who have visited the hospital before. A patient can be
+searched using their name, phone number, national ID, patient number, or QR code. When the patient is
+found, the system displays their previous visit history and allows staff to create a new visit without re-
+entering all details.
+
+   WHY IT MATTERS This saves time during registration and reduces duplicate patient records.
+
+1.3 Patient Token Number Generation
+
+After registration, the system automatically generates a unique queue/token number for the patient. This
+number is used to identify the patient in the queue without publicly showing their full name. For example, a
+patient may receive a number such as OPD-025, LAB-014, or PHARM-041.
+
+The token number can be printed, displayed on the patient's phone, sent through WhatsApp, or shown on
+queue display screens.
+
+1.4 QR Code Patient Card
+
+The system can generate a QR code for each patient or visit. Staff can scan this QR code to quickly retrieve
+the patient's record, current queue position, department, and visit status. The QR code may be printed on a
+small ticket or stored on the patient's phone.
+
+   WHY IT MATTERS This makes check-in faster and reduces typing errors.
+
+1.5 Patient Category Identification
+
+During registration, staff can classify patients into categories such as walk-in patient, referred patient,
+emergency patient, elderly patient, pregnant patient, child patient, disabled patient, or chronic care patient.
+This helps the system apply the correct queue rules and priority levels.
+
+For example, elderly patients, pregnant women, or emergency cases may be prioritised according to hospital
+policy.
+
+MODULE 02
+
+Patient Self-Service
+
+2.1 Online Pre-Registration
+
+This feature allows patients to register before arriving at the hospital using a web portal. The patient enters
+their basic details, selects the service they need, and receives a pre-registration confirmation. When they
+arrive at the hospital, staff only need to verify the details and activate the visit.
+
+Detailed Feature Requirements · Version 1.0  PAGE 3
+WAITLESS                                                                        WORLD-CLASS SYSTEM DEVELOPMENT
+
+WHY IT MATTERS This reduces congestion at the registration desk and shortens the time spent at the hospital.
+
+2.2 Self Check-In
+
+Patients who have registered online can check themselves in when they arrive at the hospital. They can do
+this by scanning a QR code, entering their phone number, or using a kiosk. Once checked in, the system
+places them in the correct queue.
+
+   WHY IT MATTERS This feature is useful in busy hospitals because it reduces pressure on reception staff.
+
+2.3 Patient Queue Status Page
+
+The patient can view their current queue status from a phone or web browser. The page shows their token
+number, current department, queue position, estimated waiting time, and whether their turn is approaching.
+
+   WHY IT MATTERS This gives patients more control and reduces the need to constantly ask staff, "When am I being
+   served?"
+
+2.4 Patient Feedback Form
+
+After service, the system can ask the patient to rate their hospital experience. The patient may rate waiting
+time, staff behaviour, communication, cleanliness, and overall satisfaction. The feedback is stored and used
+by hospital management to improve service quality.
+
+   WHY IT MATTERS This helps the hospital understand patient complaints and satisfaction trends.
+
+MODULE 03
+
+Triage
+
+The proposal identifies triage as a key requirement because Chinhoyi Provincial Hospital uses a colour-
+coded triage system: Red, Yellow, Green, and Black.
+
+3.1 Digital Triage Assessment
+
+This feature allows nurses or triage officers to assess patients digitally. The staff member records the
+patient's symptoms, vital signs, pain level, condition severity, and emergency indicators. The system then
+stores the triage assessment and assigns the patient to the correct priority category.
+
+   WHY IT MATTERS This replaces handwritten triage records and gives the hospital a digital history of patient
+   assessments.
+
+3.2 Colour-Coded Triage Priority
+
+The system uses colour-coded priority levels to classify patients according to severity:
+
+Colour                                       Meaning                            How It Works
+Red
+Yellow                                       Critical emergency                 Patient is sent immediately to
+                                                                                emergency/resuscitation area
+                                             Serious but not immediately life-
+                                             threatening                        Patient is prioritised above normal OPD
+                                                                                cases
+
+Green                                        Minor or stable case               Patient joins the normal waiting queue
+
+Black                                        Deceased case                      Patient is handled according to hospital
+                                                                                mortuary procedure
+
+   WHY IT MATTERS This ensures that critically ill patients are not treated the same as minor cases.
+
+3.3 Automatic Emergency Fast-Tracking
+
+When a patient is marked as Red or high-risk, the system automatically pushes them to the top of the
+emergency queue. Staff on the casualty or emergency dashboard receive an alert that a critical patient is
+waiting.
+
+   WHY IT MATTERS This improves emergency response and reduces the risk of critically ill patients being delayed.
+
+Detailed Feature Requirements · Version 1.0                                     PAGE 4
+WAITLESS                                     WORLD-CLASS SYSTEM DEVELOPMENT
+
+3.4 Triage Reassessment Alerts
+
+If a patient waits too long after being triaged, the system can alert nurses to reassess the patient. For
+example, a Yellow patient who has waited for 30 minutes may need to be checked again to ensure their
+condition has not worsened.
+
+   WHY IT MATTERS This feature improves patient safety because some patients deteriorate while waiting.
+
+3.5 Manual Triage Override
+
+Although the system can recommend a triage level, trained medical staff must be able to override it. For
+example, the system may suggest Green, but the nurse may decide the patient should be Yellow based on
+clinical judgement.
+
+WHY IT MATTERS This keeps medical decision-making under qualified staff control.
+
+MODULE 04
+
+Queue Management
+
+4.1 Automatic Queue Assignment
+
+After registration and triage, the system automatically places the patient in the correct queue. For example,
+the patient may be sent to OPD, Casualty, Laboratory, Radiology, Pharmacy, or OI Clinic depending on their
+reason for visit and triage level.
+
+   WHY IT MATTERS This removes confusion and helps patients follow the correct hospital pathway.
+
+4.2 Department-Specific Queues
+
+Each department has its own queue. OPD, Pharmacy, Laboratory, Radiology, Casualty, and OI Clinic can each
+manage their own list of waiting patients. Staff in each department only see the patients relevant to their
+work.
+
+   WHY IT MATTERS This makes the system organised and prevents one general queue from becoming confusing.
+
+4.3 Call Next Patient
+
+Staff can click a Call Next Patient button to call the next person in the queue. The system selects the correct
+patient based on priority, arrival time, and department rules. Once called, the patient's status changes from
+"Waiting" to "Called" or "In Service."
+
+   WHY IT MATTERS This makes patient calling faster, fairer, and easier to track.
+
+4.4 Missed Turn Handling
+
+If a patient is called but does not appear, staff can mark them as Missed Turn or Absent. The system can
+then send a notification to the patient and temporarily move them aside without deleting them from the
+queue.
+
+   WHY IT MATTERS This solves the problem of patients leaving the waiting area and missing their turn.
+
+4.5 Patient Recall
+
+If a patient misses their turn, staff can recall them later. The system can place the patient back into the queue
+according to hospital rules. For example, they may be placed after the next three patients instead of going to
+the very back.
+
+   WHY IT MATTERS This keeps the queue fair while still allowing flexibility.
+
+4.6 Queue Transfer
+
+Patients often move between departments. For example, after seeing a doctor, a patient may be sent to
+Laboratory, then back to the doctor, then to Pharmacy. The queue transfer feature allows staff to move the
+patient digitally from one department to another.
+
+   WHY IT MATTERS This helps track the full patient journey from registration to discharge.
+
+Detailed Feature Requirements · Version 1.0                                       PAGE 5
+WAITLESS                                     WORLD-CLASS SYSTEM DEVELOPMENT
+
+4.7 Waiting Time Estimation
+
+The system calculates estimated waiting time based on the number of patients in the queue, average service
+time, number of available staff, and patient priority level. The estimated time can be shown to staff and
+patients.
+
+   WHY IT MATTERS This improves transparency and helps patients plan their time.
+
+4.8 Bottleneck Detection
+
+A bottleneck happens when patients are stuck for too long in one department. The system can detect this by
+comparing waiting times across departments. For example, if Laboratory has many patients waiting longer
+than expected, the dashboard can show a warning.
+
+WHY IT MATTERS This helps hospital managers identify departments that need more staff or resources.
+
+Detailed Feature Requirements · Version 1.0                                                          PAGE 6
+WAITLESS                                                                               WORLD-CLASS SYSTEM DEVELOPMENT
+
+                     02                      PART II
+
+                                             Department Operations &
+                                             Communication
+
+                                             Modules 5-8: routing, dashboards, notifications and display
+                                             screens
+
+MODULE 05
+
+Department Routing
+
+The proposal explains that the current hospital flow includes registration, nurse observation, consultation,
+laboratory, radiology, pharmacy, treatment room, and departure, but the process is paper-based and difficult
+to monitor digitally.
+
+5.1 Automatic Department Routing
+
+After a patient is assessed, the system directs them to the next appropriate department. For example:
+
+Patient Need                                 System Routing
+Minor illness                                OPD queue
+
+Emergency case                               Casualty queue
+Lab test needed                              Laboratory queue
+X-ray needed                                 Radiology queue
+Medicine collection                          Pharmacy queue
+
+HIV/TB/ART services                          OI Clinic queue
+
+   WHY IT MATTERS This prevents patients from being sent to the wrong place.
+
+5.2 Doctor-to-Lab Routing
+
+When a doctor requests a lab test, the system transfers the patient to the Laboratory queue. The lab staff can
+see the request and mark the test as pending, in progress, or completed. Once results are ready, the patient
+can be routed back to the doctor.
+
+   WHY IT MATTERS This avoids physical movement of papers between departments.
+
+5.3 Doctor-to-Pharmacy Routing
+
+After consultation, the doctor can send the patient to Pharmacy. The pharmacy receives the patient in its
+queue and prepares medication. When medicine is ready, the system can notify the patient.
+
+   WHY IT MATTERS This makes the medicine collection process smoother.
+
+5.4 OI Clinic Routing
+
+The OI Clinic handles multiple service streams such as ART resupply, TB services, viral load testing,
+counselling, and cervical cancer screening. The routing feature separates these service types so that
+patients are sent to the correct queue.
+
+   WHY IT MATTERS This reduces confusion and missed appointments in chronic care services.
+
+Detailed Feature Requirements · Version 1.0                    PAGE 7
+WAITLESS                                                               WORLD-CLASS SYSTEM DEVELOPMENT
+MODULE 06
+
+Real-Time Staff Dashboard
+
+6.1 Live Queue Dashboard
+
+The live dashboard shows current queue activity across departments. Staff can see how many patients are
+waiting, who is being served, who has missed their turn, and which department is congested.
+
+   WHY IT MATTERS This gives staff real-time visibility instead of relying on paper lists.
+
+6.2 Department Dashboard
+
+Each department has its own dashboard. For example, Pharmacy staff only see patients waiting for medicine,
+while Laboratory staff only see patients waiting for tests. The dashboard can show queue number, patient
+priority, waiting time, and service status.
+
+   WHY IT MATTERS This keeps each department focused on its own workflow.
+
+6.3 Admin Dashboard
+
+The admin dashboard gives hospital managers an overview of the whole hospital. It shows total patients
+registered, average waiting time, number of emergency cases, number of completed visits, no-shows, and
+department performance.
+
+   WHY IT MATTERS This helps management make evidence-based decisions.
+
+6.4 Real-Time Alerts
+
+The dashboard can show alerts when something needs attention. Examples include:
+
+Alert                                        Meaning
+
+Critical patient waiting                     Red triage patient needs immediate attention
+
+Queue too long                               A department has too many waiting patients
+
+Patient waited too long                      A patient has exceeded safe waiting time
+
+Notification failed                          WhatsApp or web push message failed
+
+Staff unavailable                            A department has no active staff serving
+
+   WHY IT MATTERS This makes the system proactive instead of passive.
+
+MODULE 07
+
+Patient Notification
+
+Your proposal identifies notifications as one of the most important features. It states that patients can be
+notified through WhatsApp and web push notifications when their turn is approaching, especially if they
+temporarily leave the hospital premises.
+
+7.1 WhatsApp Queue Notifications
+
+When a patient registers with a WhatsApp number, the system can send queue updates through WhatsApp.
+The patient may receive messages such as:
+
+  · "Your token number is OPD-025."
+
+  · "You are number 3 in the queue."
+
+  · "Please return to OPD. Your turn is approaching."
+
+  · "Your lab results are ready. Please return to the doctor."
+
+   WHY IT MATTERS This is useful because many patients already use WhatsApp and do not need to install a new
+   app.
+
+Detailed Feature Requirements · Version 1.0                                                PAGE 8
+WAITLESS                                     WORLD-CLASS SYSTEM DEVELOPMENT
+
+7.2 Web Push Notifications
+
+Patients who register through the web application can receive browser notifications. These notifications
+appear on their phone or computer even if they are not actively looking at the page.
+
+WHY IT MATTERS This provides a low-cost alternative to SMS and supports patients who use the web portal.
+
+7.3 Notification Retry System
+
+Sometimes notifications may fail because of poor internet connection or network problems. The system
+should store failed notifications and retry sending them when the connection improves.
+
+   WHY IT MATTERS This is important because the proposal mentions that the system should be suitable for low-
+   bandwidth and resource-limited environments.
+
+7.4 Notification Log
+
+Every notification sent by the system should be recorded. The log should show the patient, message type,
+time sent, delivery status, and whether it succeeded or failed.
+
+   WHY IT MATTERS This helps staff prove that a patient was notified and helps administrators troubleshoot
+   communication problems.
+
+7.5 Missed Turn Notification
+
+If a patient is called and does not appear, the system sends a message telling them that they missed their
+turn and should return to the department. This reduces queue disruption and allows staff to manage absent
+patients fairly.
+
+MODULE 08
+
+Queue Display Screens
+
+8.1 Waiting Area Display Board
+
+This feature displays live queue numbers on a TV or monitor in the waiting area. Patients can see which
+number is currently being served and which numbers are coming next.
+
+Although the proposal lists queue display monitors as a future enhancement, it is a very strong world-class
+feature because it supports patients who do not have smartphones or internet access.
+
+8.2 Department-Specific Display Boards
+
+Each department can have its own display screen. For example, OPD displays OPD tokens, Pharmacy
+displays Pharmacy tokens, and Laboratory displays Lab tokens.
+
+   WHY IT MATTERS This avoids confusion because patients only follow the queue board relevant to their
+   department.
+
+8.3 Audio Calling
+
+The system can call out patient token numbers using speakers. For example, it may announce: "OPD zero
+two five, please proceed to consultation room two."
+
+   WHY IT MATTERS This is useful for patients who may not be watching the display screen.
+
+Detailed Feature Requirements · Version 1.0                                                               PAGE 9
+WAITLESS                                                                               WORLD-CLASS SYSTEM DEVELOPMENT
+
+          03                                 PART III
+
+                                             Reporting, Analytics &
+                                             Governance
+
+                                             Modules 9-12: reporting, decision support, security and
+                                             confidentiality
+
+MODULE 09
+
+Reporting
+
+9.1 Daily Patient Report
+
+This report shows the number of patients served in a day, broken down by department, service type, gender,
+age group, and triage category. Hospital managers can use this report to understand daily workload.
+
+9.2 Average Waiting Time Report
+
+This report calculates how long patients waited in each department. For example, it may show that OPD
+patients waited an average of 2 hours, while Pharmacy patients waited 45 minutes.
+
+   WHY IT MATTERS This helps management identify where delays are happening.
+
+9.3 Department Performance Report
+
+This report compares departments based on patients served, average service time, waiting time, and queue
+length. It helps hospital administrators know which departments are performing well and which need
+improvement.
+
+9.4 No-Show Report
+
+This report shows how many patients missed their turn or left before being served. It can also show whether
+notifications helped reduce no-shows.
+
+   WHY IT MATTERS This is important because the proposal identifies no-shows as a major problem when patients
+   leave the hospital premises while waiting.
+
+9.5 Triage Report
+
+This report shows how many patients were classified as Red, Yellow, Green, or Black. It helps the hospital
+understand emergency demand and plan staffing for casualty and OPD.
+
+9.6 Export to PDF, Excel, and CSV
+
+Hospital managers may need reports for meetings, audits, or Ministry of Health submissions. The system
+should allow reports to be exported as PDF, Excel, or CSV files.
+
+   WHY IT MATTERS This makes the system more professional and useful for administration.
+
+MODULE 10
+
+Analytics and Decision Support
+
+10.1 Peak Hour Analysis
+
+The system can analyse patient arrival times and identify the busiest hours of the day. For example, it may
+show that most patients arrive between 7:00 AM and 10:00 AM.
+
+   WHY IT MATTERS This helps managers schedule more staff during busy periods.
+
+10.2 Queue Congestion Prediction
+
+Using previous queue data, the system can predict when a department is likely to become congested. For
+example, if Pharmacy usually becomes busy after OPD consultations, the system can warn staff early.
+
+Detailed Feature Requirements · Version 1.0  PAGE 10
+WAITLESS                                                          WORLD-CLASS SYSTEM DEVELOPMENT
+   WHY IT MATTERS This improves planning and reduces long waits.
+
+10.3 Resource Allocation Suggestions
+
+The system can suggest where additional staff may be needed. For example, if Laboratory has many patients
+waiting and OPD is less busy, management may temporarily assign support staff to Laboratory.
+
+   WHY IT MATTERS This helps improve hospital efficiency.
+
+MODULE 11
+
+Security and Access Control
+
+11.1 Role-Based Access Control
+
+Different users should access different parts of the system depending on their roles. For example:
+
+User Role                                    Access
+Receptionist                                 Patient registration
+Nurse                                        Triage and patient assessment
+Doctor                                       Consultation queue and referrals
+Pharmacist                                   Pharmacy queue
+Lab staff                                    Laboratory queue
+Administrator                                Users, reports, settings
+Hospital manager                             Analytics and performance reports
+
+   WHY IT MATTERS This protects patient information and prevents unauthorised actions.
+
+11.2 Secure Login
+
+Every staff member logs in using their own username and password. The system records who performed
+each action, such as registering a patient, changing triage level, or marking a patient as served.
+
+   WHY IT MATTERS This creates accountability.
+
+11.3 Audit Trail
+
+The audit trail records important system activities. For example, it records who changed a patient's priority,
+who transferred a patient, who deleted a record, or who exported a report.
+
+   WHY IT MATTERS This improves transparency and helps investigate mistakes or misuse.
+
+11.4 Automatic Logout
+
+If a staff member leaves the computer idle, the system automatically logs them out after a set period. This
+prevents other people from accessing patient records on unattended computers.
+
+MODULE 12
+
+Privacy and Patient Confidentiality
+
+12.1 Anonymous Queue Display
+
+Instead of showing patient names on public screens, the system displays token numbers. For example, it
+shows OPD-025 instead of Norris Marava.
+
+   WHY IT MATTERS This protects patient privacy.
+
+Detailed Feature Requirements · Version 1.0                                                         PAGE 11
+WAITLESS                                                                 WORLD-CLASS SYSTEM DEVELOPMENT
+
+12.2 Consent for Notifications
+
+Before sending WhatsApp or web push notifications, the system should ask the patient for consent. The
+patient must agree that the hospital can send queue updates to their phone.
+
+WHY IT MATTERS This supports ethical handling of patient communication.
+
+12.3 Confidential Clinic Mode
+
+For sensitive departments such as OI Clinic, the system should avoid exposing patient names, diagnosis, or
+service type publicly. It should use private token numbers and limit access to authorised staff only.
+
+   WHY IT MATTERS This protects patients who may be receiving HIV, TB, counselling, or other sensitive services.
+
+Detailed Feature Requirements · Version 1.0                              PAGE 12
+WAITLESS                                                                               WORLD-CLASS SYSTEM DEVELOPMENT
+
+          04                                 PART IV
+
+                                             Resilience, Scheduling &
+                                             Clinical Services
+
+                                             Modules 13-16: offline readiness, appointments, OI Clinic
+                                             and Pharmacy
+
+MODULE 13
+
+Offline and Low-Bandwidth Operation
+
+The proposal states that the system should be designed for low-bandwidth networks and local hospital
+infrastructure.
+
+13.1 Local Area Network Hosting
+
+The system can be hosted on a local hospital server so that staff can continue using it even when internet
+connection is poor. Computers inside the hospital connect to the system through the local network.
+
+   WHY IT MATTERS This is important for public hospitals where internet may be unstable.
+
+13.2 Offline Queue Management
+
+If the internet goes down, the core queue functions should still work locally. Staff should still be able to
+register patients, call patients, transfer patients, and complete visits.
+
+   WHY IT MATTERS Only internet-dependent features such as WhatsApp notifications may wait until internet returns.
+
+13.3 Queued Notifications
+
+When internet is unavailable, WhatsApp and web push messages are stored in a pending queue. Once
+connectivity returns, the system automatically sends the pending messages.
+
+   WHY IT MATTERS This ensures communication is not completely lost during network problems.
+
+13.4 Auto-Save Forms
+
+If a staff member is entering patient details and the connection becomes unstable, the system should auto-
+save the form locally. This prevents data loss and avoids forcing staff to re-enter the same information.
+
+MODULE 14
+
+Appointment Scheduling
+
+14.1 Online Appointment Booking
+
+Patients can book appointments online for services such as OPD review, OI Clinic, ART resupply, TB review,
+or follow-up consultation. The system assigns a date, time slot, and queue category.
+
+   WHY IT MATTERS This helps reduce overcrowding caused by too many walk-in patients arriving at the same time.
+
+14.2 Follow-Up Appointment Scheduling
+
+After consultation, the doctor or nurse can schedule the patient's next visit. The patient receives a
+notification confirming the appointment date and time.
+
+   WHY IT MATTERS This is useful for chronic patients who need regular care.
+
+14.3 Appointment Reminders
+
+The system sends reminders before the appointment date. This may be done through WhatsApp, web push,
+SMS, or email.
+
+   WHY IT MATTERS This reduces missed appointments.
+
+Detailed Feature Requirements · Version 1.0  PAGE 13
+WAITLESS                                     WORLD-CLASS SYSTEM DEVELOPMENT
+MODULE 15
+
+OI Clinic Features
+
+15.1 Multiple Service Stream Management
+
+The OI Clinic may handle ART resupply, TB services, viral load testing, counselling, and cervical cancer
+screening. The system separates these services into different queues so that each patient follows the
+correct path.
+
+   WHY IT MATTERS This prevents confusion and makes chronic care management more organised.
+
+15.2 Confidential Patient Handling
+
+Because OI Clinic services can be sensitive, the system should protect patient privacy by using token
+numbers, limited staff access, and confidential service labels.
+
+   WHY IT MATTERS This builds patient trust and protects dignity.
+
+15.3 Missed Appointment Tracking
+
+If a chronic care patient misses an appointment, the system records it and can notify staff for follow-up. The
+system may also send the patient a reminder to reschedule.
+
+   WHY IT MATTERS This improves continuity of care.
+
+MODULE 16
+
+Pharmacy Features
+
+16.1 Pharmacy Queue
+
+Patients sent to Pharmacy are placed in a pharmacy-specific queue. Pharmacy staff can see waiting patients,
+prepare medication, and mark prescriptions as ready or collected.
+
+   WHY IT MATTERS This improves the medicine collection process.
+
+16.2 Prescription Ready Notification
+
+When medicine is ready, the patient receives a message telling them to proceed to Pharmacy. This means
+the patient does not need to stand near the pharmacy counter the whole time.
+
+   WHY IT MATTERS This reduces crowding around Pharmacy.
+
+16.3 Medicine Out-of-Stock Flag
+
+If a prescribed medicine is not available, pharmacy staff can mark it as out of stock. The system records this
+and can notify the doctor or patient.
+
+   WHY IT MATTERS This improves communication and prevents patients from waiting unnecessarily.
+
+Detailed Feature Requirements · Version 1.0  PAGE 14
+WAITLESS                                                                               WORLD-CLASS SYSTEM DEVELOPMENT
+
+          05                                 PART V
+
+                                             Diagnostics, Workforce &
+                                             Patient Experience
+
+                                             Modules 17-20: diagnostics, staff management, patient
+                                             experience and global scale
+
+MODULE 17
+
+Laboratory and Radiology Features
+
+17.1 Lab Test Queue
+
+When a doctor requests a lab test, the patient is placed in the Laboratory queue. Lab staff can update the
+test status as pending, sample collected, in progress, or completed.
+
+   WHY IT MATTERS This helps doctors and patients know the progress of lab requests.
+
+17.2 Results Ready Alert
+
+When lab or radiology results are ready, the system can notify the doctor and route the patient back to the
+doctor's review queue.
+
+   WHY IT MATTERS This reduces delays caused by patients waiting without knowing that results are ready.
+
+17.3 Turnaround Time Tracking
+
+The system records how long it takes from test request to result completion. This helps management identify
+delays in Laboratory or Radiology.
+
+MODULE 18
+
+Staff Management Features
+
+18.1 Staff Profiles
+
+Each staff member has a profile with name, role, department, contact details, and login credentials. This
+helps administrators manage system users.
+
+18.2 Department Assignment
+
+Staff can be assigned to specific departments. For example, a nurse may be assigned to Triage, while a
+pharmacist is assigned to Pharmacy.
+
+   WHY IT MATTERS This ensures staff only see the queues and actions relevant to their duties.
+
+18.3 Staff Workload Tracking
+
+The system can show how many patients each staff member served during a shift. This helps managers
+understand workload distribution.
+
+   WHY IT MATTERS This should be used carefully and fairly, not to punish staff, but to improve planning.
+
+MODULE 19
+
+Patient Experience Features
+
+19.1 Estimated Waiting Time Display
+
+Patients can see how long they are likely to wait. This improves transparency and reduces anxiety because
+patients know what to expect.
+
+Detailed Feature Requirements · Version 1.0  PAGE 15
+WAITLESS                                                  WORLD-CLASS SYSTEM DEVELOPMENT
+
+19.2 Leave-and-Return Support
+
+Patients may leave the waiting area temporarily and return when notified. This is one of the most important
+improvements because the proposal identifies no-shows and queue disruption as problems when patients
+leave without being notified.
+
+19.3 Service Direction Guidance
+
+The system can show instructions such as "Proceed to Laboratory," "Return to Doctor Room 2," or "Go to
+Pharmacy Counter 1." This helps patients navigate the hospital more easily.
+
+MODULE 20
+
+Global / World-Class Features
+
+20.1 Multi-Hospital Support
+
+The system can be designed to support more than one hospital. Each hospital has its own departments, staff,
+queues, reports, and settings.
+
+   WHY IT MATTERS This allows WaitLess to grow from one hospital prototype into a national or international solution.
+
+20.2 Multi-Language Support
+
+The system can support English, Shona, Ndebele, and other languages. Staff and patients can choose their
+preferred language.
+
+   WHY IT MATTERS This makes the system more inclusive and easier to use.
+
+20.3 Configurable Hospital Workflows
+
+Different hospitals may have different patient flow processes. The system should allow administrators to
+configure departments, service types, queue rules, working hours, and triage policies.
+
+   WHY IT MATTERS This makes WaitLess adaptable globally.
+
+20.4 Cloud, Local, or Hybrid Deployment
+
+The system can support three deployment models:
+
+Deployment Type                              Description
+
+Local                                        Runs on a hospital server/LAN
+
+Cloud                                        Runs online and is accessed through the internet
+
+Hybrid                                       Core system runs locally, with cloud backup and remote
+                                             reporting
+
+WHY IT MATTERS This makes the system suitable for both low-resource hospitals and advanced hospitals.
+
+Detailed Feature Requirements · Version 1.0                                                            PAGE 16
+WAITLESS                                                                               WORLD-CLASS SYSTEM DEVELOPMENT
+
+          06                                 PART VI
+
+                                             Intelligent & Advanced
+                                             Capabilities
+
+                                             Module 21: predictive analytics, AI bottleneck detection and
+                                             patient chatbot
+
+MODULE 21
+
+AI and Advanced Features
+
+21.1 AI Waiting Time Prediction
+
+The system can use past queue data to predict waiting times more accurately. It considers number of
+patients, staff availability, department speed, and patient priority.
+
+   WHY IT MATTERS This makes waiting time estimates smarter.
+
+21.2 AI Bottleneck Detection
+
+The system can automatically identify when one department is slowing down the whole hospital flow. For
+example, if many patients are waiting for lab results, the system alerts management.
+
+   WHY IT MATTERS This helps hospitals respond before queues become too long.
+
+21.3 AI Chatbot for Patients
+
+A chatbot can answer common patient questions such as:
+  · "What is my queue number?"
+  · "How many people are before me?"
+  · "Where should I go next?"
+  · "What time is my appointment?"
+   WHY IT MATTERS This reduces pressure on hospital reception staff.
+
+Detailed Feature Requirements · Version 1.0  PAGE 17
+WAITLESS                                                                                        WORLD-CLASS SYSTEM DEVELOPMENT
+
+                                                      FINAL OVERVIEW
+
+                                                      Executive Feature Summary
+
+                                                      A concise description of the complete WaitLess platform
+
+EXECUTIVE SUMMARY
+
+WaitLess in one clear description
+
+WaitLess will provide a complete digital patient flow management platform that supports electronic
+registration, triage prioritisation, department routing, real-time queue monitoring, patient notifications, staff
+dashboards, and management reporting. Patients will be registered digitally and assigned a queue number
+based on their service needs and triage priority. The system will then route them to the correct department,
+monitor their progress, estimate waiting times, and notify them through WhatsApp or web push when their
+turn is approaching. Staff will use role-based dashboards to call patients, transfer them between
+departments, update service status, and monitor congestion. Hospital administrators will use reports and
+analytics to identify bottlenecks, reduce waiting times, improve staff allocation, and make evidence-based
+decisions. The system will also support low-bandwidth and local network deployment, making it suitable for
+public hospitals in Zimbabwe and other resource-constrained environments.
+
+CORE PATIENT JOURNEY
+
+     01                  02                      03        04                       05         06
+Register              Triage                 Consult  Diagnose                    Treat  Complete
+
+DESIGNED TO WORK                             CLOUD                                HYBRID
+                                             Remote access and central reporting  Local continuity with cloud backup
+  LOCAL
+  Hospital LAN and local server
+
+WAITLESS VISION A safer, faster and more transparent patient journey - supported by technology
+that works in real hospital conditions.
+
+Detailed Feature Requirements · Version 1.0                                                                           PAGE 18
+

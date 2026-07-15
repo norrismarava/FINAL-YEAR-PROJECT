@@ -49,8 +49,12 @@ function publicStaffUser(user) {
     username: user.username,
     name: user.name,
     email: user.email,
+    phone: user.phone,
     role: user.role,
     department: user.department,
+    employeeId: user.employeeId,
+    createdAt: user.createdAt,
+    lastLoginAt: user.lastLoginAt,
   };
 }
 
@@ -111,6 +115,9 @@ export function loginStaff({ username, password }) {
   if (!verifyPassword(user, password)) {
     throw new HttpError(401, "Invalid username or password.");
   }
+
+  user.lastLoginAt = new Date().toISOString();
+  saveStaffUsers();
 
   return createSession(user);
 }

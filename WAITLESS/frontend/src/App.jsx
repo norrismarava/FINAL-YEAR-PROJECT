@@ -5,6 +5,7 @@ import DashboardPage from "@/pages/dashboard";
 import ForgotPasswordPage from "@/pages/forgot-password";
 import Home from "@/pages/index";
 import LoginPage from "@/pages/login";
+import ProfilePage from "@/pages/profile";
 import QueuePage from "@/pages/queue";
 import RegisterPage from "@/pages/register";
 import ResetPasswordPage from "@/pages/reset-password";
@@ -26,6 +27,7 @@ export default function App() {
 
         <Route path="forgot-password" element={<ForgotPasswordPage />} />
         <Route path="login" element={<LoginPage />} />
+        <Route path="profile" element={<ProfilePage />} />
         <Route path="queue" element={<QueuePage />} />
         <Route path="register" element={<RegisterPage />} />
         <Route path="reset-password" element={<ResetPasswordPage />} />

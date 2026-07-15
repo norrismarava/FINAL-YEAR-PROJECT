@@ -20,8 +20,7 @@ import {
 } from "lucide-react";
 
 import hospitalHeroBackground from "@/assets/bgfinal.png";
-import waitlessLogo from "@/assets/waitlesslogo-cropped.png";
-import { PRIORITY_META, priorityChipClass } from "@/services/queueMeta";
+import { PRIORITY_META } from "@/services/queueMeta";
 
 export default function Home() {
   return (
@@ -57,6 +56,29 @@ function LandingLightCanvas({ children }) {
 }
 
 function Hero() {
+  const heroHighlights = [
+    {
+      icon: Users,
+      label: "Patients triaged today",
+      value: "247",
+    },
+    {
+      icon: Timer,
+      label: "Median live wait",
+      value: "23m",
+    },
+    {
+      icon: BellRing,
+      label: "Alerts delivered",
+      value: "1,184",
+    },
+  ];
+  const heroQueueSnapshot = [
+    { label: "Now serving", value: "R-104", detail: "Casualty Resus Room" },
+    { label: "Up next", value: "Y-118", detail: "Observation priority" },
+    { label: "Patient alert", value: "G-203", detail: "WhatsApp near-turn sent" },
+  ];
+
   return (
     <section className="relative isolate min-h-[calc(100vh-5rem)] overflow-hidden">
       <div
@@ -68,18 +90,12 @@ function Hero() {
       <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(248,250,252,0.96),rgba(248,250,252,0.82)_42%,rgba(15,118,110,0.18)_72%,rgba(2,6,23,0.18))]" />
       <div className="absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-background to-transparent" />
 
-      <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-7xl flex-col justify-center px-4 py-16 sm:px-6 lg:px-8">
+      <div className="mx-auto grid min-h-[calc(100vh-5rem)] max-w-7xl items-center gap-10 px-4 py-12 sm:px-6 sm:py-14 lg:grid-cols-[0.9fr_0.72fr] lg:gap-12 lg:px-8">
         <div className="max-w-3xl">
-          <div className="inline-flex w-fit items-center justify-center">
-            <img
-              src={waitlessLogo}
-              alt="WaitLess"
-              className="h-24 w-auto max-w-[340px] object-contain drop-shadow-[0_16px_36px_rgba(15,118,110,0.18)] sm:h-28"
-            />
+          <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-white/62 px-3 py-1.5 text-xs font-semibold text-primary shadow-[0_14px_30px_-24px_rgba(15,118,110,0.26)] backdrop-blur">
+            <ShieldAlert className="h-3.5 w-3.5" />
+            Triage-aware hospital operations
           </div>
-          <p className="-mt-3 text-sm font-semibold tracking-[0.18em] text-primary sm:-mt-4 sm:text-base">
-            Smarter Queues, Better Care
-          </p>
           <h1 className="mt-5 text-balance font-display text-5xl font-bold leading-[1.02] tracking-tight text-foreground sm:text-6xl lg:text-7xl">
             Digital Patient Flow
             <br />
@@ -102,60 +118,107 @@ function Hero() {
             </Link>
             <Link
               to="/queue"
-              className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-border bg-card px-5 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+              className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-white/68 px-5 py-3 text-sm font-semibold text-foreground shadow-[0_16px_34px_-28px_rgba(15,23,42,0.20)] backdrop-blur transition-colors hover:bg-white/82"
             >
               View live queue board
               <MonitorSmartphone className="h-4 w-4" />
             </Link>
             <Link
               to="/track"
-              className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-primary/15 bg-white/70 px-5 py-3 text-sm font-semibold text-primary shadow-[0_14px_34px_-26px_rgba(15,118,110,0.28)] backdrop-blur transition-colors hover:bg-primary-soft/70"
+              className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-primary-soft/72 px-5 py-3 text-sm font-semibold text-primary shadow-[0_14px_34px_-26px_rgba(15,118,110,0.24)] backdrop-blur transition-colors hover:bg-primary-soft/88"
             >
               Track a ticket
               <Search className="h-4 w-4" />
             </Link>
           </div>
-          <dl className="mt-10 grid max-w-md grid-cols-3 gap-6 text-sm">
-            <div>
-              <dt className="text-xs uppercase tracking-wider text-muted-foreground">
-                Avg. OPD time
-              </dt>
-              <dd className="mt-1 font-display text-2xl font-bold">42m</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase tracking-wider text-muted-foreground">
-                Departments
-              </dt>
-              <dd className="mt-1 font-display text-2xl font-bold">6</dd>
-            </div>
-            <div>
-              <dt className="text-xs uppercase tracking-wider text-muted-foreground">
-                No-show drop
-              </dt>
-              <dd className="mt-1 font-display text-2xl font-bold">-38%</dd>
-            </div>
-          </dl>
+
+          <div className="mt-10 grid max-w-2xl gap-4 sm:grid-cols-3">
+            {heroHighlights.map((item) => (
+              <div
+                key={item.label}
+                className="rounded-2xl bg-white/64 px-4 py-4 shadow-[0_20px_40px_-30px_rgba(15,23,42,0.24)] backdrop-blur"
+              >
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary-soft text-primary">
+                  <item.icon className="h-4 w-4" />
+                </span>
+                <div className="mt-3 font-display text-3xl font-bold tracking-tight">
+                  {item.value}
+                </div>
+                <div className="mt-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">
+                  {item.label}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div className="mt-12 grid max-w-4xl gap-3 md:grid-cols-3">
-          {[
-            { label: "Now serving", value: "R-104", detail: "Casualty Resus Room" },
-            { label: "Up next", value: "Y-118", detail: "Observation priority" },
-            { label: "Patient alert", value: "G-203", detail: "WhatsApp near-turn sent" },
-          ].map((item) => (
-            <div
-              key={item.label}
-              className="rounded-2xl border border-white/70 bg-white/75 px-4 py-4 shadow-card backdrop-blur"
-            >
-              <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-                {item.label}
+        <div className="relative w-full max-w-lg justify-self-end lg:translate-y-4">
+          <div className="absolute -left-8 top-10 h-32 w-32 rounded-full bg-primary/14 blur-3xl" />
+          <div className="absolute -right-6 bottom-6 h-36 w-36 rounded-full bg-accent/16 blur-3xl" />
+          <div className="relative space-y-4">
+            <div className="rounded-[1.75rem] border border-white/45 bg-white/28 p-4 shadow-[0_26px_58px_-38px_rgba(15,23,42,0.26)] backdrop-blur-lg sm:p-5">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="eyebrow">Operations pulse</div>
+                  <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-foreground">
+                    Live patient flow
+                  </h2>
+                </div>
+                <span className="inline-flex items-center gap-2 rounded-full bg-primary-soft/78 px-3 py-1.5 text-xs font-semibold text-primary shadow-[0_12px_24px_-22px_rgba(15,118,110,0.34)]">
+                  <BellRing className="h-3.5 w-3.5" />
+                  Live updates
+                </span>
               </div>
-              <div className="mt-1 font-display text-3xl font-bold tracking-tight">
-                {item.value}
-              </div>
-              <div className="mt-1 text-xs text-muted-foreground">{item.detail}</div>
             </div>
-          ))}
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              {heroQueueSnapshot.map((item) => (
+                <div
+                  key={item.label}
+                  className="rounded-2xl border border-white/44 bg-white/68 px-4 py-4 shadow-[0_20px_38px_-30px_rgba(15,23,42,0.22)] backdrop-blur"
+                >
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                    {item.label}
+                  </div>
+                  <div className="mt-1 font-display text-3xl font-bold tracking-tight">
+                    {item.value}
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">{item.detail}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-[1.6rem] bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(37,99,235,0.88))] p-5 text-primary-foreground shadow-[0_24px_52px_-30px_rgba(37,99,235,0.42)] backdrop-blur">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-primary-foreground/76">
+                    Queue routing
+                  </div>
+                  <div className="mt-2 font-display text-2xl font-bold tracking-tight">
+                    Built for public hospitals
+                  </div>
+                  <p className="mt-2 max-w-sm text-sm leading-6 text-primary-foreground/82">
+                    Registration, triage, tracking and queue boards stay connected
+                    in one visible patient journey.
+                  </p>
+                </div>
+                <span className="grid h-11 w-11 place-items-center rounded-2xl bg-white/14">
+                  <Activity className="h-5 w-5" />
+                </span>
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-2">
+                {["OPD", "Casualty", "Pharmacy", "Radiology"].map((item) => (
+                  <span
+                    key={item}
+                    className="rounded-full border border-white/12 bg-white/10 px-3 py-1.5 text-xs font-semibold text-primary-foreground/88"
+                  >
+                    {item}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -411,6 +474,49 @@ function Stats() {
 }
 
 function TriageStrip() {
+  const priorityCardStyles = {
+    red: {
+      shell:
+        "border-priority-red/20 shadow-[0_24px_60px_-36px_rgba(220,38,38,0.30)] hover:shadow-[0_28px_70px_-38px_rgba(220,38,38,0.34)]",
+      header:
+        "bg-[linear-gradient(135deg,rgba(239,68,68,0.98),rgba(220,38,38,0.96))] text-white",
+      body:
+        "bg-[linear-gradient(180deg,rgba(255,255,255,0.60),rgba(255,255,255,0.46)_50%,rgba(254,226,226,0.50))]",
+      route: "bg-priority-red/10 text-priority-red",
+      icon: "text-white/78",
+    },
+    yellow: {
+      shell:
+        "border-priority-yellow/26 shadow-[0_24px_60px_-36px_rgba(245,158,11,0.28)] hover:shadow-[0_28px_70px_-38px_rgba(245,158,11,0.32)]",
+      header:
+        "bg-[linear-gradient(135deg,rgba(251,191,36,0.98),rgba(245,158,11,0.95))] text-slate-950",
+      body:
+        "bg-[linear-gradient(180deg,rgba(255,255,255,0.60),rgba(255,255,255,0.48)_52%,rgba(254,240,138,0.38))]",
+      route: "bg-priority-yellow/18 text-slate-900",
+      icon: "text-slate-900/65",
+    },
+    green: {
+      shell:
+        "border-priority-green/22 shadow-[0_24px_60px_-36px_rgba(22,163,74,0.28)] hover:shadow-[0_28px_70px_-38px_rgba(22,163,74,0.32)]",
+      header:
+        "bg-[linear-gradient(135deg,rgba(34,197,94,0.98),rgba(22,163,74,0.95))] text-white",
+      body:
+        "bg-[linear-gradient(180deg,rgba(255,255,255,0.60),rgba(255,255,255,0.48)_52%,rgba(220,252,231,0.42))]",
+      route: "bg-priority-green/12 text-priority-green",
+      icon: "text-white/78",
+    },
+    black: {
+      shell:
+        "border-slate-900/20 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.34)] hover:shadow-[0_28px_70px_-38px_rgba(15,23,42,0.38)]",
+      header:
+        "bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(2,6,23,0.95))] text-white",
+      body:
+        "bg-[linear-gradient(180deg,rgba(255,255,255,0.60),rgba(255,255,255,0.48)_52%,rgba(226,232,240,0.42))]",
+      route: "bg-slate-900/8 text-slate-800",
+      icon: "text-white/74",
+    },
+  };
+
   return (
     <section className="relative overflow-hidden border-b border-border/50 bg-transparent">
       <MedicalBackdrop variant="triage" />
@@ -434,8 +540,9 @@ function TriageStrip() {
             </Link>
           </div>
 
-          <div className="relative rounded-[1.75rem] border border-primary/16 bg-[linear-gradient(135deg,rgba(15,118,110,0.96),rgba(14,165,233,0.92)_58%,rgba(37,99,235,0.94))] p-5 text-primary-foreground shadow-[0_24px_70px_-30px_rgba(37,99,235,0.44)]">
-            <div className="pointer-events-none absolute inset-0 rounded-[inherit] bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.14),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.10),transparent_30%)]" />
+          <div className="relative overflow-hidden rounded-[1.85rem] border border-white/45 bg-[linear-gradient(135deg,rgba(15,118,110,0.72),rgba(14,165,233,0.68)_58%,rgba(37,99,235,0.74))] p-5 text-primary-foreground shadow-[0_26px_80px_-34px_rgba(37,99,235,0.34)] backdrop-blur-xl">
+            <div className="pointer-events-none absolute inset-0 rounded-[inherit] bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.18),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.14),transparent_32%)]" />
+            <div className="pointer-events-none absolute inset-[1px] rounded-[calc(1.85rem-1px)] border border-white/10" />
             <div className="relative flex items-center justify-between gap-4">
               <div>
                 <div className="text-[11px] font-bold uppercase tracking-[0.24em] opacity-75">
@@ -455,7 +562,7 @@ function TriageStrip() {
               ].map(([label, value]) => (
                 <div
                   key={label}
-                  className="rounded-2xl border border-white/14 bg-white/10 px-4 py-3 backdrop-blur"
+                  className="rounded-2xl border border-white/18 bg-white/12 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-md"
                 >
                   <div className="text-[10px] uppercase tracking-[0.2em] opacity-70">
                     {label}
@@ -470,23 +577,35 @@ function TriageStrip() {
         <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {Object.keys(PRIORITY_META).map((priority) => {
             const meta = PRIORITY_META[priority];
+            const styles = priorityCardStyles[priority];
 
             return (
-              <div key={priority} className="surface-panel">
+              <div
+                key={priority}
+                className={`group overflow-hidden rounded-[1.6rem] border bg-white/18 backdrop-blur-xl transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1 ${styles.shell}`}
+              >
                 <div
-                  className={`flex items-center justify-between px-4 py-3 ${priorityChipClass[priority]}`}
+                  className={`relative flex items-center justify-between px-4 py-3 ${styles.header}`}
                 >
+                  <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),transparent)]" />
                   <span className="font-display text-sm font-bold uppercase tracking-wider">
                     {meta.short}
                   </span>
-                  <Stethoscope className="h-4 w-4 opacity-70" />
+                  <Stethoscope className={`h-4 w-4 ${styles.icon}`} />
                 </div>
-                <div className="space-y-2 p-4">
-                  <div className="font-display font-bold">{meta.label}</div>
-                  <p className="text-sm text-muted-foreground">{meta.description}</p>
-                  <div className="pt-2 text-xs">
+                <div className={`space-y-3 p-4 backdrop-blur-md ${styles.body}`}>
+                  <div className="font-display text-[1.05rem] font-bold text-foreground">
+                    {meta.label}
+                  </div>
+                  <p className="min-h-[4.5rem] text-sm leading-7 text-muted-foreground">
+                    {meta.description}
+                  </p>
+                  <div className="h-px bg-gradient-to-r from-border/60 via-white/70 to-transparent" />
+                  <div
+                    className={`inline-flex rounded-full px-3 py-1.5 text-xs font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.28)] ${styles.route}`}
+                  >
                     <span className="text-muted-foreground">Route to -&gt; </span>
-                    <span className="font-medium">{meta.destination}</span>
+                    <span className="ml-1 font-semibold">{meta.destination}</span>
                   </div>
                 </div>
               </div>
@@ -554,8 +673,13 @@ function Features() {
 
             <div className="mt-6 space-y-3">
               {reasons.map((reason) => (
-                <div key={reason} className="flex gap-3 rounded-2xl border border-border/70 bg-background/80 px-4 py-3">
-                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-primary" />
+                <div
+                  key={reason}
+                  className="flex gap-3 rounded-[1.7rem] border border-white/65 bg-[linear-gradient(135deg,rgba(255,255,255,0.64),rgba(255,255,255,0.50)_46%,rgba(219,234,254,0.32))] px-4 py-3 shadow-[0_22px_52px_-38px_rgba(37,99,235,0.24)] backdrop-blur-xl"
+                >
+                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-white/70 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.95),rgba(204,251,241,0.72)_42%,rgba(20,184,166,0.92))] text-white shadow-[0_10px_28px_-14px_rgba(20,184,166,0.7)]">
+                    <CheckCircle2 className="h-5 w-5" />
+                  </span>
                   <p className="text-sm leading-6 text-muted-foreground">{reason}</p>
                 </div>
               ))}
@@ -566,13 +690,19 @@ function Features() {
             {items.map((feature) => (
               <div
                 key={feature.title}
-                className="surface-panel group p-6 transition-all hover:-translate-y-1 hover:shadow-elegant"
+                className="group relative overflow-hidden rounded-[1.9rem] border border-white/70 bg-[linear-gradient(145deg,rgba(255,255,255,0.68),rgba(255,255,255,0.52)_48%,rgba(219,234,254,0.34)_100%)] p-6 shadow-[0_26px_62px_-36px_rgba(37,99,235,0.22)] backdrop-blur-xl transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1 hover:border-white/85 hover:shadow-[0_30px_70px_-34px_rgba(37,99,235,0.3)]"
               >
-                <span className="grid h-11 w-11 place-items-center rounded-xl bg-primary-soft text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.22),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(191,219,254,0.24),transparent_34%)] opacity-90" />
+                <div className="pointer-events-none absolute inset-[1px] rounded-[calc(1.9rem-1px)] border border-white/14" />
+                <span className="relative grid h-14 w-14 place-items-center rounded-2xl border border-white/75 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.98),rgba(204,251,241,0.76)_40%,rgba(20,184,166,0.16)_70%,rgba(255,255,255,0.08))] text-primary shadow-[0_14px_34px_-20px_rgba(20,184,166,0.62)] transition-all duration-300 group-hover:scale-[1.04] group-hover:shadow-[0_18px_40px_-18px_rgba(20,184,166,0.72)]">
                   <feature.icon className="h-5 w-5" />
                 </span>
-                <h3 className="mt-4 font-display text-lg font-bold">{feature.title}</h3>
-                <p className="mt-1.5 text-sm leading-6 text-muted-foreground">{feature.body}</p>
+                <h3 className="relative mt-4 font-display text-lg font-bold text-foreground">
+                  {feature.title}
+                </h3>
+                <p className="relative mt-1.5 text-sm leading-7 text-muted-foreground">
+                  {feature.body}
+                </p>
               </div>
             ))}
           </div>
@@ -734,17 +864,49 @@ function Flow() {
 
 function LightToDarkWaveDivider() {
   return (
-    <div className="relative isolate h-24 overflow-hidden bg-transparent sm:h-28">
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0)_0%,rgba(219,234,254,0.18)_34%,rgba(20,184,166,0.12)_64%,rgba(6,27,47,0.18)_100%)]" />
-      <div className="absolute inset-0 opacity-[0.1] [background-image:radial-gradient(rgba(148,163,184,0.68)_1px,transparent_1px)] [background-size:110px_110px]" />
-      <div className="absolute inset-x-[10%] top-6 h-16 bg-[radial-gradient(ellipse_at_center,rgba(20,184,166,0.26),rgba(37,99,235,0.18)_44%,rgba(255,255,255,0)_78%)] blur-3xl" />
-      <div className="absolute left-[6%] top-0 h-full w-20 bg-[linear-gradient(180deg,rgba(20,184,166,0.16),rgba(6,27,47,0))] blur-3xl" />
-      <div className="absolute right-[10%] top-0 h-full w-24 bg-[linear-gradient(180deg,rgba(37,99,235,0.16),rgba(6,27,47,0))] blur-3xl" />
+    <div className="relative isolate h-28 overflow-hidden bg-transparent sm:h-32">
+      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0)_0%,rgba(219,234,254,0.14)_30%,rgba(20,184,166,0.08)_58%,rgba(6,27,47,0.12)_100%)]" />
+      <div className="absolute inset-0 opacity-[0.07] [background-image:radial-gradient(rgba(148,163,184,0.68)_1px,transparent_1px)] [background-size:120px_120px]" />
+      <div className="absolute left-[12%] top-8 h-14 w-44 bg-[radial-gradient(ellipse_at_center,rgba(20,184,166,0.18),rgba(255,255,255,0)_74%)] blur-3xl" />
+      <div className="absolute right-[14%] top-10 h-16 w-52 bg-[radial-gradient(ellipse_at_center,rgba(37,99,235,0.18),rgba(255,255,255,0)_74%)] blur-3xl" />
+
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 1440 220"
+        preserveAspectRatio="none"
+        className="absolute inset-x-0 bottom-0 h-full w-full"
+      >
+        <defs>
+          <linearGradient id="waitless-wave-glow" x1="0%" x2="100%" y1="0%" y2="0%">
+            <stop offset="0%" stopColor="rgba(20,184,166,0.00)" />
+            <stop offset="18%" stopColor="rgba(20,184,166,0.24)" />
+            <stop offset="50%" stopColor="rgba(255,255,255,0.30)" />
+            <stop offset="78%" stopColor="rgba(37,99,235,0.20)" />
+            <stop offset="100%" stopColor="rgba(37,99,235,0.00)" />
+          </linearGradient>
+        </defs>
+        <path
+          d="M0 112C132 100 260 108 396 100C566 90 714 92 862 110C1010 128 1146 104 1274 112C1356 118 1412 122 1440 126V220H0Z"
+          fill="#061b2f"
+        />
+        <path
+          d="M0 112C132 100 260 108 396 100C566 90 714 92 862 110C1010 128 1146 104 1274 112C1356 118 1412 122 1440 126"
+          fill="none"
+          stroke="rgba(255,255,255,0.30)"
+          strokeWidth="3"
+          strokeLinecap="round"
+        />
+        <path
+          d="M0 118C152 108 294 114 432 106C582 98 726 100 864 116C996 132 1128 110 1268 116C1354 120 1412 124 1440 128"
+          fill="none"
+          stroke="url(#waitless-wave-glow)"
+          strokeWidth="10"
+          strokeLinecap="round"
+          opacity="0.7"
+        />
+      </svg>
+
       <div className="absolute inset-x-0 bottom-0 h-12 bg-[#061b2f]" />
-      <div className="absolute left-[-14%] right-[64%] bottom-5 h-20 rounded-[100%] bg-[#061b2f]" />
-      <div className="absolute left-[10%] right-[30%] bottom-7 h-20 rounded-[100%] bg-[#061b2f]" />
-      <div className="absolute left-[48%] right-[-10%] bottom-4 h-20 rounded-[100%] bg-[#061b2f]" />
-      <div className="absolute inset-x-[18%] bottom-6 h-10 bg-[radial-gradient(ellipse_at_center,rgba(163,230,53,0.16),rgba(20,184,166,0.12)_48%,rgba(6,27,47,0)_80%)] blur-2xl" />
     </div>
   );
 }

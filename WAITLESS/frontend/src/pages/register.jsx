@@ -3,14 +3,21 @@ import { Link } from "react-router-dom";
 import {
   CheckCircle2,
   ClipboardPlus,
+  History,
   LoaderCircle,
   MessageCircle,
+  RefreshCw,
+  Search,
   ShieldCheck,
   User,
 } from "lucide-react";
 
 import { DEPARTMENTS, PATIENT_CATEGORIES } from "@/services/queueMeta";
-import { fetchQueueMeta, registerPatient } from "@/services/queueApi";
+import {
+  fetchPatientMatches,
+  fetchQueueMeta,
+  registerPatient,
+} from "@/services/queueApi";
 import { useLiveRefresh } from "@/context/LiveRefreshContext";
 import { useApiAction, useApiResource } from "@/hooks/useApiResource";
 
@@ -35,13 +42,18 @@ export default function RegisterPage() {
   const { refreshLiveData } = useLiveRefresh();
   const [submitted, setSubmitted] = useState(null);
   const [form, setForm] = useState(INITIAL_FORM);
+  const [lookupTerm, setLookupTerm] = useState("");
+  const [appliedPatientId, setAppliedPatientId] = useState(null);
 
   const loadMeta = useCallback(() => fetchQueueMeta(), []);
   const metaQuery = useApiResource(loadMeta, { enabled: isBrowser });
+  const patientLookupMutation = useApiAction(fetchPatientMatches);
 
   const registerMutation = useApiAction(registerPatient, {
     onSuccess: (ticket) => {
       setSubmitted(ticket);
+      setAppliedPatientId(null);
+      setLookupTerm("");
       refreshLiveData();
     },
   });
@@ -56,6 +68,38 @@ export default function RegisterPage() {
   function submit(event) {
     event.preventDefault();
     registerMutation.mutate(form);
+  }
+
+  function lookupExistingPatients() {
+    const normalizedLookup = lookupTerm.trim();
+    if (normalizedLookup.length < 2) {
+      return;
+    }
+
+    patientLookupMutation.mutate(normalizedLookup);
+  }
+
+  function applyReturningPatient(profile) {
+    setForm((current) => ({
+      ...current,
+      fullName: profile.patientName ?? "",
+      nationalId: profile.nationalId ?? "",
+      dob: profile.dob ?? "",
+      gender: profile.gender ?? current.gender,
+      phone: profile.phone ?? "",
+      address: profile.address ?? "",
+      patientCategory: profile.patientCategory ?? current.patientCategory,
+      nextOfKinName: profile.nextOfKinName ?? "",
+      nextOfKinPhone: profile.nextOfKinPhone ?? "",
+      dept: profile.lastDepartment ?? current.dept,
+    }));
+    setAppliedPatientId(profile.id);
+    setLookupTerm(profile.patientName ?? "");
+  }
+
+  function resetRegistrationForm() {
+    setForm(INITIAL_FORM);
+    setAppliedPatientId(null);
   }
 
   if (submitted) {
@@ -128,7 +172,7 @@ export default function RegisterPage() {
             <button
               onClick={() => {
                 setSubmitted(null);
-                setForm(INITIAL_FORM);
+                resetRegistrationForm();
               }}
               className="rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
             >
@@ -217,6 +261,95 @@ export default function RegisterPage() {
               <User className="h-3.5 w-3.5" />
               Front desk ready
             </span>
+          </div>
+
+          <div className="surface-panel-muted mt-6 px-4 py-4 sm:px-5">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                  Returning patient search
+                </div>
+                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
+                  Search by patient name, phone number, national ID, or a previous
+                  ticket code to reuse demographics and review recent visits.
+                </p>
+              </div>
+              {appliedPatientId ? (
+                <span className="inline-flex items-center gap-2 rounded-full border border-priority-green/20 bg-priority-green/10 px-3 py-1.5 text-xs font-semibold text-priority-green">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  Existing record applied
+                </span>
+              ) : null}
+            </div>
+
+            <div className="mt-4 flex flex-col gap-3 lg:flex-row">
+              <label className="relative flex-1">
+                <span className="sr-only">Search returning patients</span>
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={lookupTerm}
+                  onChange={(event) => setLookupTerm(event.target.value)}
+                  className="input-base pl-10"
+                  placeholder="Search name, phone, national ID, or ticket"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={lookupExistingPatients}
+                disabled={patientLookupMutation.isPending || lookupTerm.trim().length < 2}
+                className="inline-flex items-center justify-center gap-2 rounded-xl gradient-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-elegant disabled:opacity-70"
+              >
+                {patientLookupMutation.isPending ? (
+                  <>
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
+                    Searching...
+                  </>
+                ) : (
+                  <>
+                    <Search className="h-4 w-4" />
+                    Search records
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={resetRegistrationForm}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background/80 px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+              >
+                <RefreshCw className="h-4 w-4" />
+                New blank form
+              </button>
+            </div>
+
+            {patientLookupMutation.isError && (
+              <div className="mt-4 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                {patientLookupMutation.error.message}
+              </div>
+            )}
+
+            {patientLookupMutation.data ? (
+              patientLookupMutation.data.length ? (
+                <div className="mt-4 grid gap-3">
+                  {patientLookupMutation.data.map((profile) => (
+                    <ReturningPatientCard
+                      key={profile.id}
+                      profile={profile}
+                      isApplied={appliedPatientId === profile.id}
+                      onApply={() => applyReturningPatient(profile)}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-4 rounded-2xl border border-dashed border-border bg-background/70 px-4 py-4 text-sm text-muted-foreground">
+                  No previous patient record matched that search yet.
+                </div>
+              )
+            ) : (
+              <div className="mt-4 rounded-2xl border border-dashed border-border bg-background/70 px-4 py-4 text-sm text-muted-foreground">
+                Search the existing register before capturing a new patient to avoid
+                duplicate records and reuse known details.
+              </div>
+            )}
           </div>
 
           <div className="mt-6 grid gap-5 sm:grid-cols-2">
@@ -443,6 +576,111 @@ function InfoCard({ icon: Icon, title, body }) {
       <p className="mt-1 text-sm leading-6 text-muted-foreground">{body}</p>
     </div>
   );
+}
+
+function ReturningPatientCard({ profile, isApplied, onApply }) {
+  return (
+    <article
+      className={`rounded-[1.6rem] border px-4 py-4 transition-all ${
+        isApplied
+          ? "border-primary/20 bg-primary-soft/45 shadow-card"
+          : "border-border/70 bg-background/80"
+      }`}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="font-display text-lg font-bold tracking-tight">
+              {profile.patientName}
+            </div>
+            <span className="rounded-full bg-primary-soft px-2.5 py-1 text-[11px] font-semibold text-primary">
+              {profile.totalVisits} visit{profile.totalVisits === 1 ? "" : "s"}
+            </span>
+          </div>
+
+          <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+            {profile.phone ? (
+              <span className="rounded-full bg-background/85 px-2.5 py-1 font-semibold">
+                {profile.phone}
+              </span>
+            ) : null}
+            {profile.nationalId ? (
+              <span className="rounded-full bg-background/85 px-2.5 py-1 font-semibold">
+                {profile.nationalId}
+              </span>
+            ) : null}
+            {profile.patientCategory ? (
+              <span className="rounded-full bg-background/85 px-2.5 py-1 font-semibold capitalize">
+                {profile.patientCategory.replaceAll("-", " ")}
+              </span>
+            ) : null}
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={onApply}
+          className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors ${
+            isApplied
+              ? "bg-primary text-primary-foreground"
+              : "border border-border bg-card text-foreground hover:bg-muted"
+          }`}
+        >
+          <History className="h-4 w-4" />
+          {isApplied ? "Applied" : "Use record"}
+        </button>
+      </div>
+
+      <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
+        <LookupMeta label="Last visit" value={formatVisitDate(profile.lastVisitAt)} />
+        <LookupMeta label="Last department" value={profile.lastDepartment || "Unknown"} />
+        <LookupMeta label="Latest ticket" value={profile.lastTicket || "Not available"} />
+      </div>
+
+      {profile.recentVisits?.length ? (
+        <div className="mt-4">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+            Recent visits
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {profile.recentVisits.map((visit) => (
+              <span
+                key={`${profile.id}-${visit.ticket}`}
+                className="rounded-full border border-border/70 bg-background/85 px-3 py-1.5 text-[11px] font-semibold text-muted-foreground"
+              >
+                {visit.ticket} · {visit.department} · {visit.status}
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </article>
+  );
+}
+
+function LookupMeta({ label, value }) {
+  return (
+    <div className="rounded-2xl border border-border/70 bg-background/70 px-3 py-3">
+      <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+        {label}
+      </div>
+      <div className="mt-1 font-medium text-foreground">{value}</div>
+    </div>
+  );
+}
+
+function formatVisitDate(value) {
+  if (!value) {
+    return "Not available";
+  }
+
+  return new Date(value).toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 }
 
 function Field({ label, children, required, full }) {

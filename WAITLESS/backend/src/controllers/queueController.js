@@ -7,6 +7,7 @@ import {
   getTicketTracking,
   getQueueBoard,
   getTickets,
+  searchPatients,
   recallMissedPatient,
   registerPatient,
   transferPatient,
@@ -52,6 +53,15 @@ export async function registerController({ body }) {
     status: 201,
     body: {
       ticket: await registerPatient(body ?? {}),
+    },
+  };
+}
+
+export async function patientSearchController({ query }) {
+  return {
+    status: 200,
+    body: {
+      patients: await searchPatients(query.get("query") ?? ""),
     },
   };
 }

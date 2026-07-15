@@ -413,6 +413,165 @@ export async function getTickets(filters = {}) {
   return sortAllTickets(tickets);
 }
 
+function buildPatientProfileKey(ticket) {
+  const normalizedNationalId = ticket.nationalId?.trim().toLowerCase();
+  if (normalizedNationalId) {
+    return `nid:${normalizedNationalId}`;
+  }
+
+  const normalizedPhone = ticket.phone?.trim();
+  if (normalizedPhone) {
+    return `phone:${normalizedPhone}`;
+  }
+
+  const normalizedName = ticket.patientName?.trim().toLowerCase() ?? "unknown";
+  return `name:${normalizedName}|dob:${ticket.dob ?? ""}`;
+}
+
+function buildPatientProfiles(tickets) {
+  const profiles = new Map();
+  const visits = [...tickets].sort(
+    (left, right) =>
+      new Date(right.registeredAt).getTime() - new Date(left.registeredAt).getTime(),
+  );
+
+  for (const ticket of visits) {
+    const key = buildPatientProfileKey(ticket);
+    const existing =
+      profiles.get(key) ??
+      {
+        id: key,
+        patientName: ticket.patientName,
+        nationalId: ticket.nationalId ?? "",
+        dob: ticket.dob ?? "",
+        gender: ticket.gender ?? "unknown",
+        phone: ticket.phone ?? "",
+        address: ticket.address ?? "",
+        patientCategory: ticket.patientCategory ?? "walk-in",
+        nextOfKinName: ticket.nextOfKinName ?? "",
+        nextOfKinPhone: ticket.nextOfKinPhone ?? "",
+        lastDepartment: ticket.department,
+        lastTicket: ticket.ticket,
+        lastVisitAt: ticket.registeredAt,
+        totalVisits: 0,
+        recentVisits: [],
+      };
+
+    existing.totalVisits += 1;
+    existing.phone ||= ticket.phone ?? "";
+    existing.address ||= ticket.address ?? "";
+    existing.nationalId ||= ticket.nationalId ?? "";
+    existing.dob ||= ticket.dob ?? "";
+    existing.gender ||= ticket.gender ?? "unknown";
+    existing.patientCategory ||= ticket.patientCategory ?? "walk-in";
+    existing.nextOfKinName ||= ticket.nextOfKinName ?? "";
+    existing.nextOfKinPhone ||= ticket.nextOfKinPhone ?? "";
+
+    if (
+      new Date(ticket.registeredAt).getTime() >=
+      new Date(existing.lastVisitAt).getTime()
+    ) {
+      existing.lastDepartment = ticket.department;
+      existing.lastTicket = ticket.ticket;
+      existing.lastVisitAt = ticket.registeredAt;
+    }
+
+    if (existing.recentVisits.length < 5) {
+      existing.recentVisits.push({
+        ticket: ticket.ticket,
+        department: ticket.department,
+        priority: ticket.priority,
+        status: ticket.status,
+        registeredAt: ticket.registeredAt,
+      });
+    }
+
+    profiles.set(key, existing);
+  }
+
+  return [...profiles.values()];
+}
+
+function scorePatientProfile(profile, normalizedQuery) {
+  if (!normalizedQuery) {
+    return 0;
+  }
+
+  const patientName = profile.patientName?.toLowerCase() ?? "";
+  const phone = profile.phone?.toLowerCase() ?? "";
+  const nationalId = profile.nationalId?.toLowerCase() ?? "";
+  const lastTicket = profile.lastTicket?.toLowerCase() ?? "";
+  const recentTickets = profile.recentVisits.map((visit) => visit.ticket.toLowerCase());
+  const recentDepartments = profile.recentVisits.map((visit) =>
+    visit.department.toLowerCase(),
+  );
+
+  if (recentTickets.includes(normalizedQuery) || lastTicket === normalizedQuery) {
+    return 420;
+  }
+
+  if (nationalId && nationalId === normalizedQuery) {
+    return 360;
+  }
+
+  if (phone && phone === normalizedQuery) {
+    return 340;
+  }
+
+  if (patientName.startsWith(normalizedQuery)) {
+    return 280;
+  }
+
+  if (patientName.includes(normalizedQuery)) {
+    return 220;
+  }
+
+  if (nationalId.includes(normalizedQuery)) {
+    return 200;
+  }
+
+  if (phone.includes(normalizedQuery)) {
+    return 190;
+  }
+
+  if (recentTickets.some((ticket) => ticket.includes(normalizedQuery))) {
+    return 170;
+  }
+
+  if (recentDepartments.some((department) => department.includes(normalizedQuery))) {
+    return 90;
+  }
+
+  return 0;
+}
+
+export async function searchPatients(queryText) {
+  const normalizedQuery = queryText?.trim().toLowerCase() ?? "";
+  if (normalizedQuery.length < 2) {
+    return [];
+  }
+
+  const tickets = await listTickets();
+  const profiles = buildPatientProfiles(tickets);
+
+  return profiles
+    .map((profile) => ({
+      profile,
+      score: scorePatientProfile(profile, normalizedQuery),
+    }))
+    .filter((entry) => entry.score > 0)
+    .sort(
+      (left, right) =>
+        right.score - left.score ||
+        new Date(right.profile.lastVisitAt).getTime() -
+          new Date(left.profile.lastVisitAt).getTime() ||
+        right.profile.totalVisits - left.profile.totalVisits ||
+        left.profile.patientName.localeCompare(right.profile.patientName),
+    )
+    .slice(0, 8)
+    .map((entry) => entry.profile);
+}
+
 export async function registerPatient(payload) {
   const patientName = payload.fullName?.trim();
   const department = payload.dept ?? payload.department ?? "OPD";

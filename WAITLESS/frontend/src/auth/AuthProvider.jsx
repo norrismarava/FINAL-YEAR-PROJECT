@@ -8,6 +8,11 @@ import {
   getStoredAuthToken,
   storeAuthSession,
 } from "@/services/authSession";
+import {
+  decorateStaffUser,
+  getStoredStaffWorkspaceProfile,
+  storeStaffWorkspaceProfile,
+} from "@/services/staffProfilePrefs";
 
 const AuthContext = createContext({
   user: null,
@@ -18,6 +23,7 @@ const AuthContext = createContext({
   login: async () => {},
   logout: () => {},
   hasRole: () => false,
+  updateProfile: () => {},
 });
 
 function isExpired(expiresAt) {
@@ -42,14 +48,14 @@ export function AuthProvider({ children }) {
     }
 
     setToken(storedToken);
-    setUser(storedUser);
+    setUser(decorateStaffUser(storedUser));
     setExpiresAt(storedExpiry);
 
     fetchCurrentStaff()
       .then((session) => {
         storeAuthSession(session);
         setToken(session.token);
-        setUser(session.user);
+        setUser(decorateStaffUser(session.user));
         setExpiresAt(session.expiresAt);
       })
       .catch(() => {
@@ -63,12 +69,16 @@ export function AuthProvider({ children }) {
 
   async function login(credentials) {
     const session = await loginStaff(credentials);
+    const nextUser = decorateStaffUser(session.user);
 
     storeAuthSession(session);
     setToken(session.token);
-    setUser(session.user);
+    setUser(nextUser);
     setExpiresAt(session.expiresAt);
-    return session;
+    return {
+      ...session,
+      user: nextUser,
+    };
   }
 
   function logout() {
@@ -86,6 +96,27 @@ export function AuthProvider({ children }) {
     return user.role === "admin" || roles.includes(user.role);
   }
 
+  function updateProfile(updates) {
+    setUser((currentUser) => {
+      if (!currentUser) {
+        return currentUser;
+      }
+
+      const nextProfile = {
+        ...getStoredStaffWorkspaceProfile(currentUser.id),
+        ...currentUser.workspaceProfile,
+        ...updates,
+      };
+
+      storeStaffWorkspaceProfile(currentUser.id, nextProfile);
+
+      return {
+        ...currentUser,
+        workspaceProfile: nextProfile,
+      };
+    });
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -97,6 +128,7 @@ export function AuthProvider({ children }) {
         login,
         logout,
         hasRole,
+        updateProfile,
       }}
     >
       {children}
