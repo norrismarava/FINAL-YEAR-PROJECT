@@ -3,7 +3,14 @@ import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-do
 import { ArrowUpRight, LogOut, ShieldCheck, Stethoscope, Settings, HelpCircle, UserRound } from "lucide-react";
 =======
 import { useEffect, useRef, useState } from "react";
-import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
+import {
+  Link,
+  Navigate,
+  NavLink,
+  Outlet,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import {
   ArrowUpRight,
   ChevronDown,
@@ -29,6 +36,7 @@ import {
 
 >>>>>>> 1b9b1e0 (frontend: auth pages modified-next staff dashboard page(s))
 import { AuthProvider, useAuth } from "@/auth/AuthProvider";
+import { LoadingPanel } from "@/components/ui/system-loader";
 import { WaitLessLogo } from "@/components/WaitLessLogo";
 import { LiveRefreshProvider } from "@/context/LiveRefreshContext";
 import {
@@ -188,8 +196,13 @@ function AppScaffold() {
   const auth = useAuth();
   const location = useLocation();
   const isAuthRoute = isAuthPath(location.pathname);
+  const isWorkspaceRoute = isStaffWorkspacePath(location.pathname);
   const showStaffSidebar =
-    auth.isAuthenticated && isStaffWorkspacePath(location.pathname);
+    auth.isAuthenticated && isWorkspaceRoute;
+
+  if (isWorkspaceRoute && auth.isReady && !auth.isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
 
   return (
     <div
@@ -213,7 +226,14 @@ function AppScaffold() {
       <div className="relative flex min-h-screen flex-col">
         <Header />
         <main className="flex-1">
-          {showStaffSidebar ? (
+          {isWorkspaceRoute && !auth.isReady ? (
+            <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+              <LoadingPanel
+                title="Opening your workspace"
+                message="Loading your staff session, profile controls, and role-based access."
+              />
+            </section>
+          ) : showStaffSidebar ? (
             <StaffWorkspaceShell auth={auth}>
               <div
                 key={`${location.pathname}${location.search}`}
@@ -620,13 +640,15 @@ function AccountMenu({ auth, displayName, isAuthRoute, isHomeRoute }) {
           <div className={`my-2 border-t ${dividerClassName}`} />
 
           <div className="space-y-1 px-1 pb-1">
-            <Link
-              to={defaultWorkspacePath}
-              className={`flex items-center gap-3 rounded-2xl px-3 py-3 text-base font-medium transition-colors ${menuItemClassName}`}
-            >
-              <LayoutDashboard className={`h-4.5 w-4.5 ${iconTintClassName}`} />
-              Open workspace
-            </Link>
+            {defaultWorkspacePath !== "/register" ? (
+              <Link
+                to={defaultWorkspacePath}
+                className={`flex items-center gap-3 rounded-2xl px-3 py-3 text-base font-medium transition-colors ${menuItemClassName}`}
+              >
+                <LayoutDashboard className={`h-4.5 w-4.5 ${iconTintClassName}`} />
+                Open workspace
+              </Link>
+            ) : null}
             <Link
               to="/profile"
               className={`flex items-center gap-3 rounded-2xl px-3 py-3 text-base font-medium transition-colors ${menuItemClassName}`}
@@ -680,7 +702,6 @@ function AccountMenu({ auth, displayName, isAuthRoute, isHomeRoute }) {
 }
 
 function StaffWorkspaceShell({ auth, children }) {
-  const location = useLocation();
   const navigate = useNavigate();
   const user = auth.user;
   const displayName =
@@ -695,6 +716,9 @@ function StaffWorkspaceShell({ auth, children }) {
   const workspaceLinks = navItems.filter(
     (item) => item.to !== "/" && (!item.roles || auth.hasRole(item.roles)),
   );
+  const preferredLandingLabel =
+    workspaceLinks.find((item) => item.to === preferredLandingPath)?.label ??
+    "Dashboard";
   const availabilityLabel = user?.workspaceProfile?.availability
     ?.replaceAll("-", " ")
     ?.replace(/\b\w/g, (character) => character.toUpperCase());
@@ -802,7 +826,7 @@ function StaffWorkspaceShell({ auth, children }) {
                 <div className="flex items-start justify-between gap-3">
                   <span className="text-muted-foreground">Preferred launch</span>
                   <span className="text-right font-semibold text-foreground">
-                    {preferredLandingPath.replace("/", "").replaceAll("-", " ") || "dashboard"}
+                    {preferredLandingLabel}
                   </span>
                 </div>
                 <div className="flex items-start justify-between gap-3">
