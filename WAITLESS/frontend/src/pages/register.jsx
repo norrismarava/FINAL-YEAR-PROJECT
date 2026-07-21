@@ -1,15 +1,21 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   CheckCircle2,
   ClipboardPlus,
+  Copy,
   History,
   LoaderCircle,
   MessageCircle,
+  MonitorSmartphone,
+  PhoneCall,
+  QrCode,
   RefreshCw,
+  ScanLine,
   Search,
   ShieldCheck,
   User,
+  X,
 } from "lucide-react";
 
 import { DEPARTMENTS, PATIENT_CATEGORIES } from "@/services/queueMeta";
@@ -23,6 +29,7 @@ import { useApiAction, useApiResource } from "@/hooks/useApiResource";
 
 const isBrowser = typeof window !== "undefined";
 const INITIAL_FORM = {
+  patientId: null,
   fullName: "",
   nationalId: "",
   dob: "",
@@ -44,6 +51,8 @@ export default function RegisterPage() {
   const [form, setForm] = useState(INITIAL_FORM);
   const [lookupTerm, setLookupTerm] = useState("");
   const [appliedPatientId, setAppliedPatientId] = useState(null);
+  const [scannerOpen, setScannerOpen] = useState(false);
+  const [handoffState, setHandoffState] = useState("");
 
   const loadMeta = useCallback(() => fetchQueueMeta(), []);
   const metaQuery = useApiResource(loadMeta, { enabled: isBrowser });
@@ -54,6 +63,7 @@ export default function RegisterPage() {
       setSubmitted(ticket);
       setAppliedPatientId(null);
       setLookupTerm("");
+      setHandoffState("");
       refreshLiveData();
     },
   });
@@ -82,6 +92,7 @@ export default function RegisterPage() {
   function applyReturningPatient(profile) {
     setForm((current) => ({
       ...current,
+      patientId: profile.id,
       fullName: profile.patientName ?? "",
       nationalId: profile.nationalId ?? "",
       dob: profile.dob ?? "",
@@ -94,12 +105,31 @@ export default function RegisterPage() {
       dept: profile.lastDepartment ?? current.dept,
     }));
     setAppliedPatientId(profile.id);
-    setLookupTerm(profile.patientName ?? "");
+    setLookupTerm(profile.patientNumber ?? profile.patientName ?? "");
   }
 
   function resetRegistrationForm() {
     setForm(INITIAL_FORM);
     setAppliedPatientId(null);
+    setLookupTerm("");
+    setHandoffState("");
+  }
+
+  function applyQrLookup(value) {
+    setLookupTerm(value);
+    setScannerOpen(false);
+    patientLookupMutation.mutate(value);
+  }
+
+  async function copyRegistrationValue(value, label) {
+    try {
+      await copyTextToClipboard(value);
+      setHandoffState(label);
+      window.setTimeout(() => setHandoffState(""), 2200);
+    } catch (error) {
+      setHandoffState("Copy is not available on this device yet.");
+      window.setTimeout(() => setHandoffState(""), 2600);
+    }
   }
 
   if (submitted) {
@@ -164,6 +194,79 @@ export default function RegisterPage() {
                 icon={User}
                 title="Next step"
                 body="Keep the ticket code handy to track progress at any time from the patient view."
+              />
+            </div>
+          </div>
+
+          <div className="surface-panel-muted mt-8 grid gap-5 px-5 py-5 sm:px-6 lg:grid-cols-[0.95fr_1.05fr]">
+            <div>
+              <div className="eyebrow">Module 02 handoff</div>
+              <h2 className="mt-2 font-display text-2xl font-bold tracking-tight">
+                Open patient self-service now
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                The patient can use the tracker immediately on a phone, reception
+                kiosk, or support desk to follow queue movement and review alerts.
+              </p>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <HandoffMeta label="Ticket code" value={submitted.ticket} />
+                <HandoffMeta
+                  label="Tracking link"
+                  value={buildTrackingUrl(submitted.ticket)}
+                />
+              </div>
+
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={() =>
+                    copyRegistrationValue(submitted.ticket, "Ticket code copied.")
+                  }
+                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-background/80 px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+                >
+                  <Copy className="h-4 w-4 text-primary" />
+                  Copy ticket
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    copyRegistrationValue(
+                      buildTrackingUrl(submitted.ticket),
+                      "Tracking link copied.",
+                    )
+                  }
+                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-background/80 px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+                >
+                  <Copy className="h-4 w-4 text-primary" />
+                  Copy tracking link
+                </button>
+              </div>
+
+              <div className="mt-4 min-h-6 text-sm font-medium text-primary">
+                {handoffState || "Copy the ticket or the tracking link for the patient before they leave the desk."}
+              </div>
+            </div>
+
+            <div className="grid gap-3">
+              <HandoffSupportCard
+                icon={MonitorSmartphone}
+                title="Phone-ready tracking"
+                body="Patients can keep checking position, wait guidance, and notification history from the track page."
+              />
+              <HandoffSupportCard
+                icon={MessageCircle}
+                title="Alert continuity"
+                body={
+                  submitted.whatsApp
+                    ? "WhatsApp queue alerts are active, so the patient tracker and phone updates stay in sync."
+                    : "This patient is on board-only updates, so the tracker and queue board become the main patient-facing view."
+                }
+              />
+              <HandoffSupportCard
+                icon={PhoneCall}
+                title="Reception fallback"
+                body="If the patient misses a step, reception can reopen the tracker and guide them with the same ticket code."
               />
             </div>
           </div>
@@ -270,8 +373,8 @@ export default function RegisterPage() {
                   Returning patient search
                 </div>
                 <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                  Search by patient name, phone number, national ID, or a previous
-                  ticket code to reuse demographics and review recent visits.
+                  Search by patient name, phone number, national ID, patient number,
+                  previous ticket, or scan their WaitLess QR code.
                 </p>
               </div>
               {appliedPatientId ? (
@@ -290,7 +393,7 @@ export default function RegisterPage() {
                   value={lookupTerm}
                   onChange={(event) => setLookupTerm(event.target.value)}
                   className="input-base pl-10"
-                  placeholder="Search name, phone, national ID, or ticket"
+                  placeholder="Name, phone, national ID, patient number, or ticket"
                 />
               </label>
               <button
@@ -310,6 +413,14 @@ export default function RegisterPage() {
                     Search records
                   </>
                 )}
+              </button>
+              <button
+                type="button"
+                onClick={() => setScannerOpen(true)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary-soft/70 px-4 py-3 text-sm font-semibold text-primary transition-colors hover:bg-primary-soft"
+              >
+                <ScanLine className="h-4 w-4" />
+                Scan QR
               </button>
               <button
                 type="button"
@@ -351,6 +462,13 @@ export default function RegisterPage() {
               </div>
             )}
           </div>
+
+          {scannerOpen ? (
+            <QrPatientScanner
+              onClose={() => setScannerOpen(false)}
+              onScan={applyQrLookup}
+            />
+          ) : null}
 
           <div className="mt-6 grid gap-5 sm:grid-cols-2">
             <Field label="Full name" required>
@@ -578,6 +696,33 @@ function InfoCard({ icon: Icon, title, body }) {
   );
 }
 
+function HandoffMeta({ label, value }) {
+  return (
+    <div className="rounded-2xl border border-border/70 bg-background/80 px-4 py-3">
+      <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+        {label}
+      </div>
+      <div className="mt-1 break-all text-sm font-semibold text-foreground">{value}</div>
+    </div>
+  );
+}
+
+function HandoffSupportCard({ icon: Icon, title, body }) {
+  return (
+    <div className="rounded-2xl border border-border/70 bg-background/80 px-4 py-4">
+      <div className="flex items-start gap-3">
+        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">
+          <Icon className="h-4.5 w-4.5" />
+        </span>
+        <div>
+          <div className="font-semibold">{title}</div>
+          <p className="mt-1 text-sm leading-6 text-muted-foreground">{body}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ReturningPatientCard({ profile, isApplied, onApply }) {
   return (
     <article
@@ -599,6 +744,12 @@ function ReturningPatientCard({ profile, isApplied, onApply }) {
           </div>
 
           <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+            {profile.patientNumber ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2.5 py-1 font-semibold text-primary">
+                <QrCode className="h-3 w-3" />
+                {profile.patientNumber}
+              </span>
+            ) : null}
             {profile.phone ? (
               <span className="rounded-full bg-background/85 px-2.5 py-1 font-semibold">
                 {profile.phone}
@@ -658,6 +809,95 @@ function ReturningPatientCard({ profile, isApplied, onApply }) {
   );
 }
 
+function QrPatientScanner({ onClose, onScan }) {
+  const scannerId = `patient-qr-${useId().replaceAll(":", "")}`;
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let scanner = null;
+    let cancelled = false;
+
+    async function startScanner() {
+      try {
+        const { Html5Qrcode } = await import("html5-qrcode");
+        if (cancelled) return;
+
+        scanner = new Html5Qrcode(scannerId);
+        await scanner.start(
+          { facingMode: "environment" },
+          { fps: 10, qrbox: { width: 230, height: 230 } },
+          (decodedText) => onScan(decodedText),
+          () => {},
+        );
+      } catch (scannerError) {
+        if (!cancelled) {
+          setError(
+            scannerError?.message ||
+              "Camera access is unavailable. Enter the patient number in the search field instead.",
+          );
+        }
+      }
+    }
+
+    startScanner();
+
+    return () => {
+      cancelled = true;
+      if (scanner?.isScanning) {
+        scanner
+          .stop()
+          .catch(() => {})
+          .finally(() => scanner.clear());
+      } else {
+        scanner?.clear();
+      }
+    };
+  }, [onScan, scannerId]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="patient-qr-title"
+      className="fixed inset-0 z-[100] grid place-items-center bg-slate-950/80 px-4 py-6 backdrop-blur-sm"
+    >
+      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-2xl">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="eyebrow">Patient lookup</div>
+            <h2 id="patient-qr-title" className="mt-2 font-display text-xl font-bold">
+              Scan WaitLess QR
+            </h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close QR scanner"
+            className="grid h-10 w-10 place-items-center rounded-xl border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="mt-4 min-h-72 overflow-hidden rounded-xl border border-border bg-slate-950 p-2">
+          <div id={scannerId} className="min-h-64 w-full" />
+        </div>
+
+        {error ? (
+          <div className="mt-4 rounded-xl border border-destructive/25 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {error}
+          </div>
+        ) : (
+          <p className="mt-4 text-sm leading-6 text-muted-foreground">
+            Hold the patient QR card inside the frame. The matching patient record will
+            open automatically.
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function LookupMeta({ label, value }) {
   return (
     <div className="rounded-2xl border border-border/70 bg-background/70 px-3 py-3">
@@ -693,4 +933,39 @@ function Field({ label, children, required, full }) {
       {children}
     </label>
   );
+}
+
+function buildTrackingUrl(ticketCode) {
+  const targetPath = `/track?ticket=${encodeURIComponent(ticketCode)}`;
+
+  if (typeof window === "undefined") {
+    return targetPath;
+  }
+
+  return `${window.location.origin}${targetPath}`;
+}
+
+async function copyTextToClipboard(value) {
+  if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(value);
+    return;
+  }
+
+  if (typeof document === "undefined") {
+    throw new Error("Clipboard is not available.");
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = value;
+  textarea.setAttribute("readonly", "true");
+  textarea.style.position = "absolute";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+
+  try {
+    document.execCommand("copy");
+  } finally {
+    document.body.removeChild(textarea);
+  }
 }

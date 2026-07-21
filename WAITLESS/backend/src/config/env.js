@@ -53,7 +53,7 @@ function parseJson(value, fallback) {
 }
 
 export const env = {
-  port: Number(process.env.PORT ?? 4000),
+  port: Number(process.env.PORT ?? 4242),
   corsOrigin: process.env.CORS_ORIGIN ?? "*",
   stateFilePath: process.env.STATE_FILE_PATH
     ? path.resolve(process.cwd(), process.env.STATE_FILE_PATH)

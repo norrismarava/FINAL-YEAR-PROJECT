@@ -723,6 +723,277 @@ h4 {
   }
 }
 
+/* =========================================================
+   QUEUE BOARD PREMIUM DISPLAY STYLES
+   ========================================================= */
+
+/* Priority glow pulse animations for now-serving cards */
+@keyframes queueGlowRed {
+  0%, 100% {
+    box-shadow:
+      0 0 0 0 rgba(220, 38, 38, 0),
+      0 18px 50px rgba(220, 38, 38, 0.12);
+  }
+  50% {
+    box-shadow:
+      0 0 28px 6px rgba(220, 38, 38, 0.18),
+      0 18px 50px rgba(220, 38, 38, 0.22);
+  }
+}
+
+@keyframes queueGlowYellow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 0 rgba(245, 158, 11, 0),
+      0 18px 50px rgba(245, 158, 11, 0.12);
+  }
+  50% {
+    box-shadow:
+      0 0 28px 6px rgba(245, 158, 11, 0.18),
+      0 18px 50px rgba(245, 158, 11, 0.22);
+  }
+}
+
+@keyframes queueGlowGreen {
+  0%, 100% {
+    box-shadow:
+      0 0 0 0 rgba(22, 163, 74, 0),
+      0 18px 50px rgba(22, 163, 74, 0.12);
+  }
+  50% {
+    box-shadow:
+      0 0 28px 6px rgba(22, 163, 74, 0.18),
+      0 18px 50px rgba(22, 163, 74, 0.22);
+  }
+}
+
+@keyframes queueGlowBlack {
+  0%, 100% {
+    box-shadow:
+      0 0 0 0 rgba(2, 6, 23, 0),
+      0 18px 50px rgba(2, 6, 23, 0.12);
+  }
+  50% {
+    box-shadow:
+      0 0 28px 6px rgba(2, 6, 23, 0.14),
+      0 18px 50px rgba(2, 6, 23, 0.22);
+  }
+}
+
+.queue-card-pulse-red {
+  animation: queueGlowRed 2.4s ease-in-out infinite;
+}
+
+.queue-card-pulse-yellow {
+  animation: queueGlowYellow 2.4s ease-in-out infinite;
+}
+
+.queue-card-pulse-green {
+  animation: queueGlowGreen 2.4s ease-in-out infinite;
+}
+
+.queue-card-pulse-black {
+  animation: queueGlowBlack 2.4s ease-in-out infinite;
+}
+
+/* Live pulsing dot indicator */
+@keyframes queueLiveDot {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(0.75);
+  }
+}
+
+.queue-live-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #16a34a;
+  animation: queueLiveDot 1.6s ease-in-out infinite;
+  box-shadow: 0 0 6px rgba(22, 163, 74, 0.4);
+}
+
+.queue-live-dot--amber {
+  background: #f59e0b;
+  box-shadow: 0 0 6px rgba(245, 158, 11, 0.4);
+}
+
+/* Queue position badge */
+.queue-position-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 28px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+  background: rgba(15, 118, 110, 0.08);
+  color: #0f766e;
+  border: 1px solid rgba(15, 118, 110, 0.12);
+}
+
+/* Priority color ribbon at top of serving cards */
+.queue-priority-ribbon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: 28px 28px 0 0;
+}
+
+.queue-priority-ribbon--red {
+  background: linear-gradient(90deg, #dc2626, #ef4444);
+}
+
+.queue-priority-ribbon--yellow {
+  background: linear-gradient(90deg, #f59e0b, #fbbf24);
+}
+
+.queue-priority-ribbon--green {
+  background: linear-gradient(90deg, #16a34a, #22c55e);
+}
+
+.queue-priority-ribbon--black {
+  background: linear-gradient(90deg, #020617, #334155);
+}
+
+/* Missed section amber pulse border */
+@keyframes queueMissedPulse {
+  0%, 100% {
+    border-color: rgba(245, 158, 11, 0.2);
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
+  }
+  50% {
+    border-color: rgba(245, 158, 11, 0.45);
+    box-shadow: 0 0 18px -4px rgba(245, 158, 11, 0.16);
+  }
+}
+
+.queue-missed-pulse {
+  animation: queueMissedPulse 2.8s ease-in-out infinite;
+}
+
+/* Stat card entrance animation */
+@keyframes queueStatEnter {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.95);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.queue-stat-enter {
+  animation: queueStatEnter 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.queue-stat-enter-1 { animation-delay: 0.06s; }
+.queue-stat-enter-2 { animation-delay: 0.12s; }
+.queue-stat-enter-3 { animation-delay: 0.18s; }
+
+/* Priority left-border accent for table rows */
+.queue-row-accent {
+  border-left: 4px solid transparent;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.queue-row-accent--red { border-left-color: #dc2626; }
+.queue-row-accent--yellow { border-left-color: #f59e0b; }
+.queue-row-accent--green { border-left-color: #16a34a; }
+.queue-row-accent--black { border-left-color: #020617; }
+
+/* Queue board empty state */
+.queue-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.queue-empty-state-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: rgba(20, 184, 166, 0.08);
+  color: #0f766e;
+}
+
+/* Serving card shine overlay */
+.queue-serving-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.queue-serving-shine::after {
+  content: "";
+  position: absolute;
+  inset: -120% auto auto -40%;
+  width: 42%;
+  height: 300%;
+  transform: rotate(25deg);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.18),
+    transparent
+  );
+  animation: shineSweep 7s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* ECG line in header dark panel */
+.queue-ecg-line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 36px;
+  opacity: 0.12;
+  background-image: url("data:image/svg+xml,%3Csvg width='900' height='44' viewBox='0 0 900 44' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 24H145L160 24L171 8L185 36L198 24H340L352 24L363 14L377 31L391 24H900' fill='none' stroke='%232dd4bf' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-size: 900px 36px;
+  background-repeat: repeat-x;
+  animation: ecgMove 18s linear infinite;
+  pointer-events: none;
+}
+
+/* Status pulsing dot for "in service" */
+@keyframes statusPulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 currentColor;
+  }
+  50% {
+    opacity: 0.7;
+    box-shadow: 0 0 0 4px transparent;
+  }
+}
+
+.queue-status-pulse {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: statusPulse 1.4s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

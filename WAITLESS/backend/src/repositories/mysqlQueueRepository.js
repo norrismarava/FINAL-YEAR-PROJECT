@@ -1,3 +1,4 @@
+import crypto from "node:crypto";
 import fs from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
@@ -5,6 +6,7 @@ import { env } from "../config/env.js";
 import { createSeedTickets, DEPARTMENTS } from "../modules/queue/queue.constants.js";
 
 const INITIAL_SEQUENCE = 201;
+const INITIAL_PATIENT_SEQUENCE = 1;
 const INITIAL_NOTIFICATION_SEQUENCE = 1;
 const schemaPath = fileURLToPath(new URL("../db/schema.sql", import.meta.url));
 
@@ -41,6 +43,10 @@ async function ensureDatabaseExists() {
 
 function cloneTicket(ticket) {
   return { ...ticket };
+}
+
+function clonePatient(patient) {
+  return { ...patient };
 }
 
 function cloneNotification(notification) {
@@ -149,6 +155,7 @@ function mapTicketRow(row) {
   return {
     id: row.id,
     ticket: row.ticket_code,
+    patientId: row.patient_id ?? null,
     patientName: row.patient_name,
     nationalId: row.national_id ?? "",
     dob: fromSqlDate(row.dob),
@@ -174,6 +181,25 @@ function mapTicketRow(row) {
     recallCount: Number(row.recall_count ?? 0),
     completedAt: fromSqlDateTime(row.completed_at),
     whatsApp: Boolean(row.whatsapp_enabled),
+  };
+}
+
+function mapPatientRow(row) {
+  return {
+    id: row.id,
+    patientNumber: row.patient_number,
+    patientName: row.full_name,
+    nationalId: row.national_id ?? "",
+    dob: fromSqlDate(row.dob),
+    gender: row.gender ?? "unknown",
+    phone: row.phone ?? "",
+    address: row.address ?? "",
+    patientCategory: row.patient_category ?? "walk-in",
+    nextOfKinName: row.next_of_kin_name ?? "",
+    nextOfKinPhone: row.next_of_kin_phone ?? "",
+    createdAt: fromSqlDateTime(row.created_at),
+    updatedAt: fromSqlDateTime(row.updated_at),
+    lastVisitAt: fromSqlDateTime(row.last_visit_at),
   };
 }
 
@@ -229,10 +255,12 @@ async function insertDepartments(connection) {
 
 async function insertCounters(connection) {
   await connection.execute(
-    "INSERT IGNORE INTO system_counters (name, value) VALUES (?, ?), (?, ?)",
+    "INSERT IGNORE INTO system_counters (name, value) VALUES (?, ?), (?, ?), (?, ?)",
     [
       "ticket_sequence",
       INITIAL_SEQUENCE,
+      "patient_sequence",
+      INITIAL_PATIENT_SEQUENCE,
       "notification_sequence",
       INITIAL_NOTIFICATION_SEQUENCE,
     ],
@@ -253,7 +281,35 @@ async function ensureColumn(connection, tableName, columnName, definition) {
   }
 }
 
+async function ensureIndex(connection, tableName, indexName, columns) {
+  const [rows] = await connection.execute(
+    `SELECT INDEX_NAME
+     FROM INFORMATION_SCHEMA.STATISTICS
+     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND INDEX_NAME = ?
+     LIMIT 1`,
+    [env.databaseName, tableName, indexName],
+  );
+
+  if (!rows.length) {
+    await connection.query(
+      `ALTER TABLE ${tableName} ADD INDEX ${indexName} (${columns})`,
+    );
+  }
+}
+
 async function ensureTicketSchema(connection) {
+  await ensureColumn(
+    connection,
+    "tickets",
+    "patient_id",
+    "patient_id CHAR(36) NULL AFTER sequence_number",
+  );
+  await ensureIndex(
+    connection,
+    "tickets",
+    "idx_tickets_patient_id",
+    "patient_id",
+  );
   await ensureColumn(
     connection,
     "tickets",
@@ -316,6 +372,7 @@ async function insertTicket(connection, ticket) {
       id,
       ticket_code,
       sequence_number,
+      patient_id,
       patient_name,
       national_id,
       dob,
@@ -341,11 +398,12 @@ async function insertTicket(connection, ticket) {
       recall_count,
       completed_at,
       whatsapp_enabled
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       ticket.id,
       ticket.ticket,
       getTicketSequence(ticket.ticket),
+      ticket.patientId ?? null,
       ticket.patientName,
       ticket.nationalId ?? "",
       toSqlDate(ticket.dob),
@@ -380,6 +438,7 @@ async function replaceTicket(connection, ticket) {
     `UPDATE tickets SET
       ticket_code = ?,
       sequence_number = ?,
+      patient_id = ?,
       patient_name = ?,
       national_id = ?,
       dob = ?,
@@ -409,6 +468,7 @@ async function replaceTicket(connection, ticket) {
     [
       ticket.ticket,
       getTicketSequence(ticket.ticket),
+      ticket.patientId ?? null,
       ticket.patientName,
       ticket.nationalId ?? "",
       toSqlDate(ticket.dob),
@@ -437,6 +497,195 @@ async function replaceTicket(connection, ticket) {
       ticket.id,
     ],
   );
+}
+
+function toNullableText(value) {
+  const normalized = value?.trim();
+  return normalized || null;
+}
+
+async function insertPatient(connection, patient) {
+  await connection.execute(
+    `INSERT INTO patient_profiles (
+      id,
+      patient_number,
+      full_name,
+      national_id,
+      dob,
+      gender,
+      phone,
+      address,
+      patient_category,
+      next_of_kin_name,
+      next_of_kin_phone,
+      created_at,
+      updated_at,
+      last_visit_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      patient.id,
+      patient.patientNumber,
+      patient.patientName,
+      toNullableText(patient.nationalId),
+      toSqlDate(patient.dob),
+      patient.gender ?? "unknown",
+      toNullableText(patient.phone),
+      patient.address ?? "",
+      patient.patientCategory ?? "walk-in",
+      patient.nextOfKinName ?? "",
+      patient.nextOfKinPhone ?? "",
+      toSqlDateTime(patient.createdAt),
+      toSqlDateTime(patient.updatedAt),
+      toSqlDateTime(patient.lastVisitAt),
+    ],
+  );
+}
+
+async function replacePatient(connection, patient) {
+  await connection.execute(
+    `UPDATE patient_profiles SET
+      patient_number = ?,
+      full_name = ?,
+      national_id = ?,
+      dob = ?,
+      gender = ?,
+      phone = ?,
+      address = ?,
+      patient_category = ?,
+      next_of_kin_name = ?,
+      next_of_kin_phone = ?,
+      updated_at = ?,
+      last_visit_at = ?
+    WHERE id = ?`,
+    [
+      patient.patientNumber,
+      patient.patientName,
+      toNullableText(patient.nationalId),
+      toSqlDate(patient.dob),
+      patient.gender ?? "unknown",
+      toNullableText(patient.phone),
+      patient.address ?? "",
+      patient.patientCategory ?? "walk-in",
+      patient.nextOfKinName ?? "",
+      patient.nextOfKinPhone ?? "",
+      toSqlDateTime(patient.updatedAt),
+      toSqlDateTime(patient.lastVisitAt),
+      patient.id,
+    ],
+  );
+}
+
+function normalizeIdentity(value) {
+  return value?.trim().toLowerCase().replace(/[^a-z0-9]/g, "") ?? "";
+}
+
+function findLegacyPatient(patients, ticket) {
+  const nationalId = normalizeIdentity(ticket.nationalId);
+  const phone = normalizeIdentity(ticket.phone);
+  const name = ticket.patientName?.trim().toLowerCase() ?? "";
+
+  return patients.find((patient) => {
+    if (nationalId && normalizeIdentity(patient.nationalId) === nationalId) {
+      return true;
+    }
+
+    if (
+      phone &&
+      normalizeIdentity(patient.phone) === phone &&
+      patient.patientName.trim().toLowerCase() === name
+    ) {
+      return true;
+    }
+
+    return Boolean(
+      name &&
+        ticket.dob &&
+        patient.patientName.trim().toLowerCase() === name &&
+        patient.dob === ticket.dob,
+    );
+  });
+}
+
+async function getNextCounterFromConnection(connection, name) {
+  const [rows] = await connection.execute(
+    "SELECT value FROM system_counters WHERE name = ?",
+    [name],
+  );
+  const current = Number(rows[0]?.value ?? 1);
+  await connection.execute("UPDATE system_counters SET value = ? WHERE name = ?", [
+    current + 1,
+    name,
+  ]);
+  return current;
+}
+
+function createPatientNumber(sequence) {
+  return `WL-P${String(sequence).padStart(6, "0")}`;
+}
+
+async function migrateLegacyPatients(connection) {
+  const [patientRows] = await connection.execute(
+    "SELECT * FROM patient_profiles ORDER BY created_at",
+  );
+  const patients = patientRows.map(mapPatientRow);
+  const [ticketRows] = await connection.execute(
+    "SELECT * FROM tickets ORDER BY registered_at, ticket_code",
+  );
+
+  for (const row of ticketRows) {
+    const ticket = mapTicketRow(row);
+    let patient = ticket.patientId
+      ? patients.find((entry) => entry.id === ticket.patientId)
+      : null;
+
+    patient ??= findLegacyPatient(patients, ticket);
+
+    if (!patient) {
+      const sequence = await getNextCounterFromConnection(
+        connection,
+        "patient_sequence",
+      );
+      const createdAt = ticket.registeredAt ?? new Date().toISOString();
+      patient = {
+        id: crypto.randomUUID(),
+        patientNumber: createPatientNumber(sequence),
+        patientName: ticket.patientName,
+        nationalId: ticket.nationalId ?? "",
+        dob: ticket.dob ?? "",
+        gender: ticket.gender ?? "unknown",
+        phone: ticket.phone ?? "",
+        address: ticket.address ?? "",
+        patientCategory: ticket.patientCategory ?? "walk-in",
+        nextOfKinName: ticket.nextOfKinName ?? "",
+        nextOfKinPhone: ticket.nextOfKinPhone ?? "",
+        createdAt,
+        updatedAt: createdAt,
+        lastVisitAt: ticket.registeredAt ?? null,
+      };
+      await insertPatient(connection, patient);
+      patients.push(patient);
+    } else if (
+      ticket.registeredAt &&
+      (!patient.lastVisitAt ||
+        new Date(ticket.registeredAt).getTime() > new Date(patient.lastVisitAt).getTime())
+    ) {
+      patient = {
+        ...patient,
+        lastVisitAt: ticket.registeredAt,
+        updatedAt: ticket.registeredAt,
+      };
+      await replacePatient(connection, patient);
+      const patientIndex = patients.findIndex((entry) => entry.id === patient.id);
+      patients[patientIndex] = patient;
+    }
+
+    if (ticket.patientId !== patient.id) {
+      await connection.execute("UPDATE tickets SET patient_id = ? WHERE id = ?", [
+        patient.id,
+        ticket.id,
+      ]);
+    }
+  }
 }
 
 async function insertNotification(connection, notification) {
@@ -663,6 +912,8 @@ export async function initializeQueueRepository() {
         await insertTicket(connection, ticket);
       }
     }
+
+    await migrateLegacyPatients(connection);
   });
 }
 
@@ -712,6 +963,56 @@ export async function updateTicket(id, updater) {
 
 export async function getNextSequence() {
   return getNextCounter("ticket_sequence");
+}
+
+export async function listPatients() {
+  return withConnection(async (connection) => {
+    const [rows] = await connection.execute(
+      "SELECT * FROM patient_profiles ORDER BY updated_at DESC, full_name",
+    );
+    return rows.map(mapPatientRow).map(clonePatient);
+  });
+}
+
+export async function findPatientById(id) {
+  return withConnection(async (connection) => {
+    const [rows] = await connection.execute(
+      "SELECT * FROM patient_profiles WHERE id = ? LIMIT 1",
+      [id],
+    );
+    return rows.length ? clonePatient(mapPatientRow(rows[0])) : null;
+  });
+}
+
+export async function createPatient(patient) {
+  await withConnection((connection) => insertPatient(connection, patient));
+  return clonePatient(patient);
+}
+
+export async function updatePatient(id, updater) {
+  return withTransaction(async (connection) => {
+    const [rows] = await connection.execute(
+      "SELECT * FROM patient_profiles WHERE id = ? LIMIT 1",
+      [id],
+    );
+
+    if (!rows.length) {
+      return null;
+    }
+
+    const current = mapPatientRow(rows[0]);
+    const nextValue =
+      typeof updater === "function"
+        ? await updater(clonePatient(current))
+        : { ...current, ...updater };
+
+    await replacePatient(connection, nextValue);
+    return clonePatient(nextValue);
+  });
+}
+
+export async function getNextPatientSequence() {
+  return getNextCounter("patient_sequence");
 }
 
 export async function listNotifications() {

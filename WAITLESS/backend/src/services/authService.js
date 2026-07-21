@@ -3,25 +3,29 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { env } from "../config/env.js";
+import { saveAvatarImage } from "./avatarService.js";
 import { HttpError } from "../utils/http.js";
 
 const sessions = new Map();
 const passwordResetTokens = new Map();
 
-// Load staff users from file or use env for demo
-let staffUsers = [...env.staffUsers];
-
 const usersFilePath = path.join(process.cwd(), "data", "staff-users.json");
 
-// Load users from file if exists
-if (fs.existsSync(usersFilePath)) {
+function loadStaffUsers() {
+  if (!fs.existsSync(usersFilePath)) {
+    return [...env.staffUsers];
+  }
+
   try {
     const data = fs.readFileSync(usersFilePath, "utf8");
-    staffUsers = JSON.parse(data);
+    return JSON.parse(data);
   } catch (error) {
     console.error("Failed to load staff users from file:", error);
+    return [...env.staffUsers];
   }
 }
+
+let staffUsers = loadStaffUsers();
 
 function saveStaffUsers() {
   try {
@@ -53,6 +57,7 @@ function publicStaffUser(user) {
     role: user.role,
     department: user.department,
     employeeId: user.employeeId,
+    avatarUrl: user.avatarUrl ?? null,
     createdAt: user.createdAt,
     lastLoginAt: user.lastLoginAt,
   };
@@ -110,10 +115,11 @@ function pruneExpiredSessions() {
 
 export function loginStaff({ username, password }) {
   pruneExpiredSessions();
+  staffUsers = loadStaffUsers();
 
-  const user = findStaffUser(username);
+  const user = findStaffUser(username) ?? findStaffUserByEmail(username);
   if (!verifyPassword(user, password)) {
-    throw new HttpError(401, "Invalid username or password.");
+    throw new HttpError(401, "Invalid username, email, or password.");
   }
 
   user.lastLoginAt = new Date().toISOString();
@@ -124,15 +130,44 @@ export function loginStaff({ username, password }) {
 
 export function registerStaff({
   fullName,
+  username,
   email,
   phone,
   department,
   role,
   employeeId,
   password,
+  avatarBase64,
 }) {
+  staffUsers = loadStaffUsers();
+
+  const normalizedUsername = normalizeUsername(username);
+  const normalizedEmail = normalizeEmail(email);
+
+  if (!normalizedUsername) {
+    throw new HttpError(400, "Username is required.");
+  }
+
+  if (!/^[a-z0-9._-]{3,32}$/.test(normalizedUsername)) {
+    throw new HttpError(
+      400,
+      "Username must be 3 to 32 characters and use only letters, numbers, dots, underscores, or hyphens.",
+    );
+  }
+
+  if (!normalizedEmail) {
+    throw new HttpError(400, "Email is required.");
+  }
+
+  if (findStaffUser(normalizedUsername)) {
+    throw new HttpError(
+      400,
+      "A staff account with this username already exists.",
+    );
+  }
+
   // Check if email already exists
-  const existingUser = findStaffUserByEmail(email);
+  const existingUser = findStaffUserByEmail(normalizedEmail);
   if (existingUser) {
     throw new HttpError(400, "A user with this email already exists.");
   }
@@ -145,15 +180,12 @@ export function registerStaff({
     throw new HttpError(400, "A user with this employee ID already exists.");
   }
 
-  // Generate username from email
-  const username = email.split("@")[0];
-
   // Create new user
   const newUser = {
     id: crypto.randomUUID(),
-    username,
+    username: normalizedUsername,
     name: fullName,
-    email,
+    email: normalizedEmail,
     phone,
     department,
     role,
@@ -161,6 +193,10 @@ export function registerStaff({
     password, // In production, this should be hashed
     createdAt: new Date().toISOString(),
   };
+
+  if (avatarBase64) {
+    newUser.avatarUrl = saveAvatarImage(newUser.id, avatarBase64);
+  }
 
   staffUsers.push(newUser);
   saveStaffUsers();
@@ -176,7 +212,8 @@ export function requestPasswordReset({ email }) {
   if (!user) {
     // For security, don't reveal if email exists
     return {
-      message: "If an account with this email exists, a password reset link has been sent.",
+      message:
+        "If an account with this email exists, a password reset link has been sent.",
     };
   }
 
@@ -190,16 +227,19 @@ export function requestPasswordReset({ email }) {
   });
 
   // In production, send email with reset link
-  console.log(`Password reset link for ${email}: http://localhost:3000/reset-password?token=${token}`);
+  console.log(
+    `Password reset link for ${email}: http://localhost:3000/reset-password?token=${token}`,
+  );
 
   return {
-    message: "If an account with this email exists, a password reset link has been sent.",
+    message:
+      "If an account with this email exists, a password reset link has been sent.",
   };
 }
 
 export function resetPassword({ token, password }) {
   const resetData = passwordResetTokens.get(token);
-  
+
   if (!resetData) {
     throw new HttpError(400, "Invalid or expired reset token.");
   }

@@ -27,6 +27,15 @@ export async function registerPatient(payload) {
   return response.ticket;
 }
 
+export async function selfRegisterPatient(payload) {
+  const response = await apiRequest("/api/tickets/self-register", {
+    method: "POST",
+    body: payload,
+  });
+
+  return response.ticket;
+}
+
 export async function fetchPatientMatches(query) {
   const search = new URLSearchParams({ query });
   const response = await apiRequest(`/api/patients/search?${search.toString()}`);

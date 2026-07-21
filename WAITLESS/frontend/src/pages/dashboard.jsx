@@ -1,61 +1,47 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import {
+  Activity,
   AlertTriangle,
   ArrowRight,
-  BellRing,
+  Bell,
   CheckCircle2,
   Clock3,
+  FileText,
+  Hash,
   LoaderCircle,
   MessageCircle,
   RefreshCw,
-  Search,
+  Shield,
   Timer,
-  TrendingUp,
   Users,
-  Wifi,
+  XCircle,
+  Zap,
 } from "lucide-react";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
+import { useAuth } from "@/auth/AuthProvider";
 import { LoadingPanel } from "@/components/ui/system-loader";
 import { useLiveRefresh } from "@/context/LiveRefreshContext";
 import { useApiAction, useApiResource } from "@/hooks/useApiResource";
-import { DEPARTMENTS, PRIORITY_META, STATUS_META, priorityChipClass } from "@/services/queueMeta";
+import { DEPARTMENTS } from "@/services/queueMeta";
 import {
   callNextPatient,
   fetchDashboardSummary,
-  recallTicket,
-  retryNotificationDelivery,
   retryNotificationDeliveries,
-  transferTicket,
-  updateTicketStatus,
 } from "@/services/queueApi";
 import { useQueueRealtime } from "@/sockets/QueueRealtimeProvider";
 
 const isBrowser = typeof window !== "undefined";
 const EMPTY_LIST = [];
-const PRIORITY_ORDER = ["red", "yellow", "green", "black"];
-const STATUS_ORDER = ["waiting", "called", "in-service", "missed", "completed"];
-const LIVE_STATUS_META = {
-  connected: {
-    label: "Live sync",
-    className: "bg-priority-green/15 text-priority-green",
-  },
-  connecting: {
-    label: "Connecting",
-    className: "bg-primary-soft text-primary",
-  },
-  reconnecting: {
-    label: "Reconnecting",
-    className: "bg-muted text-muted-foreground",
-  },
-  polling: {
-    label: "Polling fallback",
-    className: "bg-muted text-muted-foreground",
-  },
-  closed: {
-    label: "Offline",
-    className: "bg-muted text-muted-foreground",
-  },
-};
+
 const EMPTY_METRICS = {
   total: 0,
   waiting: 0,
@@ -88,1333 +74,1321 @@ const EMPTY_METRICS = {
     retrying: 0,
     failed: 0,
   },
-  byDepartment: [],
 };
-const EMPTY_NOTIFICATION_ANALYTICS = {
+
+const EMPTY_ANALYTICS = {
   trend: [],
-  statusMix: [],
   departmentIssues: [],
   audit: {
     retryableCount: 0,
-    readRate: 0,
-    whatsAppShare: 0,
-    averageAttemptsPerWhatsApp: 0,
-    oldestOutstandingMinutes: 0,
-    topFailureReasons: [],
     deliveredCount: 0,
   },
 };
-const NotificationAnalyticsPanels = lazy(
-  () => import("@/components/dashboard/NotificationAnalyticsPanels"),
-);
+
+const STATUS_ORDER = {
+  "in-service": 0,
+  called: 1,
+  waiting: 2,
+  missed: 3,
+  completed: 4,
+};
+
+const PRIORITY_ORDER = {
+  red: 0,
+  yellow: 1,
+  green: 2,
+  black: 3,
+};
+
+const STATUS_META = {
+  waiting: {
+    label: "Waiting",
+    className: "bg-blue-500/15 text-blue-300",
+    dotClassName: "bg-blue-400",
+  },
+  called: {
+    label: "Called",
+    className: "bg-amber-500/15 text-amber-300",
+    dotClassName: "bg-amber-400",
+  },
+  "in-service": {
+    label: "Serving",
+    className: "bg-teal-500/15 text-teal-300",
+    dotClassName: "bg-teal-400",
+  },
+  missed: {
+    label: "Missed",
+    className: "bg-red-500/15 text-red-300",
+    dotClassName: "bg-red-400",
+  },
+  completed: {
+    label: "Completed",
+    className: "bg-green-500/15 text-green-300",
+    dotClassName: "bg-green-400",
+  },
+};
+
+const PRIORITY_META = {
+  red: "bg-red-500/20 text-red-300",
+  yellow: "bg-amber-500/20 text-amber-300",
+  green: "bg-green-500/20 text-green-300",
+  black: "bg-slate-500/20 text-slate-300",
+};
+
+const DEPARTMENT_COLORS = [
+  "#14b8a6",
+  "#6366f1",
+  "#f59e0b",
+  "#22c55e",
+  "#a78bfa",
+  "#fb923c",
+  "#38bdf8",
+  "#f43f5e",
+];
+
+const PRIORITY_BAR_META = [
+  { key: "red", label: "Critical", className: "bg-red-500", textClassName: "text-red-300" },
+  { key: "yellow", label: "Serious", className: "bg-amber-500", textClassName: "text-amber-300" },
+  { key: "green", label: "Ambulant", className: "bg-emerald-500", textClassName: "text-emerald-300" },
+  { key: "black", label: "Deceased", className: "bg-slate-500", textClassName: "text-slate-300" },
+];
 
 export default function DashboardPage() {
   const { refreshLiveData } = useLiveRefresh();
   const realtime = useQueueRealtime();
-  const [selectedDepartment, setSelectedDepartment] = useState(DEPARTMENTS[0]);
-  const [notificationFilter, setNotificationFilter] = useState("attention");
-  const [notificationSearch, setNotificationSearch] = useState("");
-  const [selectedNotificationId, setSelectedNotificationId] = useState(null);
+  const auth = useAuth();
+  const staffName = auth.user?.workspaceProfile?.preferredName?.trim() || auth.user?.name || "Staff";
+
   const loadDashboardSummary = useCallback(() => fetchDashboardSummary(), []);
-  const dashboardQuery = useApiResource(loadDashboardSummary, { enabled: isBrowser });
+  const dashboardQuery = useApiResource(loadDashboardSummary, {
+    enabled: isBrowser,
+  });
+
   const callNextMutation = useApiAction(callNextPatient, {
     onSuccess: refreshLiveData,
   });
-  const updateStatusMutation = useApiAction(
-    ({ id, status }) => updateTicketStatus(id, status),
-    { onSuccess: refreshLiveData },
-  );
-  const recallTicketMutation = useApiAction(recallTicket, {
-    onSuccess: refreshLiveData,
-  });
-  const transferTicketMutation = useApiAction(
-    ({ id, department }) => transferTicket(id, department),
-    { onSuccess: refreshLiveData },
-  );
-  const retryNotificationMutation = useApiAction(retryNotificationDelivery, {
-    onSuccess: refreshLiveData,
-  });
-  const bulkRetryNotificationMutation = useApiAction(retryNotificationDeliveries, {
+
+  const retryFailedMutation = useApiAction(retryNotificationDeliveries, {
     onSuccess: refreshLiveData,
   });
 
   const tickets = dashboardQuery.data?.tickets ?? EMPTY_LIST;
   const notifications = dashboardQuery.data?.notifications ?? EMPTY_LIST;
   const metrics = dashboardQuery.data?.metrics ?? EMPTY_METRICS;
-  const notificationAnalytics =
-    dashboardQuery.data?.notificationAnalytics ?? EMPTY_NOTIFICATION_ANALYTICS;
-  const reassessmentAlerts = dashboardQuery.data?.safetyAlerts?.reassessment ?? EMPTY_LIST;
+  const analytics =
+    dashboardQuery.data?.notificationAnalytics ?? EMPTY_ANALYTICS;
+  const safetyAlerts =
+    dashboardQuery.data?.safetyAlerts?.reassessment ?? EMPTY_LIST;
 
-  const departmentSummaries = DEPARTMENTS.map((department) => {
-    const scopedTickets = tickets.filter((ticket) => ticket.department === department);
-    const waiting = scopedTickets.filter((ticket) => ticket.status === "waiting").length;
-    const active = scopedTickets.filter(
-      (ticket) => ticket.status === "called" || ticket.status === "in-service",
-    ).length;
-    const missed = scopedTickets.filter((ticket) => ticket.status === "missed").length;
-    const completed = scopedTickets.filter((ticket) => ticket.status === "completed").length;
+  const statusMetrics = metrics.byStatus ?? EMPTY_METRICS.byStatus;
+  const notificationStatuses =
+    metrics.notificationStatuses ?? EMPTY_METRICS.notificationStatuses;
 
-    return {
-      dept: department,
-      count: scopedTickets.length,
-      waiting,
-      active,
-      missed,
-      completed,
-    };
-  }).sort(
-    (left, right) =>
-      right.count - left.count ||
-      right.waiting - left.waiting ||
-      left.dept.localeCompare(right.dept),
-  );
+  const servingCount =
+    Number(statusMetrics.called ?? 0) +
+    Number(statusMetrics["in-service"] ?? 0);
 
-  const selectedSummary = departmentSummaries.find(
-    (department) => department.dept === selectedDepartment,
-  ) ?? {
-    dept: selectedDepartment,
-    count: 0,
-    waiting: 0,
-    active: 0,
-    missed: 0,
-    completed: 0,
-  };
-  const busiestDepartment = departmentSummaries[0] ?? selectedSummary;
-  const maxDepartmentCount = Math.max(
-    ...departmentSummaries.map((department) => department.count),
-    1,
-  );
-  const liveMeta = LIVE_STATUS_META[realtime.status] ?? LIVE_STATUS_META.connecting;
-  const departmentWaiting = tickets.filter(
-    (ticket) => ticket.status === "waiting" && ticket.department === selectedDepartment,
-  );
-  const departmentActive = tickets.filter(
-    (ticket) =>
-      (ticket.status === "called" || ticket.status === "in-service") &&
-      ticket.department === selectedDepartment,
-  );
-  const departmentMissed = tickets.filter(
-    (ticket) => ticket.status === "missed" && ticket.department === selectedDepartment,
-  );
-  const nextPatient = departmentWaiting[0] ?? null;
-  const deliveredNotifications =
-    metrics.notificationStatuses.delivered + metrics.notificationStatuses.read;
-  const notificationsNeedingAttention =
-    metrics.notificationStatuses.failed + metrics.notificationStatuses.retrying;
-  const deliveryRate = metrics.notificationsToday
-    ? Math.round((deliveredNotifications / metrics.notificationsToday) * 100)
+  const missedCount = Number(statusMetrics.missed ?? 0);
+  const completedCount = Number(statusMetrics.completed ?? 0);
+
+  const queuePressure = metrics.total
+    ? Math.round((Number(metrics.waiting ?? 0) / Number(metrics.total)) * 100)
     : 0;
-  const completionRate = metrics.total
-    ? Math.round((metrics.byStatus.completed / metrics.total) * 100)
+
+  const clearanceRate = metrics.total
+    ? Math.round((completedCount / Number(metrics.total)) * 100)
     : 0;
-  const queuePressure = metrics.total ? Math.round((metrics.waiting / metrics.total) * 100) : 0;
-  const activeMutationTicketId = updateStatusMutation.variables?.id ?? null;
-  const activeRecallTicketId = recallTicketMutation.variables ?? null;
-  const activeTransferTicketId = transferTicketMutation.variables?.id ?? null;
-  const activeRetryNotificationId = retryNotificationMutation.variables ?? null;
-  const notificationIssues = useMemo(
+
+  const failedNotifications = useMemo(
     () =>
       notifications.filter(
-        (notification) => notification.status === "failed" || notification.status === "retrying",
+        (notification) =>
+          notification.status === "failed" ||
+          notification.status === "retrying",
       ),
     [notifications],
   );
-  const inFlightNotifications = useMemo(
-    () =>
-      notifications.filter((notification) =>
-        ["queued", "sending", "sent"].includes(notification.status),
-      ),
-    [notifications],
-  );
-  const filteredNotifications = useMemo(() => {
-    const normalizedSearch = notificationSearch.trim().toLowerCase();
 
-    return notifications.filter((notification) => {
-      const matchesFilter = {
-        attention: notification.status === "failed" || notification.status === "retrying",
-        inflight: ["queued", "sending", "sent"].includes(notification.status),
-        delivered: ["delivered", "read"].includes(notification.status),
-        whatsapp: notification.channel === "whatsapp",
-        board: notification.channel === "display-board",
-        all: true,
-      }[notificationFilter];
+  const departmentSummaries = useMemo(() => {
+    return DEPARTMENTS.map((department, index) => {
+      const scopedTickets = tickets.filter(
+        (ticket) => ticket.department === department,
+      );
 
-      if (!matchesFilter) {
-        return false;
-      }
+      return {
+        name: department,
+        color: DEPARTMENT_COLORS[index % DEPARTMENT_COLORS.length],
+        total: scopedTickets.length,
+        waiting: scopedTickets.filter(
+          (ticket) => ticket.status === "waiting",
+        ).length,
+        active: scopedTickets.filter((ticket) =>
+          ["called", "in-service"].includes(ticket.status),
+        ).length,
+        missed: scopedTickets.filter(
+          (ticket) => ticket.status === "missed",
+        ).length,
+      };
+    })
+      .sort(
+        (left, right) =>
+          right.total - left.total ||
+          right.waiting - left.waiting ||
+          left.name.localeCompare(right.name),
+      )
+      .slice(0, 6);
+  }, [tickets]);
 
-      if (!normalizedSearch) {
-        return true;
-      }
+  const busiestDepartment =
+    departmentSummaries.find((department) => department.waiting > 0) ??
+    departmentSummaries[0] ?? {
+      name: DEPARTMENTS[0] ?? "General Outpatient",
+      waiting: 0,
+      active: 0,
+      missed: 0,
+      total: 0,
+      color: DEPARTMENT_COLORS[0],
+    };
 
-      const haystack = [
-        notification.ticket,
-        notification.patientName,
-        notification.department,
-        notification.recipient,
-        notification.title,
-        notification.message,
-        notification.type,
-        notification.status,
-        notification.channel,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
+  const queueRows = useMemo(() => {
+    return [...tickets]
+      .sort((left, right) => {
+        const statusDifference =
+          (STATUS_ORDER[left.status] ?? 99) -
+          (STATUS_ORDER[right.status] ?? 99);
 
-      return haystack.includes(normalizedSearch);
+        if (statusDifference !== 0) {
+          return statusDifference;
+        }
+
+        const priorityDifference =
+          (PRIORITY_ORDER[left.priority] ?? 99) -
+          (PRIORITY_ORDER[right.priority] ?? 99);
+
+        if (priorityDifference !== 0) {
+          return priorityDifference;
+        }
+
+        return Number(right.waitMinutes ?? 0) - Number(left.waitMinutes ?? 0);
+      })
+      .slice(0, 6);
+  }, [tickets]);
+
+  const chartData = useMemo(() => {
+    const source =
+      dashboardQuery.data?.queueTrend ??
+      dashboardQuery.data?.trend ??
+      analytics.trend ??
+      EMPTY_LIST;
+
+    if (!source.length) {
+      return [
+        {
+          day: "Mon",
+          registered: 0,
+          served: 0,
+          missed: 0,
+        },
+        {
+          day: "Tue",
+          registered: 0,
+          served: 0,
+          missed: 0,
+        },
+        {
+          day: "Wed",
+          registered: 0,
+          served: 0,
+          missed: 0,
+        },
+        {
+          day: "Thu",
+          registered: 0,
+          served: 0,
+          missed: 0,
+        },
+        {
+          day: "Fri",
+          registered: Number(metrics.total ?? 0),
+          served: completedCount,
+          missed: missedCount,
+        },
+        {
+          day: "Sat",
+          registered: 0,
+          served: 0,
+          missed: 0,
+        },
+        {
+          day: "Sun",
+          registered: 0,
+          served: 0,
+          missed: 0,
+        },
+      ];
+    }
+
+    return source.slice(-7).map((entry, index) => {
+      const registered = Number(
+        entry.registered ??
+          entry.total ??
+          entry.count ??
+          entry.value ??
+          0,
+      );
+
+      const missed = Number(
+        entry.missed ??
+          entry.failed ??
+          entry.attention ??
+          0,
+      );
+
+      const served = Number(
+        entry.served ??
+          entry.completed ??
+          Math.max(registered - missed, 0),
+      );
+
+      return {
+        day: entry.day ?? entry.label ?? `Day ${index + 1}`,
+        registered,
+        served,
+        missed,
+      };
     });
-  }, [notificationFilter, notificationSearch, notifications]);
-  const selectedNotification =
-    filteredNotifications.find((notification) => notification.id === selectedNotificationId) ??
-    filteredNotifications[0] ??
-    null;
-  const topNotificationIssue = notificationIssues[0] ?? null;
-  const retryableIssueNotifications = useMemo(
-    () => notificationIssues.filter((notification) => canRetryNotification(notification.status)),
-    [notificationIssues],
-  );
-  const retryableFilteredNotifications = useMemo(
-    () => filteredNotifications.filter((notification) => canRetryNotification(notification.status)),
-    [filteredNotifications],
-  );
-  const notificationAudit = notificationAnalytics.audit;
-  const departmentIssueChartData = notificationAnalytics.departmentIssues.slice(0, 5);
+  }, [
+    analytics.trend,
+    completedCount,
+    dashboardQuery.data,
+    metrics.total,
+    missedCount,
+  ]);
 
-  useEffect(() => {
-    if (!filteredNotifications.length) {
-      setSelectedNotificationId(null);
-      return;
+  const recentActivity = useMemo(() => {
+    return [...tickets]
+      .sort((left, right) => {
+        const leftTime = new Date(
+          left.updatedAt ?? left.createdAt ?? 0,
+        ).getTime();
+        const rightTime = new Date(
+          right.updatedAt ?? right.createdAt ?? 0,
+        ).getTime();
+
+        return rightTime - leftTime;
+      })
+      .slice(0, 7)
+      .map((ticket) => ({
+        id: ticket.id,
+        ticket: ticket.ticket,
+        patientName: ticket.patientName,
+        department: ticket.department,
+        status: ticket.status,
+        createdAt: ticket.updatedAt ?? ticket.createdAt,
+      }));
+  }, [tickets]);
+
+  const systemAlerts = useMemo(() => {
+    const alerts = [];
+
+    safetyAlerts.slice(0, 2).forEach((alert) => {
+      alerts.push({
+        id: `safety-${alert.id}`,
+        severity: alert.priority === "red" ? "critical" : "warning",
+        message: `${alert.ticket}${
+          alert.patientName ? ` (${alert.patientName})` : ""
+        } has waited ${alert.waitMinutes}m — reassessment needed`,
+        detail: `${alert.department} safety threshold: ${alert.thresholdMinutes}m`,
+        time: formatRelativeTime(alert.createdAt),
+      });
+    });
+
+    if (failedNotifications.length) {
+      const firstFailure = failedNotifications[0];
+
+      alerts.push({
+        id: "notification-failure",
+        severity: "warning",
+        message: `${failedNotifications.length} notification${
+          failedNotifications.length === 1 ? "" : "s"
+        } need another delivery attempt`,
+        detail:
+          firstFailure?.errorMessage ??
+          "Review WhatsApp and patient alert delivery.",
+        time: formatRelativeTime(
+          firstFailure?.updatedAt ?? firstFailure?.createdAt,
+        ),
+      });
     }
 
-    if (
-      !selectedNotificationId ||
-      !filteredNotifications.some((notification) => notification.id === selectedNotificationId)
-    ) {
-      setSelectedNotificationId(filteredNotifications[0].id);
+    const pressureDepartment = departmentSummaries.find(
+      (department) => department.waiting >= 5,
+    );
+
+    if (pressureDepartment) {
+      alerts.push({
+        id: "queue-pressure",
+        severity: "info",
+        message: `${pressureDepartment.name} queue pressure is high`,
+        detail: `${pressureDepartment.waiting} waiting, ${pressureDepartment.active} active`,
+        time: "Live",
+      });
     }
-  }, [filteredNotifications, selectedNotificationId]);
 
-  return (
-    <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <header className="surface-panel p-6 sm:p-8">
-        <div className="absolute right-0 top-0 h-44 w-44 rounded-full bg-accent/10 blur-3xl" />
-        <div className="relative grid gap-6 xl:grid-cols-[1.2fr_0.85fr]">
-          <div>
-            <div className="eyebrow">Hospital operations</div>
-            <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
-              <div className="max-w-2xl">
-                <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">
-                  Staff command dashboard
-                </h1>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-                  Monitor queue movement, clinical priority pressure, and patient notifications from
-                  one live operations room.
-                </p>
-              </div>
-              <span
-                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${liveMeta.className}`}
-              >
-                <Wifi className="h-3.5 w-3.5" />
-                {liveMeta.label}
-              </span>
-            </div>
+    return alerts.slice(0, 3);
+  }, [
+    departmentSummaries,
+    failedNotifications,
+    safetyAlerts,
+  ]);
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              <SnapshotTile
-                label="Patients still waiting"
-                value={metrics.waiting}
-                detail={`${metrics.byStatus.called} already called across the hospital`}
-              />
-              <SnapshotTile
-                label="Average queue time"
-                value={`${metrics.avgWait}m`}
-                detail={`${queuePressure}% of tracked tickets are still in the waiting state`}
-              />
-              <SnapshotTile
-                label="Delivery confidence"
-                value={`${deliveryRate}%`}
-                detail={
-                  metrics.notificationsToday
-                    ? `${deliveredNotifications} notifications reached or were read`
-                    : "Notification activity will appear here as patients are registered"
-                }
-              />
-            </div>
-          </div>
+  function exportTodayReport() {
+    const header = [
+      "Ticket",
+      "Patient",
+      "Department",
+      "Status",
+      "Priority",
+      "Wait Minutes",
+    ];
 
-          <div className="surface-panel-dark p-5 sm:p-6">
-            <div className="text-[11px] font-bold uppercase tracking-[0.28em] text-primary-foreground/70">
-              Operational focus
-            </div>
-            <div className="mt-3 flex items-start justify-between gap-4">
-              <div>
-                <h2 className="font-display text-2xl font-bold tracking-tight">
-                  {busiestDepartment.count ? busiestDepartment.dept : "No active pressure"}
-                </h2>
-                <p className="mt-2 max-w-sm text-sm leading-6 text-primary-foreground/80">
-                  {busiestDepartment.count
-                    ? "This department carries the heaviest live load right now. Use the command desk to step through tickets without losing triage order."
-                    : "As new patients arrive, this panel will spotlight where the queue needs the most staff attention."}
-                </p>
-              </div>
-              <span className="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold text-primary-foreground/85">
-                {busiestDepartment.count} tracked
-              </span>
-            </div>
+    const rows = tickets.map((ticket) => [
+      ticket.ticket,
+      ticket.patientName,
+      ticket.department,
+      ticket.status,
+      ticket.priority,
+      ticket.waitMinutes,
+    ]);
 
-            <div className="mt-6 grid grid-cols-3 gap-3">
-              <DarkStat label="Waiting" value={busiestDepartment.waiting} />
-              <DarkStat label="Active" value={busiestDepartment.active} />
-              <DarkStat label="Closed" value={busiestDepartment.completed} />
-            </div>
+    const csv = [header, ...rows]
+      .map((row) =>
+        row
+          .map((value) => `"${String(value ?? "").replaceAll('"', '""')}"`)
+          .join(","),
+      )
+      .join("\n");
 
-            <div className="mt-5 rounded-2xl border border-white/12 bg-white/10 p-4">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-primary-foreground/80" />
-                <div>
-                  <div className="font-semibold text-primary-foreground">Notification watch</div>
-                  <p className="mt-1 text-sm leading-6 text-primary-foreground/80">
-                    {notificationsNeedingAttention
-                      ? `${notificationsNeedingAttention} patient alerts still need attention or another send attempt.`
-                      : "Delivery health is stable. No patient notifications are currently waiting for intervention."}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+    const blob = new Blob([csv], {
+      type: "text/csv;charset=utf-8",
+    });
 
-      {dashboardQuery.isLoading ? (
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+
+    anchor.href = url;
+    anchor.download = `waitless-report-${new Date()
+      .toISOString()
+      .slice(0, 10)}.csv`;
+
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+
+    URL.revokeObjectURL(url);
+  }
+
+  function scrollToAlerts() {
+    document
+      .getElementById("dashboard-system-alerts")
+      ?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+  }
+
+  if (dashboardQuery.isLoading) {
+    return (
+      <section className="min-h-screen bg-[#0c1220] px-4 py-5 sm:px-6">
         <LoadingPanel
-          className="mt-6"
-          message="Syncing queue, triage and notification activity."
           title="Loading the live dashboard"
+          message="Syncing queue, department, safety and notification activity."
         />
-      ) : dashboardQuery.isError ? (
-        <div className="surface-panel mt-6 border-destructive/30 bg-destructive/10 px-5 py-6 text-sm text-destructive">
+      </section>
+    );
+  }
+
+  if (dashboardQuery.isError) {
+    return (
+      <section className="min-h-screen bg-[#0c1220] px-4 py-5 sm:px-6">
+        <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-6 text-sm text-red-300">
           {dashboardQuery.error.message}
         </div>
-      ) : (
-        <>
-          <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <KpiCard
-              icon={Users}
-              label="Patients in flow"
-              value={metrics.total}
-              hint={`${metrics.waiting} waiting and ${metrics.active} active right now`}
-            />
-            <KpiCard
-              icon={Timer}
-              label="Average wait"
-              value={`${metrics.avgWait}m`}
-              hint={`${completionRate}% of today's tracked tickets are already completed`}
-              tone="accent"
-            />
-            <KpiCard
-              icon={AlertTriangle}
-              label="Critical cases"
-              value={metrics.byPriority.red}
-              hint="Priority I patients should move directly into emergency response"
-              tone="critical"
-            />
-            <KpiCard
-              icon={BellRing}
-              label="Alerts issued"
-              value={metrics.notificationsToday}
-              hint={`${deliveredNotifications} delivered or read, ${notificationsNeedingAttention} need attention`}
-              tone="primary"
-            />
-          </div>
-
-          <ReassessmentAlertsPanel alerts={reassessmentAlerts} />
-
-          <div className="mt-6 grid gap-6 xl:grid-cols-[1.2fr_0.85fr_1fr]">
-            <article className="surface-panel p-6">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <div className="eyebrow">Operations overview</div>
-                  <h2 className="mt-2 font-display text-2xl font-bold tracking-tight">
-                    Department load board
-                  </h2>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                    Click any department to sync the command desk and move staff attention without
-                    losing context.
-                  </p>
-                </div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary-soft/70 px-3 py-1.5 text-xs font-semibold text-primary">
-                  <TrendingUp className="h-3.5 w-3.5" />
-                  {busiestDepartment.dept} is carrying the heaviest live load
-                </div>
-              </div>
-
-              <div className="mt-5 space-y-3">
-                {departmentSummaries.map((department) => {
-                  const width = department.count
-                    ? Math.max((department.count / maxDepartmentCount) * 100, 12)
-                    : 0;
-                  const isSelected = department.dept === selectedDepartment;
-
-                  return (
-                    <button
-                      key={department.dept}
-                      type="button"
-                      onClick={() => setSelectedDepartment(department.dept)}
-                      className={`w-full rounded-2xl border px-4 py-4 text-left transition-all ${
-                        isSelected
-                          ? "border-primary/25 bg-primary-soft/55 shadow-card"
-                          : "border-border/70 bg-background/80 hover:border-primary/15 hover:bg-primary-soft/25"
-                      }`}
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-4">
-                        <div>
-                          <div className="font-semibold">{department.dept}</div>
-                          <div className="mt-1 text-xs text-muted-foreground">
-                            {department.waiting} waiting, {department.active} active,{" "}
-                            {department.completed} completed
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-display text-3xl font-bold tracking-tight">
-                            {department.count}
-                          </div>
-                          <div className="text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-                            tracked
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted/80">
-                        <div
-                          className={`h-full rounded-full ${
-                            isSelected
-                              ? "gradient-primary"
-                              : "bg-gradient-to-r from-primary/70 to-accent/70"
-                          }`}
-                          style={{ width: `${width}%` }}
-                        />
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </article>
-
-            <div className="space-y-6">
-              <article className="surface-panel p-6">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="eyebrow">Clinical picture</div>
-                    <h2 className="mt-2 font-display text-2xl font-bold tracking-tight">
-                      Priority and flow health
-                    </h2>
-                  </div>
-                  <span className="rounded-full border border-border/70 bg-background/80 px-3 py-1 text-xs font-semibold text-muted-foreground">
-                    {completionRate}% clearance
-                  </span>
-                </div>
-
-                <div className="mt-5 space-y-3">
-                  {PRIORITY_ORDER.map((priority) => (
-                    <div
-                      key={priority}
-                      className="rounded-2xl border border-border/70 bg-background/70 px-4 py-3"
-                    >
-                      <div className="flex items-center gap-3">
-                        <span
-                          className={`inline-grid h-10 w-16 place-items-center rounded-xl font-display text-xs font-bold uppercase ${priorityChipClass[priority]}`}
-                        >
-                          {PRIORITY_META[priority].short}
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <div className="font-semibold">{PRIORITY_META[priority].label}</div>
-                          <div className="mt-0.5 text-xs text-muted-foreground">
-                            {PRIORITY_META[priority].destination}
-                          </div>
-                        </div>
-                        <div className="font-display text-3xl font-bold tracking-tight">
-                          {metrics.byPriority[priority]}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                  {STATUS_ORDER.map((status) => (
-                    <StatusMiniCard
-                      key={status}
-                      label={STATUS_META[status]?.label ?? status}
-                      value={metrics.byStatus[status]}
-                    />
-                  ))}
-                </div>
-
-                <div className="mt-6 rounded-2xl border border-border/70 bg-background/70 p-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                        Delivery confidence
-                      </div>
-                      <div className="mt-1 font-display text-3xl font-bold tracking-tight">
-                        {deliveryRate}%
-                      </div>
-                    </div>
-                    <BellRing className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full rounded-full gradient-primary"
-                      style={{ width: `${Math.min(deliveryRate, 100)}%` }}
-                    />
-                  </div>
-                  <div className="mt-3 flex items-center justify-between gap-3 text-xs text-muted-foreground">
-                    <span>{deliveredNotifications} delivered or read</span>
-                    <span>{notificationsNeedingAttention} need attention</span>
-                  </div>
-                </div>
-              </article>
-
-              <article className="surface-panel p-6">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="eyebrow">Command desk</div>
-                    <h2 className="mt-2 font-display text-2xl font-bold tracking-tight">
-                      {selectedDepartment}
-                    </h2>
-                    <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                      Advance patients while preserving the live triage order for this department.
-                    </p>
-                  </div>
-                  <span className="rounded-full border border-border/70 bg-background/80 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                    Staff action
-                  </span>
-                </div>
-
-                <label className="mt-5 block">
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                    Focus department
-                  </span>
-                  <select
-                    value={selectedDepartment}
-                    onChange={(event) => setSelectedDepartment(event.target.value)}
-                    className="input-base mt-2"
-                  >
-                    {DEPARTMENTS.map((department) => (
-                      <option key={department} value={department}>
-                        {department}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  <MiniStat label="Waiting here" value={selectedSummary.waiting} />
-                  <MiniStat label="Active here" value={selectedSummary.active} />
-                  <MiniStat label="Missed here" value={selectedSummary.missed} />
-                </div>
-
-                <button
-                  onClick={() => callNextMutation.mutate(selectedDepartment)}
-                  disabled={callNextMutation.isPending || !nextPatient}
-                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl gradient-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-elegant transition-transform hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-60"
-                >
-                  {callNextMutation.isPending ? (
-                    <>
-                      <LoaderCircle className="h-4 w-4 animate-spin" />
-                      Calling next patient...
-                    </>
-                  ) : (
-                    <>
-                      <ArrowRight className="h-4 w-4" />
-                      Call next patient
-                    </>
-                  )}
-                </button>
-
-                {callNextMutation.isError && (
-                  <div className="mt-4 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                    {callNextMutation.error.message}
-                  </div>
-                )}
-
-                <div className="surface-panel-muted mt-5 px-4 py-4">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
-                    Next candidate
-                  </div>
-                  {nextPatient ? (
-                    <div className="mt-3">
-                      <div className="flex items-center justify-between gap-3">
-                        <span
-                          className={`inline-grid h-10 w-18 place-items-center rounded-xl px-3 font-display text-sm font-bold ${priorityChipClass[nextPatient.priority]}`}
-                        >
-                          {nextPatient.ticket}
-                        </span>
-                        <span className="text-xs font-semibold text-muted-foreground">
-                          waiting {nextPatient.waitMinutes}m
-                        </span>
-                      </div>
-                      <div className="mt-3 font-semibold">{nextPatient.patientName}</div>
-                      <div className="mt-1 text-sm text-muted-foreground">
-                        {PRIORITY_META[nextPatient.priority].label} for {nextPatient.department}
-                      </div>
-                      {nextPatient.whatsApp && (
-                        <div className="mt-3 inline-flex items-center gap-1 rounded-full bg-accent/12 px-2.5 py-1 text-[11px] font-semibold text-accent">
-                          <MessageCircle className="h-3 w-3" />
-                          WhatsApp notifications active
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <p className="mt-3 text-sm text-muted-foreground">
-                      No waiting patients are currently queued for this department.
-                    </p>
-                  )}
-                </div>
-
-                <div className="mt-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="font-display text-lg font-bold tracking-tight">
-                      Currently active
-                    </h3>
-                    <Clock3 className="h-4 w-4 text-muted-foreground" />
-                  </div>
-
-                  {departmentActive.length ? (
-                    <ul className="mt-3 space-y-2">
-                      {departmentActive.map((ticket) => (
-                        <li
-                          key={ticket.id}
-                          className="rounded-2xl border border-border/70 bg-background/75 px-4 py-3"
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <span
-                              className={`inline-grid h-9 w-16 place-items-center rounded-xl font-display text-xs font-bold ${priorityChipClass[ticket.priority]}`}
-                            >
-                              {ticket.ticket}
-                            </span>
-                            <span
-                              className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ${STATUS_META[ticket.status]?.className ?? STATUS_META.waiting.className}`}
-                            >
-                              {STATUS_META[ticket.status]?.label ?? ticket.status}
-                            </span>
-                          </div>
-                          <div className="mt-2 font-medium">{ticket.patientName}</div>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <div className="mt-3 rounded-2xl border border-dashed border-border bg-background/70 px-4 py-4 text-sm text-muted-foreground">
-                      No patient is currently being served in this department.
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <h3 className="font-display text-lg font-bold tracking-tight">
-                      Missed turns
-                    </h3>
-                    <span className="rounded-full bg-priority-yellow/15 px-2.5 py-1 text-[10px] font-semibold text-foreground">
-                      Recall lane
-                    </span>
-                  </div>
-
-                  {departmentMissed.length ? (
-                    <ul className="mt-3 space-y-2">
-                      {departmentMissed.map((ticket) => (
-                        <li
-                          key={ticket.id}
-                          className="rounded-2xl border border-priority-yellow/30 bg-priority-yellow/10 px-4 py-3"
-                        >
-                          <div className="flex items-center justify-between gap-3">
-                            <span
-                              className={`inline-grid h-9 w-16 place-items-center rounded-xl font-display text-xs font-bold ${priorityChipClass[ticket.priority]}`}
-                            >
-                              {ticket.ticket}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => recallTicketMutation.mutate(ticket.id)}
-                              disabled={recallTicketMutation.isPending}
-                              className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-60"
-                            >
-                              {recallTicketMutation.isPending &&
-                              activeRecallTicketId === ticket.id ? (
-                                <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
-                              ) : (
-                                <RefreshCw className="h-3.5 w-3.5" />
-                              )}
-                              Recall
-                            </button>
-                          </div>
-                          <div className="mt-2 font-medium">{ticket.patientName}</div>
-                          <div className="mt-1 text-xs text-muted-foreground">
-                            Missed after {ticket.waitMinutes}m in flow
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <div className="mt-3 rounded-2xl border border-dashed border-border bg-background/70 px-4 py-4 text-sm text-muted-foreground">
-                      No missed patients are waiting for recall in this department.
-                    </div>
-                  )}
-                </div>
-              </article>
-            </div>
-
-            <article className="surface-panel p-6">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <div className="eyebrow">Patient alerts</div>
-                  <h2 className="mt-2 font-display text-2xl font-bold tracking-tight">
-                    Notification management
-                  </h2>
-                  <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                    Separate delivery issues from routine traffic, search quickly, and retry a
-                    message with full attempt context in view.
-                  </p>
-                </div>
-                <BellRing className="h-5 w-5 text-muted-foreground" />
-              </div>
-
-              <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
-                <MiniStat label="Needs attention" value={notificationIssues.length} />
-                <MiniStat label="In flight" value={inFlightNotifications.length} />
-                <MiniStat label="Delivered / read" value={deliveredNotifications} />
-                <MiniStat
-                  label="Display alerts"
-                  value={metrics.notificationChannels["display-board"]}
-                />
-              </div>
-
-              <div className="surface-panel-muted mt-5 px-4 py-4">
-                {topNotificationIssue ? (
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="min-w-0">
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                        Top issue
-                      </div>
-                      <div className="mt-2 font-semibold text-foreground">
-                        {topNotificationIssue.ticket} for {topNotificationIssue.patientName}
-                      </div>
-                      <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                        {topNotificationIssue.errorMessage ||
-                          "This notification is still waiting for a successful delivery state."}
-                      </p>
-                    </div>
-                    <NotificationStatusBadge status={topNotificationIssue.status} />
-                  </div>
-                ) : (
-                  <div className="flex items-start gap-3">
-                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-priority-green" />
-                    <div>
-                      <div className="font-semibold text-foreground">Delivery lane is stable</div>
-                      <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                        No failed or retrying patient alerts need staff intervention right now.
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="mt-5 space-y-3">
-                <div className="flex flex-wrap gap-2">
-                  {[
-                    {
-                      value: "attention",
-                      label: "Needs attention",
-                      count: notificationIssues.length,
-                    },
-                    {
-                      value: "inflight",
-                      label: "In flight",
-                      count: inFlightNotifications.length,
-                    },
-                    {
-                      value: "delivered",
-                      label: "Delivered",
-                      count: deliveredNotifications,
-                    },
-                    {
-                      value: "whatsapp",
-                      label: "WhatsApp",
-                      count: metrics.notificationChannels.whatsapp,
-                    },
-                    {
-                      value: "board",
-                      label: "Display board",
-                      count: metrics.notificationChannels["display-board"],
-                    },
-                    {
-                      value: "all",
-                      label: "All",
-                      count: notifications.length,
-                    },
-                  ].map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setNotificationFilter(option.value)}
-                      className={`rounded-full px-3 py-1.5 text-xs font-semibold transition-colors ${
-                        notificationFilter === option.value
-                          ? "gradient-primary text-primary-foreground shadow-elegant"
-                          : "border border-border/70 bg-background/80 text-muted-foreground hover:bg-muted"
-                      }`}
-                    >
-                      {option.label} ({option.count})
-                    </button>
-                  ))}
-                </div>
-
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <input
-                    value={notificationSearch}
-                    onChange={(event) => setNotificationSearch(event.target.value)}
-                    placeholder="Search by patient, ticket, department, or status"
-                    className="input-base pl-10"
-                  />
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      bulkRetryNotificationMutation.mutate(
-                        retryableFilteredNotifications.map((notification) => notification.id),
-                      )
-                    }
-                    disabled={
-                      bulkRetryNotificationMutation.isPending ||
-                      !retryableFilteredNotifications.length
-                    }
-                    className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-60"
-                  >
-                    {bulkRetryNotificationMutation.isPending ? (
-                      <LoaderCircle className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4" />
-                    )}
-                    Retry filtered eligible ({retryableFilteredNotifications.length})
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() =>
-                      bulkRetryNotificationMutation.mutate(
-                        retryableIssueNotifications.map((notification) => notification.id),
-                      )
-                    }
-                    disabled={
-                      bulkRetryNotificationMutation.isPending || !retryableIssueNotifications.length
-                    }
-                    className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-60"
-                  >
-                    <AlertTriangle className="h-4 w-4" />
-                    Retry all issues ({retryableIssueNotifications.length})
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-5 flex items-center justify-between gap-3 text-xs text-muted-foreground">
-                <span>Filtered delivery events</span>
-                <span>
-                  {filteredNotifications.length} shown of {notifications.length}
-                </span>
-              </div>
-
-              {bulkRetryNotificationMutation.data && (
-                <div className="mt-4 rounded-2xl border border-primary/20 bg-primary-soft/55 px-4 py-3 text-sm text-foreground">
-                  Queued {bulkRetryNotificationMutation.data.retried} notification
-                  {bulkRetryNotificationMutation.data.retried === 1 ? "" : "s"} for retry.
-                  {bulkRetryNotificationMutation.data.skipped.length
-                    ? ` ${bulkRetryNotificationMutation.data.skipped.length} skipped.`
-                    : ""}
-                </div>
-              )}
-
-              {filteredNotifications.length ? (
-                <div className="mt-4 grid gap-4 lg:grid-cols-[0.92fr_1.08fr]">
-                  <div className="max-h-[44rem] space-y-3 overflow-y-auto pr-1">
-                    {filteredNotifications.map((notification) => (
-                      <button
-                        key={notification.id}
-                        type="button"
-                        onClick={() => setSelectedNotificationId(notification.id)}
-                        className={`w-full rounded-2xl border px-4 py-4 text-left transition-all ${
-                          selectedNotification?.id === notification.id
-                            ? "border-primary/20 bg-primary-soft/35 shadow-card"
-                            : `${notificationFrameClass(notification.status)} hover:border-primary/15`
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="flex flex-wrap items-center gap-2">
-                              <span
-                                className={`inline-grid h-8 w-14 place-items-center rounded-xl font-display text-xs font-bold ${priorityChipClass[notification.priority]}`}
-                              >
-                                {notification.ticket}
-                              </span>
-                              <span className="text-xs font-semibold text-muted-foreground">
-                                {notification.patientName}
-                              </span>
-                            </div>
-                            <div className="mt-2 text-sm font-semibold text-foreground">
-                              {notification.title}
-                            </div>
-                            <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">
-                              {notification.message}
-                            </p>
-                          </div>
-                          <div className="flex shrink-0 flex-col items-end gap-2">
-                            <NotificationChannelBadge channel={notification.channel} />
-                            <NotificationStatusBadge status={notification.status} />
-                          </div>
-                        </div>
-
-                        <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
-                          <span>{notification.department}</span>
-                          <span>&bull;</span>
-                          <span>{notification.recipient}</span>
-                          <span>&bull;</span>
-                          <span>{formatNotificationTime(notification.createdAt)}</span>
-                        </div>
-
-                        <div className="mt-3 flex flex-wrap items-center gap-2 text-[11px]">
-                          {notification.channel === "whatsapp" && (
-                            <span className="rounded-full bg-background/80 px-2.5 py-1 font-semibold text-muted-foreground">
-                              {notification.attempts?.length ?? 0}/{notification.maxAttempts ?? 1}{" "}
-                              attempts
-                            </span>
-                          )}
-                          {notification.nextRetryAt && (
-                            <span className="rounded-full bg-priority-yellow/15 px-2.5 py-1 font-semibold text-foreground">
-                              Retry at {formatNotificationSchedule(notification.nextRetryAt)}
-                            </span>
-                          )}
-                          {canRetryNotification(notification.status) && (
-                            <span className="rounded-full bg-primary-soft px-2.5 py-1 font-semibold text-primary">
-                              Retry available
-                            </span>
-                          )}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-
-                  <NotificationFocusPanel
-                    notification={selectedNotification}
-                    retryNotificationMutation={retryNotificationMutation}
-                    activeRetryNotificationId={activeRetryNotificationId}
-                  />
-                </div>
-              ) : (
-                <div className="mt-4 rounded-2xl border border-dashed border-border bg-background/70 px-4 py-4 text-sm text-muted-foreground">
-                  No notifications match the current filter and search.
-                </div>
-              )}
-
-              {retryNotificationMutation.isError && (
-                <div className="mt-4 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                  {retryNotificationMutation.error.message}
-                </div>
-              )}
-
-              {bulkRetryNotificationMutation.isError && (
-                <div className="mt-4 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                  {bulkRetryNotificationMutation.error.message}
-                </div>
-              )}
-            </article>
-          </div>
-
-          <Suspense fallback={<NotificationAnalyticsFallback />}>
-            <NotificationAnalyticsPanels
-              analytics={notificationAnalytics}
-              audit={notificationAudit}
-              departmentIssues={departmentIssueChartData}
-            />
-          </Suspense>
-
-          <article className="surface-panel mt-6 overflow-hidden">
-            <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border/70 px-5 py-5 sm:px-6">
-              <div>
-                <div className="eyebrow">Live queue</div>
-                <h2 className="mt-2 font-display text-2xl font-bold tracking-tight">
-                  Active patient table
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                  Every tracked ticket, its live status, the communication channel, and the next
-                  action for staff.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {STATUS_ORDER.map((status) => (
-                  <QueueStatusChip
-                    key={status}
-                    label={STATUS_META[status]?.label ?? status}
-                    value={metrics.byStatus[status]}
-                    className={STATUS_META[status]?.className ?? STATUS_META.waiting.className}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {tickets.length ? (
-              <>
-                <div className="space-y-3 px-4 py-4 lg:hidden sm:px-6">
-                  {tickets.map((ticket) => (
-                    <article
-                      key={ticket.id}
-                      className="rounded-2xl border border-border/70 bg-background/80 px-4 py-4"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          <span
-                            className={`inline-grid h-10 w-16 place-items-center rounded-xl font-display text-sm font-bold ${priorityChipClass[ticket.priority]}`}
-                          >
-                            {ticket.ticket}
-                          </span>
-                          <div>
-                            <div className="font-semibold">{ticket.patientName}</div>
-                            <div className="text-xs text-muted-foreground">{ticket.department}</div>
-                          </div>
-                        </div>
-                        <span
-                          className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ${STATUS_META[ticket.status]?.className ?? STATUS_META.waiting.className}`}
-                        >
-                          {STATUS_META[ticket.status]?.label ?? ticket.status}
-                        </span>
-                      </div>
-
-                      <div className="mt-4 flex items-center justify-between gap-3 text-sm">
-                        <span className="inline-flex items-center gap-1 text-muted-foreground">
-                          {ticket.whatsApp ? (
-                            <>
-                              <MessageCircle className="h-3.5 w-3.5 text-accent" />
-                              WhatsApp
-                            </>
-                          ) : (
-                            "Web / walk-in"
-                          )}
-                        </span>
-                        <span className="font-semibold tabular-nums">
-                          {ticket.waitMinutes}m wait
-                        </span>
-                      </div>
-
-                      <div className="mt-4">
-                        <TicketActionButton
-                          ticket={ticket}
-                          disabled={
-                            updateStatusMutation.isPending || recallTicketMutation.isPending
-                          }
-                          loading={
-                            updateStatusMutation.isPending && activeMutationTicketId === ticket.id
-                          }
-                          recallLoading={
-                            recallTicketMutation.isPending && activeRecallTicketId === ticket.id
-                          }
-                          onAction={(status) =>
-                            updateStatusMutation.mutate({ id: ticket.id, status })
-                          }
-                          onRecall={() => recallTicketMutation.mutate(ticket.id)}
-                        />
-                        <TransferTicketControl
-                          ticket={ticket}
-                          departments={DEPARTMENTS}
-                          disabled={transferTicketMutation.isPending}
-                          loading={
-                            transferTicketMutation.isPending &&
-                            activeTransferTicketId === ticket.id
-                          }
-                          onTransfer={(department) =>
-                            transferTicketMutation.mutate({ id: ticket.id, department })
-                          }
-                        />
-                      </div>
-                    </article>
-                  ))}
-                </div>
-
-                <div className="hidden overflow-x-auto lg:block">
-                  <table className="w-full min-w-[980px] text-left text-sm">
-                    <thead className="bg-muted/50 text-xs uppercase tracking-[0.22em] text-muted-foreground">
-                      <tr>
-                        <th className="px-6 py-3">Ticket</th>
-                        <th className="px-6 py-3">Patient</th>
-                        <th className="px-6 py-3">Department</th>
-                        <th className="px-6 py-3">Status</th>
-                        <th className="px-6 py-3">Channel</th>
-                        <th className="px-6 py-3 text-right">Wait</th>
-                        <th className="px-6 py-3 text-right">Action</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border/70">
-                      {tickets.map((ticket) => (
-                        <tr
-                          key={ticket.id}
-                          className="bg-background/70 transition-colors hover:bg-primary-soft/25"
-                        >
-                          <td className="px-6 py-4">
-                            <span
-                              className={`inline-grid h-9 w-16 place-items-center rounded-xl font-display text-xs font-bold ${priorityChipClass[ticket.priority]}`}
-                            >
-                              {ticket.ticket}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 font-medium">{ticket.patientName}</td>
-                          <td className="px-6 py-4 text-muted-foreground">{ticket.department}</td>
-                          <td className="px-6 py-4">
-                            <span
-                              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${STATUS_META[ticket.status]?.className ?? STATUS_META.waiting.className}`}
-                            >
-                              {STATUS_META[ticket.status]?.label ?? ticket.status}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 text-muted-foreground">
-                            {ticket.whatsApp ? (
-                              <span className="inline-flex items-center gap-1 text-accent">
-                                <MessageCircle className="h-3.5 w-3.5" />
-                                WhatsApp
-                              </span>
-                            ) : (
-                              <span className="text-xs">Web / walk-in</span>
-                            )}
-                          </td>
-                          <td className="px-6 py-4 text-right font-semibold tabular-nums">
-                            {ticket.waitMinutes}m
-                          </td>
-                          <td className="px-6 py-4 text-right">
-                            <div className="flex flex-col items-end gap-2">
-                              <TicketActionButton
-                                ticket={ticket}
-                                disabled={
-                                  updateStatusMutation.isPending ||
-                                  recallTicketMutation.isPending
-                                }
-                                loading={
-                                  updateStatusMutation.isPending &&
-                                  activeMutationTicketId === ticket.id
-                                }
-                                recallLoading={
-                                  recallTicketMutation.isPending &&
-                                  activeRecallTicketId === ticket.id
-                                }
-                                onAction={(status) =>
-                                  updateStatusMutation.mutate({ id: ticket.id, status })
-                                }
-                                onRecall={() => recallTicketMutation.mutate(ticket.id)}
-                              />
-                              <TransferTicketControl
-                                ticket={ticket}
-                                departments={DEPARTMENTS}
-                                disabled={transferTicketMutation.isPending}
-                                loading={
-                                  transferTicketMutation.isPending &&
-                                  activeTransferTicketId === ticket.id
-                                }
-                                onTransfer={(department) =>
-                                  transferTicketMutation.mutate({ id: ticket.id, department })
-                                }
-                              />
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </>
-            ) : (
-              <div className="px-5 py-6 text-sm text-muted-foreground sm:px-6">
-                No patients are currently in the live queue.
-              </div>
-            )}
-
-            {updateStatusMutation.isError && (
-              <div className="border-t border-destructive/20 bg-destructive/5 px-5 py-4 text-sm text-destructive sm:px-6">
-                {updateStatusMutation.error.message}
-              </div>
-            )}
-
-            {recallTicketMutation.isError && (
-              <div className="border-t border-destructive/20 bg-destructive/5 px-5 py-4 text-sm text-destructive sm:px-6">
-                {recallTicketMutation.error.message}
-              </div>
-            )}
-
-            {transferTicketMutation.isError && (
-              <div className="border-t border-destructive/20 bg-destructive/5 px-5 py-4 text-sm text-destructive sm:px-6">
-                {transferTicketMutation.error.message}
-              </div>
-            )}
-          </article>
-        </>
-      )}
-    </section>
-  );
-}
-
-function SnapshotTile({ label, value, detail }) {
-  return (
-    <div className="surface-panel-muted px-4 py-4">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-        {label}
-      </div>
-      <div className="mt-2 font-display text-3xl font-bold tracking-tight">{value}</div>
-      <div className="mt-2 text-xs leading-5 text-muted-foreground">{detail}</div>
-    </div>
-  );
-}
-
-function DarkStat({ label, value }) {
-  return (
-    <div className="rounded-2xl border border-white/12 bg-white/10 px-4 py-3">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-primary-foreground/65">
-        {label}
-      </div>
-      <div className="mt-1 font-display text-2xl font-bold tracking-tight text-primary-foreground">
-        {value}
-      </div>
-    </div>
-  );
-}
-
-function KpiCard({ icon: Icon, label, value, hint, tone = "primary" }) {
-  const iconTone =
-    {
-      primary: "bg-primary-soft text-primary",
-      accent: "bg-accent/15 text-accent",
-      critical: "bg-priority-red/12 text-priority-red",
-    }[tone] ?? "bg-primary-soft text-primary";
-
-  return (
-    <div className="surface-panel p-5">
-      <div className="flex items-start justify-between gap-3">
-        <span className={`grid h-11 w-11 place-items-center rounded-2xl ${iconTone}`}>
-          <Icon className="h-5 w-5" />
-        </span>
-        <div className="text-right">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-            {label}
-          </div>
-        </div>
-      </div>
-      <div className="mt-5 font-display text-4xl font-bold tracking-tight">{value}</div>
-      <p className="mt-2 text-sm leading-6 text-muted-foreground">{hint}</p>
-    </div>
-  );
-}
-
-function StatusMiniCard({ label, value }) {
-  return (
-    <div className="surface-panel-muted px-4 py-4">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-        {label}
-      </div>
-      <div className="mt-1 font-display text-3xl font-bold tracking-tight">{value}</div>
-    </div>
-  );
-}
-
-function MiniStat({ label, value }) {
-  return (
-    <div className="surface-panel-muted px-4 py-4">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-        {label}
-      </div>
-      <div className="mt-1 font-display text-3xl font-bold tracking-tight">{value}</div>
-    </div>
-  );
-}
-
-function QueueStatusChip({ label, value, className }) {
-  return (
-    <span
-      className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-semibold ${className}`}
-    >
-      <span>{label}</span>
-      <span className="rounded-full bg-white/70 px-1.5 py-0.5 text-[10px] font-bold text-foreground/80">
-        {value}
-      </span>
-    </span>
-  );
-}
-
-function NotificationAnalyticsFallback() {
-  return (
-    <div className="mt-6 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-      <LoadingPanel
-        className="min-h-80"
-        message="Preparing notification volume and channel delivery charts."
-        title="Loading notification analytics"
-      />
-      <LoadingPanel
-        className="min-h-80"
-        message="Checking failed, queued and retryable patient alerts."
-        title="Loading delivery health"
-      />
-    </div>
-  );
-}
-
-function ReassessmentAlertsPanel({ alerts }) {
-  if (!alerts.length) {
-    return (
-      <div className="surface-panel-muted mt-6 flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-        <div>
-          <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-            Safety watch
-          </div>
-          <div className="mt-1 font-semibold text-foreground">
-            No triage reassessments are overdue
-          </div>
-        </div>
-        <CheckCircle2 className="h-5 w-5 text-priority-green" />
-      </div>
+      </section>
     );
   }
 
   return (
-    <article className="surface-panel mt-6 border-priority-yellow/30 p-5">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+    <section className="min-h-screen bg-[#0c1220] px-4 py-5 text-slate-200 sm:px-5 lg:px-6">
+      <style>{`
+        @keyframes waitlessPulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: .42; transform: scale(.82); }
+        }
+
+        .waitless-dashboard-scrollbar::-webkit-scrollbar {
+          width: 5px;
+          height: 5px;
+        }
+
+        .waitless-dashboard-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        .waitless-dashboard-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(148, 163, 184, .18);
+          border-radius: 999px;
+        }
+      `}</style>
+
+      <div className="mx-auto max-w-[1500px]">
+        <HeroGreeting
+          staffName={staffName}
+          departmentCount={departmentSummaries.filter(
+            (department) => department.total > 0,
+          ).length}
+          queuePressure={queuePressure}
+          clearanceRate={clearanceRate}
+          realtimeStatus={realtime.status}
+        />
+
+        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <KpiCard
+            icon={Users}
+            label="Total Patients Today"
+            value={metrics.total}
+            description={`${completedCount} completed · ${missedCount} missed`}
+            tone="navy"
+          />
+
+          <KpiCard
+            icon={Clock3}
+            label="Currently Waiting"
+            value={metrics.waiting}
+            description="Across all departments"
+            tone="teal"
+          />
+
+          <KpiCard
+            icon={Timer}
+            label="Avg. Wait Time"
+            value={`${metrics.avgWait}m`}
+            description={metrics.waiting ? `${metrics.waiting} patient${metrics.waiting === 1 ? "" : "s"} in queue` : "No patients waiting"}
+            tone="purple"
+          />
+
+          <KpiCard
+            icon={Activity}
+            label="Now Being Served"
+            value={servingCount}
+            description={`${missedCount} missed turn${missedCount === 1 ? "" : "s"}`}
+            tone="brown"
+          />
+        </div>
+
+        <PriorityBreakdown
+          byPriority={metrics.byPriority ?? EMPTY_METRICS.byPriority}
+          total={metrics.total}
+        />
+
+        <div className="mt-5 grid items-start gap-5 xl:grid-cols-3">
+          <div className="xl:col-span-2">
+            <QueueOverview tickets={queueRows} />
+          </div>
+
+          <QuickActions
+            busiestDepartment={busiestDepartment}
+            ticketCount={tickets.length}
+            failedCount={failedNotifications.length}
+            safetyCount={safetyAlerts.length}
+            callNextMutation={callNextMutation}
+            retryFailedMutation={retryFailedMutation}
+            failedNotificationIds={failedNotifications.map(
+              (notification) => notification.id,
+            )}
+            onReviewSafety={scrollToAlerts}
+            onExport={exportTodayReport}
+          />
+        </div>
+
+        <div className="mt-5 grid items-start gap-5 xl:grid-cols-2">
+          <QueueTrend data={chartData} />
+
+          <DepartmentLoad departments={departmentSummaries} />
+        </div>
+
+        <div className="mt-5 grid items-start gap-5 xl:grid-cols-2">
+          <RecentActivity
+            activity={recentActivity}
+            onRefresh={refreshLiveData}
+          />
+
+          <SystemAlerts
+            id="dashboard-system-alerts"
+            alerts={systemAlerts}
+          />
+        </div>
+
+        <footer className="mt-6 flex flex-col items-center justify-between gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-5 py-4 sm:flex-row">
+          <div className="flex items-center gap-2 text-[11px] text-white/30">
+            <span
+              className={`h-2 w-2 rounded-full ${
+                realtime.status === "connected"
+                  ? "bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.5)]"
+                  : "bg-amber-400"
+              }`}
+            />
+            {realtime.status === "connected"
+              ? "Live sync active"
+              : "Reconnecting…"}
+            <span className="mx-2 text-white/10">·</span>
+            WaitLess Hospital Queue OS
+            <span className="mx-2 text-white/10">·</span>
+            © {new Date().getFullYear()} WaitLess Zimbabwe
+          </div>
+
+          <div className="text-[10px] uppercase tracking-[0.2em] text-white/20">
+            Chinhoyi Provincial Hospital
+          </div>
+        </footer>
+      </div>
+    </section>
+  );
+}
+
+function HeroGreeting({
+  staffName,
+  departmentCount,
+  queuePressure,
+  clearanceRate,
+  realtimeStatus,
+}) {
+  const greeting = getGreeting();
+
+  return (
+    <header className="relative overflow-hidden rounded-2xl bg-[linear-gradient(135deg,#0f766e_0%,#0e7490_47%,#1e3a5f_100%)]">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(20,184,166,0.6)_0%,transparent_50%),radial-gradient(circle_at_80%_20%,rgba(6,182,212,0.4)_0%,transparent_50%)] opacity-20" />
+
+      <div
+        className="absolute inset-0 opacity-10"
+        style={{
+          backgroundImage:
+            "linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)",
+          backgroundSize: "48px 48px",
+        }}
+      />
+
+      <div className="relative flex flex-col gap-5 px-5 py-6 sm:px-7 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <div className="eyebrow">Safety watch</div>
-          <h2 className="mt-2 font-display text-xl font-bold tracking-tight">
-            Triage reassessment needed
-          </h2>
-          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-            Red and yellow patients who wait beyond the safe threshold should be checked
-            again before their condition changes unnoticed.
+          <div className="flex items-center gap-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-teal-100/60">
+              Hospital operations
+            </p>
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] ${
+                realtimeStatus === "connected"
+                  ? "bg-teal-400/20 text-teal-200"
+                  : "bg-amber-400/20 text-amber-200"
+              }`}
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  realtimeStatus === "connected"
+                    ? "bg-teal-300"
+                    : "bg-amber-300"
+                }`}
+              />
+              {realtimeStatus === "connected" ? "Live" : "Syncing"}
+            </span>
+          </div>
+
+          <h1 className="mt-1 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+            {greeting}, {staffName}
+          </h1>
+
+          <p className="mt-1.5 text-sm text-teal-100/70">
+            Live queue across {departmentCount} department
+            {departmentCount === 1 ? "" : "s"} ·{" "}
+            {new Date().toLocaleDateString([], {
+              weekday: "long",
+              month: "long",
+              day: "numeric",
+            })}
           </p>
         </div>
-        <span className="rounded-full bg-priority-yellow/20 px-3 py-1.5 text-xs font-semibold text-foreground">
-          {alerts.length} alert{alerts.length === 1 ? "" : "s"}
+
+        <div className="grid grid-cols-2 gap-3">
+          <HeroMetric
+            label="Queue pressure"
+            value={`${queuePressure}%`}
+          />
+
+          <HeroMetric
+            label="Clearance rate"
+            value={`${clearanceRate}%`}
+          />
+        </div>
+      </div>
+    </header>
+  );
+}
+
+function HeroMetric({ label, value }) {
+  return (
+    <div className="min-w-[150px] rounded-xl border border-white/15 bg-white/10 px-5 py-3 text-center backdrop-blur">
+      <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-teal-100/60">
+        {label}
+      </div>
+
+      <div className="mt-1 font-mono text-2xl font-medium text-white">
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function PriorityBreakdown({ byPriority, total }) {
+  const counts = PRIORITY_BAR_META.map((meta) => ({
+    ...meta,
+    count: Number(byPriority[meta.key] ?? 0),
+  }));
+
+  return (
+    <div className="mt-4 flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3">
+      <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/30">
+        Priority Mix
+      </span>
+
+      <div className="flex h-2 flex-1 overflow-hidden rounded-full bg-white/[0.04]">
+        {counts.map((item) =>
+          item.count > 0 ? (
+            <div
+              key={item.key}
+              className={item.className}
+              style={{
+                width: `${total ? (item.count / total) * 100 : 0}%`,
+              }}
+            />
+          ) : null,
+        )}
+      </div>
+
+      <div className="flex shrink-0 items-center gap-4">
+        {counts.map((item) => (
+          <div key={item.key} className="flex items-center gap-1.5">
+            <span className={`h-2 w-2 rounded-full ${item.className}`} />
+            <span className={`text-[11px] font-semibold ${item.textClassName}`}>
+              {item.count}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function KpiCard({
+  icon: Icon,
+  label,
+  value,
+  description,
+  tone,
+}) {
+  const tones = {
+    navy: {
+      card:
+        "border-sky-400/10 bg-[linear-gradient(135deg,#0b3154_0%,#0b3a67_100%)]",
+      glow: "bg-sky-300/10",
+      iconWrap: "border-sky-200/10 bg-sky-300/10 text-sky-100",
+    },
+    teal: {
+      card:
+        "border-cyan-300/10 bg-[linear-gradient(135deg,#0a424b_0%,#075764_100%)]",
+      glow: "bg-cyan-200/10",
+      iconWrap: "border-cyan-100/10 bg-cyan-200/10 text-cyan-100",
+    },
+    purple: {
+      card:
+        "border-violet-300/10 bg-[linear-gradient(135deg,#2c2067_0%,#392a82_100%)]",
+      glow: "bg-violet-200/10",
+      iconWrap: "border-violet-100/10 bg-violet-200/10 text-violet-100",
+    },
+    brown: {
+      card:
+        "border-orange-300/10 bg-[linear-gradient(135deg,#4b2a18_0%,#66381f_100%)]",
+      glow: "bg-orange-200/10",
+      iconWrap: "border-orange-100/10 bg-orange-100/10 text-orange-100",
+    },
+  };
+
+  const selectedTone = tones[tone] ?? tones.navy;
+
+  return (
+    <article
+      className={`group relative min-h-[120px] overflow-hidden rounded-2xl border p-5 shadow-[0_18px_45px_rgba(0,0,0,0.16)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_55px_rgba(0,0,0,0.22)] ${selectedTone.card}`}
+    >
+      <div
+        className={`pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full ${selectedTone.glow}`}
+      />
+      <div className="pointer-events-none absolute inset-y-0 right-[26%] w-px rotate-[8deg] bg-white/[0.025]" />
+
+      <div className="relative flex h-full items-center justify-between gap-5">
+        <div className="min-w-0">
+          <div className="text-xs font-semibold text-white/85">
+            {label}
+          </div>
+
+          <div className="mt-2 font-mono text-4xl font-semibold tracking-tight text-white">
+            {value}
+          </div>
+
+          <div className="mt-1.5 text-[10px] font-semibold text-white/55">
+            {description}
+          </div>
+        </div>
+
+        <span
+          className={`relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border ${selectedTone.iconWrap}`}
+        >
+          <Icon className="h-7 w-7" strokeWidth={2} />
         </span>
       </div>
-      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-        {alerts.slice(0, 6).map((alert) => (
-          <div
-            key={alert.id}
-            className="rounded-2xl border border-priority-yellow/30 bg-priority-yellow/10 px-4 py-4"
+    </article>
+  );
+}
+
+function QueueOverview({ tickets }) {
+  return (
+    <article className="overflow-hidden rounded-2xl border border-white/[0.07] bg-[#111827]">
+      <PanelHeader
+        eyebrow="Live data"
+        title="Queue Overview"
+        trailing={
+          <span className="inline-flex items-center gap-2 text-[11px] text-white/35">
+            <span
+              className="h-2 w-2 rounded-full bg-teal-400"
+              style={{
+                animation:
+                  "waitlessPulse 1.6s ease-in-out infinite",
+              }}
+            />
+            {tickets.length} ticket{tickets.length === 1 ? "" : "s"}
+          </span>
+        }
+      />
+
+      {tickets.length ? (
+        <>
+          <div className="space-y-3 px-4 py-4 lg:hidden">
+            {tickets.map((ticket) => (
+              <QueueMobileCard key={ticket.id} ticket={ticket} />
+            ))}
+          </div>
+
+          <div className="waitless-dashboard-scrollbar hidden overflow-x-auto lg:block">
+            <table className="w-full min-w-[860px] text-sm">
+              <thead>
+                <tr className="border-b border-white/[0.05]">
+                  {[
+                    "Ticket",
+                    "Patient",
+                    "Department",
+                    "Priority",
+                    "Status",
+                    "Wait",
+                  ].map((heading) => (
+                    <th
+                      key={heading}
+                      className="px-6 py-3 text-left text-[10px] font-semibold uppercase tracking-[0.2em] text-white/30"
+                    >
+                      {heading}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+
+              <tbody className="divide-y divide-white/[0.045]">
+                {tickets.map((ticket) => (
+                  <QueueTableRow key={ticket.id} ticket={ticket} />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      ) : (
+        <EmptyPanel message="No patient tickets are currently available." />
+      )}
+    </article>
+  );
+}
+
+function QueueTableRow({ ticket }) {
+  const status =
+    STATUS_META[ticket.status] ?? STATUS_META.waiting;
+
+  const priorityClass =
+    PRIORITY_META[ticket.priority] ?? PRIORITY_META.green;
+
+  const priorityLabel =
+    ticket.priority === "red" ? "Critical" :
+    ticket.priority === "yellow" ? "Serious" :
+    ticket.priority === "green" ? "Ambulant" :
+    ticket.priority === "black" ? "Deceased" :
+    ticket.priority;
+
+  return (
+    <tr className="transition-colors hover:bg-white/[0.025]">
+      <td className="px-6 py-4">
+        <span
+          className={`inline-flex h-8 min-w-[4rem] items-center justify-center rounded-lg px-2 font-mono text-xs font-medium ${priorityClass}`}
+        >
+          {ticket.ticket}
+        </span>
+      </td>
+
+      <td className="px-6 py-4">
+        <div className="font-medium text-white/85">
+          {ticket.patientName}
+        </div>
+
+        {ticket.whatsApp ? (
+          <div className="mt-1 flex items-center gap-1 text-[10px] text-teal-400/80">
+            <MessageCircle className="h-3 w-3" />
+            WhatsApp
+          </div>
+        ) : null}
+      </td>
+
+      <td className="px-6 py-4 text-sm text-white/45">
+        {ticket.department}
+      </td>
+
+      <td className="px-6 py-4">
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold ${priorityClass}`}
+        >
+          {priorityLabel}
+        </span>
+      </td>
+
+      <td className="px-6 py-4">
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold ${status.className}`}
+        >
+          <span
+            className={`h-1.5 w-1.5 rounded-full ${status.dotClassName}`}
+          />
+          {status.label}
+        </span>
+      </td>
+
+      <td className="px-6 py-4 font-mono text-xs text-white/50">
+        {ticket.waitMinutes}m
+      </td>
+    </tr>
+  );
+}
+
+function QueueMobileCard({ ticket }) {
+  const status =
+    STATUS_META[ticket.status] ?? STATUS_META.waiting;
+
+  const priorityClass =
+    PRIORITY_META[ticket.priority] ?? PRIORITY_META.green;
+
+  const priorityLabel =
+    ticket.priority === "red" ? "Critical" :
+    ticket.priority === "yellow" ? "Serious" :
+    ticket.priority === "green" ? "Ambulant" :
+    ticket.priority === "black" ? "Deceased" :
+    ticket.priority;
+
+  return (
+    <div className="rounded-xl border border-white/[0.06] bg-white/[0.025] p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span
+            className={`inline-flex h-8 min-w-[4rem] items-center justify-center rounded-lg px-2 font-mono text-xs font-medium ${priorityClass}`}
           >
-            <div className="flex items-center justify-between gap-3">
-              <span
-                className={`inline-grid h-9 w-16 place-items-center rounded-xl font-display text-xs font-bold ${priorityChipClass[alert.priority]}`}
-              >
-                {alert.ticket}
-              </span>
-              <span className="text-xs font-semibold text-muted-foreground">
-                {alert.waitMinutes}m wait
-              </span>
+            {ticket.ticket}
+          </span>
+
+          <div>
+            <div className="font-medium text-white/85">
+              {ticket.patientName}
             </div>
-            <div className="mt-2 font-semibold">{alert.patientName}</div>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">
-              {alert.department} threshold is {alert.thresholdMinutes} minutes.
-            </p>
+            <div className="mt-1 text-xs text-white/40">
+              {ticket.department}
+            </div>
+          </div>
+        </div>
+
+        <span
+          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold ${status.className}`}
+        >
+          <span
+            className={`h-1.5 w-1.5 rounded-full ${status.dotClassName}`}
+          />
+          {status.label}
+        </span>
+      </div>
+
+      <div className="mt-4 flex items-center justify-between text-xs">
+        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${priorityClass}`}>
+          {priorityLabel}
+        </span>
+
+        <span className="font-mono text-white/55">
+          {ticket.waitMinutes}m wait
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function QueueTrend({ data }) {
+  return (
+    <article className="rounded-2xl border border-white/[0.07] bg-[#111827] p-5 sm:p-6">
+      <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/35">
+            Analytics
+          </p>
+
+          <h2 className="mt-1 text-lg font-semibold text-white">
+            Queue Trend · 7 Days
+          </h2>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-4 text-[11px]">
+          <ChartLegend color="#14b8a6" label="Registered" />
+          <ChartLegend color="#6366f1" label="Served" />
+          <ChartLegend color="#f59e0b" label="Missed" />
+        </div>
+      </div>
+
+      <div className="h-[280px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart
+            data={data}
+            margin={{
+              top: 4,
+              right: 6,
+              left: -18,
+              bottom: 0,
+            }}
+          >
+            <defs>
+              <linearGradient
+                id="registeredGradient"
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+              >
+                <stop
+                  offset="5%"
+                  stopColor="#14b8a6"
+                  stopOpacity={0.25}
+                />
+                <stop
+                  offset="95%"
+                  stopColor="#14b8a6"
+                  stopOpacity={0}
+                />
+              </linearGradient>
+
+              <linearGradient
+                id="servedGradient"
+                x1="0"
+                y1="0"
+                x2="0"
+                y2="1"
+              >
+                <stop
+                  offset="5%"
+                  stopColor="#6366f1"
+                  stopOpacity={0.2}
+                />
+                <stop
+                  offset="95%"
+                  stopColor="#6366f1"
+                  stopOpacity={0}
+                />
+              </linearGradient>
+            </defs>
+
+            <CartesianGrid
+              strokeDasharray="3 3"
+              stroke="rgba(255,255,255,0.05)"
+            />
+
+            <XAxis
+              dataKey="day"
+              axisLine={false}
+              tickLine={false}
+              tick={{
+                fill: "rgba(255,255,255,0.3)",
+                fontSize: 11,
+              }}
+            />
+
+            <YAxis
+              axisLine={false}
+              tickLine={false}
+              tick={{
+                fill: "rgba(255,255,255,0.3)",
+                fontSize: 11,
+              }}
+            />
+
+            <Tooltip
+              contentStyle={{
+                background: "#1a2540",
+                border: "1px solid rgba(255,255,255,0.1)",
+                borderRadius: 12,
+                fontSize: 12,
+                color: "#e2e8f0",
+              }}
+              cursor={{
+                stroke: "rgba(255,255,255,0.1)",
+              }}
+            />
+
+            <Area
+              type="monotone"
+              dataKey="registered"
+              stroke="#14b8a6"
+              strokeWidth={2}
+              fill="url(#registeredGradient)"
+              dot={false}
+            />
+
+            <Area
+              type="monotone"
+              dataKey="served"
+              stroke="#6366f1"
+              strokeWidth={2}
+              fill="url(#servedGradient)"
+              dot={false}
+            />
+
+            <Area
+              type="monotone"
+              dataKey="missed"
+              stroke="#f59e0b"
+              strokeWidth={1.5}
+              fill="none"
+              dot={false}
+              strokeDasharray="4 3"
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </article>
+  );
+}
+
+function ChartLegend({ color, label }) {
+  return (
+    <span className="flex items-center gap-1.5 text-white/40">
+      <span
+        className="h-2 w-2 rounded-full"
+        style={{ backgroundColor: color }}
+      />
+      {label}
+    </span>
+  );
+}
+
+function RecentActivity({ activity, onRefresh }) {
+  return (
+    <article className="rounded-2xl border border-white/[0.07] bg-[#111827] p-5 sm:p-6">
+      <div className="flex items-center justify-between border-b border-white/[0.05] pb-4">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/35">
+            Live feed
+          </p>
+
+          <h2 className="mt-1 text-lg font-semibold text-white">
+            Recent Activity
+          </h2>
+        </div>
+
+        <button
+          type="button"
+          onClick={onRefresh}
+          className="flex items-center gap-1.5 text-xs font-medium text-teal-400 transition hover:text-teal-300"
+        >
+          <RefreshCw className="h-3.5 w-3.5" />
+          Refresh
+        </button>
+      </div>
+
+      {activity.length ? (
+        <ul className="mt-5 space-y-0">
+          {activity.map((item, index) => (
+            <ActivityItem
+              key={item.id}
+              item={item}
+              isLast={index === activity.length - 1}
+            />
+          ))}
+        </ul>
+      ) : (
+        <EmptyPanel message="Recent patient activity will appear here." />
+      )}
+    </article>
+  );
+}
+
+function ActivityItem({ item, isLast }) {
+  const activityMeta = {
+    waiting: {
+      label: "Registered",
+      icon: Hash,
+      color: "#6366f1",
+    },
+    called: {
+      label: "Called",
+      icon: Bell,
+      color: "#14b8a6",
+    },
+    "in-service": {
+      label: "Serving",
+      icon: Activity,
+      color: "#14b8a6",
+    },
+    completed: {
+      label: "Completed",
+      icon: CheckCircle2,
+      color: "#22c55e",
+    },
+    missed: {
+      label: "Missed",
+      icon: XCircle,
+      color: "#f59e0b",
+    },
+  };
+
+  const meta =
+    activityMeta[item.status] ?? activityMeta.waiting;
+
+  const Icon = meta.icon;
+
+  return (
+    <li className="relative flex gap-3 pb-5">
+      {!isLast ? (
+        <div className="absolute bottom-0 left-[13px] top-7 w-px bg-white/[0.05]" />
+      ) : null}
+
+      <div
+        className="relative z-10 mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+        style={{
+          backgroundColor: `${meta.color}20`,
+        }}
+      >
+        <Icon
+          className="h-3.5 w-3.5"
+          style={{ color: meta.color }}
+        />
+      </div>
+
+      <div className="min-w-0 flex-1 pt-0.5">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <span className="text-sm font-medium text-white/75">
+            {item.ticket} · {item.patientName}
+          </span>
+
+          <span className="shrink-0 text-[11px] text-white/25">
+            {formatRelativeTime(item.createdAt)}
+          </span>
+        </div>
+
+        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+          <span
+            className="text-[10px] font-semibold uppercase tracking-[0.14em]"
+            style={{ color: `${meta.color}dd` }}
+          >
+            {meta.label}
+          </span>
+
+          <span className="text-[11px] text-white/30">
+            · {item.department}
+          </span>
+        </div>
+      </div>
+    </li>
+  );
+}
+
+function DepartmentLoad({ departments }) {
+  const maximum = Math.max(
+    ...departments.map((department) => department.total),
+    1,
+  );
+
+  return (
+    <article className="rounded-2xl border border-white/[0.07] bg-[#111827] p-5 sm:p-6">
+      <PanelHeader
+        compact
+        eyebrow="Operations"
+        title="Department Load"
+        trailing={
+          <span className="text-[11px] text-white/30">
+            {departments.length} depts
+          </span>
+        }
+      />
+
+      <div className="mt-5 space-y-4">
+        {departments.map((department) => (
+          <div key={department.name}>
+            <div className="mb-1.5 flex items-center justify-between gap-4">
+              <div className="flex min-w-0 items-center gap-2">
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  style={{
+                    backgroundColor: department.color,
+                  }}
+                />
+
+                <span className="truncate text-sm text-white/65">
+                  {department.name}
+                </span>
+              </div>
+
+              <div className="flex shrink-0 items-center gap-3 text-[11px] text-white/35">
+                <span className="text-blue-400">
+                  {department.waiting}w
+                </span>
+
+                <span className="text-teal-400">
+                  {department.active}a
+                </span>
+
+                {department.missed > 0 ? (
+                  <span className="text-amber-400">
+                    {department.missed}m
+                  </span>
+                ) : null}
+
+                <span className="font-mono font-medium text-white/60">
+                  {department.total}
+                </span>
+              </div>
+            </div>
+
+            <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{
+                  width: `${(department.total / maximum) * 100}%`,
+                  backgroundColor: department.color,
+                  opacity: 0.78,
+                }}
+              />
+            </div>
           </div>
         ))}
       </div>
@@ -1422,417 +1396,289 @@ function ReassessmentAlertsPanel({ alerts }) {
   );
 }
 
-function TicketActionButton({
-  ticket,
+function SystemAlerts({ id, alerts }) {
+  return (
+    <article
+      id={id}
+      className="rounded-2xl border border-white/[0.07] bg-[#111827] p-5 sm:p-6"
+    >
+      <PanelHeader
+        compact
+        eyebrow="Safety"
+        title="System Alerts"
+        trailing={
+          <span className="rounded-full bg-red-500/15 px-2.5 py-1 text-[10px] font-semibold text-red-400">
+            {alerts.length} active
+          </span>
+        }
+      />
+
+      {alerts.length ? (
+        <div className="mt-5 space-y-3">
+          {alerts.map((alert) => (
+            <AlertItem key={alert.id} alert={alert} />
+          ))}
+        </div>
+      ) : (
+        <div className="mt-5 rounded-xl border border-green-500/15 bg-green-500/10 px-4 py-4">
+          <div className="flex items-start gap-3">
+            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-400" />
+
+            <div>
+              <div className="text-sm font-semibold text-green-300">
+                No active system alerts
+              </div>
+
+              <p className="mt-1 text-xs leading-5 text-white/35">
+                Queue safety and notification delivery are stable.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+    </article>
+  );
+}
+
+function AlertItem({ alert }) {
+  const tones = {
+    critical:
+      "border-red-500/20 bg-red-500/10 text-red-400",
+    warning:
+      "border-amber-500/20 bg-amber-500/10 text-amber-400",
+    info:
+      "border-blue-500/20 bg-blue-500/10 text-blue-400",
+  };
+
+  const tone = tones[alert.severity] ?? tones.info;
+
+  return (
+    <div
+      className={`flex items-start gap-3 rounded-xl border px-4 py-4 ${tone}`}
+    >
+      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+
+      <div className="min-w-0 flex-1">
+        <p className="text-sm leading-6 text-white/70">
+          {alert.message}
+        </p>
+
+        <p className="mt-1 text-xs text-white/30">
+          {alert.detail}
+        </p>
+
+        <p className="mt-1 text-[10px] text-white/25">
+          {alert.time}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function QuickActions({
+  busiestDepartment,
+  ticketCount,
+  failedCount,
+  safetyCount,
+  callNextMutation,
+  retryFailedMutation,
+  failedNotificationIds,
+  onReviewSafety,
+  onExport,
+}) {
+  return (
+    <article className="rounded-2xl border border-white/[0.07] bg-[#111827] p-5 sm:p-6">
+      <PanelHeader
+        compact
+        eyebrow="Staff actions"
+        title="Quick Actions"
+      />
+
+      <div className="mt-5 space-y-3">
+        <ActionButton
+          icon={Zap}
+          title="Call next patient"
+          description={busiestDepartment.name}
+          className="border-teal-500/15 bg-teal-500/12 text-teal-400"
+          disabled={
+            callNextMutation.isPending ||
+            !busiestDepartment.waiting
+          }
+          onClick={() =>
+            callNextMutation.mutate(busiestDepartment.name)
+          }
+          loading={callNextMutation.isPending}
+        />
+
+        <ActionButton
+          icon={RefreshCw}
+          title="Retry failed alerts"
+          description={`${failedCount} notification${
+            failedCount === 1 ? "" : "s"
+          }`}
+          className="border-amber-500/15 bg-amber-500/12 text-amber-400"
+          disabled={
+            retryFailedMutation.isPending ||
+            !failedNotificationIds.length
+          }
+          onClick={() =>
+            retryFailedMutation.mutate(failedNotificationIds)
+          }
+          loading={retryFailedMutation.isPending}
+        />
+
+        <ActionButton
+          icon={Shield}
+          title="Review safety watch"
+          description={`${safetyCount} overdue ticket${
+            safetyCount === 1 ? "" : "s"
+          }`}
+          className="border-red-500/15 bg-red-500/12 text-red-400"
+          disabled={!safetyCount}
+          onClick={onReviewSafety}
+        />
+
+        <ActionButton
+          icon={FileText}
+          title="Export today's report"
+          description={`CSV · ${ticketCount} entries`}
+          className="border-indigo-500/15 bg-indigo-500/12 text-indigo-400"
+          disabled={!ticketCount}
+          onClick={onExport}
+        />
+      </div>
+    </article>
+  );
+}
+
+function ActionButton({
+  icon: Icon,
+  title,
+  description,
+  className,
   disabled,
   loading,
-  recallLoading,
-  onAction,
-  onRecall,
+  onClick,
 }) {
-  const primaryActionMeta = {
-    waiting: {
-      label: "Call now",
-      nextStatus: "called",
-      className: "border border-border bg-background hover:bg-muted",
-    },
-    called: {
-      label: "Start service",
-      nextStatus: "in-service",
-      className: "border border-primary/20 bg-primary-soft text-primary hover:bg-primary-soft/80",
-    },
-    "in-service": {
-      label: "Complete visit",
-      nextStatus: "completed",
-      className:
-        "border border-priority-green/30 bg-priority-green/10 text-priority-green hover:bg-priority-green/15",
-    },
-  }[ticket.status];
-
-  if (ticket.status === "missed") {
-    return (
-      <button
-        onClick={onRecall}
-        disabled={disabled}
-        className="inline-flex items-center gap-2 rounded-xl border border-priority-yellow/30 bg-priority-yellow/10 px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-priority-yellow/15 disabled:opacity-60"
-      >
-        {recallLoading ? (
-          <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <RefreshCw className="h-3.5 w-3.5" />
-        )}
-        Recall
-      </button>
-    );
-  }
-
-  if (!primaryActionMeta) {
-    return (
-      <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-        <CheckCircle2 className="h-3.5 w-3.5" />
-        Closed
-      </span>
-    );
-  }
-
   return (
-    <div className="flex flex-wrap justify-end gap-2">
-      <button
-        onClick={() => onAction(primaryActionMeta.nextStatus)}
-        disabled={disabled}
-        className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition-colors disabled:opacity-60 ${primaryActionMeta.className}`}
-      >
-        {loading ? (
-          <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <ArrowRight className="h-3.5 w-3.5" />
-        )}
-        {primaryActionMeta.label}
-      </button>
-      {ticket.status === "called" && (
-        <button
-          onClick={() => onAction("missed")}
-          disabled={disabled}
-          className="inline-flex items-center gap-2 rounded-xl border border-priority-yellow/30 bg-priority-yellow/10 px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-priority-yellow/15 disabled:opacity-60"
-        >
-          <AlertTriangle className="h-3.5 w-3.5" />
-          Missed
-        </button>
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className={`flex min-h-[72px] w-full items-center gap-4 rounded-xl border px-5 py-4 text-left transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45 ${className}`}
+    >
+      {loading ? (
+        <LoaderCircle className="h-5 w-5 shrink-0 animate-spin" />
+      ) : (
+        <Icon className="h-5 w-5 shrink-0" />
       )}
-    </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="text-sm font-semibold text-white/80">
+          {title}
+        </div>
+
+        <div className="mt-1 text-xs text-white/40">
+          {description}
+        </div>
+      </div>
+
+      <ArrowRight className="h-4 w-4 shrink-0 opacity-45" />
+    </button>
   );
 }
 
-function TransferTicketControl({ ticket, departments, disabled, loading, onTransfer }) {
-  const [department, setDepartment] = useState(ticket.department);
-  const canTransfer = ticket.status !== "completed";
-  const isChanged = department !== ticket.department;
-
-  useEffect(() => {
-    setDepartment(ticket.department);
-  }, [ticket.department]);
-
-  if (!canTransfer) {
-    return null;
-  }
-
-  return (
-    <div className="flex flex-wrap justify-end gap-2">
-      <select
-        value={department}
-        onChange={(event) => setDepartment(event.target.value)}
-        className="rounded-xl border border-border bg-background px-2.5 py-2 text-xs font-semibold text-foreground outline-none transition-colors focus:border-primary"
-      >
-        {departments.map((entry) => (
-          <option key={entry} value={entry}>
-            {entry}
-          </option>
-        ))}
-      </select>
-      <button
-        type="button"
-        onClick={() => onTransfer(department)}
-        disabled={disabled || !isChanged}
-        className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-60"
-      >
-        {loading ? (
-          <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
-        ) : (
-          <ArrowRight className="h-3.5 w-3.5" />
-        )}
-        Transfer
-      </button>
-    </div>
-  );
-}
-
-function NotificationChannelBadge({ channel }) {
-  const badgeMeta = {
-    whatsapp: {
-      label: "WhatsApp",
-      className: "bg-accent/15 text-accent",
-    },
-    "display-board": {
-      label: "Display board",
-      className: "bg-primary-soft text-primary",
-    },
-  }[channel] ?? {
-    label: channel,
-    className: "bg-muted text-muted-foreground",
-  };
-
-  return (
-    <span
-      className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.22em] ${badgeMeta.className}`}
-    >
-      {badgeMeta.label}
-    </span>
-  );
-}
-
-function NotificationStatusBadge({ status }) {
-  const badgeMeta = {
-    queued: {
-      label: "Queued",
-      className: "bg-muted text-muted-foreground",
-    },
-    sending: {
-      label: "Sending",
-      className: "bg-primary-soft text-primary",
-    },
-    sent: {
-      label: "Sent",
-      className: "bg-accent/15 text-accent",
-    },
-    delivered: {
-      label: "Delivered",
-      className: "bg-priority-green/15 text-priority-green",
-    },
-    read: {
-      label: "Read",
-      className: "bg-priority-green text-priority-green-foreground",
-    },
-    retrying: {
-      label: "Retrying",
-      className: "bg-priority-yellow/20 text-foreground",
-    },
-    failed: {
-      label: "Failed",
-      className: "bg-destructive/15 text-destructive",
-    },
-  }[status] ?? {
-    label: status,
-    className: "bg-muted text-muted-foreground",
-  };
-
-  return (
-    <span
-      className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.22em] ${badgeMeta.className}`}
-    >
-      {badgeMeta.label}
-    </span>
-  );
-}
-
-function NotificationFocusPanel({
-  notification,
-  retryNotificationMutation,
-  activeRetryNotificationId,
+function PanelHeader({
+  eyebrow,
+  title,
+  trailing,
+  compact = false,
 }) {
-  if (!notification) {
-    return (
-      <div className="surface-panel-muted flex h-full items-center justify-center px-4 py-10 text-center">
-        <div className="max-w-xs">
-          <BellRing className="mx-auto h-6 w-6 text-muted-foreground" />
-          <div className="mt-3 font-semibold text-foreground">Select a notification</div>
-          <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            Choose a delivery event from the list to inspect its full status and attempt history.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  const attempts = notification.attempts ?? [];
-  const isRetryingThisNotification =
-    retryNotificationMutation.isPending && activeRetryNotificationId === notification.id;
-
   return (
-    <div className="surface-panel-muted h-full px-4 py-4">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-            Delivery focus
-          </div>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <span
-              className={`inline-grid h-8 w-14 place-items-center rounded-xl font-display text-xs font-bold ${priorityChipClass[notification.priority]}`}
-            >
-              {notification.ticket}
-            </span>
-            <span className="text-sm font-semibold text-muted-foreground">
-              {notification.patientName}
-            </span>
-          </div>
-          <h3 className="mt-3 font-display text-xl font-bold tracking-tight text-foreground">
-            {notification.title}
-          </h3>
-          <p className="mt-1 text-sm leading-6 text-muted-foreground">{notification.message}</p>
-        </div>
-        <div className="flex shrink-0 flex-col items-end gap-2">
-          <NotificationChannelBadge channel={notification.channel} />
-          <NotificationStatusBadge status={notification.status} />
-        </div>
+    <div
+      className={`flex items-start justify-between gap-4 ${
+        compact
+          ? "border-b border-white/[0.05] pb-4"
+          : "border-b border-white/[0.05] px-5 py-4 sm:px-6"
+      }`}
+    >
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/35">
+          {eyebrow}
+        </p>
+
+        <h2 className="mt-1 text-lg font-semibold text-white">
+          {title}
+        </h2>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <NotificationMetaItem label="Recipient" value={notification.recipient} />
-        <NotificationMetaItem label="Department" value={notification.department} />
-        <NotificationMetaItem
-          label="Created"
-          value={formatNotificationTimestamp(notification.createdAt)}
-        />
-        <NotificationMetaItem
-          label="Attempts"
-          value={`${attempts.length}/${notification.maxAttempts ?? 1}`}
-        />
-        <NotificationMetaItem
-          label="Next retry"
-          value={
-            notification.nextRetryAt
-              ? formatNotificationTimestamp(notification.nextRetryAt)
-              : "None scheduled"
-          }
-        />
-        <NotificationMetaItem
-          label="Last attempt"
-          value={
-            notification.lastAttemptAt
-              ? formatNotificationTimestamp(notification.lastAttemptAt)
-              : "Not attempted"
-          }
-        />
-      </div>
-
-      {notification.errorMessage && (
-        <div className="mt-4 rounded-2xl border border-destructive/25 bg-destructive/10 px-4 py-4">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-destructive">
-            Delivery error
-          </div>
-          <p className="mt-2 text-sm leading-6 text-destructive">{notification.errorMessage}</p>
-        </div>
-      )}
-
-      {canRetryNotification(notification.status) && (
-        <button
-          onClick={() => retryNotificationMutation.mutate(notification.id)}
-          disabled={retryNotificationMutation.isPending}
-          className="mt-4 inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted disabled:opacity-60"
-        >
-          {isRetryingThisNotification ? (
-            <LoaderCircle className="h-4 w-4 animate-spin" />
-          ) : (
-            <RefreshCw className="h-4 w-4" />
-          )}
-          Retry notification
-        </button>
-      )}
-
-      <div className="mt-5">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-          Attempt history
-        </div>
-        {attempts.length ? (
-          <ul className="mt-3 space-y-2">
-            {attempts.map((attempt) => (
-              <li
-                key={`${notification.id}-${attempt.sequence}`}
-                className="rounded-2xl border border-border/70 bg-background/80 px-4 py-4"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-sm font-semibold text-foreground">
-                      Attempt {attempt.sequence}
-                    </div>
-                    <div className="mt-1 text-[11px] text-muted-foreground">
-                      Started {formatNotificationTimestamp(attempt.attemptedAt)}
-                    </div>
-                    {attempt.completedAt && (
-                      <div className="mt-1 text-[11px] text-muted-foreground">
-                        Completed {formatNotificationTimestamp(attempt.completedAt)}
-                      </div>
-                    )}
-                  </div>
-                  <NotificationStatusBadge status={attempt.status} />
-                </div>
-
-                {(attempt.providerMessageId || attempt.errorCode || attempt.errorMessage) && (
-                  <div className="mt-3 rounded-xl border border-border/70 bg-muted/30 px-3 py-3 text-[11px] text-muted-foreground">
-                    {attempt.providerMessageId && (
-                      <div>Provider ID: {attempt.providerMessageId}</div>
-                    )}
-                    {attempt.errorCode && <div>Error code: {attempt.errorCode}</div>}
-                    {attempt.errorMessage && (
-                      <div className="mt-1 text-destructive">{attempt.errorMessage}</div>
-                    )}
-                  </div>
-                )}
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <div className="mt-3 rounded-2xl border border-dashed border-border bg-background/70 px-4 py-4 text-sm text-muted-foreground">
-            No attempt records have been captured for this notification yet.
-          </div>
-        )}
-      </div>
+      {trailing}
     </div>
   );
 }
 
-function NotificationMetaItem({ label, value }) {
+function EmptyPanel({ message }) {
   return (
-    <div className="rounded-2xl border border-border/70 bg-background/80 px-4 py-3">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-        {label}
-      </div>
-      <div className="mt-1 text-sm font-semibold text-foreground">{value}</div>
+    <div className="px-5 py-8 text-sm text-white/35 sm:px-6">
+      {message}
     </div>
   );
 }
 
-function canRetryNotification(status) {
-  return status === "queued" || status === "retrying" || status === "failed";
-}
+function getGreeting() {
+  const hour = new Date().getHours();
 
-function notificationFrameClass(status) {
-  return (
-    {
-      failed: "border-destructive/25 bg-destructive/5",
-      retrying: "border-priority-yellow/30 bg-priority-yellow/10",
-      delivered: "border-priority-green/20 bg-priority-green/5",
-      read: "border-priority-green/25 bg-priority-green/10",
-      sent: "border-accent/20 bg-accent/5",
-    }[status] ?? "border-border/70 bg-background/75"
-  );
-}
-
-function formatNotificationTimestamp(value) {
-  return new Date(value).toLocaleString([], {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-function formatNotificationTime(value) {
-  const createdAt = new Date(value).getTime();
-  const diffMinutes = Math.max(0, Math.round((Date.now() - createdAt) / 60_000));
-
-  if (diffMinutes < 1) {
-    return "just now";
+  if (hour < 12) {
+    return "Good morning";
   }
 
-  if (diffMinutes === 1) {
+  if (hour < 18) {
+    return "Good afternoon";
+  }
+
+  return "Good evening";
+}
+
+function formatRelativeTime(value) {
+  if (!value) {
+    return "Just now";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Just now";
+  }
+
+  const minutes = Math.max(
+    0,
+    Math.round((Date.now() - date.getTime()) / 60_000),
+  );
+
+  if (minutes < 1) {
+    return "Just now";
+  }
+
+  if (minutes === 1) {
     return "1 min ago";
   }
 
-  if (diffMinutes < 60) {
-    return `${diffMinutes} mins ago`;
+  if (minutes < 60) {
+    return `${minutes} min ago`;
   }
 
-  const diffHours = Math.round(diffMinutes / 60);
-  if (diffHours === 1) {
+  const hours = Math.round(minutes / 60);
+
+  if (hours === 1) {
     return "1 hour ago";
   }
 
-  return `${diffHours} hours ago`;
-}
+  if (hours < 24) {
+    return `${hours} hours ago`;
+  }
 
-function formatNotificationSchedule(value) {
-  return new Date(value).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
+  return date.toLocaleDateString([], {
+    month: "short",
+    day: "numeric",
   });
 }

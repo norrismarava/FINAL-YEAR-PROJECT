@@ -24,6 +24,7 @@ const AuthContext = createContext({
   logout: () => {},
   hasRole: () => false,
   updateProfile: () => {},
+  updateAvatar: () => {},
 });
 
 function isExpired(expiresAt) {
@@ -117,6 +118,27 @@ export function AuthProvider({ children }) {
     });
   }
 
+  function updateAvatar(avatarUrl) {
+    setUser((currentUser) => {
+      if (!currentUser) {
+        return currentUser;
+      }
+
+      const nextUser = {
+        ...currentUser,
+        avatarUrl,
+      };
+
+      storeAuthSession({
+        token,
+        expiresAt,
+        user: nextUser,
+      });
+
+      return nextUser;
+    });
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -129,6 +151,7 @@ export function AuthProvider({ children }) {
         logout,
         hasRole,
         updateProfile,
+        updateAvatar,
       }}
     >
       {children}

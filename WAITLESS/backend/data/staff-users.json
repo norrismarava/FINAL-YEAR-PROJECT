@@ -1,0 +1,32 @@
+[
+  {
+    "id": "admin",
+    "username": "admin",
+    "password": "admin123",
+    "name": "System Administrator",
+    "role": "admin",
+    "lastLoginAt": "2026-07-21T10:14:26.723Z"
+  },
+  {
+    "id": "reception",
+    "username": "reception",
+    "password": "reception123",
+    "name": "Reception Desk",
+    "role": "reception"
+  },
+  {
+    "id": "triage",
+    "username": "triage",
+    "password": "triage123",
+    "name": "Triage Nurse",
+    "role": "triage"
+  },
+  {
+    "id": "clinician",
+    "username": "clinician",
+    "password": "clinician123",
+    "name": "Clinical Desk",
+    "role": "clinician",
+    "lastLoginAt": "2026-07-16T10:18:38.289Z"
+  }
+]

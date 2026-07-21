@@ -1,9 +1,5 @@
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
-
-import { env } from "../config/env.js";
 import { requireStaffSession } from "../services/sessionService.js";
+import { readAvatarImage, saveAvatarImage } from "../services/avatarService.js";
 
 import {
   getStoredStaffUsers,
@@ -11,15 +7,17 @@ import {
   updateStaffUserAvatar,
 } from "../services/profileService.js";
 
-
-
-
 export async function getMeController({ req }) {
   const session = requireStaffSession(req);
 
   // Profile is stored on the user record.
   const users = getStoredStaffUsers();
   const user = users.find((u) => u.id === session.user.id) ?? null;
+  const publicUser = user
+    ? Object.fromEntries(
+        Object.entries(user).filter(([key]) => key !== "password"),
+      )
+    : {};
 
   return {
     status: 200,
@@ -28,13 +26,12 @@ export async function getMeController({ req }) {
       user: {
         ...session.user,
         // staff-users.json stores core fields at top-level.
-        ...(user ?? {}),
+        ...publicUser,
         avatarUrl: user?.avatarUrl ?? null,
       },
     },
   };
 }
-
 
 export async function saveProfileController({ req, body }) {
   const session = requireStaffSession(req);
@@ -65,7 +62,6 @@ export async function saveProfileController({ req, body }) {
   };
 }
 
-
 export async function saveAvatarController({ req, body }) {
   const session = requireStaffSession(req);
 
@@ -74,23 +70,13 @@ export async function saveAvatarController({ req, body }) {
     return { status: 400, body: { message: "avatarBase64 is required" } };
   }
 
-  // Write avatar to disk.
   const users = getStoredStaffUsers();
   const existing = users.find((u) => u.id === session.user.id);
   if (!existing) {
     return { status: 404, body: { message: "User not found." } };
   }
 
-  const dataDir = path.join(process.cwd(), "data", "avatars");
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
-
-  const filePath = path.join(dataDir, `${existing.id}.jpg`);
-  const buffer = Buffer.from(avatarBase64, "base64");
-  fs.writeFileSync(filePath, buffer);
-
-  const avatarUrl = `/data/avatars/${existing.id}.jpg`;
+  const avatarUrl = saveAvatarImage(existing.id, avatarBase64);
 
   updateStaffUserAvatar(existing.id, {
     avatarUrl,
@@ -102,4 +88,19 @@ export async function saveAvatarController({ req, body }) {
   };
 }
 
+export async function getAvatarController({ params, res }) {
+  const image = readAvatarImage(params.userId);
 
+  res.writeHead(200, {
+    "cache-control": "public, max-age=86400",
+    "content-length": image.length,
+    "content-type": "image/jpeg",
+  });
+  res.end(image);
+
+  return {
+    status: 200,
+    body: null,
+    handled: true,
+  };
+}

@@ -76,7 +76,7 @@ export default function ResetPasswordPage() {
             <CheckCircle2 className="h-8 w-8" />
           </span>
           <Link
-            to="/login"
+            to="/admin/login"
             className="inline-flex h-12 w-full items-center justify-center rounded-xl bg-[#062653] px-4 text-sm font-bold uppercase tracking-[0.08em] text-white transition hover:bg-[#083a73]"
           >
             Sign in

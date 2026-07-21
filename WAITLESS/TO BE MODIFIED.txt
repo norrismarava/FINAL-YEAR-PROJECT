@@ -1,0 +1,2090 @@
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { NavLink } from "react-router-dom";
+import {
+  Activity,
+  AlertTriangle,
+  BarChart3,
+  Bell,
+  Building2,
+  CheckCircle2,
+  ChevronDown,
+  ChevronRight,
+  ClipboardList,
+  Clock3,
+  FlaskConical,
+  HeartPulse,
+  LayoutDashboard,
+  LogOut,
+  MessageCircle,
+  Moon,
+  Pill,
+  Search,
+  Settings,
+  ShieldCheck,
+  Stethoscope,
+  TicketCheck,
+  Users,
+  Wifi,
+  XCircle,
+} from "lucide-react";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
+
+import { useApiResource } from "@/hooks/useApiResource";
+import { fetchDashboardSummary } from "@/services/queueApi";
+import { useQueueRealtime } from "@/sockets/QueueRealtimeProvider";
+import waitlessLogoIcon from "@/assets/waitless-logo-icon.png";
+
+const isBrowser = typeof window !== "undefined";
+
+const EMPTY_METRICS = {
+  total: 0,
+  waiting: 0,
+  active: 0,
+  avgWait: 0,
+  notificationsToday: 0,
+  byPriority: {
+    red: 0,
+    yellow: 0,
+    green: 0,
+    black: 0,
+  },
+  byStatus: {
+    waiting: 0,
+    called: 0,
+    "in-service": 0,
+    missed: 0,
+    completed: 0,
+  },
+  notificationStatuses: {
+    queued: 0,
+    sending: 0,
+    sent: 0,
+    delivered: 0,
+    read: 0,
+    retrying: 0,
+    failed: 0,
+  },
+};
+
+const FALLBACK_TREND = [
+  { label: "Fri", registered: 82, served: 58 },
+  { label: "Sat", registered: 158, served: 103 },
+  { label: "Sun", registered: 112, served: 49 },
+  { label: "Mon", registered: 91, served: 37 },
+  { label: "Tue", registered: 166, served: 119 },
+  { label: "Wed", registered: 149, served: 83 },
+  { label: "Thu", registered: 151, served: 76 },
+];
+
+const NAVIGATION = [
+  {
+    label: "Patient flow",
+    items: [
+      { label: "Dashboard", to: "/dashboard", icon: LayoutDashboard },
+      { label: "Register Patient", to: "/register", icon: ClipboardList },
+      { label: "Triage", to: "/triage", icon: HeartPulse },
+      { label: "Queue Board", to: "/queue", icon: TicketCheck },
+      { label: "Departments", to: "/departments", icon: Building2 },
+      { label: "Tracking", to: "/track", icon: Search },
+    ],
+  },
+  {
+    label: "Operations",
+    items: [
+      { label: "Appointments", to: "/appointments", icon: Clock3 },
+      { label: "Pharmacy", to: "/pharmacy", icon: Pill },
+      { label: "Laboratory", to: "/laboratory", icon: FlaskConical },
+      { label: "Reports", to: "/reports", icon: BarChart3 },
+      { label: "Analytics", to: "/analytics", icon: Activity },
+    ],
+  },
+  {
+    label: "Admin & settings",
+    items: [
+      { label: "Staff Management", to: "/staff", icon: Users },
+      { label: "Roles & Permissions", to: "/roles", icon: ShieldCheck },
+      { label: "System Settings", to: "/settings", icon: Settings },
+      { label: "Audit Logs", to: "/audit", icon: Stethoscope },
+    ],
+  },
+];
+
+const STATUS_META = {
+  waiting: {
+    label: "Waiting",
+    className: "wl-status wl-status-blue",
+  },
+  called: {
+    label: "Called",
+    className: "wl-status wl-status-green",
+  },
+  "in-service": {
+    label: "Serving",
+    className: "wl-status wl-status-cyan",
+  },
+  missed: {
+    label: "No show",
+    className: "wl-status wl-status-red",
+  },
+  completed: {
+    label: "Completed",
+    className: "wl-status wl-status-green",
+  },
+};
+
+const DEPARTMENT_ICONS = [Users, FlaskConical, Pill, Activity, Stethoscope];
+
+export default function DashboardPage() {
+  const realtime = useQueueRealtime();
+  const loadDashboardSummary = useCallback(() => fetchDashboardSummary(), []);
+  const dashboardQuery = useApiResource(loadDashboardSummary, {
+    enabled: isBrowser,
+  });
+
+  const [now, setNow] = useState(new Date());
+  const [selectedPeriod, setSelectedPeriod] = useState("7 Days");
+  const [selectedDepartment, setSelectedDepartment] = useState("All Departments");
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
+
+  const tickets = dashboardQuery.data?.tickets ?? [];
+  const notifications = dashboardQuery.data?.notifications ?? [];
+  const metrics = dashboardQuery.data?.metrics ?? EMPTY_METRICS;
+  const safetyAlerts =
+    dashboardQuery.data?.safetyAlerts?.reassessment ?? [];
+
+  const realtimeConnected = realtime.status === "connected";
+
+  const departments = useMemo(() => {
+    const grouped = new Map();
+
+    tickets.forEach((ticket) => {
+      const department = ticket.department || "Unassigned";
+      const current = grouped.get(department) ?? {
+        name: department,
+        total: 0,
+        waiting: 0,
+        serving: 0,
+        nextTicket: "—",
+      };
+
+      current.total += 1;
+
+      if (ticket.status === "waiting") {
+        current.waiting += 1;
+        if (current.nextTicket === "—") {
+          current.nextTicket = ticket.ticket;
+        }
+      }
+
+      if (ticket.status === "called" || ticket.status === "in-service") {
+        current.serving += 1;
+      }
+
+      grouped.set(department, current);
+    });
+
+    const entries = Array.from(grouped.values()).sort(
+      (left, right) =>
+        right.total - left.total || left.name.localeCompare(right.name),
+    );
+
+    return entries.length
+      ? entries.slice(0, 5)
+      : [
+          {
+            name: "Outpatient (OPD)",
+            total: 28,
+            waiting: 28,
+            serving: 1,
+            nextTicket: "OPD-026",
+          },
+          {
+            name: "Laboratory",
+            total: 12,
+            waiting: 12,
+            serving: 1,
+            nextTicket: "LAB-015",
+          },
+          {
+            name: "Pharmacy",
+            total: 18,
+            waiting: 18,
+            serving: 1,
+            nextTicket: "PHARM-042",
+          },
+          {
+            name: "Radiology",
+            total: 9,
+            waiting: 9,
+            serving: 1,
+            nextTicket: "RAD-009",
+          },
+          {
+            name: "Eye Clinic",
+            total: 7,
+            waiting: 7,
+            serving: 1,
+            nextTicket: "EYE-007",
+          },
+        ];
+  }, [tickets]);
+
+  const queueRows = useMemo(
+    () =>
+      departments.map((department, index) => {
+        const servingTicket = tickets.find(
+          (ticket) =>
+            ticket.department === department.name &&
+            ["called", "in-service"].includes(ticket.status),
+        );
+
+        return {
+          ...department,
+          icon: DEPARTMENT_ICONS[index % DEPARTMENT_ICONS.length],
+          currentTicket:
+            servingTicket?.ticket ??
+            ["OPD-025", "LAB-014", "PHARM-041", "RAD-008", "EYE-006"][index] ??
+            "—",
+        };
+      }),
+    [departments, tickets],
+  );
+
+  const chartData = useMemo(() => {
+    const source =
+      dashboardQuery.data?.queueTrend ??
+      dashboardQuery.data?.notificationAnalytics?.trend ??
+      [];
+
+    if (!source.length) {
+      return FALLBACK_TREND;
+    }
+
+    return source.slice(-7).map((entry, index) => {
+      const total =
+        Number(entry.registered ?? entry.total ?? entry.value ?? 0) || 0;
+      const attention =
+        Number(entry.attention ?? entry.failed ?? entry.missed ?? 0) || 0;
+      const served =
+        Number(entry.served ?? entry.completed ?? Math.max(total - attention, 0)) ||
+        0;
+
+      return {
+        label: entry.day ?? entry.label ?? `Day ${index + 1}`,
+        registered: total,
+        served,
+      };
+    });
+  }, [dashboardQuery.data]);
+
+  const recentActivity = useMemo(() => {
+    const ticketActivity = tickets
+      .slice()
+      .sort((left, right) => {
+        const leftTime = new Date(
+          left.updatedAt ?? left.createdAt ?? 0,
+        ).getTime();
+        const rightTime = new Date(
+          right.updatedAt ?? right.createdAt ?? 0,
+        ).getTime();
+        return rightTime - leftTime;
+      })
+      .slice(0, 5)
+      .map((ticket) => ({
+        ticket: ticket.ticket,
+        status: ticket.status,
+        time: formatActivityTime(ticket.updatedAt ?? ticket.createdAt),
+      }));
+
+    if (ticketActivity.length) {
+      return ticketActivity;
+    }
+
+    return [
+      { ticket: "OPD-024", status: "called", time: "12:44 PM" },
+      { ticket: "LAB-013", status: "completed", time: "12:43 PM" },
+      { ticket: "PHARM-040", status: "in-service", time: "12:42 PM" },
+      { ticket: "RAD-007", status: "called", time: "12:41 PM" },
+      { ticket: "EYE-005", status: "missed", time: "12:39 PM" },
+    ];
+  }, [tickets]);
+
+  const systemAlerts = useMemo(() => {
+    const alerts = safetyAlerts.slice(0, 2).map((alert) => ({
+      type: alert.priority === "red" ? "critical" : "warning",
+      title: `${alert.ticket} needs reassessment`,
+      detail: `${alert.department} · ${alert.waitMinutes} min wait`,
+      time: formatActivityTime(alert.createdAt),
+    }));
+
+    const failedNotifications = notifications.filter(
+      (notification) => notification.status === "failed",
+    ).length;
+
+    if (failedNotifications) {
+      alerts.push({
+        type: "info",
+        title: `${failedNotifications} notification${
+          failedNotifications === 1 ? "" : "s"
+        } failed`,
+        detail: "Check WhatsApp delivery activity",
+        time: "Now",
+      });
+    }
+
+    if (!alerts.length) {
+      return [
+        {
+          type: "warning",
+          title: "High waiting time in OPD",
+          detail: "Average wait: 1h 24m",
+          time: "12:40 PM",
+        },
+        {
+          type: "info",
+          title: "Pharmacy queue increasing",
+          detail: "18 patients waiting",
+          time: "12:38 PM",
+        },
+        {
+          type: "success",
+          title: "Backup completed",
+          detail: "System backup successful",
+          time: "12:30 PM",
+        },
+      ];
+    }
+
+    return alerts.slice(0, 3);
+  }, [notifications, safetyAlerts]);
+
+  const delivered =
+    metrics.notificationStatuses.delivered +
+    metrics.notificationStatuses.read;
+  const missed = metrics.byStatus.missed ?? 0;
+  const serving =
+    metrics.byStatus.called + metrics.byStatus["in-service"];
+
+  const greeting = getGreeting(now);
+
+  return (
+    <div className="wl-dashboard-shell">
+      <style>{DASHBOARD_STYLES}</style>
+
+      <aside className="wl-sidebar">
+        <div className="wl-brand">
+          <div className="wl-brand-icon">
+            <img src={waitlessLogoIcon} alt="WaitLess logo" />
+          </div>
+
+          <div className="wl-brand-copy">
+            <div className="wl-brand-name">
+              Wait<span>Less</span>
+            </div>
+            <div className="wl-brand-subtitle">Hospital Queue OS</div>
+          </div>
+        </div>
+
+        <nav className="wl-navigation">
+          <NavLink
+            to="/dashboard"
+            className={({ isActive }) =>
+              `wl-main-dashboard-link ${isActive ? "is-active" : ""}`
+            }
+          >
+            <LayoutDashboard size={17} />
+            <span>Dashboard</span>
+          </NavLink>
+
+          {NAVIGATION.map((group) => (
+            <section className="wl-nav-section" key={group.label}>
+              <div className="wl-nav-section-title">{group.label}</div>
+
+              <div className="wl-nav-list">
+                {group.items
+                  .filter((item) => item.to !== "/dashboard")
+                  .map(({ label, to, icon: Icon }) => (
+                    <NavLink
+                      key={to}
+                      to={to}
+                      className={({ isActive }) =>
+                        `wl-nav-item ${isActive ? "is-active" : ""}`
+                      }
+                    >
+                      <Icon size={16} />
+                      <span>{label}</span>
+                    </NavLink>
+                  ))}
+              </div>
+            </section>
+          ))}
+        </nav>
+
+        <div className="wl-sidebar-account">
+          <button type="button" className="wl-user-card">
+            <span className="wl-user-avatar">BZ</span>
+            <span className="wl-user-copy">
+              <strong>Brighton Zhou</strong>
+              <small>
+                <span className="wl-online-dot" />
+                Administrator
+              </small>
+            </span>
+            <ChevronDown size={15} />
+          </button>
+
+          <button type="button" className="wl-logout-button">
+            <LogOut size={16} />
+            Log Out
+          </button>
+        </div>
+      </aside>
+
+      <main className="wl-main">
+        <header className="wl-topbar">
+          <label className="wl-search">
+            <Search size={18} />
+            <input
+              type="search"
+              placeholder="Search patient, ticket, department..."
+            />
+            <span>⌘ K</span>
+          </label>
+
+          <div className="wl-topbar-actions">
+            <button type="button" className="wl-dark-mode-button">
+              <Moon size={15} />
+              Dark Mode
+            </button>
+
+            <button type="button" className="wl-icon-button">
+              <Bell size={17} />
+              <span className="wl-notification-dot">7</span>
+            </button>
+
+            <div className="wl-time-card">
+              <small>
+                {now.toLocaleDateString([], {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })}
+              </small>
+              <strong>
+                {now.toLocaleTimeString([], {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                })}
+              </strong>
+              <span>
+                {now.toLocaleDateString([], { weekday: "short" })}
+              </span>
+            </div>
+          </div>
+        </header>
+
+        <div className="wl-dashboard-content">
+          <section className="wl-welcome-banner">
+            <div className="wl-welcome-left">
+              <span className="wl-welcome-avatar">
+                <Users size={27} />
+              </span>
+
+              <div>
+                <h1>
+                  {greeting}, Brighton <span>👋</span>
+                </h1>
+                <p>
+                  Chinhoyi Provincial Hospital
+                  <ShieldCheck size={14} />
+                </p>
+              </div>
+            </div>
+
+            <div className="wl-system-status">
+              <div>
+                <small>System Status</small>
+                <strong>
+                  <span
+                    className={`wl-live-dot ${
+                      realtimeConnected ? "is-connected" : ""
+                    }`}
+                  />
+                  {realtimeConnected ? "Live & Online" : "Connecting"}
+                </strong>
+              </div>
+
+              <div className="wl-status-divider" />
+
+              <div>
+                <small>Last Sync</small>
+                <strong>
+                  {now.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                  })}
+                </strong>
+              </div>
+
+              <Wifi size={28} />
+            </div>
+          </section>
+
+          {dashboardQuery.isLoading ? (
+            <DashboardState
+              title="Loading dashboard"
+              message="Syncing live queue activity and hospital operations."
+            />
+          ) : dashboardQuery.isError ? (
+            <DashboardState
+              error
+              title="Dashboard could not load"
+              message={dashboardQuery.error.message}
+            />
+          ) : (
+            <>
+              <section className="wl-kpi-grid">
+                <MetricCard
+                  tone="blue"
+                  label="Total Patients Today"
+                  value={metrics.total}
+                  detail="+12% vs yesterday"
+                  icon={Users}
+                />
+                <MetricCard
+                  tone="cyan"
+                  label="Currently Waiting"
+                  value={metrics.waiting}
+                  detail="Across all departments"
+                  icon={Clock3}
+                />
+                <MetricCard
+                  tone="purple"
+                  label="Now Being Served"
+                  value={serving}
+                  detail="Across all departments"
+                  icon={CheckCircle2}
+                />
+                <MetricCard
+                  tone="orange"
+                  label="Missed / No Show"
+                  value={missed}
+                  detail="Today"
+                  icon={AlertTriangle}
+                />
+              </section>
+
+              <section className="wl-main-grid">
+                <article className="wl-panel wl-queue-panel">
+                  <PanelHeader title="Live Queue Overview" />
+
+                  <div className="wl-queue-tabs">
+                    {[
+                      "All Departments",
+                      ...departments.slice(0, 4).map((item) => item.name),
+                    ].map((department) => (
+                      <button
+                        key={department}
+                        type="button"
+                        onClick={() => setSelectedDepartment(department)}
+                        className={
+                          selectedDepartment === department ? "is-active" : ""
+                        }
+                      >
+                        {department}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="wl-queue-table-wrap">
+                    <table className="wl-queue-table">
+                      <thead>
+                        <tr>
+                          <th>Department</th>
+                          <th>Now Serving</th>
+                          <th>Waiting</th>
+                          <th>Next in Queue</th>
+                          <th />
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {queueRows
+                          .filter(
+                            (row) =>
+                              selectedDepartment === "All Departments" ||
+                              row.name === selectedDepartment,
+                          )
+                          .map((department) => (
+                            <tr key={department.name}>
+                              <td>
+                                <span className="wl-department-cell">
+                                  <span className="wl-department-icon">
+                                    <department.icon size={15} />
+                                  </span>
+                                  {department.name}
+                                </span>
+                              </td>
+                              <td>
+                                <span className="wl-ticket-pill is-serving">
+                                  {department.currentTicket}
+                                </span>
+                              </td>
+                              <td>
+                                <span className="wl-wait-count">
+                                  {department.waiting}
+                                </span>
+                              </td>
+                              <td>
+                                <span className="wl-ticket-pill">
+                                  {department.nextTicket}
+                                </span>
+                              </td>
+                              <td>
+                                <ChevronRight size={16} />
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <NavLink to="/queue" className="wl-view-link">
+                    View Full Queue Board
+                    <ChevronRight size={15} />
+                  </NavLink>
+                </article>
+
+                <article className="wl-panel wl-chart-panel">
+                  <div className="wl-panel-header">
+                    <h2>Queue Trend (7 Days)</h2>
+
+                    <select
+                      value={selectedPeriod}
+                      onChange={(event) =>
+                        setSelectedPeriod(event.target.value)
+                      }
+                    >
+                      <option>7 Days</option>
+                      <option>30 Days</option>
+                      <option>Quarter</option>
+                    </select>
+                  </div>
+
+                  <div className="wl-chart-wrap">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={chartData}>
+                        <defs>
+                          <linearGradient
+                            id="registeredFill"
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop
+                              offset="0%"
+                              stopColor="#19ded0"
+                              stopOpacity={0.32}
+                            />
+                            <stop
+                              offset="100%"
+                              stopColor="#19ded0"
+                              stopOpacity={0}
+                            />
+                          </linearGradient>
+
+                          <linearGradient
+                            id="servedFill"
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop
+                              offset="0%"
+                              stopColor="#4585ff"
+                              stopOpacity={0.3}
+                            />
+                            <stop
+                              offset="100%"
+                              stopColor="#4585ff"
+                              stopOpacity={0}
+                            />
+                          </linearGradient>
+                        </defs>
+
+                        <CartesianGrid
+                          stroke="rgba(136,170,198,.11)"
+                          vertical
+                        />
+                        <XAxis
+                          dataKey="label"
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fill: "#7f94a8", fontSize: 11 }}
+                        />
+                        <YAxis
+                          axisLine={false}
+                          tickLine={false}
+                          width={34}
+                          tick={{ fill: "#7f94a8", fontSize: 11 }}
+                        />
+                        <Tooltip content={<QueueTooltip />} />
+
+                        <Area
+                          type="monotone"
+                          dataKey="registered"
+                          stroke="#19ded0"
+                          strokeWidth={2.2}
+                          fill="url(#registeredFill)"
+                        />
+                        <Area
+                          type="monotone"
+                          dataKey="served"
+                          stroke="#4585ff"
+                          strokeWidth={2.2}
+                          fill="url(#servedFill)"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  <div className="wl-chart-legend">
+                    <span>
+                      <i className="is-registered" />
+                      Registered
+                    </span>
+                    <span>
+                      <i className="is-served" />
+                      Served
+                    </span>
+                  </div>
+
+                  <div className="wl-peak-card">
+                    <Activity size={17} />
+                    <div>
+                      <small>Peak Time Today</small>
+                      <strong>10:00 AM – 12:00 PM</strong>
+                      <span>{Math.max(metrics.total, 156)} Patients</span>
+                    </div>
+                  </div>
+                </article>
+
+                <div className="wl-right-column">
+                  <article className="wl-panel wl-activity-panel">
+                    <PanelHeader
+                      title="Recent Activity"
+                      action="View All"
+                    />
+
+                    <div className="wl-activity-list">
+                      {recentActivity.map((item, index) => (
+                        <div
+                          className="wl-activity-row"
+                          key={`${item.ticket}-${index}`}
+                        >
+                          <span
+                            className={`wl-activity-icon ${
+                              STATUS_META[item.status]?.className ??
+                              "wl-status-blue"
+                            }`}
+                          >
+                            {getActivityIcon(item.status)}
+                          </span>
+
+                          <strong>{item.ticket}</strong>
+
+                          <span
+                            className={
+                              STATUS_META[item.status]?.className ??
+                              STATUS_META.waiting.className
+                            }
+                          >
+                            {STATUS_META[item.status]?.label ?? item.status}
+                          </span>
+
+                          <time>{item.time}</time>
+                        </div>
+                      ))}
+                    </div>
+                  </article>
+
+                  <article className="wl-panel wl-alerts-panel">
+                    <PanelHeader
+                      title="System Alerts"
+                      action="View All"
+                    />
+
+                    <div className="wl-alert-list">
+                      {systemAlerts.map((alert, index) => (
+                        <div
+                          className="wl-alert-row"
+                          key={`${alert.title}-${index}`}
+                        >
+                          <span
+                            className={`wl-alert-icon is-${alert.type}`}
+                          >
+                            {getAlertIcon(alert.type)}
+                          </span>
+
+                          <div>
+                            <strong>{alert.title}</strong>
+                            <small>{alert.detail}</small>
+                          </div>
+
+                          <time>{alert.time}</time>
+                        </div>
+                      ))}
+                    </div>
+                  </article>
+                </div>
+              </section>
+            </>
+          )}
+
+          <footer className="wl-dashboard-footer">
+            <span>
+              WaitLess Hospital Queue OS
+            </span>
+            <span>
+              {delivered} notifications delivered today
+            </span>
+          </footer>
+        </div>
+      </main>
+    </div>
+  );
+}
+
+function MetricCard({ tone, label, value, detail, icon: Icon }) {
+  return (
+    <article className={`wl-metric-card is-${tone}`}>
+      <div>
+        <small>{label}</small>
+        <strong>{value}</strong>
+        <span>{detail}</span>
+      </div>
+
+      <span className="wl-metric-icon">
+        <Icon size={29} />
+      </span>
+    </article>
+  );
+}
+
+function PanelHeader({ title, action }) {
+  return (
+    <div className="wl-panel-header">
+      <h2>{title}</h2>
+      {action ? <button type="button">{action}</button> : null}
+    </div>
+  );
+}
+
+function QueueTooltip({ active, payload, label }) {
+  if (!active || !payload?.length) {
+    return null;
+  }
+
+  return (
+    <div className="wl-chart-tooltip">
+      <strong>{label}</strong>
+      {payload.map((entry) => (
+        <span key={entry.dataKey}>
+          <i style={{ background: entry.color }} />
+          {entry.name}: {entry.value}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function DashboardState({ title, message, error = false }) {
+  return (
+    <div className={`wl-dashboard-state ${error ? "is-error" : ""}`}>
+      {error ? <AlertTriangle size={24} /> : <Activity size={24} />}
+      <div>
+        <strong>{title}</strong>
+        <span>{message}</span>
+      </div>
+    </div>
+  );
+}
+
+function getActivityIcon(status) {
+  if (status === "completed") {
+    return <CheckCircle2 size={14} />;
+  }
+
+  if (status === "missed") {
+    return <XCircle size={14} />;
+  }
+
+  if (status === "called") {
+    return <Bell size={14} />;
+  }
+
+  return <Activity size={14} />;
+}
+
+function getAlertIcon(type) {
+  if (type === "success") {
+    return <CheckCircle2 size={18} />;
+  }
+
+  if (type === "critical" || type === "warning") {
+    return <AlertTriangle size={18} />;
+  }
+
+  return <MessageCircle size={18} />;
+}
+
+function getGreeting(date) {
+  const hour = date.getHours();
+
+  if (hour < 12) {
+    return "Good morning";
+  }
+
+  if (hour < 18) {
+    return "Good afternoon";
+  }
+
+  return "Good evening";
+}
+
+function formatActivityTime(value) {
+  if (!value) {
+    return "Now";
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return "Now";
+  }
+
+  return date.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+const DASHBOARD_STYLES = `
+  :root {
+    color-scheme: dark;
+  }
+
+  .wl-dashboard-shell,
+  .wl-dashboard-shell * {
+    box-sizing: border-box;
+  }
+
+  .wl-dashboard-shell {
+    --wl-bg: #03111d;
+    --wl-sidebar: #061523;
+    --wl-panel: rgba(7, 27, 44, 0.95);
+    --wl-panel-soft: rgba(10, 35, 55, 0.88);
+    --wl-border: rgba(91, 190, 218, 0.13);
+    --wl-text: #f4f8fc;
+    --wl-muted: #89a0b4;
+    --wl-cyan: #1adbd2;
+    --wl-blue: #3f7cff;
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at 77% -10%, rgba(34, 105, 190, 0.17), transparent 30rem),
+      linear-gradient(180deg, #020d17, #03111d 52%, #041421);
+    color: var(--wl-text);
+    font-family: Inter, "Segoe UI", Arial, sans-serif;
+  }
+
+  .wl-dashboard-shell button,
+  .wl-dashboard-shell input,
+  .wl-dashboard-shell select {
+    font: inherit;
+  }
+
+  .wl-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 50;
+    display: flex;
+    width: 248px;
+    flex-direction: column;
+    border-right: 1px solid var(--wl-border);
+    background:
+      radial-gradient(circle at 18% 0%, rgba(20, 184, 166, 0.09), transparent 17rem),
+      linear-gradient(180deg, #061727, #04131f);
+    box-shadow: 20px 0 70px rgba(0, 0, 0, 0.22);
+  }
+
+  .wl-brand {
+    display: flex;
+    min-height: 88px;
+    align-items: center;
+    gap: 11px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+    padding: 16px 18px;
+  }
+
+  .wl-brand-icon {
+    display: grid;
+    height: 48px;
+    width: 52px;
+    flex: none;
+    place-items: center;
+  }
+
+  .wl-brand-icon img {
+    max-height: 47px;
+    max-width: 52px;
+    object-fit: contain;
+    filter: drop-shadow(0 0 12px rgba(25, 222, 208, 0.24));
+  }
+
+  .wl-brand-name {
+    font-size: 21px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    color: #fff;
+  }
+
+  .wl-brand-name span {
+    color: #1adbd2;
+  }
+
+  .wl-brand-subtitle {
+    margin-top: 2px;
+    font-size: 8px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: #7f93a7;
+  }
+
+  .wl-navigation {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px 12px;
+  }
+
+  .wl-main-dashboard-link,
+  .wl-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    border: 1px solid transparent;
+    color: #b6c3d0;
+    text-decoration: none;
+    transition: 180ms ease;
+  }
+
+  .wl-main-dashboard-link {
+    margin-bottom: 12px;
+    border-radius: 10px;
+    padding: 10px 13px;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .wl-main-dashboard-link.is-active {
+    border-color: rgba(52, 235, 218, 0.18);
+    background: linear-gradient(90deg, rgba(18, 169, 163, 0.95), rgba(0, 125, 151, 0.95));
+    color: white;
+    box-shadow: 0 12px 25px rgba(0, 155, 165, 0.17);
+  }
+
+  .wl-nav-section + .wl-nav-section {
+    margin-top: 18px;
+  }
+
+  .wl-nav-section-title {
+    margin-bottom: 7px;
+    padding: 0 13px;
+    color: #4da8ff;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+  }
+
+  .wl-nav-list {
+    display: grid;
+    gap: 1px;
+  }
+
+  .wl-nav-item {
+    border-radius: 9px;
+    padding: 8px 13px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .wl-nav-item:hover,
+  .wl-nav-item.is-active {
+    border-color: rgba(25, 222, 208, 0.1);
+    background: rgba(255, 255, 255, 0.045);
+    color: white;
+  }
+
+  .wl-sidebar-account {
+    border-top: 1px solid rgba(255, 255, 255, 0.055);
+    padding: 12px;
+  }
+
+  .wl-user-card {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.055);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.025);
+    padding: 9px;
+    color: white;
+    text-align: left;
+  }
+
+  .wl-user-avatar {
+    display: grid;
+    height: 36px;
+    width: 36px;
+    flex: none;
+    place-items: center;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #16b8ac, #2774e9);
+    font-size: 11px;
+    font-weight: 800;
+  }
+
+  .wl-user-copy {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .wl-user-copy strong,
+  .wl-user-copy small {
+    display: block;
+  }
+
+  .wl-user-copy strong {
+    overflow: hidden;
+    font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .wl-user-copy small {
+    margin-top: 3px;
+    color: #879caf;
+    font-size: 9px;
+  }
+
+  .wl-online-dot {
+    display: inline-block;
+    height: 6px;
+    width: 6px;
+    margin-right: 5px;
+    border-radius: 999px;
+    background: #22c55e;
+  }
+
+  .wl-logout-button {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    gap: 10px;
+    margin-top: 5px;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    padding: 9px 12px;
+    color: #fb7185;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .wl-logout-button:hover {
+    background: rgba(251, 113, 133, 0.09);
+  }
+
+  .wl-main {
+    min-height: 100vh;
+    padding-left: 248px;
+  }
+
+  .wl-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: flex;
+    min-height: 68px;
+    align-items: center;
+    gap: 18px;
+    border-bottom: 1px solid var(--wl-border);
+    background: rgba(3, 16, 28, 0.88);
+    padding: 9px 22px;
+    backdrop-filter: blur(20px);
+  }
+
+  .wl-search {
+    display: flex;
+    min-width: 0;
+    max-width: 790px;
+    flex: 1;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid rgba(120, 183, 211, 0.11);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.045);
+    padding: 0 13px;
+  }
+
+  .wl-search input {
+    height: 40px;
+    min-width: 0;
+    flex: 1;
+    border: 0;
+    background: transparent;
+    color: white;
+    outline: 0;
+    font-size: 12px;
+  }
+
+  .wl-search input::placeholder {
+    color: #72879a;
+  }
+
+  .wl-search > span {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 3px 6px;
+    color: #8598aa;
+    font-size: 9px;
+  }
+
+  .wl-topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .wl-dark-mode-button,
+  .wl-icon-button,
+  .wl-time-card {
+    border: 1px solid rgba(120, 183, 211, 0.09);
+    background: rgba(255, 255, 255, 0.032);
+    color: #d8e3ec;
+  }
+
+  .wl-dark-mode-button {
+    display: inline-flex;
+    height: 40px;
+    align-items: center;
+    gap: 8px;
+    border-radius: 9px;
+    padding: 0 13px;
+    cursor: pointer;
+    font-size: 10px;
+    font-weight: 600;
+  }
+
+  .wl-icon-button {
+    position: relative;
+    display: grid;
+    height: 40px;
+    width: 40px;
+    place-items: center;
+    border-radius: 9px;
+    cursor: pointer;
+  }
+
+  .wl-notification-dot {
+    position: absolute;
+    right: 4px;
+    top: 3px;
+    display: grid;
+    height: 14px;
+    min-width: 14px;
+    place-items: center;
+    border-radius: 999px;
+    background: #f43f5e;
+    color: white;
+    font-size: 7px;
+    font-weight: 800;
+  }
+
+  .wl-time-card {
+    min-width: 101px;
+    border-radius: 9px;
+    padding: 6px 11px;
+  }
+
+  .wl-time-card small,
+  .wl-time-card strong,
+  .wl-time-card span {
+    display: block;
+  }
+
+  .wl-time-card small,
+  .wl-time-card span {
+    color: #8297aa;
+    font-size: 8px;
+  }
+
+  .wl-time-card strong {
+    margin: 1px 0;
+    font-size: 15px;
+    line-height: 1;
+  }
+
+  .wl-dashboard-content {
+    padding: 18px 20px 28px;
+  }
+
+  .wl-welcome-banner {
+    position: relative;
+    display: flex;
+    min-height: 92px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 22px;
+    overflow: hidden;
+    border: 1px solid rgba(33, 232, 217, 0.17);
+    border-radius: 14px;
+    background:
+      linear-gradient(105deg, rgba(3, 112, 119, 0.98), rgba(1, 101, 122, 0.95) 54%, rgba(3, 143, 150, 0.92));
+    padding: 18px 24px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.14);
+  }
+
+  .wl-welcome-banner::before,
+  .wl-welcome-banner::after {
+    position: absolute;
+    right: -38px;
+    border-radius: 22px;
+    background: rgba(22, 226, 210, 0.17);
+    content: "";
+    transform: rotate(-45deg);
+  }
+
+  .wl-welcome-banner::before {
+    top: -65px;
+    height: 190px;
+    width: 48px;
+  }
+
+  .wl-welcome-banner::after {
+    right: 58px;
+    bottom: -62px;
+    height: 160px;
+    width: 35px;
+  }
+
+  .wl-welcome-left,
+  .wl-system-status {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+  }
+
+  .wl-welcome-left {
+    gap: 15px;
+  }
+
+  .wl-welcome-avatar {
+    display: grid;
+    height: 52px;
+    width: 52px;
+    place-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.13);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.09);
+    color: #bffcf4;
+  }
+
+  .wl-welcome-left h1 {
+    margin: 0;
+    font-size: 19px;
+    letter-spacing: -0.025em;
+  }
+
+  .wl-welcome-left h1 span {
+    font-size: 18px;
+  }
+
+  .wl-welcome-left p {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    margin: 7px 0 0;
+    color: rgba(235, 254, 255, 0.77);
+    font-size: 11px;
+  }
+
+  .wl-system-status {
+    gap: 17px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 10px;
+    background: rgba(3, 63, 76, 0.34);
+    padding: 10px 13px;
+  }
+
+  .wl-system-status div:not(.wl-status-divider) {
+    min-width: 70px;
+  }
+
+  .wl-system-status small,
+  .wl-system-status strong {
+    display: block;
+  }
+
+  .wl-system-status small {
+    color: rgba(223, 251, 252, 0.55);
+    font-size: 8px;
+  }
+
+  .wl-system-status strong {
+    margin-top: 4px;
+    color: white;
+    font-size: 9px;
+  }
+
+  .wl-status-divider {
+    height: 31px;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  .wl-live-dot {
+    display: inline-block;
+    height: 6px;
+    width: 6px;
+    margin-right: 5px;
+    border-radius: 999px;
+    background: #f59e0b;
+  }
+
+  .wl-live-dot.is-connected {
+    background: #22c55e;
+    box-shadow: 0 0 10px rgba(34, 197, 94, 0.45);
+  }
+
+  .wl-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 14px;
+  }
+
+  .wl-metric-card {
+    position: relative;
+    display: flex;
+    min-height: 102px;
+    align-items: center;
+    justify-content: space-between;
+    overflow: hidden;
+    border: 1px solid rgba(122, 187, 215, 0.09);
+    border-radius: 12px;
+    padding: 15px 17px;
+  }
+
+  .wl-metric-card::after {
+    position: absolute;
+    right: -32px;
+    top: -34px;
+    height: 105px;
+    width: 105px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.035);
+    content: "";
+  }
+
+  .wl-metric-card.is-blue {
+    background: linear-gradient(145deg, #082846, #07335c);
+  }
+
+  .wl-metric-card.is-cyan {
+    background: linear-gradient(145deg, #07343f, #064653);
+  }
+
+  .wl-metric-card.is-purple {
+    background: linear-gradient(145deg, #241a55, #292269);
+  }
+
+  .wl-metric-card.is-orange {
+    background: linear-gradient(145deg, #382417, #51311d);
+  }
+
+  .wl-metric-card div,
+  .wl-metric-icon {
+    position: relative;
+    z-index: 1;
+  }
+
+  .wl-metric-card small,
+  .wl-metric-card strong,
+  .wl-metric-card span {
+    display: block;
+  }
+
+  .wl-metric-card small {
+    color: #cad6e1;
+    font-size: 10px;
+  }
+
+  .wl-metric-card strong {
+    margin: 7px 0 3px;
+    font-size: 29px;
+    line-height: 1;
+  }
+
+  .wl-metric-card div > span {
+    color: #b6c4d0;
+    font-size: 9px;
+  }
+
+  .wl-metric-card.is-blue div > span {
+    color: #2ee8d2;
+  }
+
+  .wl-metric-icon {
+    display: grid !important;
+    height: 52px;
+    width: 52px;
+    place-items: center;
+    border-radius: 50%;
+    background: rgba(65, 132, 255, 0.12);
+    color: rgba(255, 255, 255, 0.78);
+  }
+
+  .wl-main-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.36fr) minmax(330px, 0.96fr) minmax(280px, 0.82fr);
+    gap: 14px;
+    margin-top: 14px;
+  }
+
+  .wl-panel {
+    overflow: hidden;
+    border: 1px solid var(--wl-border);
+    border-radius: 12px;
+    background:
+      linear-gradient(145deg, rgba(8, 30, 48, 0.97), rgba(5, 22, 37, 0.95));
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.025);
+  }
+
+  .wl-panel-header {
+    display: flex;
+    min-height: 45px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 16px;
+  }
+
+  .wl-panel-header h2 {
+    margin: 0;
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .wl-panel-header button {
+    border: 0;
+    background: transparent;
+    color: #35a9ff;
+    cursor: pointer;
+    font-size: 9px;
+    font-weight: 700;
+  }
+
+  .wl-panel-header select {
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 6px 9px;
+    color: #d8e3ec;
+    outline: 0;
+    font-size: 9px;
+  }
+
+  .wl-panel-header option {
+    background: #071827;
+  }
+
+  .wl-queue-tabs {
+    display: flex;
+    gap: 5px;
+    overflow-x: auto;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.055);
+    padding: 0 14px 8px;
+  }
+
+  .wl-queue-tabs button {
+    flex: none;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    padding: 6px 12px;
+    color: #8295a7;
+    cursor: pointer;
+    font-size: 9px;
+  }
+
+  .wl-queue-tabs button.is-active {
+    background: #20364d;
+    color: white;
+  }
+
+  .wl-queue-table-wrap {
+    overflow-x: auto;
+  }
+
+  .wl-queue-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9px;
+  }
+
+  .wl-queue-table th {
+    padding: 9px 13px;
+    color: #8195a7;
+    font-size: 8px;
+    font-weight: 600;
+    text-align: left;
+  }
+
+  .wl-queue-table td {
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 8px 13px;
+    color: #cbd7e1;
+  }
+
+  .wl-queue-table tbody tr {
+    transition: 150ms ease;
+  }
+
+  .wl-queue-table tbody tr:hover {
+    background: rgba(25, 222, 208, 0.035);
+  }
+
+  .wl-department-cell {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+  }
+
+  .wl-department-icon {
+    display: grid;
+    height: 25px;
+    width: 25px;
+    flex: none;
+    place-items: center;
+    border-radius: 6px;
+    background: rgba(25, 222, 208, 0.14);
+    color: #6ef6e8;
+  }
+
+  .wl-ticket-pill,
+  .wl-wait-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 7px;
+    background: rgba(255, 255, 255, 0.045);
+    padding: 4px 9px;
+    color: #dbe7ef;
+    font-size: 8px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .wl-ticket-pill.is-serving {
+    background: rgba(34, 197, 94, 0.13);
+    color: #b9f6c9;
+  }
+
+  .wl-wait-count {
+    min-width: 29px;
+    border-radius: 999px;
+    background: rgba(63, 124, 255, 0.13);
+    color: #bcd0ff;
+  }
+
+  .wl-view-link {
+    display: flex;
+    min-height: 40px;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    color: #38aaff;
+    text-decoration: none;
+    font-size: 9px;
+    font-weight: 700;
+  }
+
+  .wl-chart-panel {
+    min-height: 362px;
+  }
+
+  .wl-chart-wrap {
+    height: 226px;
+    padding: 4px 8px 0 0;
+  }
+
+  .wl-chart-tooltip {
+    display: grid;
+    gap: 6px;
+    border: 1px solid rgba(112, 192, 220, 0.18);
+    border-radius: 8px;
+    background: #061827;
+    padding: 9px 10px;
+    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.28);
+    font-size: 9px;
+  }
+
+  .wl-chart-tooltip span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #9eb1c2;
+  }
+
+  .wl-chart-tooltip i {
+    height: 6px;
+    width: 6px;
+    border-radius: 999px;
+  }
+
+  .wl-chart-legend {
+    display: flex;
+    justify-content: center;
+    gap: 21px;
+    color: #a8b7c4;
+    font-size: 9px;
+  }
+
+  .wl-chart-legend span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .wl-chart-legend i {
+    height: 3px;
+    width: 17px;
+    border-radius: 999px;
+  }
+
+  .wl-chart-legend i.is-registered {
+    background: #19ded0;
+  }
+
+  .wl-chart-legend i.is-served {
+    background: #4585ff;
+  }
+
+  .wl-peak-card {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    margin: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.055);
+    border-radius: 9px;
+    background: rgba(255, 255, 255, 0.025);
+    padding: 9px 11px;
+    color: #f59e0b;
+  }
+
+  .wl-peak-card small,
+  .wl-peak-card strong,
+  .wl-peak-card span {
+    display: block;
+  }
+
+  .wl-peak-card small {
+    color: #879bad;
+    font-size: 8px;
+  }
+
+  .wl-peak-card strong {
+    margin: 2px 0;
+    color: #dce8f1;
+    font-size: 10px;
+  }
+
+  .wl-peak-card span {
+    color: #2a9df4;
+    font-size: 8px;
+  }
+
+  .wl-right-column {
+    display: grid;
+    gap: 14px;
+  }
+
+  .wl-activity-list,
+  .wl-alert-list {
+    padding: 0 13px 11px;
+  }
+
+  .wl-activity-row {
+    display: grid;
+    grid-template-columns: 25px minmax(55px, 1fr) auto auto;
+    align-items: center;
+    gap: 8px;
+    min-height: 38px;
+  }
+
+  .wl-activity-icon {
+    display: grid;
+    height: 25px;
+    width: 25px;
+    place-items: center;
+    border-radius: 6px;
+  }
+
+  .wl-activity-row strong {
+    font-size: 9px;
+  }
+
+  .wl-activity-row time,
+  .wl-alert-row time {
+    color: #7e92a4;
+    font-size: 8px;
+    white-space: nowrap;
+  }
+
+  .wl-status {
+    display: inline-flex;
+    width: fit-content;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 7px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .wl-status-blue {
+    background: rgba(63, 124, 255, 0.13);
+    color: #83a8ff;
+  }
+
+  .wl-status-cyan {
+    background: rgba(25, 222, 208, 0.13);
+    color: #59eee2;
+  }
+
+  .wl-status-green {
+    background: rgba(34, 197, 94, 0.13);
+    color: #70dc91;
+  }
+
+  .wl-status-red {
+    background: rgba(244, 63, 94, 0.13);
+    color: #fb7185;
+  }
+
+  .wl-alert-row {
+    display: grid;
+    grid-template-columns: 25px minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 8px;
+    padding: 7px 0;
+  }
+
+  .wl-alert-icon {
+    display: grid;
+    height: 25px;
+    width: 25px;
+    place-items: center;
+  }
+
+  .wl-alert-icon.is-warning,
+  .wl-alert-icon.is-critical {
+    color: #f59e0b;
+  }
+
+  .wl-alert-icon.is-info {
+    color: #38aaff;
+  }
+
+  .wl-alert-icon.is-success {
+    color: #22c55e;
+  }
+
+  .wl-alert-row strong,
+  .wl-alert-row small {
+    display: block;
+  }
+
+  .wl-alert-row strong {
+    color: #d6e1ea;
+    font-size: 9px;
+  }
+
+  .wl-alert-row small {
+    margin-top: 3px;
+    color: #8094a6;
+    font-size: 8px;
+  }
+
+  .wl-dashboard-state {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    margin-top: 14px;
+    border: 1px solid var(--wl-border);
+    border-radius: 12px;
+    background: var(--wl-panel);
+    padding: 24px;
+    color: #35d8ca;
+  }
+
+  .wl-dashboard-state.is-error {
+    color: #fb7185;
+  }
+
+  .wl-dashboard-state strong,
+  .wl-dashboard-state span {
+    display: block;
+  }
+
+  .wl-dashboard-state strong {
+    color: white;
+  }
+
+  .wl-dashboard-state span {
+    margin-top: 4px;
+    color: #8196a8;
+    font-size: 11px;
+  }
+
+  .wl-dashboard-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.045);
+    padding: 13px 2px 0;
+    color: #61788b;
+    font-size: 8px;
+  }
+
+  @media (max-width: 1280px) {
+    .wl-main-grid {
+      grid-template-columns: 1.2fr 0.9fr;
+    }
+
+    .wl-right-column {
+      grid-column: 1 / -1;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 1050px) {
+    .wl-sidebar {
+      width: 210px;
+    }
+
+    .wl-main {
+      padding-left: 210px;
+    }
+
+    .wl-kpi-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .wl-main-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .wl-right-column {
+      grid-column: auto;
+    }
+  }
+
+  @media (max-width: 760px) {
+    .wl-sidebar {
+      position: static;
+      width: 100%;
+      max-height: none;
+    }
+
+    .wl-navigation {
+      display: none;
+    }
+
+    .wl-sidebar-account {
+      display: none;
+    }
+
+    .wl-main {
+      padding-left: 0;
+    }
+
+    .wl-topbar {
+      position: relative;
+      padding: 9px 12px;
+    }
+
+    .wl-dark-mode-button,
+    .wl-time-card {
+      display: none;
+    }
+
+    .wl-dashboard-content {
+      padding: 12px;
+    }
+
+    .wl-welcome-banner {
+      align-items: flex-start;
+      flex-direction: column;
+      padding: 16px;
+    }
+
+    .wl-system-status {
+      width: 100%;
+      justify-content: space-between;
+    }
+
+    .wl-kpi-grid,
+    .wl-right-column {
+      grid-template-columns: 1fr;
+    }
+
+    .wl-main-grid {
+      display: block;
+    }
+
+    .wl-main-grid > * + * {
+      margin-top: 12px;
+    }
+
+    .wl-dashboard-footer {
+      flex-direction: column;
+    }
+  }
+`;
+

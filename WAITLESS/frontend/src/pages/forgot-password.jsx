@@ -50,7 +50,7 @@ export default function ForgotPasswordPage() {
         title="Check your email"
         subtitle={`If ${email} is linked to a WaitLess staff account, a reset link has been created.`}
         footer={
-          <Link to="/login" className="inline-flex items-center gap-2 font-semibold text-cyan-100 hover:text-white">
+          <Link to="/admin/login" className="inline-flex items-center gap-2 font-semibold text-cyan-100 hover:text-white">
             <ArrowLeft className="h-4 w-4" />
             Back to login
           </Link>
@@ -74,7 +74,7 @@ export default function ForgotPasswordPage() {
       title="Reset access"
       subtitle="Enter the email address linked to your staff account and we will prepare a secure reset link."
       footer={
-        <Link to="/login" className="inline-flex items-center gap-2 font-semibold text-cyan-100 hover:text-white">
+        <Link to="/admin/login" className="inline-flex items-center gap-2 font-semibold text-cyan-100 hover:text-white">
           <ArrowLeft className="h-4 w-4" />
           Back to login
         </Link>

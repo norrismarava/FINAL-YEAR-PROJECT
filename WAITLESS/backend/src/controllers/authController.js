@@ -1,4 +1,10 @@
-import { getSessionFromRequest, loginStaff, registerStaff, requestPasswordReset, resetPassword } from "../services/authService.js";
+import {
+  getSessionFromRequest,
+  loginStaff,
+  registerStaff,
+  requestPasswordReset,
+  resetPassword,
+} from "../services/authService.js";
 import { HttpError } from "../utils/http.js";
 
 export async function loginController({ body }) {
@@ -22,7 +28,8 @@ export async function meController({ req }) {
   // profileController already implements a richer /api/auth/me, but keep this
   // controller consistent for any existing callers.
   try {
-    const { getStoredStaffUsers } = await import("../services/profileService.js");
+    const { getStoredStaffUsers } =
+      await import("../services/profileService.js");
     const users = getStoredStaffUsers();
     const stored = users.find((u) => u.id === session.user.id) ?? null;
 
@@ -50,7 +57,6 @@ export async function meController({ req }) {
   }
 }
 
-
 export async function forgotPasswordController({ body }) {
   return {
     status: 200,
@@ -75,12 +81,14 @@ export async function staffRegisterController({ body }) {
     status: 201,
     body: registerStaff({
       fullName: body?.fullName,
+      username: body?.username,
       email: body?.email,
       phone: body?.phone,
       department: body?.department,
       role: body?.role,
       employeeId: body?.employeeId,
       password: body?.password,
+      avatarBase64: body?.avatarBase64,
     }),
   };
 }

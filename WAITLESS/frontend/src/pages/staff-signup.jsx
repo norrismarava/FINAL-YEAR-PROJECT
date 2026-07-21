@@ -108,7 +108,7 @@ export default function StaffSignupPage() {
               Register another staff member
             </button>
             <Link
-              to="/dashboard"
+              to="/admin/dashboard"
               className="rounded-xl gradient-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-elegant"
             >
               Go to dashboard

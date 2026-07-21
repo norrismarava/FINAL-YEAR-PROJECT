@@ -8,10 +8,31 @@ CREATE TABLE IF NOT EXISTS system_counters (
   value BIGINT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS patient_profiles (
+  id CHAR(36) PRIMARY KEY,
+  patient_number VARCHAR(24) NOT NULL UNIQUE,
+  full_name VARCHAR(160) NOT NULL,
+  national_id VARCHAR(80) NULL,
+  dob DATE NULL,
+  gender VARCHAR(40) NOT NULL DEFAULT 'unknown',
+  phone VARCHAR(80) NULL,
+  address VARCHAR(255) NOT NULL DEFAULT '',
+  patient_category VARCHAR(80) NOT NULL DEFAULT 'walk-in',
+  next_of_kin_name VARCHAR(160) NOT NULL DEFAULT '',
+  next_of_kin_phone VARCHAR(80) NOT NULL DEFAULT '',
+  created_at DATETIME(3) NOT NULL,
+  updated_at DATETIME(3) NOT NULL,
+  last_visit_at DATETIME(3) NULL,
+  INDEX idx_patient_profiles_name (full_name),
+  INDEX idx_patient_profiles_national_id (national_id),
+  INDEX idx_patient_profiles_phone (phone)
+);
+
 CREATE TABLE IF NOT EXISTS tickets (
   id CHAR(36) PRIMARY KEY,
   ticket_code VARCHAR(20) NOT NULL UNIQUE,
   sequence_number INT NOT NULL,
+  patient_id CHAR(36) NULL,
   patient_name VARCHAR(160) NOT NULL,
   national_id VARCHAR(80) NOT NULL DEFAULT '',
   dob DATE NULL,
@@ -42,6 +63,7 @@ CREATE TABLE IF NOT EXISTS tickets (
   INDEX idx_tickets_department_status (department, status),
   INDEX idx_tickets_priority_status (priority, status),
   INDEX idx_tickets_registered_at (registered_at),
+  INDEX idx_tickets_patient_id (patient_id),
   CONSTRAINT fk_tickets_department FOREIGN KEY (department) REFERENCES departments(name)
 );
 

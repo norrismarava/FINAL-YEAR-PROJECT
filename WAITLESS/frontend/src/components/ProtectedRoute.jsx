@@ -2,15 +2,21 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 
-export function ProtectedRoute({ children }) {
-  const { isAuthenticated, isReady } = useAuth();
+export function ProtectedRoute({ children, roles }) {
+  const { isAuthenticated, isReady, hasRole } = useAuth();
   const navigate = useNavigate();
+
+  const hasRequiredRole = !roles || hasRole(roles);
 
   useEffect(() => {
     if (isReady && !isAuthenticated) {
-      navigate("/login");
+      navigate("/admin/login");
+      return;
     }
-  }, [isAuthenticated, isReady, navigate]);
+    if (isReady && isAuthenticated && roles && !hasRole(roles)) {
+      navigate("/admin/dashboard");
+    }
+  }, [isAuthenticated, isReady, roles, hasRole, navigate]);
 
   if (!isReady) {
     return (
@@ -20,7 +26,7 @@ export function ProtectedRoute({ children }) {
     );
   }
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !hasRequiredRole) {
     return null;
   }
 

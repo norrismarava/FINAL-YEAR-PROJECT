@@ -9,11 +9,16 @@ import {
   TICKET_STATUSES,
 } from "../modules/queue/queue.constants.js";
 import {
+  createPatient,
   createTicket,
+  findPatientById,
   findTicketById,
+  getNextPatientSequence,
   getNextSequence,
+  listPatients,
   listTickets,
   listNotifications,
+  updatePatient,
   updateTicket,
 } from "../repositories/queueRepository.js";
 import { broadcastQueueEvent } from "../sockets/queueEvents.js";
@@ -413,83 +418,45 @@ export async function getTickets(filters = {}) {
   return sortAllTickets(tickets);
 }
 
-function buildPatientProfileKey(ticket) {
-  const normalizedNationalId = ticket.nationalId?.trim().toLowerCase();
-  if (normalizedNationalId) {
-    return `nid:${normalizedNationalId}`;
-  }
-
-  const normalizedPhone = ticket.phone?.trim();
-  if (normalizedPhone) {
-    return `phone:${normalizedPhone}`;
-  }
-
-  const normalizedName = ticket.patientName?.trim().toLowerCase() ?? "unknown";
-  return `name:${normalizedName}|dob:${ticket.dob ?? ""}`;
-}
-
-function buildPatientProfiles(tickets) {
-  const profiles = new Map();
+function buildPatientProfiles(patients, tickets) {
   const visits = [...tickets].sort(
     (left, right) =>
       new Date(right.registeredAt).getTime() - new Date(left.registeredAt).getTime(),
   );
 
-  for (const ticket of visits) {
-    const key = buildPatientProfileKey(ticket);
-    const existing =
-      profiles.get(key) ??
-      {
-        id: key,
-        patientName: ticket.patientName,
-        nationalId: ticket.nationalId ?? "",
-        dob: ticket.dob ?? "",
-        gender: ticket.gender ?? "unknown",
-        phone: ticket.phone ?? "",
-        address: ticket.address ?? "",
-        patientCategory: ticket.patientCategory ?? "walk-in",
-        nextOfKinName: ticket.nextOfKinName ?? "",
-        nextOfKinPhone: ticket.nextOfKinPhone ?? "",
-        lastDepartment: ticket.department,
-        lastTicket: ticket.ticket,
-        lastVisitAt: ticket.registeredAt,
-        totalVisits: 0,
-        recentVisits: [],
-      };
-
-    existing.totalVisits += 1;
-    existing.phone ||= ticket.phone ?? "";
-    existing.address ||= ticket.address ?? "";
-    existing.nationalId ||= ticket.nationalId ?? "";
-    existing.dob ||= ticket.dob ?? "";
-    existing.gender ||= ticket.gender ?? "unknown";
-    existing.patientCategory ||= ticket.patientCategory ?? "walk-in";
-    existing.nextOfKinName ||= ticket.nextOfKinName ?? "";
-    existing.nextOfKinPhone ||= ticket.nextOfKinPhone ?? "";
-
-    if (
-      new Date(ticket.registeredAt).getTime() >=
-      new Date(existing.lastVisitAt).getTime()
-    ) {
-      existing.lastDepartment = ticket.department;
-      existing.lastTicket = ticket.ticket;
-      existing.lastVisitAt = ticket.registeredAt;
-    }
-
-    if (existing.recentVisits.length < 5) {
-      existing.recentVisits.push({
+  return patients.map((patient) => {
+    const recentVisits = visits
+      .filter((ticket) => ticket.patientId === patient.id)
+      .slice(0, 5)
+      .map((ticket) => ({
         ticket: ticket.ticket,
         department: ticket.department,
         priority: ticket.priority,
         status: ticket.status,
         registeredAt: ticket.registeredAt,
-      });
-    }
+      }));
+    const latestVisit = recentVisits[0] ?? null;
 
-    profiles.set(key, existing);
-  }
+    return {
+      ...patient,
+      qrLookupValue: `WAITLESS:PATIENT:${patient.patientNumber}`,
+      lastDepartment: latestVisit?.department ?? "",
+      lastTicket: latestVisit?.ticket ?? "",
+      lastVisitAt: latestVisit?.registeredAt ?? patient.lastVisitAt,
+      totalVisits: visits.filter((ticket) => ticket.patientId === patient.id).length,
+      recentVisits,
+    };
+  });
+}
 
-  return [...profiles.values()];
+function normalizeIdentity(value) {
+  return value?.trim().toLowerCase().replace(/[^a-z0-9]/g, "") ?? "";
+}
+
+function normalizePatientLookup(value) {
+  const trimmed = value?.trim() ?? "";
+  const qrMatch = /^waitless:patient:(.+)$/i.exec(trimmed);
+  return (qrMatch?.[1] ?? trimmed).toLowerCase();
 }
 
 function scorePatientProfile(profile, normalizedQuery) {
@@ -498,23 +465,29 @@ function scorePatientProfile(profile, normalizedQuery) {
   }
 
   const patientName = profile.patientName?.toLowerCase() ?? "";
-  const phone = profile.phone?.toLowerCase() ?? "";
-  const nationalId = profile.nationalId?.toLowerCase() ?? "";
+  const compactQuery = normalizeIdentity(normalizedQuery);
+  const phone = normalizeIdentity(profile.phone);
+  const nationalId = normalizeIdentity(profile.nationalId);
+  const patientNumber = profile.patientNumber?.toLowerCase() ?? "";
   const lastTicket = profile.lastTicket?.toLowerCase() ?? "";
   const recentTickets = profile.recentVisits.map((visit) => visit.ticket.toLowerCase());
   const recentDepartments = profile.recentVisits.map((visit) =>
     visit.department.toLowerCase(),
   );
 
+  if (patientNumber === normalizedQuery) {
+    return 520;
+  }
+
   if (recentTickets.includes(normalizedQuery) || lastTicket === normalizedQuery) {
     return 420;
   }
 
-  if (nationalId && nationalId === normalizedQuery) {
+  if (nationalId && nationalId === compactQuery) {
     return 360;
   }
 
-  if (phone && phone === normalizedQuery) {
+  if (phone && phone === compactQuery) {
     return 340;
   }
 
@@ -526,11 +499,15 @@ function scorePatientProfile(profile, normalizedQuery) {
     return 220;
   }
 
-  if (nationalId.includes(normalizedQuery)) {
+  if (patientNumber.includes(normalizedQuery)) {
+    return 210;
+  }
+
+  if (compactQuery && nationalId.includes(compactQuery)) {
     return 200;
   }
 
-  if (phone.includes(normalizedQuery)) {
+  if (compactQuery && phone.includes(compactQuery)) {
     return 190;
   }
 
@@ -546,13 +523,13 @@ function scorePatientProfile(profile, normalizedQuery) {
 }
 
 export async function searchPatients(queryText) {
-  const normalizedQuery = queryText?.trim().toLowerCase() ?? "";
+  const normalizedQuery = normalizePatientLookup(queryText);
   if (normalizedQuery.length < 2) {
     return [];
   }
 
-  const tickets = await listTickets();
-  const profiles = buildPatientProfiles(tickets);
+  const [patients, tickets] = await Promise.all([listPatients(), listTickets()]);
+  const profiles = buildPatientProfiles(patients, tickets);
 
   return profiles
     .map((profile) => ({
@@ -572,6 +549,101 @@ export async function searchPatients(queryText) {
     .map((entry) => entry.profile);
 }
 
+function findMatchingPatient(patients, payload) {
+  const nationalId = normalizeIdentity(payload.nationalId);
+  const phone = normalizeIdentity(payload.phone);
+  const patientName = payload.fullName?.trim().toLowerCase() ?? "";
+
+  return patients.find((patient) => {
+    if (nationalId && normalizeIdentity(patient.nationalId) === nationalId) {
+      return true;
+    }
+
+    if (
+      phone &&
+      normalizeIdentity(patient.phone) === phone &&
+      patient.patientName.trim().toLowerCase() === patientName
+    ) {
+      return true;
+    }
+
+    return Boolean(
+      patientName &&
+        payload.dob &&
+        patient.patientName.trim().toLowerCase() === patientName &&
+        patient.dob === payload.dob,
+    );
+  });
+}
+
+function mergePatientProfile(current, payload, now) {
+  return {
+    ...current,
+    patientName: payload.fullName?.trim() || current.patientName,
+    nationalId: payload.nationalId?.trim() || current.nationalId,
+    dob: payload.dob || current.dob,
+    gender: payload.gender || current.gender,
+    phone: payload.phone?.trim() || current.phone,
+    address: payload.address?.trim() || current.address,
+    patientCategory: payload.patientCategory || current.patientCategory,
+    nextOfKinName: payload.nextOfKinName?.trim() || current.nextOfKinName,
+    nextOfKinPhone: payload.nextOfKinPhone?.trim() || current.nextOfKinPhone,
+    updatedAt: now,
+    lastVisitAt: now,
+  };
+}
+
+async function resolvePatientProfile(payload, now) {
+  const patients = await listPatients();
+  let existing = null;
+
+  if (payload.patientId) {
+    existing = await findPatientById(payload.patientId);
+    if (!existing) {
+      throw new HttpError(404, "The selected patient record no longer exists.");
+    }
+  } else {
+    existing = findMatchingPatient(patients, payload) ?? null;
+  }
+
+  if (existing) {
+    const conflictingRecord = patients.find(
+      (patient) =>
+        patient.id !== existing.id &&
+        normalizeIdentity(payload.nationalId) &&
+        normalizeIdentity(patient.nationalId) === normalizeIdentity(payload.nationalId),
+    );
+    if (conflictingRecord) {
+      throw new HttpError(
+        409,
+        `National ID already belongs to patient ${conflictingRecord.patientNumber}.`,
+      );
+    }
+
+    return updatePatient(existing.id, (current) =>
+      mergePatientProfile(current, payload, now),
+    );
+  }
+
+  const sequence = await getNextPatientSequence();
+  return createPatient({
+    id: crypto.randomUUID(),
+    patientNumber: `WL-P${String(sequence).padStart(6, "0")}`,
+    patientName: payload.fullName.trim(),
+    nationalId: payload.nationalId?.trim() ?? "",
+    dob: payload.dob ?? "",
+    gender: payload.gender ?? "unknown",
+    phone: payload.phone?.trim() ?? "",
+    address: payload.address?.trim() ?? "",
+    patientCategory: payload.patientCategory ?? "walk-in",
+    nextOfKinName: payload.nextOfKinName?.trim() ?? "",
+    nextOfKinPhone: payload.nextOfKinPhone?.trim() ?? "",
+    createdAt: now,
+    updatedAt: now,
+    lastVisitAt: now,
+  });
+}
+
 export async function registerPatient(payload) {
   const patientName = payload.fullName?.trim();
   const department = payload.dept ?? payload.department ?? "OPD";
@@ -584,11 +656,15 @@ export async function registerPatient(payload) {
   ensureDepartment(department);
   ensurePatientCategory(patientCategory);
 
+  const registeredAt = new Date().toISOString();
+  const patient = await resolvePatientProfile(payload, registeredAt);
   const sequence = await getNextSequence();
   const notificationConsent = Boolean(payload.notificationConsent);
   const ticket = {
     id: crypto.randomUUID(),
     ticket: createTicketCode("green", sequence),
+    patientId: patient.id,
+    patientNumber: patient.patientNumber,
     patientName,
     nationalId: payload.nationalId?.trim() ?? "",
     dob: payload.dob ?? "",
@@ -603,7 +679,7 @@ export async function registerPatient(payload) {
     chiefComplaint: payload.chiefComplaint?.trim() ?? "",
     priority: "green",
     status: "waiting",
-    registeredAt: new Date().toISOString(),
+    registeredAt,
     triagedAt: null,
     calledAt: null,
     serviceStartedAt: null,

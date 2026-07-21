@@ -43,39 +43,6 @@ const LIVE_STATUS_META = {
     className: "bg-muted text-muted-foreground",
   },
 };
-const TRIAGE_BACKDROP_ICONS = [
-  {
-    Icon: ShieldAlert,
-    className:
-      "left-[5%] top-20 text-primary/16 [animation:medical-float_18s_ease-in-out_infinite] motion-reduce:animate-none",
-    size: "h-11 w-11",
-  },
-  {
-    Icon: Stethoscope,
-    className:
-      "right-[7%] top-24 text-accent/16 [animation:medical-drift_22s_ease-in-out_infinite] motion-reduce:animate-none",
-    size: "h-11 w-11",
-  },
-  {
-    Icon: Search,
-    className:
-      "left-[14%] top-[48%] text-primary/12 [animation:medical-spin_28s_linear_infinite] motion-reduce:animate-none",
-    size: "h-10 w-10",
-  },
-  {
-    Icon: Timer,
-    className:
-      "right-[11%] top-[52%] text-accent/12 [animation:medical-float_20s_ease-in-out_infinite] motion-reduce:animate-none",
-    size: "h-10 w-10",
-  },
-  {
-    Icon: Wifi,
-    className:
-      "left-[46%] top-14 text-primary/10 [animation:medical-drift_20s_ease-in-out_infinite] motion-reduce:animate-none",
-    size: "h-10 w-10",
-  },
-];
-
 export default function TriagePage() {
   const { refreshLiveData } = useLiveRefresh();
   const realtime = useQueueRealtime();
@@ -162,14 +129,9 @@ export default function TriagePage() {
   }
 
   return (
-    <section className="relative isolate overflow-hidden px-4 py-8 sm:px-6 lg:px-8">
-      <TriageBackdrop />
-
+    <section className="px-4 py-8 sm:px-6 lg:px-8">
       <div className="relative mx-auto max-w-7xl">
         <header className="surface-panel page-section-rise p-6 sm:p-8">
-        <div className="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(135deg,rgba(255,255,255,0.82),rgba(240,253,250,0.62)_42%,rgba(219,234,254,0.56))]" />
-        <div className="absolute right-0 top-0 h-44 w-44 rounded-full bg-accent/10 blur-3xl" />
-        <div className="absolute inset-x-0 bottom-0 h-20 bg-[linear-gradient(180deg,transparent,rgba(240,253,250,0.26))]" />
         <div className="relative grid gap-6 xl:grid-cols-[1.2fr_0.85fr]">
           <div>
             <div className="eyebrow">Clinical intake</div>
@@ -537,27 +499,6 @@ export default function TriagePage() {
   );
 }
 
-function TriageBackdrop() {
-  return (
-    <>
-      <div className="absolute inset-0 -z-30 bg-[linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.94)_18%,rgba(240,253,250,0.94)_58%,rgba(239,246,255,0.98))]" />
-      <div className="absolute inset-0 -z-20 overflow-hidden pointer-events-none">
-        <div className="absolute inset-0 portal-surface-stripes opacity-72" />
-        <div className="absolute inset-0 portal-hero-texture opacity-34" />
-        <div className="absolute inset-0 hero-dots-soft opacity-32" />
-        <div className="absolute inset-x-[-14%] top-[-6rem] h-48 rounded-[100%] bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.98),rgba(204,251,241,0.72)_36%,rgba(219,234,254,0.5)_62%,rgba(255,255,255,0)_78%)] blur-3xl" />
-        <div className="absolute inset-x-[-12%] bottom-[-7rem] h-64 rounded-[100%] bg-[radial-gradient(ellipse_at_center,rgba(20,184,166,0.18),rgba(37,99,235,0.16)_44%,rgba(248,250,252,0)_76%)] blur-3xl" />
-        <div className="absolute left-[-6%] top-28 h-80 w-80 rounded-full bg-primary/10 blur-3xl" />
-        <div className="absolute right-[-5%] top-32 h-96 w-96 rounded-full bg-accent/10 blur-3xl" />
-        {TRIAGE_BACKDROP_ICONS.map(({ Icon, className, size }, index) => (
-          <span key={`triage-backdrop-${index}`} className={`absolute ${className}`}>
-            <Icon className={size} strokeWidth={2} />
-          </span>
-        ))}
-      </div>
-    </>
-  );
-}
 
 function OverviewTile({ label, value, detail }) {
   return (

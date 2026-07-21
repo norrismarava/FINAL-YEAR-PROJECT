@@ -9,13 +9,13 @@ export function DashboardLayout({ children }) {
 
   useEffect(() => {
     if (isReady && !isAuthenticated) {
-      navigate("/login");
+      navigate("/admin/login");
     }
   }, [isAuthenticated, isReady, navigate]);
 
   const handleLogout = () => {
     logout();
-    navigate("/login");
+    navigate("/admin/login");
   };
 
   if (!isReady) {

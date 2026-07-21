@@ -43,6 +43,26 @@ export function getNextSequence() {
   return getRepository().getNextSequence();
 }
 
+export function listPatients() {
+  return getRepository().listPatients();
+}
+
+export function findPatientById(id) {
+  return getRepository().findPatientById(id);
+}
+
+export function createPatient(patient) {
+  return getRepository().createPatient(patient);
+}
+
+export function updatePatient(id, updater) {
+  return getRepository().updatePatient(id, updater);
+}
+
+export function getNextPatientSequence() {
+  return getRepository().getNextPatientSequence();
+}
+
 export function listNotifications() {
   return getRepository().listNotifications();
 }

@@ -57,6 +57,36 @@ export async function registerController({ body }) {
   };
 }
 
+export async function selfRegisterController({ body }) {
+  const payload = body ?? {};
+  const patientName = payload.fullName?.trim();
+  const phone = payload.phone?.trim();
+
+  if (!patientName) {
+    return {
+      status: 400,
+      body: { message: "Full name is required." },
+    };
+  }
+
+  if (!phone) {
+    return {
+      status: 400,
+      body: { message: "Phone number is required for queue notifications." },
+    };
+  }
+
+  return {
+    status: 201,
+    body: {
+      ticket: await registerPatient({
+        ...payload,
+        patientCategory: "self-register",
+      }),
+    },
+  };
+}
+
 export async function patientSearchController({ query }) {
   return {
     status: 200,

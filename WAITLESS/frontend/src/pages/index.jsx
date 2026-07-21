@@ -8,18 +8,23 @@ import {
   Cross,
   FlaskConical,
   HeartPulse,
+  LayoutDashboard,
   MessageCircle,
   MonitorSmartphone,
   Pill,
   Radio,
   Search,
   ShieldAlert,
+  ShieldCheck,
   Stethoscope,
   Timer,
   Users,
 } from "lucide-react";
 
 import hospitalHeroBackground from "@/assets/bgfinal.png";
+import { useAuth } from "@/auth/AuthProvider";
+import { usePatientAuth } from "@/auth/PatientAuthProvider";
+import { resolveStaffLandingPath } from "@/services/staffProfilePrefs";
 import { PRIORITY_META } from "@/services/queueMeta";
 
 export default function Home() {
@@ -56,6 +61,11 @@ function LandingLightCanvas({ children }) {
 }
 
 function Hero() {
+  const auth = useAuth();
+  const patientAuth = usePatientAuth();
+  const isStaff = auth.isAuthenticated;
+  const isPatient = patientAuth.isPatientAuthenticated;
+  const canRegisterPatient = auth.hasRole(["reception", "receptionist"]);
   const heroHighlights = [
     {
       icon: Users,
@@ -97,39 +107,92 @@ function Hero() {
             Triage-aware hospital operations
           </div>
           <h1 className="mt-5 text-balance font-display text-5xl font-bold leading-[1.02] tracking-tight text-foreground sm:text-6xl lg:text-7xl">
-            Digital Patient Flow
+            Your health journey,
             <br />
             <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              for Modern Hospitals.
+              simplified.
             </span>
           </h1>
           <p className="mt-5 max-w-2xl text-balance text-base leading-7 text-muted-foreground sm:text-lg">
-            A triage-aware queue platform built for Zimbabwean public hospitals,
-            replacing handwritten registers with live service desks and zero-cost
-            WhatsApp alerts so patients never lose their place.
+            Book your spot in the queue from your phone, track your position in
+            real time, and get WhatsApp updates — so you never lose your place.
           </p>
           <div className="mt-8 flex flex-wrap items-stretch gap-3">
-            <Link
-              to="/register"
-              className="inline-flex min-h-12 items-center gap-2 rounded-xl gradient-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-elegant transition-transform hover:-translate-y-0.5"
-            >
-              Register a patient
-              <ClipboardList className="h-4 w-4" />
-            </Link>
-            <Link
-              to="/queue"
-              className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-white/68 px-5 py-3 text-sm font-semibold text-foreground shadow-[0_16px_34px_-28px_rgba(15,23,42,0.20)] backdrop-blur transition-colors hover:bg-white/82"
-            >
-              View live queue board
-              <MonitorSmartphone className="h-4 w-4" />
-            </Link>
-            <Link
-              to="/track"
-              className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-primary-soft/72 px-5 py-3 text-sm font-semibold text-primary shadow-[0_14px_34px_-26px_rgba(15,118,110,0.24)] backdrop-blur transition-colors hover:bg-primary-soft/88"
-            >
-              Track a ticket
-              <Search className="h-4 w-4" />
-            </Link>
+            {isStaff ? (
+              <>
+                <Link
+                  to={resolveStaffLandingPath(auth.user)}
+                  className="inline-flex min-h-12 items-center gap-2 rounded-xl gradient-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-elegant transition-transform hover:-translate-y-0.5"
+                >
+                  My workspace
+                  <LayoutDashboard className="h-4 w-4" />
+                </Link>
+                {canRegisterPatient ? (
+                  <Link
+                    to="/admin/register"
+                    className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-white/68 px-5 py-3 text-sm font-semibold text-foreground shadow-[0_16px_34px_-28px_rgba(15,23,42,0.20)] backdrop-blur transition-colors hover:bg-white/82"
+                  >
+                    New patient
+                    <ClipboardList className="h-4 w-4" />
+                  </Link>
+                ) : null}
+                <Link
+                  to="/track"
+                  className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-primary-soft/72 px-5 py-3 text-sm font-semibold text-primary shadow-[0_14px_34px_-26px_rgba(15,118,110,0.24)] backdrop-blur transition-colors hover:bg-primary-soft/88"
+                >
+                  Track a ticket
+                  <Search className="h-4 w-4" />
+                </Link>
+              </>
+            ) : isPatient ? (
+              <>
+                <Link
+                  to="/patient/dashboard"
+                  className="inline-flex min-h-12 items-center gap-2 rounded-xl gradient-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-elegant transition-transform hover:-translate-y-0.5"
+                >
+                  My dashboard
+                  <LayoutDashboard className="h-4 w-4" />
+                </Link>
+                <Link
+                  to="/self-register"
+                  className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-white/68 px-5 py-3 text-sm font-semibold text-foreground shadow-[0_16px_34px_-28px_rgba(15,23,42,0.20)] backdrop-blur transition-colors hover:bg-white/82"
+                >
+                  Book a queue spot
+                  <ClipboardList className="h-4 w-4" />
+                </Link>
+                <Link
+                  to="/track"
+                  className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-primary-soft/72 px-5 py-3 text-sm font-semibold text-primary shadow-[0_14px_34px_-26px_rgba(15,118,110,0.24)] backdrop-blur transition-colors hover:bg-primary-soft/88"
+                >
+                  Track a ticket
+                  <Search className="h-4 w-4" />
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/patient/register"
+                  className="inline-flex min-h-12 items-center gap-2 rounded-xl gradient-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-elegant transition-transform hover:-translate-y-0.5"
+                >
+                  Get started today
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                <Link
+                  to="/track"
+                  className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-white/68 px-5 py-3 text-sm font-semibold text-foreground shadow-[0_16px_34px_-28px_rgba(15,23,42,0.20)] backdrop-blur transition-colors hover:bg-white/82"
+                >
+                  Track a ticket
+                  <Search className="h-4 w-4" />
+                </Link>
+                <Link
+                  to="/queue"
+                  className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-primary-soft/72 px-5 py-3 text-sm font-semibold text-primary shadow-[0_14px_34px_-26px_rgba(15,118,110,0.24)] backdrop-blur transition-colors hover:bg-primary-soft/88"
+                >
+                  View live queue board
+                  <MonitorSmartphone className="h-4 w-4" />
+                </Link>
+              </>
+            )}
           </div>
 
           <div className="mt-10 grid max-w-2xl gap-4 sm:grid-cols-3">
@@ -188,7 +251,7 @@ function Hero() {
               ))}
             </div>
 
-            <div className="rounded-[1.6rem] bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(37,99,235,0.88))] p-5 text-primary-foreground shadow-[0_24px_52px_-30px_rgba(37,99,235,0.42)] backdrop-blur">
+            <div className="rounded-[1.6rem] border border-white/40 bg-[linear-gradient(135deg,rgba(15,118,110,0.42),rgba(37,99,235,0.38))] p-5 text-primary-foreground shadow-[0_24px_52px_-30px_rgba(37,99,235,0.22)] backdrop-blur-lg">
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-primary-foreground/76">
@@ -532,7 +595,7 @@ function TriageStrip() {
               registration and used to route every patient.
             </p>
             <Link
-              to="/triage"
+              to="/admin/triage"
               className="mt-5 inline-flex items-center gap-2 rounded-xl gradient-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-elegant"
             >
               Open triage console
@@ -912,6 +975,29 @@ function LightToDarkWaveDivider() {
 }
 
 function CTA() {
+  const auth = useAuth();
+  const patientAuth = usePatientAuth();
+  const isStaff = auth.isAuthenticated;
+  const isPatient = patientAuth.isPatientAuthenticated;
+
+  const ctaCards = isStaff
+    ? [
+        ["Reception", "Register the next patient and issue a clear ticket.", "/admin/register", ClipboardList],
+        ["Waiting area", "Show the live board without exposing patient names.", "/queue", MonitorSmartphone],
+        ["Operations", "Monitor bottlenecks and call the next patient.", "/admin/dashboard", Activity],
+      ]
+    : isPatient
+      ? [
+          ["My dashboard", "View your active tickets and visit history.", "/patient/dashboard", LayoutDashboard],
+          ["Book a queue spot", "Get a ticket instantly and track your position.", "/self-register", ClipboardList],
+          ["Track a ticket", "Enter your ticket code and see your live queue position.", "/track", Search],
+        ]
+      : [
+          ["Create your account", "Sign up to book queue spots, track tickets, and get WhatsApp updates — all from your phone.", "/patient/register", ClipboardList],
+          ["Track a ticket", "Enter your ticket code and see your live queue position.", "/track", Search],
+          ["Waiting area", "Show the live board without exposing patient names.", "/queue", MonitorSmartphone],
+        ];
+
   return (
     <section className="relative overflow-hidden bg-[#081827] px-4 py-18 text-white sm:px-6 lg:px-8">
       <div className="absolute inset-x-[-14%] top-[-4.5rem] h-40 rounded-[100%] bg-[radial-gradient(ellipse_at_center,rgba(20,184,166,0.22),rgba(37,99,235,0.18)_42%,rgba(8,24,39,0)_78%)] blur-3xl" />
@@ -937,11 +1023,7 @@ function CTA() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
-              {[
-                ["Reception", "Register the next patient and issue a clear ticket.", "/register", ClipboardList],
-                ["Waiting area", "Show the live board without exposing patient names.", "/queue", MonitorSmartphone],
-                ["Operations", "Monitor bottlenecks and call the next patient.", "/dashboard", Activity],
-              ].map(([title, body, to, Icon]) => (
+              {ctaCards.map(([title, body, to, Icon]) => (
                 <Link
                   key={title}
                   to={to}

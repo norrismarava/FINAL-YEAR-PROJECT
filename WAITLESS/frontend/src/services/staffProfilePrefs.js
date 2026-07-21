@@ -26,27 +26,27 @@ const ROLE_LABELS = {
 const LANDING_PAGE_META = {
   dashboard: {
     label: "Dashboard",
-    path: "/dashboard",
+    path: "/admin/dashboard",
     roles: ["admin", "triage", "clinician", "doctor", "nurse"],
   },
   register: {
     label: "Registration desk",
-    path: "/register",
+    path: "/admin/register",
     roles: ["admin", "reception", "receptionist"],
   },
   triage: {
     label: "Triage console",
-    path: "/triage",
+    path: "/admin/triage",
     roles: ["admin", "triage"],
   },
   queue: {
     label: "Queue board",
-    path: "/queue",
+    path: "/admin/queue",
     roles: ["admin", "triage", "clinician", "doctor", "nurse", "reception", "receptionist"],
   },
   track: {
     label: "Ticket tracker",
-    path: "/track",
+    path: "/admin/track",
     roles: ["admin", "triage", "clinician", "doctor", "nurse", "reception", "receptionist"],
   },
 };
@@ -105,11 +105,7 @@ export function formatStaffRoleLabel(role) {
 }
 
 export function getStaffInitials(name = "") {
-  const parts = name
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2);
+  const parts = name.trim().split(/\s+/).filter(Boolean).slice(0, 2);
 
   if (!parts.length) {
     return "WL";
@@ -130,7 +126,7 @@ export function getAvailableLandingPages(role) {
 
 export function resolveStaffLandingPath(user) {
   if (!user) {
-    return "/login";
+    return "/admin/login";
   }
 
   const preferredLandingPage = user.workspaceProfile?.preferredLandingPage;
@@ -142,13 +138,12 @@ export function resolveStaffLandingPath(user) {
   }
 
   if (user.role === "reception" || user.role === "receptionist") {
-    return "/register";
+    return "/admin/register";
   }
 
   if (user.role === "triage") {
-    return "/triage";
+    return "/admin/triage";
   }
 
-  return "/dashboard";
+  return "/admin/dashboard";
 }
-
