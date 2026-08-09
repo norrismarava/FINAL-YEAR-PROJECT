@@ -4,10 +4,12 @@ import {
   BadgeCheck,
   Building2,
   Clock3,
+  Edit3,
   ExternalLink,
   HeartPulse,
   IdCard,
   LayoutDashboard,
+  LoaderCircle,
   Mail,
   Phone,
   Save,
@@ -15,6 +17,7 @@ import {
   ShieldCheck,
   Stethoscope,
   Ticket,
+  X,
 } from "lucide-react";
 
 import { useAuth } from "@/auth/AuthProvider";
@@ -22,6 +25,7 @@ import { ProfileCompleteness } from "@/components/ProfileCompleteness";
 import { ProfilePhotoPicker } from "@/components/ProfilePhotoPicker";
 import { LoadingPanel } from "@/components/ui/system-loader";
 import { uploadStaffAvatar } from "@/services/authApi";
+import { toast } from "sonner";
 import {
   formatStaffRoleLabel,
   getAvailableLandingPages,
@@ -67,10 +71,24 @@ export default function ProfilePage() {
   const [avatarPreview, setAvatarPreview] = useState(() =>
     resolveProfileImageUrl(auth.user?.avatarUrl),
   );
+  const [editingRecord, setEditingRecord] = useState(false);
+  const [recordSaving, setRecordSaving] = useState(false);
+  const [recordForm, setRecordForm] = useState({
+    fullName: "",
+    phone: "",
+    email: "",
+    department: "",
+  });
 
   useEffect(() => {
     setFormState(buildProfileForm(auth.user));
     setAvatarPreview(resolveProfileImageUrl(auth.user?.avatarUrl));
+    setRecordForm({
+      fullName: auth.user?.name ?? "",
+      phone: auth.user?.phone ?? "",
+      email: auth.user?.email ?? "",
+      department: auth.user?.department ?? "",
+    });
   }, [auth.user]);
 
   useEffect(() => {
@@ -200,6 +218,35 @@ export default function ProfilePage() {
     }
   }
 
+  function startEditRecord() {
+    setRecordForm({
+      fullName: auth.user?.name ?? "",
+      phone: auth.user?.phone ?? "",
+      email: auth.user?.email ?? "",
+      department: auth.user?.department ?? "",
+    });
+    setEditingRecord(true);
+  }
+
+  function cancelEditRecord() {
+    setEditingRecord(false);
+  }
+
+  async function handleRecordSave(e) {
+    e.preventDefault();
+    setRecordSaving(true);
+    try {
+      await auth.persistProfile(recordForm);
+      setEditingRecord(false);
+      setSaved(true);
+      toast.success("Staff record updated successfully");
+    } catch (error) {
+      toast.error(error.message || "Failed to update staff record");
+    } finally {
+      setRecordSaving(false);
+    }
+  }
+
   return (
     <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
       <header className="surface-panel relative overflow-hidden p-6 sm:p-8">
@@ -298,21 +345,101 @@ export default function ProfilePage() {
               <div className="eyebrow">Official account</div>
               <h2 className="mt-2 font-display text-2xl font-bold tracking-tight">Staff record</h2>
             </div>
-            <span className="rounded-full border border-border/70 bg-background/80 px-3 py-1 text-xs font-semibold text-muted-foreground">
-              Secure session active
-            </span>
+            <div className="flex items-center gap-2">
+              {editingRecord ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={cancelEditRecord}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-border/70 bg-background/80 px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-accent"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    form="staff-record-form"
+                    disabled={recordSaving}
+                    className="inline-flex items-center gap-1.5 rounded-xl gradient-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-elegant disabled:opacity-60"
+                  >
+                    {recordSaving ? (
+                      <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Save className="h-3.5 w-3.5" />
+                    )}
+                    {recordSaving ? "Saving..." : "Save record"}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <span className="rounded-full border border-border/70 bg-background/80 px-3 py-1 text-xs font-semibold text-muted-foreground">
+                    Secure session active
+                  </span>
+                  <button
+                    type="button"
+                    onClick={startEditRecord}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-border/70 bg-background/80 px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-accent"
+                  >
+                    <Edit3 className="h-3.5 w-3.5" />
+                    Edit
+                  </button>
+                </>
+              )}
+            </div>
           </div>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <ReadOnlyField label="Full name" value={user.name || "Not available"} />
-            <ReadOnlyField label="Role" value={formatStaffRoleLabel(user.role)} />
-            <ReadOnlyField label="Department" value={user.department || "Not assigned"} />
-            <ReadOnlyField label="Username" value={user.username || "Not available"} />
-            <ReadOnlyField label="Staff email" value={user.email || "Not provided"} />
-            <ReadOnlyField label="Mobile number" value={user.phone || "Not provided"} />
-            <ReadOnlyField label="Employee ID" value={user.employeeId || "Not provided"} />
-            <ReadOnlyField label="Created" value={formatDateTime(user.createdAt)} />
-          </div>
+          {editingRecord ? (
+            <form id="staff-record-form" onSubmit={handleRecordSave} className="mt-5 grid gap-3 sm:grid-cols-2">
+              <Field label="Full name">
+                <input
+                  value={recordForm.fullName}
+                  onChange={(e) => setRecordForm((p) => ({ ...p, fullName: e.target.value }))}
+                  className="input-base"
+                  placeholder="Full name"
+                />
+              </Field>
+              <Field label="Department">
+                <input
+                  value={recordForm.department}
+                  onChange={(e) => setRecordForm((p) => ({ ...p, department: e.target.value }))}
+                  className="input-base"
+                  placeholder="Department"
+                />
+              </Field>
+              <Field label="Staff email">
+                <input
+                  type="email"
+                  value={recordForm.email}
+                  onChange={(e) => setRecordForm((p) => ({ ...p, email: e.target.value }))}
+                  className="input-base"
+                  placeholder="Email address"
+                />
+              </Field>
+              <Field label="Mobile number">
+                <input
+                  value={recordForm.phone}
+                  onChange={(e) => setRecordForm((p) => ({ ...p, phone: e.target.value }))}
+                  className="input-base"
+                  placeholder="Phone number"
+                />
+              </Field>
+              <ReadOnlyField label="Role" value={formatStaffRoleLabel(user.role)} />
+              <ReadOnlyField label="Username" value={user.username || "Not available"} />
+              <ReadOnlyField label="Employee ID" value={user.employeeId || "Not provided"} />
+              <ReadOnlyField label="Created" value={formatDateTime(user.createdAt)} />
+            </form>
+          ) : (
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <ReadOnlyField label="Full name" value={user.name || "Not available"} />
+              <ReadOnlyField label="Role" value={formatStaffRoleLabel(user.role)} />
+              <ReadOnlyField label="Department" value={user.department || "Not assigned"} />
+              <ReadOnlyField label="Username" value={user.username || "Not available"} />
+              <ReadOnlyField label="Staff email" value={user.email || "Not provided"} />
+              <ReadOnlyField label="Mobile number" value={user.phone || "Not provided"} />
+              <ReadOnlyField label="Employee ID" value={user.employeeId || "Not provided"} />
+              <ReadOnlyField label="Created" value={formatDateTime(user.createdAt)} />
+            </div>
+          )}
 
           <div className="surface-panel-muted mt-6 px-4 py-4">
             <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">

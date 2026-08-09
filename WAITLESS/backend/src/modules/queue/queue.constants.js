@@ -49,6 +49,7 @@ export const PATIENT_CATEGORIES = [
 
 export const PRIORITY_ORDER = ["red", "yellow", "green", "black"];
 export const TICKET_STATUSES = [
+  "pre-registered",
   "waiting",
   "called",
   "in-service",
@@ -56,12 +57,46 @@ export const TICKET_STATUSES = [
   "completed",
 ];
 
-const TICKET_PREFIX = {
-  red: "R",
-  yellow: "Y",
-  green: "G",
-  black: "B",
+export const DEPARTMENT_TOKEN_PREFIX = {
+  OPD: "OPD",
+  "Casualty / Triage": "TRI",
+  Pharmacy: "PHA",
+  Laboratory: "LAB",
+  Radiology: "RAD",
+  "OI Clinic": "OIC",
 };
+
+export const EMERGENCY_VITAL_THRESHOLDS = {
+  oxygenSaturation: { min: 90, label: "SpO2 below 90%" },
+  heartRate: { max: 130, min: 40, label: "Heart rate outside 40-130 bpm" },
+  bloodPressureSystolic: { max: 180, min: 80, label: "Systolic BP outside 80-180 mmHg" },
+  temperature: { min: 39.5, label: "Temperature at or above 39.5°C" },
+  respiratoryRate: { max: 30, min: 8, label: "Respiratory rate outside 8-30 /min" },
+  painScore: { min: 9, label: "Pain score 9 or 10" },
+};
+
+export const DEPARTMENT_ROUTING_RULES = [
+  {
+    department: "Casualty / Triage",
+    keywords: ["chest pain", "breathing", "respiratory", "distress", "unconscious", "bleeding", "trauma", "injury", "accident", "severe burn", "stroke", "seizure", "collapse", "cardiac", "arrest", "shock", "poisoning", "overdose", "anaphylaxis", "choking", "drowning"],
+  },
+  {
+    department: "Pharmacy",
+    keywords: ["medication", "refill", "prescription", "pharmacy", "drug", "art", "arv", "collect medicine"],
+  },
+  {
+    department: "Laboratory",
+    keywords: ["blood test", "lab", "laboratory", "cbc", "urinalysis", "specimen", "sample", "blood work", "culture", "malaria test", "hiv test", "glucose test", "fasting blood"],
+  },
+  {
+    department: "Radiology",
+    keywords: ["x-ray", "xray", "radiology", "scan", "ultrasound", "ct scan", "mri", "imaging", "fracture", "bone"],
+  },
+  {
+    department: "OI Clinic",
+    keywords: ["oi clinic", "art review", "hiv", "arv", "opportunistic infection", "cd4", "viral load"],
+  },
+];
 
 const SEEDED_TICKETS = [
   {
@@ -186,8 +221,14 @@ const SEEDED_TICKETS = [
   },
 ];
 
-export function createTicketCode(priority, sequence) {
-  return `${TICKET_PREFIX[priority]}-${String(sequence).padStart(3, "0")}`;
+export function createTicketCode(department, sequence) {
+  const fallbackPrefix =
+    String(department ?? "")
+      .replace(/[^a-z0-9]/gi, "")
+      .slice(0, 3)
+      .toUpperCase() || "QUE";
+  const prefix = DEPARTMENT_TOKEN_PREFIX[department] ?? fallbackPrefix;
+  return `${prefix}-${String(sequence).padStart(3, "0")}`;
 }
 
 export function priorityRank(priority) {
@@ -212,7 +253,7 @@ export function createSeedTickets() {
 
     return {
       id: crypto.randomUUID(),
-      ticket: createTicketCode(row.priority, row.sequence),
+      ticket: createTicketCode(row.department, row.sequence),
       patientName: row.patientName,
       nationalId: "",
       dob: "",
@@ -241,3 +282,100 @@ export function createSeedTickets() {
     };
   });
 }
+
+
+export const PRESCRIPTION_STATES = {
+  prescribed: {
+    label: "Prescribed",
+    description: "Medication prescribed by doctor, awaiting pharmacy review",
+  },
+  dispensing: {
+    label: "Dispensing",
+    description: "Pharmacy is preparing the medication",
+  },
+  ready: {
+    label: "Ready for Collection",
+    description: "Medication ready for patient collection",
+  },
+  collected: {
+    label: "Collected",
+    description: "Medication collected by patient",
+  },
+  cancelled: {
+    label: "Cancelled",
+    description: "Prescription cancelled",
+  },
+};
+
+export const PRESCRIPTION_STATE_ORDER = [
+  "prescribed",
+  "dispensing",
+  "ready",
+  "collected",
+];
+
+export function canTransitionPrescriptionState(from, to) {
+  if (from === "cancelled") return false;
+  if (from === "collected") return false;
+  if (to === "cancelled") return true;
+  const fromIdx = PRESCRIPTION_STATE_ORDER.indexOf(from);
+  const toIdx = PRESCRIPTION_STATE_ORDER.indexOf(to);
+  return toIdx >= 0 && toIdx > fromIdx;
+}
+
+export const TEST_ORDER_STATES = {
+  ordered: {
+    label: "Ordered",
+    description: "Test ordered by doctor, awaiting sample collection",
+  },
+  "sample-collected": {
+    label: "Sample Collected",
+    description: "Specimen collected, test in progress",
+  },
+  "in-progress": {
+    label: "In Progress",
+    description: "Laboratory processing the test",
+  },
+  completed: {
+    label: "Completed",
+    description: "Test completed, result ready for review",
+  },
+  "result-ready": {
+    label: "Result Ready",
+    description: "Result ready, awaiting doctor review and patient return",
+  },
+  cancelled: {
+    label: "Cancelled",
+    description: "Test order cancelled",
+  },
+};
+
+export const TEST_ORDER_STATE_ORDER = [
+  "ordered",
+  "sample-collected",
+  "in-progress",
+  "completed",
+  "result-ready",
+];
+
+export function canTransitionTestOrderState(from, to) {
+  if (from === "cancelled") return false;
+  if (from === "result-ready") return false;
+  if (to === "cancelled") return true;
+  const fromIdx = TEST_ORDER_STATE_ORDER.indexOf(from);
+  const toIdx = TEST_ORDER_STATE_ORDER.indexOf(to);
+  return toIdx >= 0 && toIdx > fromIdx;
+}
+
+export const TEST_ORDER_TYPES = [
+  "blood-count",
+  "urinalysis",
+  "blood-glucose",
+  "malaria-smear",
+  "hiv-test",
+  "tb-sputum",
+  "x-ray-chest",
+  "ultrasound",
+  "ct-scan",
+  "other",
+];

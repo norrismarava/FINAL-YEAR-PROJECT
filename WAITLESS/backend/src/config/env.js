@@ -7,6 +7,12 @@ config({ path: fileURLToPath(new URL("../../.env", import.meta.url)) });
 const defaultStateFilePath = fileURLToPath(
   new URL("../../data/queue-state.json", import.meta.url),
 );
+const defaultAuditLogPath = fileURLToPath(
+  new URL("../../data/audit-events.jsonl", import.meta.url),
+);
+const stateFilePath = process.env.STATE_FILE_PATH
+  ? path.resolve(process.cwd(), process.env.STATE_FILE_PATH)
+  : defaultStateFilePath;
 
 function parseInteger(value, fallback) {
   const parsed = Number.parseInt(value ?? "", 10);
@@ -39,64 +45,41 @@ function parseBoolean(value, fallback) {
   return ["1", "true", "yes", "on"].includes(String(value).toLowerCase());
 }
 
-function parseJson(value, fallback) {
-  if (!value?.trim()) {
-    return fallback;
-  }
-
-  try {
-    return JSON.parse(value);
-  } catch (error) {
-    console.error("Failed to parse JSON environment value.", error);
-    return fallback;
-  }
-}
-
 export const env = {
   port: Number(process.env.PORT ?? 4242),
   corsOrigin: process.env.CORS_ORIGIN ?? "*",
-  stateFilePath: process.env.STATE_FILE_PATH
-    ? path.resolve(process.cwd(), process.env.STATE_FILE_PATH)
-    : defaultStateFilePath,
-  databaseProvider: process.env.DB_PROVIDER?.trim() || "file",
+  hospitalId: process.env.HOSPITAL_ID?.trim() || "chinhoyi-provincial",
+  hospitalName: process.env.HOSPITAL_NAME?.trim() || "Chinhoyi Provincial Hospital",
+  hospitalLocation: process.env.HOSPITAL_LOCATION?.trim() || "Chinhoyi, Zimbabwe",
+  multiTenant: parseBoolean(process.env.MULTI_TENANT, false),
+  publicAppUrl:
+    process.env.PUBLIC_APP_URL?.trim().replace(/\/+$/, "") ||
+    "http://localhost:5173",
+  stateFilePath,
+  auditLogPath: process.env.AUDIT_LOG_PATH
+    ? path.resolve(process.cwd(), process.env.AUDIT_LOG_PATH)
+    : process.env.STATE_FILE_PATH
+      ? path.join(path.dirname(stateFilePath), "audit-events.jsonl")
+      : defaultAuditLogPath,
+  databaseProvider: process.env.DB_PROVIDER?.trim() || "mysql",
   databaseHost: process.env.DB_HOST?.trim() || "127.0.0.1",
   databasePort: parseInteger(process.env.DB_PORT, 3306),
   databaseName: process.env.DB_NAME?.trim() || "waitless",
-  databaseUser: process.env.DB_USER?.trim() || "waitless",
+  databaseUser: process.env.DB_USER?.trim() || "root",
   databasePassword: process.env.DB_PASSWORD ?? "",
   databaseConnectionLimit: parseInteger(process.env.DB_CONNECTION_LIMIT, 10),
   databaseSeedDemoData: parseBoolean(process.env.DB_SEED_DEMO_DATA, true),
-  authSessionTtlMs: parseInteger(process.env.AUTH_SESSION_TTL_MS, 8 * 60 * 60 * 1000),
-  staffUsers: parseJson(process.env.STAFF_USERS_JSON, [
-    {
-      id: "admin",
-      username: "admin",
-      password: "admin123",
-      name: "System Administrator",
-      role: "admin",
-    },
-    {
-      id: "reception",
-      username: "reception",
-      password: "reception123",
-      name: "Reception Desk",
-      role: "reception",
-    },
-    {
-      id: "triage",
-      username: "triage",
-      password: "triage123",
-      name: "Triage Nurse",
-      role: "triage",
-    },
-    {
-      id: "clinician",
-      username: "clinician",
-      password: "clinician123",
-      name: "Clinical Desk",
-      role: "clinician",
-    },
-  ]),
+  authSessionTtlMs: parseInteger(
+    process.env.AUTH_SESSION_TTL_MS,
+    8 * 60 * 60 * 1000,
+  ),
+  initialAdminUsername: process.env.INITIAL_ADMIN_USERNAME?.trim() || "admin",
+  initialAdminEmail:
+    process.env.INITIAL_ADMIN_EMAIL?.trim().toLowerCase() ||
+    "admin@waitless.local",
+  initialAdminName:
+    process.env.INITIAL_ADMIN_NAME?.trim() || "System Administrator",
+  initialAdminPassword: process.env.INITIAL_ADMIN_PASSWORD ?? "",
   whatsAppProvider: process.env.WHATSAPP_PROVIDER?.trim() || "mock",
   whatsAppApiBaseUrl:
     process.env.WHATSAPP_API_BASE_URL?.trim() || "https://graph.facebook.com",

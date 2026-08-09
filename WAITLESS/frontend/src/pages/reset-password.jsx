@@ -2,12 +2,7 @@ import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { AlertCircle, CheckCircle2, Eye, EyeOff, Lock } from "lucide-react";
 
-import {
-  AuthButton,
-  AuthError,
-  AuthInput,
-  AuthShell,
-} from "@/components/AuthShell";
+import { AuthButton, AuthError, AuthInput, AuthShell } from "@/components/AuthShell";
 
 export default function ResetPasswordPage() {
   const [searchParams] = useSearchParams();
@@ -31,8 +26,8 @@ export default function ResetPasswordPage() {
       return;
     }
 
-    if (formData.password.length < 8) {
-      setError("Password must be at least 8 characters");
+    if (formData.password.length < 10) {
+      setError("Password must be at least 10 characters");
       return;
     }
 
@@ -102,11 +97,11 @@ export default function ResetPasswordPage() {
           type={showPassword ? "text" : "password"}
           autoComplete="new-password"
           required
-          placeholder="Minimum 8 characters"
+          minLength={10}
+          maxLength={72}
+          placeholder="10+ characters with mixed character types"
           value={formData.password}
-          onChange={(event) =>
-            setFormData({ ...formData, password: event.target.value })
-          }
+          onChange={(event) => setFormData({ ...formData, password: event.target.value })}
           onToggle={() => setShowPassword(!showPassword)}
           visible={showPassword}
         />
@@ -118,11 +113,11 @@ export default function ResetPasswordPage() {
           type={showConfirmPassword ? "text" : "password"}
           autoComplete="new-password"
           required
+          minLength={10}
+          maxLength={72}
           placeholder="Repeat password"
           value={formData.confirmPassword}
-          onChange={(event) =>
-            setFormData({ ...formData, confirmPassword: event.target.value })
-          }
+          onChange={(event) => setFormData({ ...formData, confirmPassword: event.target.value })}
           onToggle={() => setShowConfirmPassword(!showConfirmPassword)}
           visible={showConfirmPassword}
         />

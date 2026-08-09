@@ -1,5 +1,6 @@
 import { requireStaffSession } from "../services/sessionService.js";
 import { readAvatarImage, saveAvatarImage } from "../services/avatarService.js";
+import { recordAuditEventSafely } from "../services/auditService.js";
 
 import {
   getStoredStaffUsers,
@@ -10,14 +11,8 @@ import {
 export async function getMeController({ req }) {
   const session = requireStaffSession(req);
 
-  // Profile is stored on the user record.
-  const users = getStoredStaffUsers();
+  const users = await getStoredStaffUsers();
   const user = users.find((u) => u.id === session.user.id) ?? null;
-  const publicUser = user
-    ? Object.fromEntries(
-        Object.entries(user).filter(([key]) => key !== "password"),
-      )
-    : {};
 
   return {
     status: 200,
@@ -25,9 +20,12 @@ export async function getMeController({ req }) {
       ...session,
       user: {
         ...session.user,
-        // staff-users.json stores core fields at top-level.
-        ...publicUser,
-        avatarUrl: user?.avatarUrl ?? null,
+        ...(user?.full_name ? { name: user.full_name } : {}),
+        ...(user?.phone ? { phone: user.phone } : {}),
+        ...(user?.department ? { department: user.department } : {}),
+        ...(user?.email ? { email: user.email } : {}),
+        ...(user?.role ? { role: user.role } : {}),
+        avatarUrl: user?.avatar_url ?? null,
       },
     },
   };
@@ -36,9 +34,9 @@ export async function getMeController({ req }) {
 export async function saveProfileController({ req, body }) {
   const session = requireStaffSession(req);
 
-  const { fullName, phone, department, email, role } = body ?? {};
+  const { fullName, phone, department, email } = body ?? {};
 
-  const users = getStoredStaffUsers();
+  const users = await getStoredStaffUsers();
   const existing = users.find((u) => u.id === session.user.id);
   if (!existing) {
     return {
@@ -47,13 +45,29 @@ export async function saveProfileController({ req, body }) {
     };
   }
 
-  // Persist core fields onto the stored user record.
-  upsertStaffUserProfile(existing.id, {
+  await upsertStaffUserProfile(existing.id, {
     fullName,
     phone,
     department,
     email,
-    role,
+  });
+
+  const changedFields = [
+    ["fullName", existing.full_name, fullName],
+    ["phone", existing.phone, phone],
+    ["department", existing.department, department],
+    ["email", existing.email, email],
+  ]
+    .filter(([, previous, next]) => typeof next === "string" && previous !== next)
+    .map(([field]) => field);
+
+  await recordAuditEventSafely({
+    actor: session.user,
+    action: "profile.updated",
+    entityType: "staff",
+    entityId: existing.id,
+    entityLabel: existing.username,
+    metadata: { changedFields },
   });
 
   return {
@@ -70,7 +84,7 @@ export async function saveAvatarController({ req, body }) {
     return { status: 400, body: { message: "avatarBase64 is required" } };
   }
 
-  const users = getStoredStaffUsers();
+  const users = await getStoredStaffUsers();
   const existing = users.find((u) => u.id === session.user.id);
   if (!existing) {
     return { status: 404, body: { message: "User not found." } };
@@ -78,8 +92,17 @@ export async function saveAvatarController({ req, body }) {
 
   const avatarUrl = saveAvatarImage(existing.id, avatarBase64);
 
-  updateStaffUserAvatar(existing.id, {
+  await updateStaffUserAvatar(existing.id, {
     avatarUrl,
+  });
+
+  await recordAuditEventSafely({
+    actor: session.user,
+    action: "profile.avatar-updated",
+    entityType: "staff",
+    entityId: existing.id,
+    entityLabel: existing.username,
+    metadata: { hadAvatar: Boolean(existing.avatar_url) },
   });
 
   return {

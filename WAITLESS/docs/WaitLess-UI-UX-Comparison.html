@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WaitLess — UI/UX Design Comparison</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm 20mm 16mm; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    color: #1e293b; line-height: 1.65; font-size: 11pt; background: #fff;
+  }
+
+  .cover {
+    page-break-after: always; min-height: 250mm;
+    background: linear-gradient(160deg, #0f172a 0%, #0f766e 40%, #6366f1 100%);
+    color: #fff; padding: 40mm 20mm; text-align: center;
+    display: flex; flex-direction: column; justify-content: space-between;
+  }
+  .cover-logo {
+    width: 80px; height: 80px; margin: 0 auto 16px;
+    background: rgba(255,255,255,0.15); border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px; font-weight: 900; letter-spacing: -2px;
+  }
+  .cover h1 { font-size: 42pt; font-weight: 800; margin-bottom: 8px; }
+  .cover h2 { font-size: 16pt; font-weight: 400; opacity: 0.9; margin-bottom: 40px; }
+  .cover-badge {
+    display: inline-block; padding: 6px 18px;
+    border: 1px solid rgba(255,255,255,0.3); border-radius: 999px;
+    font-size: 9pt; text-transform: uppercase; letter-spacing: 0.2em; margin-bottom: 30px;
+  }
+  .cover-info { font-size: 10pt; opacity: 0.8; line-height: 1.8; }
+  .cover-info strong { display: block; font-size: 11pt; margin-bottom: 4px; }
+
+  h2.section-title {
+    font-size: 20pt; color: #0f766e; margin-top: 0;
+    padding-bottom: 8px; border-bottom: 2px solid #e2e8f0;
+  }
+  h3 { font-size: 13pt; margin-top: 22px; margin-bottom: 8px; }
+  h4 { font-size: 11pt; color: #0f766e; margin-top: 16px; margin-bottom: 6px; }
+  p { margin-bottom: 10px; }
+  ul, ol { margin-bottom: 12px; padding-left: 20px; }
+  li { margin-bottom: 5px; }
+
+  .tip { background: #ecfdf5; border-left: 4px solid #0f766e; padding: 12px 16px; margin: 14px 0; border-radius: 0 8px 8px 0; font-size: 10pt; }
+  .tip strong { color: #0f766e; }
+  .note { background: #eff6ff; border-left: 4px solid #2563eb; padding: 12px 16px; margin: 14px 0; border-radius: 0 8px 8px 0; font-size: 10pt; }
+  .note strong { color: #2563eb; }
+  .warning { background: #fef2f2; border-left: 4px solid #dc2626; padding: 12px 16px; margin: 14px 0; border-radius: 0 8px 8px 0; font-size: 10pt; }
+  .warning strong { color: #dc2626; }
+  .gap { background: #fef9c3; border-left: 4px solid #ca8a04; padding: 12px 16px; margin: 14px 0; border-radius: 0 8px 8px 0; font-size: 10pt; }
+  .gap strong { color: #ca8a04; }
+
+  .page-break { page-break-before: always; }
+
+  table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: 9.5pt; }
+  th { background: #1e293b; color: #fff; padding: 8px 10px; text-align: left; font-weight: 600; }
+  td { padding: 7px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+  tr:nth-child(even) td { background: #f8fafc; }
+
+  .check { color: #16a34a; font-weight: bold; }
+  .cross { color: #dc2626; font-weight: bold; }
+  .partial { color: #ca8a04; font-weight: bold; }
+
+  .verdict {
+    background: linear-gradient(135deg, #ecfdf5, #eff6ff);
+    border: 2px solid #0f766e; border-radius: 12px;
+    padding: 20px 24px; margin: 20px 0;
+  }
+  .verdict h3 { color: #0f766e; margin-top: 0; }
+
+  .screen-mock {
+    background: #f1f5f9; border: 2px solid #cbd5e1; border-radius: 10px;
+    padding: 16px; margin: 14px 0; font-size: 9pt;
+  }
+  .screen-mock .mock-title {
+    font-weight: bold; color: #475569; margin-bottom: 8px;
+    font-size: 10pt; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px;
+  }
+  .screen-mock .mock-row {
+    display: flex; gap: 8px; margin: 4px 0; align-items: center;
+  }
+  .mock-badge {
+    display: inline-block; padding: 2px 8px; border-radius: 4px;
+    font-size: 8pt; font-weight: 600;
+  }
+  .mock-green { background: #16a34a; color: #fff; }
+  .mock-blue { background: #2563eb; color: #fff; }
+  .mock-yellow { background: #ca8a04; color: #fff; }
+  .mock-red { background: #dc2626; color: #fff; }
+  .mock-gray { background: #64748b; color: #fff; }
+
+  .footer-note {
+    margin-top: 40px; padding-top: 16px;
+    border-top: 1px solid #e2e8f0;
+    font-size: 9pt; color: #64748b; text-align: center;
+  }
+
+  .score-bar {
+    height: 8px; border-radius: 4px; background: #e2e8f0; margin: 4px 0 12px;
+    overflow: hidden;
+  }
+  .score-fill { height: 100%; border-radius: 4px; }
+  .score-green { background: linear-gradient(90deg, #16a34a, #22c55e); }
+  .score-blue { background: linear-gradient(90deg, #2563eb, #3b82f6); }
+  .score-yellow { background: linear-gradient(90deg, #ca8a04, #eab308); }
+  .score-red { background: linear-gradient(90deg, #dc2626, #ef4444); }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ COVER ═══════════════ -->
+<div class="cover">
+  <div>
+    <div class="cover-logo">W</div>
+    <div class="cover-badge">UI/UX Design Comparison</div>
+    <h1>WaitLess</h1>
+    <h2>Screen-by-Screen Interface & User Experience Analysis</h2>
+  </div>
+  <div class="cover-info">
+    <strong>Systems Analysed</strong>
+    WaitLess &bull; ScanQueue &bull; Qminder &bull; Waitwhile &bull; Qmatic &bull; Wavetec &bull; Keona<br><br>
+    <strong>Evaluation Areas</strong>
+    Visual design &bull; Layout patterns &bull; Patient-facing screens &bull; Staff dashboards<br>
+    Navigation &bull; Mobile experience &bull; Accessibility &bull; Animation &amp; micro-interactions<br><br>
+    Version 1.0 &nbsp;|&nbsp; August 2026
+  </div>
+</div>
+
+<!-- ═══════════════ SECTION 1: METHODOLOGY ═══════════════ -->
+<h2 class="section-title">1. Evaluation Methodology</h2>
+<p>
+  Each system was evaluated across 8 UI/UX dimensions, scored from 1 to 5 stars.
+  The evaluation is based on published product screenshots, documentation, user reviews,
+  feature descriptions, and product update announcements as of August 2026.
+</p>
+
+<table>
+  <tr>
+    <th style="width:25%">Dimension</th>
+    <th>What we evaluated</th>
+  </tr>
+  <tr>
+    <td><strong>Visual Design</strong></td>
+    <td>Color palette, typography, spacing, use of whitespace, modern aesthetic, visual hierarchy</td>
+  </tr>
+  <tr>
+    <td><strong>Layout & Information Architecture</strong></td>
+    <td>Screen organization, navigation patterns, content grouping, dashboard density</td>
+  </tr>
+  <tr>
+    <td><strong>Patient-Facing Screens</strong></td>
+    <td>Registration flow, tracking page, queue board, mobile experience, clarity for non-technical users</td>
+  </tr>
+  <tr>
+    <td><strong>Staff Dashboard</strong></td>
+    <td>Queue management view, action buttons, data density, filtering, real-time updates</td>
+  </tr>
+  <tr>
+    <td><strong>Mobile Experience</strong></td>
+    <td>Responsive design, touch targets, mobile-specific layouts, PWA support</td>
+  </tr>
+  <tr>
+    <td><strong>Accessibility & i18n</strong></td>
+    <td>WCAG compliance, screen reader support, multi-language, right-to-left support</td>
+  </tr>
+  <tr>
+    <td><strong>Animation & Micro-interactions</strong></td>
+    <td>Loading states, transitions, hover effects, progress indicators, empty states</td>
+  </tr>
+  <tr>
+    <td><strong>Onboarding & Empty States</strong></td>
+    <td>First-run experience, empty state guidance, error states, form validation feedback</td>
+  </tr>
+</table>
+
+<!-- ═══════════════ SECTION 2: SCORECARD ═══════════════ -->
+<div class="page-break"></div>
+<h2 class="section-title">2. Overall UI/UX Scorecard</h2>
+
+<table>
+  <tr>
+    <th style="width:22%">Dimension</th>
+    <th>WaitLess</th>
+    <th>ScanQueue</th>
+    <th>Qminder</th>
+    <th>Waitwhile</th>
+    <th>Qmatic</th>
+    <th>Wavetec</th>
+  </tr>
+  <tr>
+    <td><strong>Visual Design</strong></td>
+    <td>★★★★★</td>
+    <td>★★★★☆</td>
+    <td>★★★★☆</td>
+    <td>★★★★★</td>
+    <td>★★★☆☆</td>
+    <td>★★☆☆☆</td>
+  </tr>
+  <tr>
+    <td><strong>Layout & IA</strong></td>
+    <td>★★★★☆</td>
+    <td>★★★★☆</td>
+    <td>★★★★☆</td>
+    <td>★★★★★</td>
+    <td>★★★☆☆</td>
+    <td>★★★☆☆</td>
+  </tr>
+  <tr>
+    <td><strong>Patient Screens</strong></td>
+    <td>★★★★★</td>
+    <td>★★★★☆</td>
+    <td>★★★☆☆</td>
+    <td>★★★★☆</td>
+    <td>★★☆☆☆</td>
+    <td>★★☆☆☆</td>
+  </tr>
+  <tr>
+    <td><strong>Staff Dashboard</strong></td>
+    <td>★★★★★</td>
+    <td>★★★★☆</td>
+    <td>★★★★☆</td>
+    <td>★★★★☆</td>
+    <td>★★★☆☆</td>
+    <td>★★★☆☆</td>
+  </tr>
+  <tr>
+    <td><strong>Mobile Experience</strong></td>
+    <td>★★★★★</td>
+    <td>★★★★☆</td>
+    <td>★★★★☆</td>
+    <td>★★★★★</td>
+    <td>★★☆☆☆</td>
+    <td>★★☆☆☆</td>
+  </tr>
+  <tr>
+    <td><strong>Accessibility & i18n</strong></td>
+    <td>★★★★☆</td>
+    <td>★★☆☆☆</td>
+    <td>★★★☆☆</td>
+    <td>★★★☆☆</td>
+    <td>★★★★☆</td>
+    <td>★★★☆☆</td>
+  </tr>
+  <tr>
+    <td><strong>Animation & Micro</strong></td>
+    <td>★★★★★</td>
+    <td>★★★☆☆</td>
+    <td>★★★☆☆</td>
+    <td>★★★★☆</td>
+    <td>★★☆☆☆</td>
+    <td>★★☆☆☆</td>
+  </tr>
+  <tr>
+    <td><strong>Onboarding</strong></td>
+    <td>★★★★☆</td>
+    <td>★★★★★</td>
+    <td>★★★★☆</td>
+    <td>★★★★★</td>
+    <td>★★★☆☆</td>
+    <td>★★☆☆☆</td>
+  </tr>
+  <tr>
+    <td style="font-weight:bold">UI/UX TOTAL</td>
+    <td style="font-weight:bold; color:#0f766e; font-size:12pt">★★★★½</td>
+    <td>★★★★☆</td>
+    <td>★★★½☆</td>
+    <td>★★★★½</td>
+    <td>★★★☆☆</td>
+    <td>★★½☆☆</td>
+  </tr>
+</table>
+
+<div class="note">
+  <strong>Key takeaway:</strong> WaitLess and Waitwhile tie for the highest UI/UX score (4.5/5).
+  Waitwhile wins on simplicity and onboarding. WaitLess wins on visual polish, animation, patient-facing screens,
+  and staff dashboard depth. ScanQueue is close behind (4.0/5) with a clean modern approach.
+  Qmatic and Wavetec lag significantly due to enterprise/legacy UI patterns.
+</div>
+
+<!-- ═══════════════ SECTION 3: SCREEN-BY-SCREEN ═══════════════ -->
+<div class="page-break"></div>
+<h2 class="section-title">3. Screen-by-Screen Comparison</h2>
+
+<h3>A. Patient Registration / Check-In Screen</h3>
+
+<h4>WaitLess</h4>
+<div class="screen-mock">
+  <div class="mock-title">WaitLess — Registration (Staff Desk)</div>
+  <div class="mock-row"><span class="mock-badge mock-blue">Search Bar</span> Search by name, phone, national ID, QR scan</div>
+  <div class="mock-row"><span class="mock-badge mock-green">Form</span> Full demographics, category badges, next of kin, chief complaint</div>
+  <div class="mock-row"><span class="mock-badge mock-blue">QR Code</span> Generated ticket with QR, printed 80mm or shared to phone</div>
+  <div class="mock-row"><span class="mock-badge mock-green">Auto-save</span> Form draft recovery — never lose data on crash</div>
+  <div class="mock-row"><span class="mock-badge mock-blue">Consent</span> WhatsApp notification consent checkbox with clear language</div>
+</div>
+<p>
+  <strong>Design strengths:</strong> Glassmorphism panel with gradient background, Lottie animations on AuthShell,
+  profile completeness meter, profile photo picker with initials fallback, patient category badges with color coding,
+  form auto-save indicator. Three registration channels (staff desk, self-registration, kiosk) each with tailored UI.
+</p>
+
+<h4>ScanQueue</h4>
+<div class="screen-mock">
+  <div class="mock-title">ScanQueue — QR Check-In (Patient Phone)</div>
+  <div class="mock-row"><span class="mock-badge mock-green">QR Scan</span> Patient scans QR code → opens browser → joins queue</div>
+  <div class="mock-row"><span class="mock-badge mock-blue">Join Form</span> Customizable fields (name, party size, phone, notes)</div>
+  <div class="mock-row"><span class="mock-badge mock-gray">Benefits</span> "SMS updates, real-time tracking, skip physical wait"</div>
+</div>
+<p>
+  <strong>Design strengths:</strong> Extremely simple — 15 seconds to join. No app download. Clean mobile-first form.
+  <strong>Design weaknesses:</strong> No staff desk registration UI for complex patient data capture. No demographics,
+  no national ID, no next of kin, no chief complaint — too simple for hospital use.
+</p>
+
+<h4>Qmatic</h4>
+<div class="screen-mock">
+  <div class="mock-title">Qmatic — Kiosk Check-In</div>
+  <div class="mock-row"><span class="mock-badge mock-gray">Kiosk</span> Physical kiosk hardware with touch screen</div>
+  <div class="mock-row"><span class="mock-badge mock-gray">Ticket</span> Printed paper ticket from kiosk printer</div>
+  <div class="mock-row"><span class="mock-badge mock-gray">Mobile</span> Mobile Ticket via app or SMS link</div>
+</div>
+<p>
+  <strong>Design strengths:</strong> Purpose-built kiosk UI is large-touch-target optimized. Surface Editor allows
+  custom layout design for kiosks and displays.
+  <strong>Design weaknesses:</strong> Requires hardware investment. Kiosk UI is dated. No web self-registration.
+  Mobile ticket is basic — no rich tracking page.
+</p>
+
+<h4>Waitwhile</h4>
+<div class="screen-mock">
+  <div class="mock-title">Waitwhile — Customer Join Flow</div>
+  <div class="mock-row"><span class="mock-badge mock-green">QR/Web</span> Scan QR or visit link → join waitlist</div>
+  <div class="mock-row"><span class="mock-badge mock-blue">Form</span> Name, party size, phone, notes — button-based (not dropdowns)</div>
+  <div class="mock-row"><span class="mock-badge mock-green">Card/List</span> Services shown as square icons or cards, not dots</div>
+</div>
+<p>
+  <strong>Design strengths:</strong> Ranked #1 easiest-to-use by G2. Button-based service selection (reduces clicks).
+  Card or list layout toggle. Drag-and-drop waitlist management. Clean, consumer-grade aesthetic.
+  <strong>Design weaknesses:</strong> No clinical data capture. No triage. No national ID. Not hospital-grade.
+</p>
+
+<div class="verdict">
+  <h3>Registration Winner: WaitLess</h3>
+  <p>
+    WaitLess is the only system that offers three registration channels (staff desk, self-registration, kiosk)
+    with rich clinical data capture (demographics, next of kin, chief complaint, patient categories, WhatsApp consent).
+    The glassmorphism design with Lottie animations and profile completeness meter creates a welcoming experience.
+    ScanQueue and Waitwhile are simpler but lack clinical depth. Qmatic requires hardware.
+  </p>
+</div>
+
+<!-- ═══════════════ SECTION 3B: TRACKING ═══════════════ -->
+<div class="page-break"></div>
+<h3>B. Patient Tracking / Queue Status Screen</h3>
+
+<h4>WaitLess</h4>
+<div class="screen-mock">
+  <div class="mock-title">WaitLess — Track Page (/track)</div>
+  <div class="mock-row"><span class="mock-badge mock-blue">Ticket Input</span> Enter ticket code (e.g., OPD-205) or scan QR</div>
+  <div class="mock-row"><span class="mock-badge mock-green">Position</span> Live queue position with patient count ahead</div>
+  <div class="mock-row"><span class="mock-badge mock-blue">ETA</span> AI-powered estimated wait time</div>
+  <div class="mock-row"><span class="mock-badge mock-green">Timeline</span> Progress: Registered → Triage → Waiting → Called → Served</div>
+  <div class="mock-row"><span class="mock-badge mock-blue">Directions</span> "Proceed to Room 3, OPD wing"</div>
+  <div class="mock-row"><span class="mock-badge mock-green">History</span> Notification history (WhatsApp messages sent)</div>
+  <div class="mock-row"><span class="mock-badge mock-blue">Real-time</span> SSE updates — no page refresh needed</div>
+</div>
+<p>
+  <strong>Design strengths:</strong> Rich timeline with 5 stages, real-time SSE updates, AI-powered ETA,
+  notification history, department directions. Works on any phone browser. Multi-language support (EN/Shona/Ndebele).
+  PWA with offline caching.
+</p>
+
+<h4>ScanQueue</h4>
+<div class="screen-mock">
+  <div class="mock-title">ScanQueue — Queue Status Page (/queue/{ticket-id})</div>
+  <div class="mock-row"><span class="mock-badge mock-blue">Position Circle</span> Large circle showing position (#1, #2, etc.)</div>
+  <div class="mock-row"><span class="mock-badge mock-green">Status</span> "You're #X in line" or "It's your turn!"</div>
+  <div class="mock-row"><span class="mock-badge mock-blue">ETA</span> Minutes until turn (hidden when next)</div>
+  <div class="mock-row"><span class="mock-badge mock-green">Progress</span> 3-step: Joined → Waiting → Being Called</div>
+  <div class="mock-row"><span class="mock-badge mock-red">Leave</span> "Leave Queue" button with confirmation</div>
+</div>
+<p>
+  <strong>Design strengths:</strong> Large position circle is visually clear. Pulsing green circle when called is
+  a great micro-interaction. 3-step progress is simple and intuitive. Leave queue button is accessible.
+  <strong>Design weaknesses:</strong> Only 3 stages (vs WaitLess's 5). No notification history. No department
+  directions. No multi-language. No timeline of what happened at each stage.
+</p>
+
+<h4>Qminder</h4>
+<div class="screen-mock">
+  <div class="mock-title">Qminder — TV Display</div>
+  <div class="mock-row"><span class="mock-badge mock-gray">TV Screen</span> Shows called visitor name + desk number</div>
+  <div class="mock-row"><span class="mock-badge mock-gray">Waiting</span> Shows waiting list on TV</div>
+</div>
+<p>
+  <strong>Design strengths:</strong> Clean TV display. Called visitor name shown prominently with desk number.
+  <strong>Design weaknesses:</strong> No patient-facing phone tracking page. No position indicator. No ETA.
+  No progress timeline. Patient must watch the TV or wait for SMS.
+</p>
+
+<div class="verdict">
+  <h3>Tracking Winner: WaitLess</h3>
+  <p>
+    WaitLess offers the richest tracking experience: 5-stage timeline, AI-powered ETA, notification history,
+    department directions, real-time SSE updates, and multi-language support. ScanQueue's position circle and
+    pulsing animation is a nice touch but lacks depth. Qmatic and Qminder have no patient phone tracking at all.
+  </p>
+</div>
+
+<!-- ═══════════════ SECTION 3C: STAFF DASHBOARD ═══════════════ -->
+<div class="page-break"></div>
+<h3>C. Staff Dashboard / Queue Management</h3>
+
+<h4>WaitLess</h4>
+<div class="screen-mock">
+  <div class="mock-title">WaitLess — Staff Dashboard (/admin/dashboard)</div>
+  <div class="mock-row"><span class="mock-badge mock-green">Metrics</span> Total waiting, in service, transferred, completed today</div>
+  <div class="mock-row"><span class="mock-badge mock-red">Priority</span> Color-coded queue (Red/Yellow/Green/Black rows)</div>
+  <div class="mock-row"><span class="mock-badge mock-blue">Actions</span> Call Next, Mark Missed, Recall, Transfer, Complete — inline buttons</div>
+  <div class="mock-row"><span class="mock-badge mock-red">Alerts</span> Reassessment alerts for long-waiting Red/Yellow patients</div>
+  <div class="mock-row"><span class="mock-badge mock-yellow">Bottleneck</span> AI bottleneck alerts per department</div>
+  <div class="mock-row"><span class="mock-badge mock-blue">Notifications</span> WhatsApp delivery status panel</div>
+  <div class="mock-row"><span class="mock-badge mock-green">Charts</span> Recharts: queue trends, department load, priority distribution</div>
+  <div class="mock-row"><span class="mock-badge mock-blue">Filter</span> Department filter, status filter, search</div>
+</div>
+<p>
+  <strong>Design strengths:</strong> Most comprehensive dashboard of any system. Priority color-coding in queue rows
+  gives instant visual triage awareness. Reassessment alerts are unique — no competitor has them. AI bottleneck alerts
+  with severity levels. Recharts integration for analytics. Inline action buttons reduce clicks. Dark mode support.
+  Sidebar navigation with role-based menu items.
+</p>
+
+<h4>ScanQueue</h4>
+<div class="screen-mock">
+  <div class="mock-title">ScanQueue — Dashboard (/dashboard)</div>
+  <div class="mock-row"><span class="mock-badge mock-green">Stats</span> Total waiting, being served, avg wait, est. wait for next</div>
+  <div class="mock-row"><span class="mock-badge mock-blue">Serving</span> Currently Serving panel: Mark Served, No Show, Return to Queue</div>
+  <div class="mock-row"><span class="mock-badge mock-green">Next</span> Next Up panel with "Call Next" button</div>
+  <div class="mock-row"><span class="mock-badge mock-blue">Waiting</span> Grid of all waiting with action menu (Move Up/Down, Move to Front, Remove)</div>
+  <div class="mock-row"><span class="mock-badge mock-gray">Delay</span> Queue delay control (add/remove 5-min increments)</div>
+  <div class="mock-row"><span class="mock-badge mock-green">Connection</span> Live/Synced/Connecting status indicator</div>
+</div>
+<p>
+  <strong>Design strengths:</strong> Clean tabbed layout (Waitlist, Reports, Billing). Connection status indicator
+  is a nice touch. Queue delay control is unique — lets staff add buffer time. Move to Front for VIPs.
+  Multi-counter mode with service tabs and counter cards.
+  <strong>Design weaknesses:</strong> No priority color-coding. No triage acuity display. No reassessment alerts.
+  No AI insights. No notification delivery panel. No charts/analytics on the main dashboard.
+</p>
+
+<h4>Qminder</h4>
+<div class="screen-mock">
+  <div class="mock-title">Qminder — Service View</div>
+  <div class="mock-row"><span class="mock-badge mock-blue">Left Panel</span> Ticket list with visitor names, wait times, labels</div>
+  <div class="mock-row"><span class="mock-badge mock-green">Center</span> Large green "CALL NEXT" text/button</div>
+  <div class="mock-row"><span class="mock-badge mock-blue">Right</span> Visitor details panel (full height, left-aligned fields)</div>
+  <div class="mock-row"><span class="mock-badge mock-gray">Top</span> Line and desk selection (multi-select with search)</div>
+  <div class="mock-row"><span class="mock-badge mock-blue">Actions</span> Call Visitor, Finish Serving, Call Next, Remove, Return to Queue</div>
+  <div class="mock-row"><span class="mock-badge mock-gray">Completed</span> Served / No-shows / Removed sections</div>
+</div>
+<p>
+  <strong>Design strengths:</strong> Recently redesigned with clean, organized UI. Full-height detail view uses
+  screen space well. Multi-selection of lines and labels (added after user feedback). Three-dots menu for
+  additional actions keeps the UI clean. Overview page with ticket cards is visually appealing.
+  <strong>Design weaknesses:</strong> No priority color-coding for triage. No AI insights. No notification panel.
+  No charts on main view. No dark mode. No multi-language.
+</p>
+
+<h4>Waitwhile</h4>
+<div class="screen-mock">
+  <div class="mock-title">Waitwhile — Waitlist Board View</div>
+  <div class="mock-row"><span class="mock-badge mock-green">Drag & Drop</span> Drag visits up/down in board view on all devices</div>
+  <div class="mock-row"><span class="mock-badge mock-blue">Buttons</span> Services/resources as buttons (not dropdowns) — reduces clicks</div>
+  <div class="mock-row"><span class="mock-badge mock-green">Icons</span> Square icons/initials for services (was colored dots)</div>
+  <div class="mock-row"><span class="mock-badge mock-blue">Status</span> Color-coded: Available (green), Busy (red), Away (yellow)</div>
+  <div class="mock-row"><span class="mock-badge mock-green">Quick Serve</span> Quick serve widget for fast visit completion</div>
+  <div class="mock-row"><span class="mock-badge mock-blue">Filter</span> Filter by label or service via URL params</div>
+</div>
+<p>
+  <strong>Design strengths:</strong> G2 #1 easiest-to-use. Drag-and-drop is the best queue reordering UX of any
+  system. Button-based workflows reduce cognitive load. Square service icons are more visually distinct than dots.
+  Quick serve widget speeds up high-volume operations. Status color-coding is clear.
+  <strong>Design weaknesses:</strong> No clinical features. No triage. No priority levels. No AI. No notification
+  panel. No analytics on main view. Not hospital-grade.
+</p>
+
+<h4>Qmatic Orchestra 7</h4>
+<div class="screen-mock">
+  <div class="mock-title">Qmatic — Operations Panel</div>
+  <div class="mock-row"><span class="mock-badge mock-gray">Real-time</span> Operations panel with branch/counter overview</div>
+  <div class="mock-row"><span class="mock-badge mock-gray">BI</span> Business Intelligence dashboard designer (canned + custom reports)</div>
+  <div class="mock-row"><span class="mock-badge mock-gray">Config</span> Branch configuration UI (redesigned in 7.4)</div>
+  <div class="mock-row"><span class="mock-badge mock-gray">Surface</span> Surface Editor for kiosk/display layouts</div>
+</div>
+<p>
+  <strong>Design strengths:</strong> Branch config redesigned in 7.4 with filter/search/scheduling. BI dashboard
+  designer is powerful for data analysts. Surface Editor is unique — design kiosk/display layouts visually.
+  <strong>Design weaknesses:</strong> Enterprise/legacy feel. Dense UI with many tabs and sub-menus. Counter staff
+  UI is functional but not modern. No patient-facing web UI. No dark mode. No animations. Feels like a 2010s
+  enterprise application.
+</p>
+
+<h4>Wavetec Spectra</h4>
+<div class="screen-mock">
+  <div class="mock-title">Wavetec — Spectra Dashboard</div>
+  <div class="mock-row"><span class="mock-badge mock-gray">Map</span> Branch map view (satellite option) with good/neutral/bad indicators</div>
+  <div class="mock-row"><span class="mock-badge mock-gray">Hardware</span> Hardware monitoring dashboard (kiosks, displays status)</div>
+  <div class="mock-row"><span class="mock-badge mock-gray">Reports</span> 50+ historical reports with charts (bar, linear)</div>
+  <div class="mock-row"><span class="mock-badge mock-gray">Export</span> Print charts, download as images/PDFs/vector</div>
+</div>
+<p>
+  <strong>Design strengths:</strong> Map view with satellite option is visually impressive. Hardware monitoring is
+  unique (for hardware-based systems). 50+ report types is the most comprehensive reporting.
+  <strong>Design weaknesses:</strong> Most dated UI of all systems compared. Feels like a 2000s desktop application
+  ported to web. No modern design patterns (no cards, no glassmorphism, no gradients). No patient-facing UI.
+  No dark mode. No animations. No mobile-responsive design. Charts are basic.
+</p>
+
+<div class="verdict">
+  <h3>Staff Dashboard Winner: WaitLess</h3>
+  <p>
+    WaitLess has the most comprehensive and visually polished staff dashboard. Priority color-coding, reassessment
+    alerts, AI bottleneck alerts, notification delivery panel, and Recharts analytics are features no competitor
+    offers in a single view. Waitwhile wins on interaction design (drag-and-drop) but lacks clinical depth.
+    ScanQueue is clean but too simple for hospital use. Qmatic and Wavetec feel like legacy enterprise applications.
+  </p>
+</div>
+
+<!-- ═══════════════ SECTION 3D: QUEUE BOARD ═══════════════ -->
+<div class="page-break"></div>
+<h3>D. Public Queue Board / Display Screen</h3>
+
+<h4>WaitLess</h4>
+<div class="screen-mock">
+  <div class="mock-title">WaitLess — Public Queue Board (/queue)</div>
+  <div class="mock-row"><span class="mock-badge mock-green">Now Serving</span> OPD-203 (green highlight, large text)</div>
+  <div class="mock-row"><span class="mock-badge mock-blue">Next</span> OPD-204, OPD-205, OPD-206 (muted text)</div>
+  <div class="mock-row"><span class="mock-badge mock-red">Missed</span> OPD-199 (red text, "see reception")</div>
+  <div class="mock-row"><span class="mock-badge mock-gray">Privacy</span> Ticket numbers only — no patient names</div>
+  <div class="mock-row"><span class="mock-badge mock-green">Real-time</span> SSE updates — instant, no refresh</div>
+  <div class="mock-row"><span class="mock-badge mock-blue">Dept Board</span> Separate per-department board (/department-board)</div>
+</div>
+<p>
+  <strong>Design strengths:</strong> Three-lane layout (Now Serving / Waiting / Missed) is clear. Real-time SSE
+  updates. Privacy-first (ticket numbers only). Department-specific boards. QR code on board for patients to scan
+  and track on phone. Hospital branding.
+</p>
+
+<h4>ScanQueue</h4>
+<div class="screen-mock">
+  <div class="mock-title">ScanQueue — Public Board</div>
+  <div class="mock-row"><span class="mock-badge mock-gray">Cast</span> Dashboard cast to any existing TV</div>
+  <div class="mock-row"><span class="mock-badge mock-gray">Privacy</span> Ticket numbers instead of names</div>
+  <div class="mock-row"><span class="mock-badge mock-gray">Configurable</span> Retention — purge data at end of clinical day</div>
+</div>
+<p>
+  <strong>Design strengths:</strong> Simple — cast dashboard to any TV. Configurable data retention for privacy.
+  <strong>Design weaknesses:</strong> "Waiting room display is basic compared to purpose-built options" (per WaitWell
+  review). No dedicated board UI — just casts the staff dashboard. No three-lane layout. No missed lane.
+</p>
+
+<h4>Qmatic</h4>
+<div class="screen-mock">
+  <div class="mock-title">Qmatic — Waiting Area Display</div>
+  <div class="mock-row"><span class="mock-badge mock-gray">Hardware</span> Purpose-built display hardware (Donatello)</div>
+  <div class="mock-row"><span class="mock-badge mock-gray">Surface Editor</span> Design custom layouts for displays</div>
+  <div class="mock-row"><span class="mock-badge mock-gray">Signage</span> Digital signage with marketing/health content</div>
+  <div class="mock-row"><span class="mock-badge mock-gray">Audio</span> Voice announcements via overhead speakers</div>
+</div>
+<p>
+  <strong>Design strengths:</strong> Surface Editor allows custom display layouts — unique feature. Digital signage
+  content management (health education, announcements) reduces perceived wait time. Purpose-built hardware ensures
+  reliability. Audio announcements via dedicated speakers.
+  <strong>Design weaknesses:</strong> Requires hardware investment. Display UI is dated. No web-based board.
+  No real-time web updates (relies on hardware polling).
+</p>
+
+<div class="verdict">
+  <h3>Queue Board Winner: WaitLess (tied with Qmatic for different reasons)</h3>
+  <p>
+    WaitLess wins for software-based boards: real-time SSE, three-lane layout, privacy-first, department-specific
+    boards, QR scan-to-track. Qmatic wins for hardware-based displays: Surface Editor for custom layouts and
+    digital signage content management. WaitLess could improve by adding a content carousel for health education
+    messages between queue updates (a Qmatic/Wavetec feature).
+  </p>
+</div>
+
+<!-- ═══════════════ SECTION 4: DESIGN PATTERNS ═══════════════ -->
+<div class="page-break"></div>
+<h2 class="section-title">4. Design Pattern Comparison</h2>
+
+<h3>Navigation Patterns</h3>
+<table>
+  <tr>
+    <th>System</th>
+    <th>Navigation approach</th>
+    <th>Effectiveness</th>
+  </tr>
+  <tr>
+    <td><strong>WaitLess</strong></td>
+    <td>Sidebar navigation with role-based menu items. Collapsible. Icons + labels. Breadcrumbs in sub-pages.</td>
+    <td>★★★★☆ — Clear, role-aware. Could benefit from breadcrumbs on all pages.</td>
+  </tr>
+  <tr>
+    <td><strong>ScanQueue</strong></td>
+    <td>Top tabs: Waitlist, Reports, Billing. Simple and flat.</td>
+    <td>★★★★☆ — Very simple. Works well for their limited feature set.</td>
+  </tr>
+  <tr>
+    <td><strong>Qminder</strong></td>
+    <td>Top-left logo → Overview. Left panel = ticket list. Center = actions. Right = details.</td>
+    <td>★★★★☆ — Clean three-panel layout. Recently redesigned.</td>
+  </tr>
+  <tr>
+    <td><strong>Waitwhile</strong></td>
+    <td>Left sidebar with sections. Board view with drag-and-drop. Side panels for details.</td>
+    <td>★★★★★ — Best navigation. Drag-and-drop is intuitive. Side panels don't lose context.</td>
+  </tr>
+  <tr>
+    <td><strong>Qmatic</strong></td>
+    <td>Multi-level tabs and sub-menus. Many configuration sections.</td>
+    <td>★★★☆☆ — Complex. Requires training. Too many levels.</td>
+  </tr>
+  <tr>
+    <td><strong>Wavetec</strong></td>
+    <td>Desktop-application style menu bars and toolbars.</td>
+    <td>★★☆☆☆ — Feels like a 2000s desktop app. Not web-native.</td>
+  </tr>
+</table>
+
+<h3>Color & Visual Language</h3>
+<table>
+  <tr>
+    <th>System</th>
+    <th>Color approach</th>
+    <th>Visual style</th>
+  </tr>
+  <tr>
+    <td><strong>WaitLess</strong></td>
+    <td>CSS variables for theming. Priority colors (Red/Yellow/Green/Black). Gradient primary. Dark mode. Glassmorphism.</td>
+    <td>Modern, polished, welcoming. Best use of color for clinical triage awareness.</td>
+  </tr>
+  <tr>
+    <td><strong>ScanQueue</strong></td>
+    <td>Clean, minimal. Blue/green accent. White background. Position circle color changes by status.</td>
+    <td>Clean and modern but minimal. Lacks visual richness.</td>
+  </tr>
+  <tr>
+    <td><strong>Waitwhile</strong></td>
+    <td>Color-coded statuses (green/red/yellow). Square service icons with colors. Consumer-grade palette.</td>
+    <td>Beautiful, consumer-grade. Best for retail. Too casual for clinical use.</td>
+  </tr>
+  <tr>
+    <td><strong>Qmatic</strong></td>
+    <td>Corporate blue/grey. Standard enterprise palette.</td>
+    <td>Functional, dated. No visual distinction.</td>
+  </tr>
+  <tr>
+    <td><strong>Wavetec</strong></td>
+    <td>Basic charts with limited color options. Map view with traffic-light colors.</td>
+    <td>Most dated. Feels like old Windows software.</td>
+  </tr>
+</table>
+
+<h3>Animation & Micro-interactions</h3>
+<table>
+  <tr>
+    <th>System</th>
+    <th>Animations</th>
+    <th>Loading states</th>
+  </tr>
+  <tr>
+    <td><strong>WaitLess</strong></td>
+    <td>Lottie animations on AuthShell, animated ribbons, gradient transitions, hover effects, icon animations, glassmorphism blur effects, LoadingPanel with branded loader.</td>
+    <td>Custom LoadingPanel with branded spinner. Suspense fallback for lazy-loaded routes. Sonner toasts for feedback.</td>
+  </tr>
+  <tr>
+    <td><strong>ScanQueue</strong></td>
+    <td>Pulsing green circle when called. Connection status indicator (Live/Synced/Connecting).</td>
+    <td>Basic. "Typing..." indicator in chatbot.</td>
+  </tr>
+  <tr>
+    <td><strong>Waitwhile</strong></td>
+    <td>Drag-and-drop animations. Smooth transitions. Button hover states.</td>
+    <td>Skeleton loaders. Progress indicators.</td>
+  </tr>
+  <tr>
+    <td><strong>Qmatic</strong></td>
+    <td>Minimal. Standard page loads.</td>
+    <td>Standard spinner. No branded loader.</td>
+  </tr>
+  <tr>
+    <td><strong>Wavetec</strong></td>
+    <td>None noticeable.</td>
+    <td>Basic. No loading states described.</td>
+  </tr>
+</table>
+
+<!-- ═══════════════ SECTION 5: GAPS & RECOMMENDATIONS ═══════════════ -->
+<div class="page-break"></div>
+<h2 class="section-title">5. UI/UX Gaps & Recommendations</h2>
+
+<p>Based on the screen-by-screen analysis, here are the UI/UX improvements that would close gaps with competitors:</p>
+
+<h3>1. Drag-and-Drop Queue Reordering (from Waitwhile)</h3>
+<p>
+  Waitwhile's drag-and-drop board view is the best queue reordering UX. WaitLess currently uses inline buttons
+  (Move Up/Down). Adding drag-and-drop would make queue management more intuitive.
+</p>
+<div class="gap">
+  <strong>Recommendation:</strong> Add drag-and-drop to the staff dashboard queue table using a library like
+  @dnd-kit/core. Allow staff to drag patients up/down to reorder, with a visual drop indicator.
+</div>
+
+<h3>2. Content Carousel on Queue Board (from Qmatic/Wavetec)</h3>
+<p>
+  Qmatic and Wavetec display health education content, facility announcements, and directional information on
+  waiting area displays alongside queue data. This reduces perceived wait time by 35% (Wavetec data).
+</p>
+<div class="gap">
+  <strong>Recommendation:</strong> Add a content carousel to the public queue board that rotates health education
+  messages, hospital announcements, and QR code between queue updates. Admin-configurable content via settings.
+</div>
+
+<h3>3. Position Circle Animation (from ScanQueue)</h3>
+<p>
+  ScanQueue's large position circle with pulsing green animation when called is a delightful micro-interaction
+  that clearly communicates "it's your turn" to patients.
+</p>
+<div class="gap">
+  <strong>Recommendation:</strong> Add a pulsing animation to the "Called" state on the patient tracking page.
+  Use a large circular indicator with the ticket number that pulses green when called.
+</div>
+
+<h3>4. Queue Delay Control (from ScanQueue)</h3>
+<p>
+  ScanQueue's queue delay control lets staff add/remove 5-minute increments to all wait estimates — useful when
+  a doctor is running late or called away.
+</p>
+<div class="gap">
+  <strong>Recommendation:</strong> Add a "Delay Buffer" control on the staff dashboard that adds X minutes to
+  all estimated wait times. Show the active delay as a badge on the dashboard.
+</div>
+
+<h3>5. Connection Status Indicator (from ScanQueue)</h3>
+<p>
+  ScanQueue shows a Live/Synced/Connecting indicator on the dashboard so staff always know if real-time updates
+  are working.
+</p>
+<div class="gap">
+  <strong>Recommendation:</strong> Add a small connection status badge to the AppLayout header (green = connected,
+  yellow = reconnecting, red = offline). WaitLess already has an offline indicator via the service worker —
+  surface it more prominently.
+</div>
+
+<h3>6. Button-Based Service Selection (from Waitwhile)</h3>
+<p>
+  Waitwhile replaced dropdowns with buttons for service selection, reducing clicks and cognitive load.
+</p>
+<div class="gap">
+  <strong>Recommendation:</strong> Replace the department dropdown in registration and self-registration with
+  a grid of clickable department cards (icon + name). More visual and faster to select.
+</div>
+
+<h3>7. Surface Editor for Display Boards (from Qmatic)</h3>
+<p>
+  Qmatic's Surface Editor lets admins visually design kiosk and display board layouts — choosing what to show,
+  where, and in what style.
+</p>
+<div class="gap">
+  <strong>Recommendation:</strong> Add a display board configuration page in admin settings where admins can
+  choose board layout (three-lane vs single-column), colors, font size, and content carousel items.
+</div>
+
+<!-- ═══════════════ SECTION 6: FINAL VERDICT ═══════════════ -->
+<div class="page-break"></div>
+<h2 class="section-title">6. Final UI/UX Verdict</h2>
+
+<div class="verdict">
+  <h3>WaitLess ranks #1 for hospital UI/UX design (tied with Waitwhile for overall UX, but WaitLess wins for hospital-specific design)</h3>
+  <p>
+    WaitLess has the most visually polished and feature-rich UI of any hospital queue management system.
+    Its use of modern web technologies (React 19, Tailwind CSS 4, Radix UI, Lottie animations, glassmorphism,
+    dark mode, code-splitting) creates an experience that feels like a 2026 product — not a 2010s enterprise tool.
+  </p>
+</div>
+
+<h3>Where WaitLess is the clear leader:</h3>
+<ul>
+  <li><strong>Visual polish:</strong> Glassmorphism, gradients, Lottie animations, dark mode — no competitor has this</li>
+  <li><strong>Patient-facing screens:</strong> 5-stage tracking timeline, AI ETA, notification history, multi-language</li>
+  <li><strong>Staff dashboard depth:</strong> Priority color-coding, reassessment alerts, AI bottleneck alerts, Recharts</li>
+  <li><strong>Clinical UI:</strong> Triage assessment form with vitals, emergency indicators, pain scale — no competitor has this</li>
+  <li><strong>Animation & micro-interactions:</strong> LoadingPanel, AuthShell animations, Sonner toasts, hover effects</li>
+  <li><strong>Mobile/PWA:</strong> Service worker, offline caching, responsive design — only system with PWA</li>
+  <li><strong>Multi-language:</strong> English, chiShona, isiNdebele — only system with African languages</li>
+</ul>
+
+<h3>Where WaitLess can learn from competitors:</h3>
+<ul>
+  <li><strong>From Waitwhile:</strong> Drag-and-drop queue reordering, button-based selections</li>
+  <li><strong>From ScanQueue:</strong> Pulsing position circle, connection status indicator, queue delay control</li>
+  <li><strong>From Qmatic:</strong> Surface Editor for display board customization, content carousel for health education</li>
+</ul>
+
+<h3>Competitor UI/UX rankings:</h3>
+<table>
+  <tr>
+    <th>Rank</th>
+    <th>System</th>
+    <th>Score</th>
+    <th>UI/UX summary</th>
+  </tr>
+  <tr>
+    <td>1 (tied)</td>
+    <td><strong>WaitLess</strong></td>
+    <td>★★★★½</td>
+    <td>Most polished hospital system. Modern stack, glassmorphism, animations, dark mode, PWA, multi-language. Best clinical UI.</td>
+  </tr>
+  <tr>
+    <td>1 (tied)</td>
+    <td><strong>Waitwhile</strong></td>
+    <td>★★★★½</td>
+    <td>Best interaction design (drag-and-drop). G2 #1 easiest-to-use. But not hospital-grade — no clinical features.</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td><strong>ScanQueue</strong></td>
+    <td>★★★★☆</td>
+    <td>Clean, modern, mobile-first. Pulsing circle is delightful. But basic — no clinical depth, no analytics on dashboard.</td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td><strong>Qminder</strong></td>
+    <td>★★★½☆</td>
+    <td>Recently redesigned. Clean three-panel layout. Good counter staff UX. But no patient tracking page, no dark mode.</td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td><strong>Qmatic</strong></td>
+    <td>★★★☆☆</td>
+    <td>Enterprise/legacy feel. Surface Editor is unique. BI dashboard is powerful. But dated UI, no patient web UI, no modern design patterns.</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td><strong>Wavetec</strong></td>
+    <td>★★½☆☆</td>
+    <td>Most dated UI. Feels like 2000s desktop software. Map view is nice. 50+ reports. But no modern web design, no patient UI, no mobile.</td>
+  </tr>
+</table>
+
+<div class="footer-note">
+  WaitLess — UI/UX Design Comparison &bull; Version 1.0 &bull; August 2026<br>
+  Built for Chinhoyi Provincial Hospital &bull; Ready for the world.
+</div>
+
+</body>
+</html>

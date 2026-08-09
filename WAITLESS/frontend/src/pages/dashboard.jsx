@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -38,6 +38,7 @@ import {
   retryNotificationDeliveries,
 } from "@/services/queueApi";
 import { useQueueRealtime } from "@/sockets/QueueRealtimeProvider";
+import { toast } from "sonner";
 
 const isBrowser = typeof window !== "undefined";
 const EMPTY_LIST = [];
@@ -179,6 +180,22 @@ export default function DashboardPage() {
     dashboardQuery.data?.notificationAnalytics ?? EMPTY_ANALYTICS;
   const safetyAlerts =
     dashboardQuery.data?.safetyAlerts?.reassessment ?? EMPTY_LIST;
+  const bottleneckAlerts =
+    dashboardQuery.data?.safetyAlerts?.bottlenecks ?? EMPTY_LIST;
+
+  const lastProcessedEventRef = useRef(null);
+  useEffect(() => {
+    if (!realtime.lastEvent) return;
+    if (lastProcessedEventRef.current === realtime.lastEvent.timestamp) return;
+    lastProcessedEventRef.current = realtime.lastEvent.timestamp;
+
+    if (realtime.lastEvent.type === "test-result.ready") {
+      const payload = realtime.lastEvent.payload ?? {};
+      toast.success(`Lab results ready for ${payload.ticketCode ?? "ticket"}`, {
+        description: `Please return to ${payload.department ?? "OPD"} for clinician review.`,
+      });
+    }
+  }, [realtime.lastEvent]);
 
   const statusMetrics = metrics.byStatus ?? EMPTY_METRICS.byStatus;
   const notificationStatuses =
@@ -391,6 +408,16 @@ export default function DashboardPage() {
   const systemAlerts = useMemo(() => {
     const alerts = [];
 
+    bottleneckAlerts.slice(0, 3).forEach((alert) => {
+      alerts.push({
+        id: `bottleneck-${alert.department}-${alert.type}`,
+        severity: alert.severity === "critical" ? "critical" : "warning",
+        message: alert.message,
+        detail: `${alert.department} · ${alert.type}`,
+        time: "Now",
+      });
+    });
+
     safetyAlerts.slice(0, 2).forEach((alert) => {
       alerts.push({
         id: `safety-${alert.id}`,
@@ -440,6 +467,7 @@ export default function DashboardPage() {
     departmentSummaries,
     failedNotifications,
     safetyAlerts,
+    bottleneckAlerts,
   ]);
 
   function exportTodayReport() {

@@ -16,6 +16,7 @@ import {
 import { usePatientAuth } from "@/auth/PatientAuthProvider";
 import { PatientAuthShell } from "@/components/PatientAuthShell";
 import { registerPatientAccount } from "@/services/patientAuthApi";
+import { useTranslation } from "@/i18n/useTranslation";
 
 const INITIAL_FORM = {
   fullName: "",
@@ -32,6 +33,7 @@ const INITIAL_FORM = {
 export default function PatientRegisterPage() {
   const navigate = useNavigate();
   const { patientLogin } = usePatientAuth();
+  const { t } = useTranslation();
   const [form, setForm] = useState(INITIAL_FORM);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -47,33 +49,31 @@ export default function PatientRegisterPage() {
     setError("");
 
     if (!form.fullName.trim()) {
-      setError("Please enter your full name.");
+      setError(t("register.errorFullName"));
       return;
     }
     if (!form.username.trim()) {
-      setError("Please choose a username.");
+      setError(t("register.errorUsername"));
       return;
     }
     if (!/^[a-zA-Z0-9._-]{3,32}$/.test(form.username.trim())) {
-      setError(
-        "Username must be 3 to 32 characters and use only letters, numbers, dots, underscores, or hyphens.",
-      );
+      setError(t("register.errorUsernameFormat"));
       return;
     }
     if (!form.email.trim()) {
-      setError("Please enter your email address.");
+      setError(t("register.errorEmail"));
       return;
     }
     if (!form.phone.trim()) {
-      setError("Please enter your phone number.");
+      setError(t("register.errorPhone"));
       return;
     }
     if (!form.password || form.password.length < 6) {
-      setError("Password must be at least 6 characters.");
+      setError(t("register.errorPassword"));
       return;
     }
     if (form.password !== form.confirmPassword) {
-      setError("Passwords do not match.");
+      setError(t("register.errorPasswordMatch"));
       return;
     }
 
@@ -97,7 +97,7 @@ export default function PatientRegisterPage() {
 
       navigate("/patient/dashboard");
     } catch (err) {
-      setError(err.message || "Registration failed. Please try again.");
+      setError(err.message || t("register.errorGeneric"));
     } finally {
       setLoading(false);
     }
@@ -105,25 +105,25 @@ export default function PatientRegisterPage() {
 
   return (
     <PatientAuthShell
-      eyebrow="Patient account"
-      title="Create your account"
-      subtitle="Sign up to book queue spots, track your tickets, and get WhatsApp updates — all from your phone."
+      eyebrow={t("register.eyebrow")}
+      title={t("register.title")}
+      subtitle={t("register.subtitle")}
       maxWidth="max-w-xl"
       footer={
         <>
-          <Link to="/patient/login" className="font-semibold text-teal-700 hover:text-teal-800">
-            Already have an account? Sign in
+          <Link to="/patient/login" className="font-semibold text-teal-300 hover:text-teal-200">
+            {t("register.haveAccount")}
           </Link>
-          <span className="text-slate-300">|</span>
-          <Link to="/self-register" className="font-medium text-slate-600 hover:text-teal-700">
-            Book without an account
+          <span className="text-white/20">|</span>
+          <Link to="/self-register" className="font-medium text-slate-300 hover:text-teal-300">
+            {t("register.bookWithout")}
           </Link>
         </>
       }
     >
       <form className="space-y-5" onSubmit={handleSubmit}>
         {error ? (
-          <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          <div className="flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-300">
             <AlertCircle className="h-4 w-4 shrink-0" />
             {error}
           </div>
@@ -132,8 +132,8 @@ export default function PatientRegisterPage() {
         <div className="grid gap-5 sm:grid-cols-2">
           {/* Full name */}
           <div className="sm:col-span-2">
-            <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-              Full name <span className="text-red-500">*</span>
+            <label className="mb-1.5 block text-sm font-semibold text-white">
+              {t("register.fullName")} <span className="text-red-400">*</span>
             </label>
             <div className="relative">
               <UserRound className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -142,8 +142,8 @@ export default function PatientRegisterPage() {
                 name="fullName"
                 value={form.fullName}
                 onChange={handleChange}
-                placeholder="e.g. Tendai Mukamuri"
-                className="h-12 w-full rounded-xl border border-slate-300 bg-white pl-11 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/25"
+                placeholder={t("register.fullNamePlaceholder")}
+                className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
                 required
               />
             </div>
@@ -151,8 +151,8 @@ export default function PatientRegisterPage() {
 
           {/* Username */}
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-              Username <span className="text-red-500">*</span>
+            <label className="mb-1.5 block text-sm font-semibold text-white">
+              {t("register.username")} <span className="text-red-400">*</span>
             </label>
             <div className="relative">
               <AtSign className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -161,12 +161,12 @@ export default function PatientRegisterPage() {
                 name="username"
                 value={form.username}
                 onChange={handleChange}
-                placeholder="e.g. tendai.m"
+                placeholder={t("register.usernamePlaceholder")}
                 minLength={3}
                 maxLength={32}
                 pattern="[A-Za-z0-9._-]+"
                 autoComplete="username"
-                className="h-12 w-full rounded-xl border border-slate-300 bg-white pl-11 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/25"
+                className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
                 required
               />
             </div>
@@ -174,8 +174,8 @@ export default function PatientRegisterPage() {
 
           {/* Email */}
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-              Email <span className="text-red-500">*</span>
+            <label className="mb-1.5 block text-sm font-semibold text-white">
+              {t("register.email")} <span className="text-red-400">*</span>
             </label>
             <div className="relative">
               <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -184,8 +184,8 @@ export default function PatientRegisterPage() {
                 name="email"
                 value={form.email}
                 onChange={handleChange}
-                placeholder="you@example.com"
-                className="h-12 w-full rounded-xl border border-slate-300 bg-white pl-11 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/25"
+                placeholder={t("register.emailPlaceholder")}
+                className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
                 required
               />
             </div>
@@ -193,8 +193,8 @@ export default function PatientRegisterPage() {
 
           {/* Phone */}
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-              Phone <span className="text-red-500">*</span>
+            <label className="mb-1.5 block text-sm font-semibold text-white">
+              {t("register.phone")} <span className="text-red-400">*</span>
             </label>
             <div className="relative">
               <PhoneCall className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -203,8 +203,8 @@ export default function PatientRegisterPage() {
                 name="phone"
                 value={form.phone}
                 onChange={handleChange}
-                placeholder="077 123 4567"
-                className="h-12 w-full rounded-xl border border-slate-300 bg-white pl-11 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/25"
+                placeholder={t("register.phonePlaceholder")}
+                className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
                 required
               />
             </div>
@@ -212,21 +212,21 @@ export default function PatientRegisterPage() {
 
           {/* National ID */}
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-slate-700">National ID</label>
+            <label className="mb-1.5 block text-sm font-semibold text-white">{t("register.nationalId")}</label>
             <input
               type="text"
               name="nationalId"
               value={form.nationalId}
               onChange={handleChange}
-              placeholder="e.g. 63-1234567A83"
-              className="h-12 w-full rounded-xl border border-slate-300 bg-white px-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/25"
+              placeholder={t("register.nationalIdPlaceholder")}
+              className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
             />
           </div>
 
           {/* Date of birth */}
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-              Date of birth
+            <label className="mb-1.5 block text-sm font-semibold text-white">
+              {t("register.dob")}
             </label>
             <div className="relative">
               <CalendarDays className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -235,15 +235,15 @@ export default function PatientRegisterPage() {
                 name="dob"
                 value={form.dob}
                 onChange={handleChange}
-                className="h-12 w-full rounded-xl border border-slate-300 bg-white pl-11 pr-4 text-sm text-slate-900 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/25"
+                className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
               />
             </div>
           </div>
 
           {/* Password */}
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-              Password <span className="text-red-500">*</span>
+            <label className="mb-1.5 block text-sm font-semibold text-white">
+              {t("register.password")} <span className="text-red-400">*</span>
             </label>
             <div className="relative">
               <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -252,14 +252,14 @@ export default function PatientRegisterPage() {
                 name="password"
                 value={form.password}
                 onChange={handleChange}
-                placeholder="At least 6 characters"
-                className="h-12 w-full rounded-xl border border-slate-300 bg-white pl-11 pr-11 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/25"
+                placeholder={t("register.passwordPlaceholder")}
+                className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-11 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
                 required
               />
               <button
                 type="button"
                 onClick={() => setShowPassword((s) => !s)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
@@ -268,8 +268,8 @@ export default function PatientRegisterPage() {
 
           {/* Confirm password */}
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-              Confirm password <span className="text-red-500">*</span>
+            <label className="mb-1.5 block text-sm font-semibold text-white">
+              {t("register.confirmPassword")} <span className="text-red-400">*</span>
             </label>
             <div className="relative">
               <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -278,8 +278,8 @@ export default function PatientRegisterPage() {
                 name="confirmPassword"
                 value={form.confirmPassword}
                 onChange={handleChange}
-                placeholder="Re-enter password"
-                className="h-12 w-full rounded-xl border border-slate-300 bg-white pl-11 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/25"
+                placeholder={t("register.confirmPasswordPlaceholder")}
+                className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
                 required
               />
             </div>
@@ -289,13 +289,13 @@ export default function PatientRegisterPage() {
         <button
           type="submit"
           disabled={loading}
-          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-6 text-sm font-semibold text-white shadow-[0_14px_34px_-14px_rgba(13,148,136,0.7)] transition-all hover:-translate-y-0.5 hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-6 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(13,148,136,0.5)] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? (
-            "Creating your account..."
+            t("register.creating")
           ) : (
             <>
-              Create account
+              {t("register.createAccount")}
               <ArrowRight className="h-4 w-4" />
             </>
           )}

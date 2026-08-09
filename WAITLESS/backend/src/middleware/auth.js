@@ -1,4 +1,5 @@
 import { requireStaffSession } from "../services/authService.js";
+import { requirePatientSession } from "../services/patientAuthService.js";
 
 const roleMapping = {
   reception: "receptionist",
@@ -17,6 +18,17 @@ export function withStaffAuth(allowedRoles, handler) {
       ...context,
       staff: session.user,
       session,
+    });
+  };
+}
+
+export function withPatientAuth(handler) {
+  return (context) => {
+    const session = requirePatientSession(context.req);
+    return handler({
+      ...context,
+      patientUser: session.user,
+      patientSession: session,
     });
   };
 }

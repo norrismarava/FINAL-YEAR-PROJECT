@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
-import { Bell, Monitor, Moon, Play, RefreshCw, Save, Shield, Timer, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Bell, Eye, EyeOff, Monitor, Moon, Play, RefreshCw, Save, Shield, ShieldCheck, SlidersHorizontal, Timer, Trash2, RotateCcw } from "lucide-react";
 
 import { useLiveRefresh } from "@/context/LiveRefreshContext";
+import { useAuth } from "@/auth/AuthContext";
+import { fetchRuntimeConfig, updateRuntimeConfig, resetRuntimeConfig } from "@/services/queueApi";
+import { useApiResource } from "@/hooks/useApiResource";
 
 const STORAGE_KEY = "waitless_system_settings_v1";
 
@@ -115,13 +118,84 @@ function SliderRow({
 
 export default function SettingsPage() {
   const { refreshLiveData } = useLiveRefresh();
+  const { user } = useAuth();
+  const isAdmin = user?.role === "admin";
 
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+  const [idleSettings, setIdleSettings] = useState(() => {
+    if (typeof window === "undefined") return { idleTimeoutMs: 900000, warningMs: 60000 };
+    try {
+      const raw = window.localStorage.getItem("waitless_idle_settings_v1");
+      return raw ? JSON.parse(raw) : { idleTimeoutMs: 900000, warningMs: 60000 };
+    } catch {
+      return { idleTimeoutMs: 900000, warningMs: 60000 };
+    }
+  });
   const [saveState, setSaveState] = useState("idle"); // idle|saving|saved
+  const [configSaveState, setConfigSaveState] = useState("idle");
+  const [configDraft, setConfigDraft] = useState(null);
 
   useEffect(() => {
     setSettings(loadSettings());
   }, []);
+
+  const configQuery = useApiResource(
+    useCallback(() => fetchRuntimeConfig(), []),
+    { enabled: isAdmin },
+  );
+
+  useEffect(() => {
+    if (configQuery.data) {
+      setConfigDraft(configQuery.data);
+    }
+  }, [configQuery.data]);
+
+  function updateConfigField(path, value) {
+    if (!configDraft) return;
+    const next = { ...configDraft };
+    const keys = path.split(".");
+    let obj = next;
+    for (let i = 0; i < keys.length - 1; i++) {
+      obj[keys[i]] = { ...obj[keys[i]] };
+      obj = obj[keys[i]];
+    }
+    obj[keys[keys.length - 1]] = value;
+    setConfigDraft(next);
+  }
+
+  async function saveConfig() {
+    if (!configDraft) return;
+    setConfigSaveState("saving");
+    try {
+      const updated = await updateRuntimeConfig({
+        triageReassessmentThresholdsMinutes: configDraft.triageReassessmentThresholdsMinutes,
+        etaMinutesPerPatientAhead: configDraft.etaMinutesPerPatientAhead,
+        etaBaselineMinutes: configDraft.etaBaselineMinutes,
+        etaActiveDepartmentBonusMinutes: configDraft.etaActiveDepartmentBonusMinutes,
+        missedRecallGracePeriodMinutes: configDraft.missedRecallGracePeriodMinutes,
+        oiPrivacyMode: configDraft.oiPrivacyMode,
+      });
+      setConfigDraft(updated);
+      setConfigSaveState("saved");
+      setTimeout(() => setConfigSaveState("idle"), 1500);
+    } catch {
+      setConfigSaveState("error");
+      setTimeout(() => setConfigSaveState("idle"), 2000);
+    }
+  }
+
+  async function handleResetConfig() {
+    setConfigSaveState("saving");
+    try {
+      const reset = await resetRuntimeConfig();
+      setConfigDraft(reset);
+      setConfigSaveState("saved");
+      setTimeout(() => setConfigSaveState("idle"), 1500);
+    } catch {
+      setConfigSaveState("error");
+      setTimeout(() => setConfigSaveState("idle"), 2000);
+    }
+  }
 
   const preview = useMemo(() => {
     // Provide a best-effort preview of how settings will impact live behavior.
@@ -264,7 +338,173 @@ export default function SettingsPage() {
                 />
               </div>
             </div>
+
+            <div className="rounded-2xl border border-border/70 bg-background/60 p-5">
+              <div className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-muted-foreground" />
+                <div className="text-sm font-semibold text-foreground">Session security</div>
+              </div>
+              <div className="mt-2 text-sm leading-6 text-muted-foreground">
+                Configure automatic logout when the workstation is left unattended.
+              </div>
+
+              <div className="mt-5 space-y-4">
+                <SliderRow
+                  icon={Timer}
+                  title="Idle logout timeout"
+                  description="Staff will be warned before automatic logout after this period of inactivity."
+                  value={Math.round((idleSettings.idleTimeoutMs ?? 900000) / 60000)}
+                  min={5}
+                  max={60}
+                  step={5}
+                  valueSuffix="min"
+                  onChange={(v) => {
+                    const ms = v * 60 * 1000;
+                    const next = { ...idleSettings, idleTimeoutMs: ms };
+                    setIdleSettings(next);
+                    window.localStorage.setItem("waitless_idle_settings_v1", JSON.stringify(next));
+                  }}
+                />
+              </div>
+
+              <div className="mt-4 text-xs text-muted-foreground">
+                A 60-second warning dialog appears before logout, giving staff time to stay signed in.
+              </div>
+            </div>
           </div>
+
+          {isAdmin && configDraft && (
+            <div className="rounded-2xl border border-border/70 bg-background/60 p-5">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-2">
+                  <SlidersHorizontal className="h-4 w-4 text-muted-foreground" />
+                  <div className="text-sm font-semibold text-foreground">Workflow configuration</div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {configSaveState === "saved" && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary-soft/55 px-2.5 py-1 text-xs font-semibold text-primary">
+                      <Save className="h-3 w-3" /> Saved
+                    </span>
+                  )}
+                  {configSaveState === "saving" && (
+                    <span className="text-xs text-muted-foreground">Saving...</span>
+                  )}
+                  {configSaveState === "error" && (
+                    <span className="text-xs text-destructive">Failed</span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={saveConfig}
+                    disabled={configSaveState === "saving"}
+                    className="inline-flex items-center gap-2 rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-xs font-semibold hover:bg-accent"
+                  >
+                    <Save className="h-3.5 w-3.5" />
+                    Save config
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleResetConfig}
+                    disabled={configSaveState === "saving"}
+                    className="inline-flex items-center gap-2 rounded-xl border border-border/70 bg-background/80 px-3 py-2 text-xs font-semibold hover:bg-accent"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    Reset
+                  </button>
+                </div>
+              </div>
+              <div className="mt-2 text-sm leading-6 text-muted-foreground">
+                Runtime-configurable thresholds for triage reassessment, ETA estimation, and recall grace period. Changes take effect immediately.
+              </div>
+
+              <div className="mt-5 space-y-4">
+                <ToggleRow
+                  icon={configDraft.oiPrivacyMode !== false ? EyeOff : Eye}
+                  title="OI Clinic privacy mode"
+                  description="Masks patient names and details for OI Clinic tickets on public queue boards and tracking pages. Protects HIV/TB patient confidentiality."
+                  checked={configDraft.oiPrivacyMode !== false}
+                  onChange={(v) => updateConfigField("oiPrivacyMode", v)}
+                />
+              </div>
+
+              <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                <div className="rounded-xl border border-border/70 bg-background/70 p-4">
+                  <div className="text-xs font-semibold text-muted-foreground">Red reassessment threshold (min)</div>
+                  <input
+                    type="number"
+                    min={1}
+                    max={120}
+                    value={configDraft.triageReassessmentThresholdsMinutes?.red ?? 10}
+                    onChange={(e) => updateConfigField("triageReassessmentThresholdsMinutes.red", Number(e.target.value))}
+                    className="input-base mt-2 h-9 w-full text-sm"
+                  />
+                  <div className="mt-1 text-[10px] text-muted-foreground">Alert when Red patients wait beyond this</div>
+                </div>
+                <div className="rounded-xl border border-border/70 bg-background/70 p-4">
+                  <div className="text-xs font-semibold text-muted-foreground">Yellow reassessment threshold (min)</div>
+                  <input
+                    type="number"
+                    min={1}
+                    max={120}
+                    value={configDraft.triageReassessmentThresholdsMinutes?.yellow ?? 30}
+                    onChange={(e) => updateConfigField("triageReassessmentThresholdsMinutes.yellow", Number(e.target.value))}
+                    className="input-base mt-2 h-9 w-full text-sm"
+                  />
+                  <div className="mt-1 text-[10px] text-muted-foreground">Alert when Yellow patients wait beyond this</div>
+                </div>
+                <div className="rounded-xl border border-border/70 bg-background/70 p-4">
+                  <div className="text-xs font-semibold text-muted-foreground">ETA minutes per patient ahead</div>
+                  <input
+                    type="number"
+                    min={0}
+                    max={30}
+                    step={0.5}
+                    value={configDraft.etaMinutesPerPatientAhead ?? 7}
+                    onChange={(e) => updateConfigField("etaMinutesPerPatientAhead", Number(e.target.value))}
+                    className="input-base mt-2 h-9 w-full text-sm"
+                  />
+                </div>
+                <div className="rounded-xl border border-border/70 bg-background/70 p-4">
+                  <div className="text-xs font-semibold text-muted-foreground">ETA baseline minutes</div>
+                  <input
+                    type="number"
+                    min={0}
+                    max={30}
+                    value={configDraft.etaBaselineMinutes ?? 3}
+                    onChange={(e) => updateConfigField("etaBaselineMinutes", Number(e.target.value))}
+                    className="input-base mt-2 h-9 w-full text-sm"
+                  />
+                </div>
+                <div className="rounded-xl border border-border/70 bg-background/70 p-4">
+                  <div className="text-xs font-semibold text-muted-foreground">ETA active dept bonus (min)</div>
+                  <input
+                    type="number"
+                    min={0}
+                    max={30}
+                    value={configDraft.etaActiveDepartmentBonusMinutes ?? 4}
+                    onChange={(e) => updateConfigField("etaActiveDepartmentBonusMinutes", Number(e.target.value))}
+                    className="input-base mt-2 h-9 w-full text-sm"
+                  />
+                </div>
+                <div className="rounded-xl border border-border/70 bg-background/70 p-4">
+                  <div className="text-xs font-semibold text-muted-foreground">Missed recall grace period (min)</div>
+                  <input
+                    type="number"
+                    min={0}
+                    max={60}
+                    value={configDraft.missedRecallGracePeriodMinutes ?? 5}
+                    onChange={(e) => updateConfigField("missedRecallGracePeriodMinutes", Number(e.target.value))}
+                    className="input-base mt-2 h-9 w-full text-sm"
+                  />
+                </div>
+              </div>
+
+              {configDraft.updatedAt && (
+                <div className="mt-4 text-xs text-muted-foreground">
+                  Last updated: {new Date(configDraft.updatedAt).toLocaleString()}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="rounded-2xl border border-destructive/30 bg-destructive/10 p-5">
             <div className="flex items-start justify-between gap-4">

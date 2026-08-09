@@ -51,6 +51,14 @@ export function findPatientById(id) {
   return getRepository().findPatientById(id);
 }
 
+export function findPatientByPhone(phone) {
+  return getRepository().findPatientByPhone(phone);
+}
+
+export function findPatientByPatientNumber(patientNumber) {
+  return getRepository().findPatientByPatientNumber(patientNumber);
+}
+
 export function createPatient(patient) {
   return getRepository().createPatient(patient);
 }
@@ -85,4 +93,56 @@ export function updateNotification(id, updater) {
 
 export function getNextNotificationSequence() {
   return getRepository().getNextNotificationSequence();
+}
+
+export function listPrescriptions() {
+  return getRepository().listPrescriptions();
+}
+
+export function findPrescriptionById(id) {
+  return getRepository().findPrescriptionById(id);
+}
+
+export function findPrescriptionsByTicketId(ticketId) {
+  return getRepository().findPrescriptionsByTicketId(ticketId);
+}
+
+export function createPrescription(prescription) {
+  return getRepository().createPrescription(prescription);
+}
+
+export function updatePrescription(id, updater) {
+  return getRepository().updatePrescription(id, updater);
+}
+
+export function listTestOrders() {
+  return getRepository().listTestOrders();
+}
+
+export function findTestOrderById(id) {
+  return getRepository().findTestOrderById(id);
+}
+
+export function findTestOrdersByTicketId(ticketId) {
+  return getRepository().findTestOrdersByTicketId(ticketId);
+}
+
+export function createTestOrder(testOrder) {
+  return getRepository().createTestOrder(testOrder);
+}
+
+export function updateTestOrder(id, updater) {
+  return getRepository().updateTestOrder(id, updater);
+}
+
+export function listFeedback() {
+  return getRepository().listFeedback();
+}
+
+export function findFeedbackByTicketId(ticketId) {
+  return getRepository().findFeedbackByTicketId(ticketId);
+}
+
+export function createFeedback(feedback) {
+  return getRepository().createFeedback(feedback);
 }

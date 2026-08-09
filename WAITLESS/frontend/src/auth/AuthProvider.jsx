@@ -1,6 +1,8 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
-import { fetchCurrentStaff, loginStaff } from "@/services/authApi";
+import { fetchCurrentStaff, loginStaff, saveStaffProfile } from "@/services/authApi";
+import { useIdleTimeout } from "@/hooks/useIdleTimeout";
+import { IdleTimeoutModal } from "@/components/ui/IdleTimeoutModal";
 import {
   clearAuthSession,
   getStoredSessionExpiry,
@@ -25,6 +27,7 @@ const AuthContext = createContext({
   hasRole: () => false,
   updateProfile: () => {},
   updateAvatar: () => {},
+  persistProfile: async () => {},
 });
 
 function isExpired(expiresAt) {
@@ -139,6 +142,26 @@ export function AuthProvider({ children }) {
     });
   }
 
+  async function persistProfile(payload) {
+    await saveStaffProfile(payload);
+    const session = await fetchCurrentStaff();
+    const nextUser = decorateStaffUser(session.user);
+    storeAuthSession(session);
+    setUser(nextUser);
+    setToken(session.token);
+    setExpiresAt(session.expiresAt);
+    return nextUser;
+  }
+
+  const handleIdleTimeout = useCallback(() => {
+    logout();
+  }, [logout]);
+
+  const { warning, secondsLeft, dismiss } = useIdleTimeout({
+    onTimeout: handleIdleTimeout,
+    enabled: Boolean(user && token),
+  });
+
   return (
     <AuthContext.Provider
       value={{
@@ -152,9 +175,16 @@ export function AuthProvider({ children }) {
         hasRole,
         updateProfile,
         updateAvatar,
+        persistProfile,
       }}
     >
       {children}
+      <IdleTimeoutModal
+        show={warning}
+        secondsLeft={secondsLeft}
+        onDismiss={dismiss}
+        onLogout={logout}
+      />
     </AuthContext.Provider>
   );
 }

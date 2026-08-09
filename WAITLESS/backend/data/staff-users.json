@@ -1,32 +1,72 @@
 [
   {
-    "id": "admin",
+    "id": "d64d822f-2548-455e-8e28-93e9594646b0",
     "username": "admin",
-    "password": "admin123",
-    "name": "System Administrator",
+    "email": "admin@waitless.local",
+    "password_hash": "$2a$12$w53jhn/2AgVmSAlQB5CI5.NNlEiREt2fawk4H1fYcp7R/aIqdjdxS",
+    "full_name": "System Administrator",
     "role": "admin",
-    "lastLoginAt": "2026-07-21T10:14:26.723Z"
+    "department": "Administration",
+    "phone": "",
+    "employee_id": "WL-001",
+    "avatar_url": null,
+    "created_at": "2026-07-31T00:58:02.030Z",
+    "last_login_at": "2026-07-31T00:58:17.380Z"
   },
   {
-    "id": "reception",
-    "username": "reception",
-    "password": "reception123",
-    "name": "Reception Desk",
-    "role": "reception"
+    "id": "9d41a922-b8d0-4117-8c71-b2845407de3a",
+    "username": "reception1",
+    "email": "reception@waitless.local",
+    "password_hash": "$2a$12$w53jhn/2AgVmSAlQB5CI5.NNlEiREt2fawk4H1fYcp7R/aIqdjdxS",
+    "full_name": "Grace Reception",
+    "role": "receptionist",
+    "department": "OPD",
+    "phone": "",
+    "employee_id": "WL-002",
+    "avatar_url": null,
+    "created_at": "2026-07-31T00:58:02.031Z",
+    "last_login_at": "2026-07-31T01:09:29.671Z"
   },
   {
-    "id": "triage",
-    "username": "triage",
-    "password": "triage123",
-    "name": "Triage Nurse",
-    "role": "triage"
+    "id": "fb98d58b-e5fc-4722-8e57-b365fa12035e",
+    "username": "triage1",
+    "email": "triage@waitless.local",
+    "password_hash": "$2a$12$w53jhn/2AgVmSAlQB5CI5.NNlEiREt2fawk4H1fYcp7R/aIqdjdxS",
+    "full_name": "Tendai Nurse",
+    "role": "nurse",
+    "department": "Casualty / Triage",
+    "phone": "",
+    "employee_id": "WL-003",
+    "avatar_url": null,
+    "created_at": "2026-07-31T00:58:02.031Z",
+    "last_login_at": "2026-07-31T01:10:29.065Z"
   },
   {
-    "id": "clinician",
-    "username": "clinician",
-    "password": "clinician123",
-    "name": "Clinical Desk",
-    "role": "clinician",
-    "lastLoginAt": "2026-07-16T10:18:38.289Z"
+    "id": "135f6b51-24e5-4051-b88b-1e6c62a07db4",
+    "username": "doctor1",
+    "email": "doctor@waitless.local",
+    "password_hash": "$2a$12$w53jhn/2AgVmSAlQB5CI5.NNlEiREt2fawk4H1fYcp7R/aIqdjdxS",
+    "full_name": "Dr. Chuma",
+    "role": "doctor",
+    "department": "OPD",
+    "phone": "",
+    "employee_id": "WL-004",
+    "avatar_url": null,
+    "created_at": "2026-07-31T00:58:02.031Z",
+    "last_login_at": "2026-07-31T01:41:27.141Z"
+  },
+  {
+    "id": "e0df7dee-ac15-420b-b3c5-ba1b0c0a6449",
+    "username": "pharmacy1",
+    "email": "pharmacy@waitless.local",
+    "password_hash": "$2a$12$w53jhn/2AgVmSAlQB5CI5.NNlEiREt2fawk4H1fYcp7R/aIqdjdxS",
+    "full_name": "Pharma Staff",
+    "role": "pharmacist",
+    "department": "Pharmacy",
+    "phone": "",
+    "employee_id": "WL-005",
+    "avatar_url": null,
+    "created_at": "2026-07-31T00:58:02.031Z",
+    "last_login_at": null
   }
 ]

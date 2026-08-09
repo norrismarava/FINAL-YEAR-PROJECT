@@ -21,6 +21,7 @@ import {
   Share2,
   ShieldCheck,
   Sparkles,
+  Star,
   Ticket,
   UserRound,
   Wifi,
@@ -37,9 +38,9 @@ import {
   STATUS_META,
   priorityChipClass,
 } from "@/services/queueMeta";
-import { fetchQueueBoard, fetchTicketTracking } from "@/services/queueApi";
+import { fetchQueueBoard, fetchTicketTracking, submitFeedback } from "@/services/queueApi";
 import { useQueueRealtime } from "@/sockets/QueueRealtimeProvider";
-import { useApiResource } from "@/hooks/useApiResource";
+import { useApiAction, useApiResource } from "@/hooks/useApiResource";
 
 const isBrowser = typeof window !== "undefined";
 
@@ -1048,6 +1049,8 @@ function TrackingResults({ data }) {
         <ActiveNowCard activeEntries={activeEntries} queue={queue} ticket={ticket} />
       </div>
 
+      <FeedbackForm ticket={ticket} />
+
       <PortalFooter />
     </div>
   );
@@ -1782,4 +1785,150 @@ async function copyTextToClipboard(value) {
   } finally {
     document.body.removeChild(textarea);
   }
+}
+
+const FEEDBACK_CATEGORIES = [
+  "Wait time",
+  "Staff friendliness",
+  "Cleanliness",
+  "Communication",
+  "Overall experience",
+];
+
+function FeedbackForm({ ticket }) {
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [comment, setComment] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+
+  const feedbackMut = useApiAction(
+    ({ id, payload }) => submitFeedback(id, payload),
+    {
+      onSuccess: () => {
+        setSubmitted(true);
+        setRating(0);
+        setSelectedCategories([]);
+        setComment("");
+      },
+    },
+  );
+
+  function toggleCategory(cat) {
+    setSelectedCategories((prev) =>
+      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat],
+    );
+  }
+
+  function handleSubmit() {
+    if (rating === 0) return;
+    feedbackMut.mutate({
+      id: ticket.id,
+      payload: { rating, categories: selectedCategories, comment },
+    });
+  }
+
+  return (
+    <article className="track-portal-card rounded-2xl border border-white/10 bg-[linear-gradient(135deg,rgba(4,20,31,0.72),rgba(6,42,53,0.62)_54%,rgba(10,31,46,0.68))] px-6 py-6 text-white shadow-[0_26px_60px_-44px_rgba(3,41,68,0.32)] backdrop-blur-xl">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="inline-flex items-center gap-2 text-[0.78rem] font-semibold uppercase tracking-[0.28em] text-teal-300">
+            <Star className="h-4 w-4" />
+            Feedback
+          </div>
+          <h3 className="mt-2 font-display text-xl font-bold tracking-tight">
+            How was your visit?
+          </h3>
+          <p className="mt-1 text-sm text-white/60">
+            Help us improve our service by sharing your experience.
+          </p>
+        </div>
+      </div>
+
+      {submitted ? (
+        <div className="mt-5 flex items-center gap-3 rounded-xl border border-emerald-400/30 bg-emerald-400/10 px-4 py-3">
+          <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+          <p className="text-sm text-emerald-200">
+            Thank you for your feedback! Your response has been recorded.
+          </p>
+        </div>
+      ) : (
+        <div className="mt-5 space-y-4">
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/50">
+              Rate your experience
+            </div>
+            <div className="mt-2 flex items-center gap-1.5">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setRating(star)}
+                  onMouseEnter={() => setHoverRating(star)}
+                  onMouseLeave={() => setHoverRating(0)}
+                  className="transition-transform hover:scale-110"
+                >
+                  <Star
+                    className={`h-7 w-7 ${
+                      (hoverRating || rating) >= star
+                        ? "fill-amber-400 text-amber-400"
+                        : "text-white/25"
+                    }`}
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/50">
+              What could we improve?
+            </div>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {FEEDBACK_CATEGORIES.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => toggleCategory(cat)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                    selectedCategories.includes(cat)
+                      ? "bg-teal-400/20 text-teal-200 border border-teal-400/40"
+                      : "border border-white/15 bg-white/5 text-white/60 hover:bg-white/10"
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/50">
+              Additional comments
+            </div>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              rows={3}
+              placeholder="Tell us more about your experience…"
+              className="mt-2 w-full resize-none rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-white/30 outline-none focus:border-teal-400/40 focus:ring-1 focus:ring-teal-400/30"
+            />
+          </div>
+
+          {feedbackMut.isError && (
+            <p className="text-sm text-red-300">{feedbackMut.error.message}</p>
+          )}
+
+          <button
+            type="button"
+            onClick={handleSubmit}
+            disabled={rating === 0 || feedbackMut.isPending}
+            className="inline-flex h-10 items-center gap-2 rounded-xl bg-teal-400/90 px-5 text-sm font-semibold text-[#04141f] hover:bg-teal-400 disabled:opacity-40"
+          >
+            {feedbackMut.isPending ? "Submitting…" : "Submit feedback"}
+          </button>
+        </div>
+      )}
+    </article>
+  );
 }

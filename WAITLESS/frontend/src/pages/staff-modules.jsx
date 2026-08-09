@@ -1,21 +1,33 @@
 import { useCallback, useMemo, useState } from "react";
 import {
+  Activity,
   AlertTriangle,
   BellRing,
   Building2,
   CalendarDays,
   CheckCircle2,
   Clock3,
+  Download,
   FileChartColumn,
+  FileText,
+  FlaskConical,
   LoaderCircle,
+  MapPin,
   MessageCircle,
+  Pill,
+  Plus,
   RefreshCw,
   Search,
+  ShieldCheck,
+  Stethoscope,
   Timer,
   TrendingUp,
   Users,
   Wifi,
+  XCircle,
+  X,
 } from "lucide-react";
+import { toast } from "sonner";
 
 import { LoadingPanel } from "@/components/ui/system-loader";
 import { useLiveRefresh } from "@/context/LiveRefreshContext";
@@ -23,10 +35,47 @@ import { useApiAction, useApiResource } from "@/hooks/useApiResource";
 import { DEPARTMENTS, PRIORITY_META, STATUS_META, priorityChipClass } from "@/services/queueMeta";
 import {
   fetchDashboardSummary,
+  fetchETAEstimates,
+  fetchPrescriptions,
+  fetchPrescriptionSummary,
+  fetchPrescriptionsWithStock,
+  fetchStockSummary,
+  flagPrescriptionItem,
   fetchQueueBoard,
+  fetchStaffQueueBoard,
+  fetchTestOrders,
+  fetchTestOrderSummary,
+  fetchAverageWaitReport,
+  fetchDepartmentPerformanceReport,
+  fetchNoShowReport,
+  fetchTriageReport,
+  fetchLabTurnaroundReport,
+  fetchStaffWorkloadReport,
+  fetchOutOfStockReport,
+  fetchPeakHoursReport,
+  fetchCongestionReport,
+  fetchResourceAllocationReport,
+  fetchWhatsAppStatus,
+  fetchHospitalInfo,
+  fetchReassessmentAlerts,
+  fetchBottleneckAnalysis,
+  recallTicket,
   retryNotificationDelivery,
+  updatePrescriptionState,
+  updateTestOrderState,
+  fetchOIClinicStreams,
+  fetchOIClinicVisits,
+  fetchOIClinicSummary,
+  createOIClinicVisit,
+  updateOIClinicVisitState,
+  fetchAppointments,
+  createAppointment,
+  fetchAppointmentMeta,
+  fetchAppointmentSummary,
+  updateAppointmentStatus,
 } from "@/services/queueApi";
 import { useQueueRealtime } from "@/sockets/QueueRealtimeProvider";
+import { exportCSV, exportPDF, exportXLSX } from "@/utils/reportExport";
 
 const isBrowser = typeof window !== "undefined";
 const EMPTY_LIST = [];
@@ -91,11 +140,14 @@ function MetricTile({ label, value, detail, icon: Icon }) {
 
 export function StaffQueueBoardPage() {
   const realtime = useQueueRealtime();
-  const loader = useCallback(() => fetchQueueBoard(), []);
+  const loader = useCallback(() => fetchStaffQueueBoard(), []);
   const query = useApiResource(loader, { enabled: isBrowser });
   const serving = query.data?.nowServing ?? EMPTY_LIST;
   const waiting = query.data?.waiting ?? EMPTY_LIST;
   const missed = query.data?.missed ?? EMPTY_LIST;
+  const departmentETAs = query.data?.departmentETAs ?? {};
+  const bottlenecks = query.data?.bottlenecks ?? EMPTY_LIST;
+  const avgServiceTime = query.data?.avgServiceTimeMinutes ?? null;
 
   return (
     <ModulePage
@@ -125,6 +177,39 @@ export function StaffQueueBoardPage() {
             icon={AlertTriangle}
           />
         </div>
+
+        {bottlenecks.length > 0 ? (
+          <div className="mt-5 space-y-2">
+            {bottlenecks.map((b, i) => (
+              <div key={i} className={"flex items-start gap-3 rounded-2xl border px-4 py-3 " + (b.severity === "critical" ? "border-red-500/40 bg-red-500/10" : "border-amber-500/40 bg-amber-500/10")}>
+                <AlertTriangle className={"mt-0.5 h-4 w-4 shrink-0 " + (b.severity === "critical" ? "text-red-500" : "text-amber-500")} />
+                <div>
+                  <div className={"text-xs font-bold uppercase tracking-wider " + (b.severity === "critical" ? "text-red-500" : "text-amber-600")}>{b.type.replace("-", " ")}</div>
+                  <div className="mt-0.5 text-sm text-muted-foreground">{b.message}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : null}
+
+        {avgServiceTime ? (
+          <div className="mt-5 rounded-2xl border border-border/70 bg-background/60 px-5 py-4">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">Average service time</div>
+            <div className="mt-1 font-display text-2xl font-bold">{avgServiceTime} min</div>
+            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {Object.entries(departmentETAs).filter(([, d]) => d.waitingCount > 0).map(([dept, data]) => (
+                <div key={dept} className="rounded-xl border border-border/50 bg-background/40 px-3 py-2">
+                  <div className="text-xs font-semibold text-foreground">{dept}</div>
+                  <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                    <Clock3 className="h-3 w-3" />
+                    ETA ~{data.etaMinutes}m
+                  </div>
+                  <div className="mt-0.5 text-[10px] text-muted-foreground">{data.waitingCount} waiting · {data.activeCount} active</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         <div className="mt-5 grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
           <article className="surface-panel p-6">
@@ -165,8 +250,121 @@ export function StaffQueueBoardPage() {
             )}
           </article>
         </div>
+
+        {missed.length > 0 ? (
+          <article className="surface-panel mt-5 overflow-hidden">
+            <div className="border-b border-border/70 px-6 py-5">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <div className="eyebrow">Missed turns</div>
+                  <h2 className="mt-2 font-display text-2xl font-bold">Recall patients</h2>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Choose a fair reinsertion position when recalling missed patients.
+                  </p>
+                </div>
+                <span className="inline-flex items-center gap-2 rounded-full bg-amber-500/15 px-3 py-1.5 text-xs font-semibold text-amber-600">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  {missed.length} missed
+                </span>
+              </div>
+            </div>
+            <div className="divide-y divide-border/70">
+              {missed.map((ticket) => (
+                <MissedRecallRow key={ticket.id} ticket={ticket} />
+              ))}
+            </div>
+          </article>
+        ) : null}
+
       </QueryBoundary>
     </ModulePage>
+  );
+}
+
+function MissedRecallRow({ ticket }) {
+  const { refreshLiveData } = useLiveRefresh();
+  const [position, setPosition] = useState("back");
+  const [offsetMinutes, setOffsetMinutes] = useState("");
+  const recallMutation = useApiAction(
+    (opts) => recallTicket(ticket.id, opts),
+    { onSuccess: refreshLiveData },
+  );
+
+  function handleRecall() {
+    const opts = { reinsertionPosition: position };
+    if (position === "offset" && offsetMinutes) {
+      opts.offsetMinutes = Number(offsetMinutes);
+    }
+    recallMutation.mutate(opts);
+  }
+
+  const options = [
+    { value: "back", label: "Back of queue" },
+    { value: "front", label: "Front of queue" },
+    { value: "original", label: "Original position" },
+    { value: "offset", label: "Custom offset" },
+  ];
+
+  return (
+    <div className="px-6 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <span className={"inline-grid h-9 w-16 shrink-0 place-items-center rounded-lg font-display text-xs font-bold " + (priorityChipClass[ticket.priority] || "")}>
+            {ticket.ticket}
+          </span>
+          <div>
+            <div className="text-sm font-semibold text-foreground">{ticket.department}</div>
+            <div className="mt-1 text-xs text-muted-foreground">
+              {(PRIORITY_META[ticket.priority] || {}).label || ticket.priority} · Missed {ticket.waitMinutes}m ago
+              {ticket.recallCount > 0 ? " · Recalled " + ticket.recallCount + "x" : ""}
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <select
+            value={position}
+            onChange={(e) => setPosition(e.target.value)}
+            className="input-base h-9 w-auto text-xs"
+          >
+            {options.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          {position === "offset" ? (
+            <input
+              type="number"
+              value={offsetMinutes}
+              onChange={(e) => setOffsetMinutes(e.target.value)}
+              placeholder="min ago"
+              className="input-base h-9 w-24 text-xs"
+            />
+          ) : null}
+          <button
+            type="button"
+            onClick={handleRecall}
+            disabled={recallMutation.isPending}
+            className="rounded-xl gradient-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-elegant disabled:opacity-60"
+          >
+            {recallMutation.isPending ? (
+              <span className="flex items-center gap-2">
+                <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+                Recalling...
+              </span>
+            ) : (
+              "Recall"
+            )}
+          </button>
+        </div>
+      </div>
+      {recallMutation.isError ? (
+        <div className="mt-2 text-xs text-destructive">{recallMutation.error.message}</div>
+      ) : null}
+      {recallMutation.data ? (
+        <div className="mt-2 text-xs text-emerald-500">
+          Recalled successfully.
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -253,105 +451,1423 @@ function DepartmentStat({ label, value }) {
 }
 
 export function AppointmentsPage() {
-  const query = useDashboardSummary();
-  const tickets = query.data?.tickets ?? EMPTY_LIST;
-  const active = tickets.filter((ticket) => ["called", "in-service"].includes(ticket.status));
-  const upcoming = tickets.filter((ticket) => ticket.status === "waiting");
+  const { refreshToken, refreshLiveData } = useLiveRefresh();
+  const [showBookingForm, setShowBookingForm] = useState(false);
+  const [statusFilter, setStatusFilter] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+
+  const metaLoader = useCallback(() => fetchAppointmentMeta(), []);
+  const metaQuery = useApiResource(metaLoader, { enabled: isBrowser });
+
+  const summaryLoader = useCallback(() => fetchAppointmentSummary(), []);
+  const summaryQuery = useApiResource(summaryLoader, { enabled: isBrowser, refreshToken });
+
+  const appointmentsLoader = useCallback(
+    () => fetchAppointments({ status: statusFilter, date: dateFilter }),
+    [statusFilter, dateFilter, refreshToken],
+  );
+  const appointmentsQuery = useApiResource(appointmentsLoader, { enabled: isBrowser });
+
+  const createAction = useApiAction(createAppointment, {
+    onSuccess: () => {
+      refreshLiveData();
+      toast.success("Appointment booked successfully");
+    },
+  });
+
+  const statusAction = useApiAction(
+    (vars) => updateAppointmentStatus(vars.id, vars.status),
+    {
+      onSuccess: () => {
+        refreshLiveData();
+      },
+    },
+  );
+
+  const meta = metaQuery.data;
+  const serviceCategories = meta?.serviceCategories ?? [];
+  const timeSlots = meta?.timeSlots ?? [];
+  const summary = summaryQuery.data;
+  const appointments = appointmentsQuery.data ?? [];
+
+  async function handleBook(formData) {
+    try {
+      await createAction.mutate(formData);
+      setShowBookingForm(false);
+    } catch (err) {
+      toast.error(err.message ?? "Failed to book appointment");
+    }
+  }
+
+  async function handleStatusChange(id, status) {
+    try {
+      await statusAction.mutate({ id, status });
+      toast.success(`Appointment ${status}`);
+    } catch (err) {
+      toast.error(err.message ?? "Failed to update appointment");
+    }
+  }
+
+  if (appointmentsQuery.isLoading && !appointmentsQuery.data) {
+    return <LoadingPanel label="Loading appointments…" />;
+  }
 
   return (
     <ModulePage
       eyebrow="Clinical schedule"
       title="Appointments"
-      description="Monitor patients currently called for care and those next in the live service sequence."
+      description="Book patient appointments by service category and time slot, then confirm check-in on arrival."
       icon={CalendarDays}
     >
-      <QueryBoundary query={query} title="Loading appointments">
-        <div className="grid gap-5 xl:grid-cols-2">
-          <AppointmentList
-            title="Active now"
-            tickets={active}
-            empty="No patients are currently in service."
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="input-base h-9 w-auto text-xs"
+          >
+            <option value="">All statuses</option>
+            <option value="pending">Pending</option>
+            <option value="confirmed">Confirmed</option>
+            <option value="checked-in">Checked In</option>
+            <option value="completed">Completed</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+          <input
+            type="date"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            className="input-base h-9 w-auto text-xs"
           />
-          <AppointmentList
-            title="Upcoming queue"
-            tickets={upcoming}
-            empty="No patients are currently waiting."
-          />
+          {(statusFilter || dateFilter) && (
+            <button
+              type="button"
+              onClick={() => { setStatusFilter(""); setDateFilter(""); }}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              Clear
+            </button>
+          )}
         </div>
-      </QueryBoundary>
+        <button
+          type="button"
+          onClick={() => setShowBookingForm((v) => !v)}
+          className="inline-flex items-center gap-1.5 rounded-lg gradient-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          {showBookingForm ? "Close form" : "New appointment"}
+        </button>
+      </div>
+
+      {summary && (
+        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
+          {[
+            { label: "Total", value: summary.total, color: "bg-blue-500/10 border-blue-500/30" },
+            { label: "Today", value: summary.today, color: "bg-teal-500/10 border-teal-500/30" },
+            { label: "Pending", value: summary.byStatus?.pending ?? 0, color: "bg-amber-500/10 border-amber-500/30" },
+            { label: "Confirmed", value: summary.byStatus?.confirmed ?? 0, color: "bg-indigo-500/10 border-indigo-500/30" },
+            { label: "Checked In", value: summary.byStatus?.["checked-in"] ?? 0, color: "bg-emerald-500/10 border-emerald-500/30" },
+          ].map((stat) => (
+            <div key={stat.label} className={`rounded-xl border p-4 ${stat.color}`}>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{stat.label}</p>
+              <p className="mt-1 text-2xl font-bold">{stat.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showBookingForm && (
+        <BookingForm
+          serviceCategories={serviceCategories}
+          timeSlots={timeSlots}
+          onSubmit={handleBook}
+          isSubmitting={createAction.isPending}
+        />
+      )}
+
+      <div className="surface-panel p-6">
+        <h2 className="font-display text-2xl font-bold">Scheduled appointments</h2>
+        <div className="mt-5 space-y-3">
+          {appointments.length === 0 ? (
+            <EmptyMessage>No appointments scheduled.</EmptyMessage>
+          ) : (
+            appointments.map((appt) => (
+              <AppointmentRow
+                key={appt.id}
+                appointment={appt}
+                onStatusChange={handleStatusChange}
+                updating={statusAction.isPending && statusAction.variables?.id === appt.id}
+              />
+            ))
+          )}
+        </div>
+      </div>
     </ModulePage>
   );
 }
 
-function AppointmentList({ title, tickets, empty }) {
+function BookingForm({ serviceCategories, timeSlots, onSubmit, isSubmitting }) {
+  const [patientName, setPatientName] = useState("");
+  const [patientContact, setPatientContact] = useState("");
+  const [patientAge, setPatientAge] = useState("");
+  const [patientGender, setPatientGender] = useState("");
+  const [serviceCategory, setServiceCategory] = useState("");
+  const [date, setDate] = useState("");
+  const [timeSlot, setTimeSlot] = useState("");
+  const [notes, setNotes] = useState("");
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    if (!patientName.trim() || !serviceCategory || !date || !timeSlot) return;
+    onSubmit({
+      patientName: patientName.trim(),
+      patientContact: patientContact.trim(),
+      patientAge: patientAge ? Number(patientAge) : null,
+      patientGender,
+      serviceCategory,
+      date,
+      timeSlot,
+      notes: notes.trim(),
+    });
+  }
+
   return (
-    <article className="surface-panel p-6">
-      <h2 className="font-display text-2xl font-bold">{title}</h2>
-      <div className="mt-5 space-y-3">
-        {tickets.length ? (
-          tickets.map((ticket) => <QueueTicketRow key={ticket.id} ticket={ticket} />)
-        ) : (
-          <EmptyMessage>{empty}</EmptyMessage>
-        )}
+    <form onSubmit={handleSubmit} className="surface-panel mb-4 space-y-4 p-6">
+      <h3 className="font-display text-lg font-bold">Book new appointment</h3>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground">Patient name *</label>
+          <input
+            type="text"
+            required
+            value={patientName}
+            onChange={(e) => setPatientName(e.target.value)}
+            className="input-base mt-1 h-9 w-full text-sm"
+            placeholder="Full name"
+          />
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground">Contact number</label>
+          <input
+            type="tel"
+            value={patientContact}
+            onChange={(e) => setPatientContact(e.target.value)}
+            className="input-base mt-1 h-9 w-full text-sm"
+            placeholder="+263..."
+          />
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground">Age</label>
+          <input
+            type="number"
+            min={0}
+            max={130}
+            value={patientAge}
+            onChange={(e) => setPatientAge(e.target.value)}
+            className="input-base mt-1 h-9 w-full text-sm"
+            placeholder="Years"
+          />
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground">Gender</label>
+          <select
+            value={patientGender}
+            onChange={(e) => setPatientGender(e.target.value)}
+            className="input-base mt-1 h-9 w-full text-sm"
+          >
+            <option value="">Select</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground">Service category *</label>
+          <select
+            required
+            value={serviceCategory}
+            onChange={(e) => setServiceCategory(e.target.value)}
+            className="input-base mt-1 h-9 w-full text-sm"
+          >
+            <option value="">Select service</option>
+            {serviceCategories.map((s) => (
+              <option key={s.id} value={s.id}>{s.label}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground">Date *</label>
+          <input
+            type="date"
+            required
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="input-base mt-1 h-9 w-full text-sm"
+          />
+        </div>
+        <div>
+          <label className="text-xs font-semibold text-muted-foreground">Time slot *</label>
+          <select
+            required
+            value={timeSlot}
+            onChange={(e) => setTimeSlot(e.target.value)}
+            className="input-base mt-1 h-9 w-full text-sm"
+          >
+            <option value="">Select time</option>
+            {timeSlots.map((slot) => (
+              <option key={slot} value={slot}>{slot}</option>
+            ))}
+          </select>
+        </div>
+        <div className="sm:col-span-2 lg:col-span-3">
+          <label className="text-xs font-semibold text-muted-foreground">Notes</label>
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="input-base mt-1 w-full text-sm"
+            rows={2}
+            placeholder="Optional notes for the clinic"
+          />
+        </div>
       </div>
-    </article>
+      <div className="flex items-center gap-3">
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="inline-flex items-center gap-1.5 rounded-lg gradient-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
+        >
+          {isSubmitting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+          Book appointment
+        </button>
+      </div>
+    </form>
   );
 }
 
+const APPT_STATUS_BADGE = {
+  pending: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+  confirmed: "bg-blue-500/15 text-blue-700 dark:text-blue-300",
+  "checked-in": "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+  cancelled: "bg-red-500/15 text-red-700 dark:text-red-300",
+  completed: "bg-violet-500/15 text-violet-700 dark:text-violet-300",
+};
+
+function AppointmentRow({ appointment, onStatusChange, updating }) {
+  const appt = appointment;
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/60 p-4">
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <span className="font-display text-sm font-bold">{appt.patientName}</span>
+          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${APPT_STATUS_BADGE[appt.status] ?? "bg-muted text-muted-foreground"}`}>
+            {appt.status}
+          </span>
+        </div>
+        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">{appt.serviceLabel}</span>
+          <span>{appt.date} · {appt.timeSlot}</span>
+          {appt.patientContact && <span>{appt.patientContact}</span>}
+          {appt.patientAge != null && <span>{appt.patientAge}y</span>}
+          {appt.patientGender && <span className="capitalize">{appt.patientGender}</span>}
+        </div>
+        {appt.notes && (
+          <p className="mt-1 text-xs italic text-muted-foreground">"{appt.notes}"</p>
+        )}
+      </div>
+      <div className="flex items-center gap-2">
+        {appt.status === "pending" && (
+          <button
+            type="button"
+            disabled={updating}
+            onClick={() => onStatusChange(appt.id, "confirmed")}
+            className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-semibold hover:bg-accent disabled:opacity-50"
+          >
+            Confirm
+          </button>
+        )}
+        {appt.status === "confirmed" && (
+          <button
+            type="button"
+            disabled={updating}
+            onClick={() => onStatusChange(appt.id, "checked-in")}
+            className="inline-flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-500/20 disabled:opacity-50 dark:text-emerald-300"
+          >
+            Check in
+          </button>
+        )}
+        {(appt.status === "pending" || appt.status === "confirmed") && (
+          <button
+            type="button"
+            disabled={updating}
+            onClick={() => onStatusChange(appt.id, "cancelled")}
+            className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-semibold text-destructive hover:bg-destructive/10 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+        )}
+        {appt.status === "checked-in" && (
+          <button
+            type="button"
+            disabled={updating}
+            onClick={() => onStatusChange(appt.id, "completed")}
+            className="inline-flex items-center gap-1 rounded-md border border-violet-500/30 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-700 hover:bg-violet-500/20 disabled:opacity-50 dark:text-violet-300"
+          >
+            Complete
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function flattenAvgWait(data) {
+  const rows = [];
+  const overall = data?.overall ?? {};
+  rows.push({ Section: "Overall", Department: "All", ...overall });
+  for (const [dept, d] of Object.entries(data?.byDepartment ?? {})) {
+    rows.push({ Section: "By Department", Department: dept, ...d });
+  }
+  return rows;
+}
+
+function flattenDeptPerformance(data) {
+  const rows = [];
+  for (const [dept, d] of Object.entries(data?.byDepartment ?? {})) {
+    rows.push({
+      Department: dept,
+      Total: d.totalTickets,
+      Completed: d.completed,
+      Missed: d.missed,
+      "Missed Rate (%)": d.missedRate,
+      "Avg Service Time (m)": d.avgServiceTime,
+      Active: d.active,
+      Red: d.byPriority?.red ?? 0,
+      Yellow: d.byPriority?.yellow ?? 0,
+      Green: d.byPriority?.green ?? 0,
+    });
+  }
+  return rows;
+}
+
+function flattenNoShow(data) {
+  const rows = [];
+  const overall = data?.overall ?? {};
+  rows.push({
+    Section: "Overall",
+    "Total Tickets": overall.totalTickets ?? 0,
+    "No-Show Rate (%)": overall.noShowRate ?? 0,
+    "Missed w/ Delivered Notif": overall.missedWithDeliveredNotification ?? 0,
+    "Missed w/o Notif": overall.missedWithoutNotification ?? 0,
+  });
+  for (const t of data?.missedTickets ?? []) {
+    rows.push({
+      Section: "Missed Ticket",
+      Ticket: t.ticket,
+      Patient: t.patientName,
+      Department: t.department,
+      "Wait (m)": t.waitMinutes,
+      "Notifs Sent": t.notificationsSent,
+      "Notifs Delivered": t.notificationsDelivered,
+      "Had Delivered Notif": t.hadDeliveredNotification ? "Yes" : "No",
+    });
+  }
+  return rows;
+}
+
+function flattenTriage(data) {
+  const rows = [];
+  const overall = data?.overall ?? {};
+  rows.push({
+    Section: "Overall",
+    "Total Tickets": overall.totalTickets ?? 0,
+    "Triage Rate (%)": overall.triageRate ?? 0,
+    "Avg Triage Time (m)": overall.avgTriageTimeMinutes ?? 0,
+    "Auto-Classified": overall.autoClassified ?? 0,
+  });
+  for (const [prio, d] of Object.entries(data?.byPriority ?? {})) {
+    rows.push({
+      Section: "By Priority",
+      Priority: prio,
+      Total: d.total,
+      Assessed: d.withAssessment,
+      "Auto-Classified": d.autoClassified,
+      "Avg Triage Time (m)": d.avgTriageTimeMinutes,
+      Completed: d.outcomes?.completed ?? 0,
+      Missed: d.outcomes?.missed ?? 0,
+      "In Service": d.outcomes?.inService ?? 0,
+    });
+  }
+  return rows;
+}
+
+function flattenLabTurnaround(data) {
+  const rows = [];
+  const overall = data?.overall ?? {};
+  rows.push({
+    Section: "Overall",
+    "Total Orders": overall.totalOrders ?? 0,
+    Completed: overall.completed ?? 0,
+    Pending: overall.pending ?? 0,
+    "In Progress": overall.inProgress ?? 0,
+    "Avg Turnaround (m)": overall.avgTurnaroundMinutes ?? 0,
+  });
+  for (const [type, t] of Object.entries(data?.byTestType ?? {})) {
+    rows.push({
+      Section: "By Test Type",
+      "Test Type": type,
+      Total: t.total,
+      Completed: t.completed,
+      "Avg Turnaround (m)": t.avgTurnaroundMinutes,
+      "Avg Sample→Result (m)": t.avgSampleToResultMinutes,
+    });
+  }
+  return rows;
+}
+
+function flattenStaffWorkload(data) {
+  const rows = [];
+  const overall = data?.overall ?? {};
+  rows.push({
+    Section: "Overall",
+    "Total Staff": overall.totalStaff ?? 0,
+    "Total Actions": overall.totalActions ?? 0,
+    "Total Triage": overall.totalTriage ?? 0,
+    "Total Completed": overall.totalCompleted ?? 0,
+  });
+  for (const s of data?.byStaff ?? []) {
+    rows.push({
+      Section: "By Staff",
+      "Staff Name": s.staffName,
+      Triaged: s.triaged,
+      Called: s.called,
+      Completed: s.completed,
+      Transferred: s.transferred,
+      "Rx Created": s.prescriptionsCreated,
+      "Tests Ordered": s.testOrdersCreated,
+      "Total Actions": s.totalActions,
+    });
+  }
+  return rows;
+}
+
+function flattenOutOfStock(data) {
+  const rows = [];
+  const overall = data?.overall ?? {};
+  rows.push({
+    Section: "Overall",
+    "Total Items": overall.totalItems ?? 0,
+    "Out of Stock": overall.outOfStockCount ?? 0,
+    "Affected Pending Rx": overall.affectedPendingPrescriptions ?? 0,
+  });
+  for (const item of data?.allItems ?? []) {
+    rows.push({
+      Section: item.outOfStock ? "Out of Stock" : "In Stock",
+      "Item Name": item.name,
+      "Total Prescribed": item.totalPrescribed,
+      "Pending Count": item.pendingCount,
+      "Out of Stock": item.outOfStock ? "Yes" : "No",
+      "Affected Tickets": item.affectedTickets.join(", "),
+    });
+  }
+  return rows;
+}
+
+function flattenPeakHours(data) {
+  const rows = [];
+  rows.push({
+    Section: "Summary",
+    "Total Tickets": data?.totalTickets ?? 0,
+  });
+  for (const h of data?.peakHours ?? []) {
+    rows.push({
+      Section: "Peak Hours",
+      Hour: `${h.hour}:00`,
+      Registrations: h.registrations,
+      Completions: h.completions,
+      Missed: h.missed,
+    });
+  }
+  for (const h of data?.hourly ?? []) {
+    if (h.registrations === 0 && h.completions === 0 && h.missed === 0) continue;
+    rows.push({
+      Section: "Hourly",
+      Hour: `${h.hour}:00`,
+      Registrations: h.registrations,
+      Completions: h.completions,
+      Missed: h.missed,
+    });
+  }
+  return rows;
+}
+
+function flattenCongestion(data) {
+  const rows = [];
+  for (const [dept, d] of Object.entries(data?.byDept ?? {})) {
+    rows.push({
+      Section: "By Department",
+      Department: dept,
+      "Total Tickets": d.totalTickets,
+      Waiting: d.waiting,
+      "In Service": d.inService,
+      Completed: d.completed,
+      Missed: d.missed,
+      "Missed Rate (%)": d.missedRate,
+      "Avg Wait (m)": d.avgWaitMinutes,
+      "Avg Service (m)": d.avgServiceMinutes,
+      Load: d.load,
+      Capacity: d.capacity,
+      "Utilization (%)": d.utilization,
+      "Congestion Level": d.congestionLevel,
+    });
+  }
+  return rows;
+}
+
+function flattenResourceAllocation(data) {
+  const rows = [];
+  const overall = data?.overall ?? {};
+  rows.push({
+    Section: "Overall",
+    "Total Tickets": overall.totalTickets ?? 0,
+    "Total Prescriptions": overall.totalPrescriptions ?? 0,
+    "Total Test Orders": overall.totalTestOrders ?? 0,
+    "Est. Staff Needed": overall.totalStaffNeeded ?? 0,
+  });
+  for (const [dept, d] of Object.entries(data?.byDept ?? {})) {
+    rows.push({
+      Section: "By Department",
+      Department: dept,
+      "Total Tickets": d.totalTickets,
+      Completed: d.completed,
+      Active: d.active,
+      "Avg Service (m)": d.avgServiceMinutes,
+      "Total Service (m)": d.totalServiceMinutes,
+      "Est. Staff Needed": d.estimatedStaffNeeded,
+      Throughput: d.throughput,
+    });
+  }
+  for (const [dept, d] of Object.entries(data?.pharmacyLoad ?? {})) {
+    rows.push({
+      Section: "Pharmacy Load",
+      Department: dept,
+      Total: d.total,
+      Pending: d.pending,
+      Ready: d.ready,
+      Collected: d.collected,
+    });
+  }
+  for (const [type, d] of Object.entries(data?.labLoad ?? {})) {
+    rows.push({
+      Section: "Lab Load",
+      "Test Type": type,
+      Total: d.total,
+      Pending: d.pending,
+      Completed: d.completed,
+    });
+  }
+  return rows;
+}
+
+function flattenOverview(data) {
+  const m = data?.metrics ?? {};
+  const rows = [
+    { Metric: "Total Patients", Value: m.total ?? 0 },
+    { Metric: "Waiting", Value: m.byStatus?.waiting ?? 0 },
+    { Metric: "Called", Value: m.byStatus?.called ?? 0 },
+    { Metric: "In Service", Value: m.byStatus?.["in-service"] ?? 0 },
+    { Metric: "Missed", Value: m.byStatus?.missed ?? 0 },
+    { Metric: "Completed", Value: m.byStatus?.completed ?? 0 },
+    { Metric: "Average Wait (m)", Value: m.avgWait ?? 0 },
+    { Metric: "Notifications Today", Value: m.notificationsToday ?? 0 },
+  ];
+  return rows;
+}
+
+const REPORT_LABELS = {
+  overview: "Overview",
+  "avg-wait": "Average Wait Time",
+  "dept-performance": "Department Performance",
+  "no-show": "No-Show Analysis",
+  triage: "Triage Report",
+  "lab-turnaround": "Lab Turnaround Time",
+  "staff-workload": "Staff Workload",
+  "out-of-stock": "Out-of-Stock Items",
+  "peak-hours": "Peak Hours",
+  congestion: "Congestion Detection",
+  "resource-allocation": "Resource Allocation",
+  whatsapp: "WhatsApp Status",
+};
+
+function getReportRows(activeReport, queries) {
+  switch (activeReport) {
+    case "overview":
+      return flattenOverview(queries.overviewQuery.data);
+    case "avg-wait":
+      return flattenAvgWait(queries.avgWaitQuery.data);
+    case "dept-performance":
+      return flattenDeptPerformance(queries.perfQuery.data);
+    case "no-show":
+      return flattenNoShow(queries.noShowQuery.data);
+    case "triage":
+      return flattenTriage(queries.triageQuery.data);
+    case "lab-turnaround":
+      return flattenLabTurnaround(queries.labTurnaroundQuery.data);
+    case "staff-workload":
+      return flattenStaffWorkload(queries.staffWorkloadQuery.data);
+    case "out-of-stock":
+      return flattenOutOfStock(queries.outOfStockQuery.data);
+    case "peak-hours":
+      return flattenPeakHours(queries.peakHoursQuery.data);
+    case "congestion":
+      return flattenCongestion(queries.congestionQuery.data);
+    case "resource-allocation":
+      return flattenResourceAllocation(queries.resourceAllocationQuery.data);
+    default:
+      return [];
+  }
+}
+
+function getReportSections(activeReport, queries) {
+  const label = REPORT_LABELS[activeReport] ?? "Report";
+  const rows = getReportRows(activeReport, queries);
+  return [{ title: label, rows }];
+}
+
 export function ReportsPage() {
-  const query = useDashboardSummary();
-  const metrics = query.data?.metrics;
+  const [activeReport, setActiveReport] = useState("overview");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+
+  const filters = {};
+  if (dateFrom) filters.from = dateFrom;
+  if (dateTo) filters.to = dateTo;
+
+  const overviewQuery = useDashboardSummary();
+  const avgWaitQuery = useApiResource(
+    useCallback(() => fetchAverageWaitReport(filters), [dateFrom, dateTo]),
+    { enabled: isBrowser && activeReport === "avg-wait" },
+  );
+  const perfQuery = useApiResource(
+    useCallback(() => fetchDepartmentPerformanceReport(filters), [dateFrom, dateTo]),
+    { enabled: isBrowser && activeReport === "dept-performance" },
+  );
+  const noShowQuery = useApiResource(
+    useCallback(() => fetchNoShowReport(filters), [dateFrom, dateTo]),
+    { enabled: isBrowser && activeReport === "no-show" },
+  );
+  const triageQuery = useApiResource(
+    useCallback(() => fetchTriageReport(filters), [dateFrom, dateTo]),
+    { enabled: isBrowser && activeReport === "triage" },
+  );
+  const labTurnaroundQuery = useApiResource(
+    useCallback(() => fetchLabTurnaroundReport(filters), [dateFrom, dateTo]),
+    { enabled: isBrowser && activeReport === "lab-turnaround" },
+  );
+  const staffWorkloadQuery = useApiResource(
+    useCallback(() => fetchStaffWorkloadReport(filters), [dateFrom, dateTo]),
+    { enabled: isBrowser && activeReport === "staff-workload" },
+  );
+  const outOfStockQuery = useApiResource(
+    useCallback(() => fetchOutOfStockReport(), []),
+    { enabled: isBrowser && activeReport === "out-of-stock" },
+  );
+  const peakHoursQuery = useApiResource(
+    useCallback(() => fetchPeakHoursReport(filters), [dateFrom, dateTo]),
+    { enabled: isBrowser && activeReport === "peak-hours" },
+  );
+  const congestionQuery = useApiResource(
+    useCallback(() => fetchCongestionReport(filters), [dateFrom, dateTo]),
+    { enabled: isBrowser && activeReport === "congestion" },
+  );
+  const resourceAllocationQuery = useApiResource(
+    useCallback(() => fetchResourceAllocationReport(filters), [dateFrom, dateTo]),
+    { enabled: isBrowser && activeReport === "resource-allocation" },
+  );
+  const whatsAppQuery = useApiResource(
+    useCallback(() => fetchWhatsAppStatus(), []),
+    { enabled: isBrowser && activeReport === "whatsapp" },
+  );
+
+  const metrics = overviewQuery.data?.metrics;
+
+  const reportTabs = [
+    { value: "overview", label: "Overview" },
+    { value: "avg-wait", label: "Average Wait Time" },
+    { value: "dept-performance", label: "Department Performance" },
+    { value: "no-show", label: "No-Show Analysis" },
+    { value: "triage", label: "Triage Report" },
+    { value: "lab-turnaround", label: "Lab Turnaround" },
+    { value: "staff-workload", label: "Staff Workload" },
+    { value: "out-of-stock", label: "Out-of-Stock" },
+    { value: "peak-hours", label: "Peak Hours" },
+    { value: "congestion", label: "Congestion" },
+    { value: "resource-allocation", label: "Resource Allocation" },
+    { value: "whatsapp", label: "WhatsApp Status" },
+  ];
 
   return (
     <ModulePage
       eyebrow="Operational insight"
       title="Reports"
-      description="A concise shift report covering patient flow, completion, priorities, and communication activity."
+      description="Comprehensive reports covering patient flow, department performance, no-show analysis, triage outcomes, and WhatsApp configuration."
       icon={FileChartColumn}
     >
-      <QueryBoundary query={query} title="Preparing reports">
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricTile
-            label="Patients tracked"
-            value={metrics?.total ?? 0}
-            detail="All tickets in the current dataset"
-            icon={Users}
-          />
-          <MetricTile
-            label="Average wait"
-            value={`${metrics?.avgWait ?? 0}m`}
-            detail="Across active patient flow"
-            icon={Timer}
-          />
-          <MetricTile
-            label="Completed"
-            value={metrics?.byStatus?.completed ?? 0}
-            detail="Visits closed successfully"
-            icon={CheckCircle2}
-          />
-          <MetricTile
-            label="Notifications"
-            value={metrics?.notificationsToday ?? 0}
-            detail="Patient messages issued today"
-            icon={BellRing}
-          />
+      <div className="surface-panel mb-4 flex flex-wrap items-center justify-between gap-4 p-4">
+        <div className="flex flex-wrap gap-2">
+          {reportTabs.map((tab) => (
+            <button
+              key={tab.value}
+              type="button"
+              onClick={() => setActiveReport(tab.value)}
+              className={`rounded-full px-3 py-2 text-xs font-semibold ${activeReport === tab.value ? "gradient-primary text-primary-foreground" : "border border-border bg-background/70 text-muted-foreground"}`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
-        <article className="surface-panel mt-5 overflow-hidden">
-          <div className="border-b border-border/70 px-6 py-5">
-            <h2 className="font-display text-2xl font-bold">Status breakdown</h2>
+        {activeReport !== "overview" && activeReport !== "whatsapp" && activeReport !== "out-of-stock" && (
+          <div className="flex flex-wrap items-center gap-2">
+            <input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="input-base h-9 w-auto text-xs" placeholder="From" />
+            <span className="text-xs text-muted-foreground">to</span>
+            <input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="input-base h-9 w-auto text-xs" placeholder="To" />
           </div>
-          <div className="grid gap-3 p-6 sm:grid-cols-2 lg:grid-cols-5">
-            {Object.entries(metrics?.byStatus ?? {}).map(([status, value]) => (
-              <DepartmentStat
-                key={status}
-                label={STATUS_META[status]?.label ?? status}
-                value={value}
-              />
+        )}
+        {activeReport !== "whatsapp" && (
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                const rows = getReportRows(activeReport, { overviewQuery, avgWaitQuery, perfQuery, noShowQuery, triageQuery, labTurnaroundQuery, staffWorkloadQuery, outOfStockQuery, peakHoursQuery, congestionQuery, resourceAllocationQuery });
+                if (rows.length > 0) {
+                  exportCSV(`waitless-${activeReport}-${new Date().toISOString().slice(0, 10)}.csv`, rows);
+                }
+              }}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background/70 px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-background"
+            >
+              <Download className="h-3.5 w-3.5" />
+              CSV
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const rows = getReportRows(activeReport, { overviewQuery, avgWaitQuery, perfQuery, noShowQuery, triageQuery, labTurnaroundQuery, staffWorkloadQuery, outOfStockQuery, peakHoursQuery, congestionQuery, resourceAllocationQuery });
+                if (rows.length > 0) {
+                  exportXLSX(`waitless-${activeReport}-${new Date().toISOString().slice(0, 10)}.xls`, rows);
+                }
+              }}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background/70 px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-background"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Excel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const sections = getReportSections(activeReport, { overviewQuery, avgWaitQuery, perfQuery, noShowQuery, triageQuery, labTurnaroundQuery, staffWorkloadQuery, outOfStockQuery, peakHoursQuery, congestionQuery, resourceAllocationQuery });
+                exportPDF(REPORT_LABELS[activeReport] ?? "Report", sections);
+              }}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background/70 px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:bg-background"
+            >
+              <FileText className="h-3.5 w-3.5" />
+              PDF
+            </button>
+          </div>
+        )}
+      </div>
+
+      {activeReport === "overview" && (
+        <QueryBoundary query={overviewQuery} title="Preparing reports">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <MetricTile label="Patients tracked" value={metrics?.total ?? 0} detail="All tickets in the current dataset" icon={Users} />
+            <MetricTile label="Average wait" value={`${metrics?.avgWait ?? 0}m`} detail="Across active patient flow" icon={Timer} />
+            <MetricTile label="Completed" value={metrics?.byStatus?.completed ?? 0} detail="Visits closed successfully" icon={CheckCircle2} />
+            <MetricTile label="Notifications" value={metrics?.notificationsToday ?? 0} detail="Patient messages issued today" icon={BellRing} />
+          </div>
+          <article className="surface-panel mt-5 overflow-hidden">
+            <div className="border-b border-border/70 px-6 py-5">
+              <h2 className="font-display text-2xl font-bold">Status breakdown</h2>
+            </div>
+            <div className="grid gap-3 p-6 sm:grid-cols-2 lg:grid-cols-5">
+              {Object.entries(metrics?.byStatus ?? {}).map(([status, value]) => (
+                <DepartmentStat key={status} label={STATUS_META[status]?.label ?? status} value={value} />
+              ))}
+            </div>
+          </article>
+        </QueryBoundary>
+      )}
+
+      {activeReport === "avg-wait" && (
+        <QueryBoundary query={avgWaitQuery} title="Loading average wait report">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <MetricTile label="Total tickets" value={avgWaitQuery.data?.overall?.totalTickets ?? 0} detail="In selected period" icon={Users} />
+            <MetricTile label="Avg wait" value={`${avgWaitQuery.data?.overall?.avgWait ?? 0}m`} detail="Current average" icon={Timer} />
+            <MetricTile label="Avg service time" value={`${avgWaitQuery.data?.overall?.avgServiceTime ?? 0}m`} detail="Completed visits" icon={Clock3} />
+          </div>
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {Object.entries(avgWaitQuery.data?.byDepartment ?? {}).map(([dept, d]) => (
+              <div key={dept} className="surface-panel p-5">
+                <h3 className="font-display text-lg font-bold">{dept}</h3>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <DepartmentStat label="Tickets" value={d.totalTickets} />
+                  <DepartmentStat label="Waiting" value={d.waiting} />
+                  <DepartmentStat label="Avg wait" value={`${d.avgCurrentWait}m`} />
+                  <DepartmentStat label="Avg service" value={`${d.avgServiceTime}m`} />
+                  <DepartmentStat label="Max wait" value={`${d.maxWait}m`} />
+                  <DepartmentStat label="Completed" value={d.completed} />
+                </div>
+              </div>
             ))}
           </div>
-        </article>
-      </QueryBoundary>
+        </QueryBoundary>
+      )}
+
+      {activeReport === "dept-performance" && (
+        <QueryBoundary query={perfQuery} title="Loading department performance">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            {Object.entries(perfQuery.data?.byDepartment ?? {}).map(([dept, d]) => (
+              <div key={dept} className="surface-panel p-5">
+                <h3 className="font-display text-lg font-bold">{dept}</h3>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <DepartmentStat label="Total" value={d.totalTickets} />
+                  <DepartmentStat label="Completed" value={d.completed} />
+                  <DepartmentStat label="Missed" value={d.missed} />
+                  <DepartmentStat label="Missed rate" value={`${d.missedRate}%`} />
+                  <DepartmentStat label="Avg service" value={`${d.avgServiceTime}m`} />
+                  <DepartmentStat label="Active" value={d.active} />
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2 text-[10px]">
+                  <span className="rounded-full bg-priority-red/15 px-2 py-0.5 font-bold text-priority-red">Red: {d.byPriority.red}</span>
+                  <span className="rounded-full bg-priority-yellow/15 px-2 py-0.5 font-bold text-priority-yellow">Yellow: {d.byPriority.yellow}</span>
+                  <span className="rounded-full bg-priority-green/15 px-2 py-0.5 font-bold text-priority-green">Green: {d.byPriority.green}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </QueryBoundary>
+      )}
+
+      {activeReport === "no-show" && (
+        <QueryBoundary query={noShowQuery} title="Loading no-show report">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <MetricTile label="Total tickets" value={noShowQuery.data?.overall?.totalTickets ?? 0} detail="In selected period" icon={Users} />
+            <MetricTile label="No-show rate" value={`${noShowQuery.data?.overall?.noShowRate ?? 0}%`} detail="Missed / total" icon={AlertTriangle} />
+            <MetricTile label="Missed w/ notif" value={noShowQuery.data?.overall?.missedWithDeliveredNotification ?? 0} detail="Had delivered notification" icon={MessageCircle} />
+            <MetricTile label="Missed w/o notif" value={noShowQuery.data?.overall?.missedWithoutNotification ?? 0} detail="No notification sent" icon={AlertTriangle} />
+          </div>
+          {(noShowQuery.data?.missedTickets ?? []).length > 0 && (
+            <article className="surface-panel mt-5 overflow-hidden">
+              <div className="border-b border-border/70 px-6 py-5">
+                <h2 className="font-display text-2xl font-bold">Missed ticket details</h2>
+              </div>
+              <div className="divide-y divide-border/70">
+                {(noShowQuery.data?.missedTickets ?? []).map((t) => (
+                  <div key={t.ticketId} className="flex flex-wrap items-center justify-between gap-3 px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <span className={`inline-grid h-9 w-16 shrink-0 place-items-center rounded-lg font-display text-xs font-bold ${priorityChipClass[t.priority] ?? ""}`}>{t.ticket}</span>
+                      <div>
+                        <div className="text-sm font-semibold">{t.patientName}</div>
+                        <div className="text-xs text-muted-foreground">{t.department} · waited {t.waitMinutes}m</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <span>Notifs sent: {t.notificationsSent}</span>
+                      <span>Delivered: {t.notificationsDelivered}</span>
+                      {t.hadDeliveredNotification ? (
+                        <span className="rounded-full bg-priority-green/15 px-2 py-0.5 font-bold text-priority-green">Notified</span>
+                      ) : (
+                        <span className="rounded-full bg-priority-yellow/15 px-2 py-0.5 font-bold text-priority-yellow">No notif</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </article>
+          )}
+        </QueryBoundary>
+      )}
+
+      {activeReport === "triage" && (
+        <QueryBoundary query={triageQuery} title="Loading triage report">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <MetricTile label="Total tickets" value={triageQuery.data?.overall?.totalTickets ?? 0} detail="In selected period" icon={Users} />
+            <MetricTile label="Triage rate" value={`${triageQuery.data?.overall?.triageRate ?? 0}%`} detail="Triaged / total" icon={CheckCircle2} />
+            <MetricTile label="Avg triage time" value={`${triageQuery.data?.overall?.avgTriageTimeMinutes ?? 0}m`} detail="Registration to triage" icon={Timer} />
+            <MetricTile label="Auto-classified" value={triageQuery.data?.overall?.autoClassified ?? 0} detail="Emergency auto-red" icon={AlertTriangle} />
+          </div>
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            {Object.entries(triageQuery.data?.byPriority ?? {}).map(([prio, d]) => (
+              <div key={prio} className="surface-panel p-5">
+                <h3 className="font-display text-lg font-bold">{PRIORITY_META[prio]?.label ?? prio}</h3>
+                <div className="mt-3 grid grid-cols-2 gap-2">
+                  <DepartmentStat label="Total" value={d.total} />
+                  <DepartmentStat label="Assessed" value={d.withAssessment} />
+                  <DepartmentStat label="Auto-classified" value={d.autoClassified} />
+                  <DepartmentStat label="Avg triage time" value={`${d.avgTriageTimeMinutes}m`} />
+                </div>
+                <div className="mt-3 flex flex-wrap gap-2 text-[10px]">
+                  <span className="rounded-full bg-priority-green/15 px-2 py-0.5 font-bold text-priority-green">Completed: {d.outcomes.completed}</span>
+                  <span className="rounded-full bg-priority-yellow/15 px-2 py-0.5 font-bold text-priority-yellow">Missed: {d.outcomes.missed}</span>
+                  <span className="rounded-full bg-blue-500/15 px-2 py-0.5 font-bold text-blue-600 dark:text-blue-300">In service: {d.outcomes.inService}</span>
+                </div>
+                {d.emergencyTriggers.length > 0 && (
+                  <div className="mt-3 text-xs text-muted-foreground">
+                    Emergency triggers: {d.emergencyTriggers.map((t) => t.field ?? t).join(", ")}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </QueryBoundary>
+      )}
+
+      {activeReport === "lab-turnaround" && (
+        <QueryBoundary query={labTurnaroundQuery} title="Loading lab turnaround report">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <MetricTile label="Total orders" value={labTurnaroundQuery.data?.overall?.totalOrders ?? 0} detail="In selected period" icon={FlaskConical} />
+            <MetricTile label="Completed" value={labTurnaroundQuery.data?.overall?.completed ?? 0} detail="Results ready" icon={CheckCircle2} />
+            <MetricTile label="Avg turnaround" value={`${labTurnaroundQuery.data?.overall?.avgTurnaroundMinutes ?? 0}m`} detail="Order to result" icon={Timer} />
+            <MetricTile label="Pending" value={labTurnaroundQuery.data?.overall?.pending ?? 0} detail="Awaiting results" icon={Clock3} />
+          </div>
+          <div className="mt-4 surface-panel p-4">
+            <h3 className="font-display text-lg font-bold">By Test Type</h3>
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border/70 text-left text-xs uppercase tracking-wider text-muted-foreground">
+                    <th className="pb-2 pr-4">Test Type</th>
+                    <th className="pb-2 pr-4">Total</th>
+                    <th className="pb-2 pr-4">Completed</th>
+                    <th className="pb-2 pr-4">Avg Turnaround</th>
+                    <th className="pb-2 pr-4">Avg Sample→Result</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(labTurnaroundQuery.data?.byTestType ?? {}).map(([type, t]) => (
+                    <tr key={type} className="border-b border-border/40">
+                      <td className="py-2 pr-4 font-medium">{type}</td>
+                      <td className="py-2 pr-4">{t.total}</td>
+                      <td className="py-2 pr-4">{t.completed}</td>
+                      <td className="py-2 pr-4">{t.avgTurnaroundMinutes}m</td>
+                      <td className="py-2 pr-4">{t.avgSampleToResultMinutes}m</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {labTurnaroundQuery.data?.pendingDetails?.length > 0 && (
+            <div className="mt-4 surface-panel p-4">
+              <h3 className="font-display text-lg font-bold">Pending Orders</h3>
+              <div className="mt-3 space-y-2">
+                {labTurnaroundQuery.data.pendingDetails.map((o) => (
+                  <div key={o.id} className="flex items-center justify-between rounded-lg border border-border/70 bg-background/70 px-4 py-2.5">
+                    <div>
+                      <span className="font-semibold">{o.ticketCode}</span>
+                      <span className="ml-2 text-muted-foreground">{o.testType}</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-xs">
+                      <span className="rounded-full bg-amber-500/15 px-2 py-0.5 font-semibold text-amber-600 dark:text-amber-300">{o.state}</span>
+                      <span className="text-muted-foreground">{o.waitingMinutes}m waiting</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </QueryBoundary>
+      )}
+
+      {activeReport === "staff-workload" && (
+        <QueryBoundary query={staffWorkloadQuery} title="Loading staff workload report">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <MetricTile label="Total staff" value={staffWorkloadQuery.data?.overall?.totalStaff ?? 0} detail="Active in period" icon={Users} />
+            <MetricTile label="Total actions" value={staffWorkloadQuery.data?.overall?.totalActions ?? 0} detail="All activities" icon={Activity} />
+            <MetricTile label="Triage actions" value={staffWorkloadQuery.data?.overall?.totalTriage ?? 0} detail="Assessments completed" icon={Stethoscope} />
+            <MetricTile label="Completed visits" value={staffWorkloadQuery.data?.overall?.totalCompleted ?? 0} detail="Patients processed" icon={CheckCircle2} />
+          </div>
+          <div className="mt-4 surface-panel p-4">
+            <h3 className="font-display text-lg font-bold">By Staff Member</h3>
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border/70 text-left text-xs uppercase tracking-wider text-muted-foreground">
+                    <th className="pb-2 pr-4">Staff Name</th>
+                    <th className="pb-2 pr-4">Triaged</th>
+                    <th className="pb-2 pr-4">Called</th>
+                    <th className="pb-2 pr-4">Completed</th>
+                    <th className="pb-2 pr-4">Transfers</th>
+                    <th className="pb-2 pr-4">Rx Created</th>
+                    <th className="pb-2 pr-4">Tests Ordered</th>
+                    <th className="pb-2 pr-4">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(staffWorkloadQuery.data?.byStaff ?? []).map((s) => (
+                    <tr key={s.staffName} className="border-b border-border/40">
+                      <td className="py-2 pr-4 font-medium">{s.staffName}</td>
+                      <td className="py-2 pr-4">{s.triaged}</td>
+                      <td className="py-2 pr-4">{s.called}</td>
+                      <td className="py-2 pr-4">{s.completed}</td>
+                      <td className="py-2 pr-4">{s.transferred}</td>
+                      <td className="py-2 pr-4">{s.prescriptionsCreated}</td>
+                      <td className="py-2 pr-4">{s.testOrdersCreated}</td>
+                      <td className="py-2 pr-4 font-bold">{s.totalActions}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </QueryBoundary>
+      )}
+
+      {activeReport === "out-of-stock" && (
+        <QueryBoundary query={outOfStockQuery} title="Loading out-of-stock report">
+          <div className="grid gap-4 sm:grid-cols-3">
+            <MetricTile label="Total items" value={outOfStockQuery.data?.overall?.totalItems ?? 0} detail="Unique prescribed items" icon={Pill} />
+            <MetricTile label="Out of stock" value={outOfStockQuery.data?.overall?.outOfStockCount ?? 0} detail="Currently unavailable" icon={AlertTriangle} />
+            <MetricTile label="Affected Rx" value={outOfStockQuery.data?.overall?.affectedPendingPrescriptions ?? 0} detail="Pending prescriptions impacted" icon={FileText} />
+          </div>
+          {(outOfStockQuery.data?.outOfStock ?? []).length > 0 && (
+            <div className="mt-4 surface-panel p-4">
+              <h3 className="font-display text-lg font-bold text-destructive">Out-of-Stock Items</h3>
+              <div className="mt-3 space-y-2">
+                {outOfStockQuery.data.outOfStock.map((item) => (
+                  <div key={item.name} className="flex items-center justify-between rounded-lg border border-destructive/30 bg-destructive/5 px-4 py-3">
+                    <div>
+                      <span className="font-semibold">{item.name}</span>
+                      <span className="ml-2 text-xs text-muted-foreground">
+                        {item.pendingCount} pending · {item.totalPrescribed} total prescribed
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {item.affectedTickets.map((t) => (
+                        <span key={t} className="rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-mono">{t}</span>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {(outOfStockQuery.data?.outOfStock ?? []).length === 0 && (
+            <div className="mt-4 surface-panel p-6 text-center">
+              <CheckCircle2 className="mx-auto h-8 w-8 text-priority-green" />
+              <p className="mt-2 text-sm text-muted-foreground">No out-of-stock items. All prescribed medications are available.</p>
+            </div>
+          )}
+        </QueryBoundary>
+      )}
+
+      {activeReport === "peak-hours" && (
+        <QueryBoundary query={peakHoursQuery} title="Loading peak hours report">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <MetricTile label="Total tickets" value={peakHoursQuery.data?.totalTickets ?? 0} detail="In selected period" icon={Users} />
+            {(peakHoursQuery.data?.peakHours ?? []).slice(0, 3).map((h) => (
+              <MetricTile key={h.hour} label={`Peak at ${h.hour}:00`} value={h.registrations} detail="Registrations" icon={TrendingUp} />
+            ))}
+          </div>
+          <div className="mt-4 surface-panel p-4">
+            <h3 className="font-display text-lg font-bold">Hourly Distribution</h3>
+            <div className="mt-3 flex items-end gap-1" style={{ height: 180 }}>
+              {(peakHoursQuery.data?.hourly ?? []).map((h) => {
+                const maxReg = Math.max(1, ...(peakHoursQuery.data?.hourly ?? []).map((x) => x.registrations));
+                const heightPct = Math.max(2, Math.round((h.registrations / maxReg) * 100));
+                return (
+                  <div key={h.hour} className="flex flex-1 flex-col items-center justify-end" title={`${h.hour}:00 — ${h.registrations} registrations`}>
+                    <div className="w-full rounded-t bg-primary/70" style={{ height: `${heightPct}%` }} />
+                    <span className="mt-1 text-[9px] text-muted-foreground">{h.hour}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          {(peakHoursQuery.data?.peakHours ?? []).length > 0 && (
+            <div className="mt-4 surface-panel p-4">
+              <h3 className="font-display text-lg font-bold">Top Peak Hours</h3>
+              <div className="mt-3 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border/70 text-left text-xs uppercase tracking-wider text-muted-foreground">
+                      <th className="pb-2 pr-4">Hour</th>
+                      <th className="pb-2 pr-4">Registrations</th>
+                      <th className="pb-2 pr-4">Completions</th>
+                      <th className="pb-2 pr-4">Missed</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {peakHoursQuery.data.peakHours.map((h) => (
+                      <tr key={h.hour} className="border-b border-border/40">
+                        <td className="py-2 pr-4 font-medium">{h.hour}:00</td>
+                        <td className="py-2 pr-4">{h.registrations}</td>
+                        <td className="py-2 pr-4">{h.completions}</td>
+                        <td className="py-2 pr-4">{h.missed}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </QueryBoundary>
+      )}
+
+      {activeReport === "congestion" && (
+        <QueryBoundary query={congestionQuery} title="Loading congestion report">
+          {(congestionQuery.data?.congestedDepartments ?? []).length > 0 && (
+            <div className="mb-4 rounded-xl border border-destructive/30 bg-destructive/10 p-4">
+              <div className="flex items-center gap-2 font-semibold text-destructive">
+                <AlertTriangle className="h-4 w-4" />
+                {congestionQuery.data.congestedDepartments.length} congested department(s) detected
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {congestionQuery.data.congestedDepartments.map((d) => (
+                  <span key={d.department} className={`rounded-full px-3 py-1 text-xs font-bold ${
+                    d.congestionLevel === "critical" ? "bg-destructive/20 text-destructive" : "bg-amber-500/15 text-amber-600 dark:text-amber-300"
+                  }`}>
+                    {d.department} — {d.congestionLevel} ({d.utilization}%)
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          <div className="surface-panel p-4">
+            <h3 className="font-display text-lg font-bold">Department Congestion</h3>
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border/70 text-left text-xs uppercase tracking-wider text-muted-foreground">
+                    <th className="pb-2 pr-4">Department</th>
+                    <th className="pb-2 pr-4">Waiting</th>
+                    <th className="pb-2 pr-4">In Service</th>
+                    <th className="pb-2 pr-4">Avg Wait</th>
+                    <th className="pb-2 pr-4">Utilization</th>
+                    <th className="pb-2 pr-4">Level</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(congestionQuery.data?.byDept ?? {}).map(([dept, d]) => (
+                    <tr key={dept} className="border-b border-border/40">
+                      <td className="py-2 pr-4 font-medium">{dept}</td>
+                      <td className="py-2 pr-4">{d.waiting}</td>
+                      <td className="py-2 pr-4">{d.inService}</td>
+                      <td className="py-2 pr-4">{d.avgWaitMinutes}m</td>
+                      <td className="py-2 pr-4">
+                        <div className="flex items-center gap-2">
+                          <div className="h-2 w-20 rounded-full bg-border/50">
+                            <div className={`h-2 rounded-full ${d.congestionLevel === "critical" ? "bg-destructive" : d.congestionLevel === "high" ? "bg-amber-500" : d.congestionLevel === "moderate" ? "bg-blue-500" : "bg-priority-green"}`} style={{ width: `${d.utilization}%` }} />
+                          </div>
+                          <span className="text-xs">{d.utilization}%</span>
+                        </div>
+                      </td>
+                      <td className="py-2 pr-4">
+                        <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                          d.congestionLevel === "critical" ? "bg-destructive/15 text-destructive" :
+                          d.congestionLevel === "high" ? "bg-amber-500/15 text-amber-600 dark:text-amber-300" :
+                          d.congestionLevel === "moderate" ? "bg-blue-500/15 text-blue-600 dark:text-blue-300" :
+                          "bg-priority-green/15 text-priority-green"
+                        }`}>
+                          {d.congestionLevel}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </QueryBoundary>
+      )}
+
+      {activeReport === "resource-allocation" && (
+        <QueryBoundary query={resourceAllocationQuery} title="Loading resource allocation report">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <MetricTile label="Total tickets" value={resourceAllocationQuery.data?.overall?.totalTickets ?? 0} detail="In selected period" icon={Users} />
+            <MetricTile label="Prescriptions" value={resourceAllocationQuery.data?.overall?.totalPrescriptions ?? 0} detail="Total Rx" icon={Pill} />
+            <MetricTile label="Test orders" value={resourceAllocationQuery.data?.overall?.totalTestOrders ?? 0} detail="Total lab orders" icon={FlaskConical} />
+            <MetricTile label="Est. staff needed" value={resourceAllocationQuery.data?.overall?.totalStaffNeeded ?? 0} detail="Across all depts" icon={Stethoscope} />
+          </div>
+          <div className="mt-4 surface-panel p-4">
+            <h3 className="font-display text-lg font-bold">Department Resource Allocation</h3>
+            <div className="mt-3 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border/70 text-left text-xs uppercase tracking-wider text-muted-foreground">
+                    <th className="pb-2 pr-4">Department</th>
+                    <th className="pb-2 pr-4">Active</th>
+                    <th className="pb-2 pr-4">Completed</th>
+                    <th className="pb-2 pr-4">Avg Service</th>
+                    <th className="pb-2 pr-4">Est. Staff</th>
+                    <th className="pb-2 pr-4">Throughput</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(resourceAllocationQuery.data?.byDept ?? {}).map(([dept, d]) => (
+                    <tr key={dept} className="border-b border-border/40">
+                      <td className="py-2 pr-4 font-medium">{dept}</td>
+                      <td className="py-2 pr-4">{d.active}</td>
+                      <td className="py-2 pr-4">{d.completed}</td>
+                      <td className="py-2 pr-4">{d.avgServiceMinutes}m</td>
+                      <td className="py-2 pr-4 font-bold">{d.estimatedStaffNeeded}</td>
+                      <td className="py-2 pr-4">{d.throughput}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <div className="surface-panel p-4">
+              <h3 className="font-display text-lg font-bold">Pharmacy Load</h3>
+              <div className="mt-3 space-y-2">
+                {Object.entries(resourceAllocationQuery.data?.pharmacyLoad ?? {}).map(([dept, d]) => (
+                  <div key={dept} className="flex items-center justify-between rounded-lg border border-border/70 bg-background/70 px-4 py-2.5">
+                    <span className="font-medium">{dept}</span>
+                    <div className="flex gap-3 text-xs">
+                      <span className="text-amber-600 dark:text-amber-300">{d.pending} pending</span>
+                      <span className="text-blue-600 dark:text-blue-300">{d.ready} ready</span>
+                      <span className="text-priority-green">{d.collected} collected</span>
+                    </div>
+                  </div>
+                ))}
+                {Object.keys(resourceAllocationQuery.data?.pharmacyLoad ?? {}).length === 0 && (
+                  <p className="text-sm text-muted-foreground">No prescription data available.</p>
+                )}
+              </div>
+            </div>
+            <div className="surface-panel p-4">
+              <h3 className="font-display text-lg font-bold">Lab Load</h3>
+              <div className="mt-3 space-y-2">
+                {Object.entries(resourceAllocationQuery.data?.labLoad ?? {}).map(([type, d]) => (
+                  <div key={type} className="flex items-center justify-between rounded-lg border border-border/70 bg-background/70 px-4 py-2.5">
+                    <span className="font-medium">{type}</span>
+                    <div className="flex gap-3 text-xs">
+                      <span className="text-amber-600 dark:text-amber-300">{d.pending} pending</span>
+                      <span className="text-priority-green">{d.completed} completed</span>
+                    </div>
+                  </div>
+                ))}
+                {Object.keys(resourceAllocationQuery.data?.labLoad ?? {}).length === 0 && (
+                  <p className="text-sm text-muted-foreground">No test order data available.</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </QueryBoundary>
+      )}
+
+      {activeReport === "whatsapp" && (
+        <QueryBoundary query={whatsAppQuery} title="Loading WhatsApp status">
+          <div className="surface-panel p-6">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <h2 className="font-display text-2xl font-bold">WhatsApp Configuration</h2>
+              {whatsAppQuery.data?.readinessLevel && (
+                <span className={`rounded-full px-3 py-1.5 text-xs font-bold ${
+                  whatsAppQuery.data.readinessLevel === "production-ready" ? "bg-priority-green/15 text-priority-green" :
+                  whatsAppQuery.data.readinessLevel === "credentials-missing" ? "bg-destructive/15 text-destructive" :
+                  whatsAppQuery.data.readinessLevel === "mock-ready" ? "bg-blue-500/15 text-blue-600 dark:text-blue-300" :
+                  "bg-amber-500/15 text-amber-600 dark:text-amber-300"
+                }`}>
+                  {whatsAppQuery.data.readinessLevel.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                </span>
+              )}
+            </div>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="rounded-xl border border-border/70 bg-background/70 p-4">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Provider</div>
+                <div className="mt-2 font-display text-xl font-bold">{whatsAppQuery.data?.provider ?? "—"}</div>
+              </div>
+              <div className="rounded-xl border border-border/70 bg-background/70 p-4">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">API Version</div>
+                <div className="mt-2 font-display text-xl font-bold">{whatsAppQuery.data?.apiVersion ?? "—"}</div>
+              </div>
+              <div className="rounded-xl border border-border/70 bg-background/70 p-4">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Language</div>
+                <div className="mt-2 font-display text-xl font-bold">{whatsAppQuery.data?.language ?? "—"}</div>
+              </div>
+              <div className="rounded-xl border border-border/70 bg-background/70 p-4">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Configured</div>
+                <div className="mt-2 font-display text-xl font-bold">
+                  {whatsAppQuery.data?.configured ? (
+                    <span className="text-priority-green">✓ Ready</span>
+                  ) : (
+                    <span className="text-destructive">✗ Missing credentials</span>
+                  )}
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <WhatsAppCheckItem label="Access token" configured={whatsAppQuery.data?.hasAccessToken} />
+              <WhatsAppCheckItem label="Phone number ID" configured={whatsAppQuery.data?.hasPhoneNumberId} />
+              <WhatsAppCheckItem label="App secret" configured={whatsAppQuery.data?.hasAppSecret} />
+              <WhatsAppCheckItem label="Webhook verify token" configured={whatsAppQuery.data?.hasWebhookVerifyToken} />
+              <WhatsAppCheckItem label="Template: Queue registered" configured={whatsAppQuery.data?.templatesConfigured?.queueRegistered} />
+              <WhatsAppCheckItem label="Template: Queue ready soon" configured={whatsAppQuery.data?.templatesConfigured?.queueReadySoon} />
+              <WhatsAppCheckItem label="Template: Queue called" configured={whatsAppQuery.data?.templatesConfigured?.queueCalled} />
+            </div>
+
+            {whatsAppQuery.data?.webhookUrl && (
+              <div className="mt-4 rounded-xl border border-border/70 bg-background/70 p-4">
+                <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Webhook URL</div>
+                <div className="mt-2 break-all font-mono text-xs text-muted-foreground">{whatsAppQuery.data.webhookUrl}</div>
+              </div>
+            )}
+
+            {whatsAppQuery.data?.checklist && (
+              <div className="mt-5">
+                <h3 className="font-display text-lg font-bold">Setup checklist</h3>
+                <div className="mt-3 space-y-2">
+                  {whatsAppQuery.data.checklist.map((item, idx) => (
+                    <div key={idx} className="flex items-center gap-3 rounded-lg border border-border/70 bg-background/70 px-4 py-2.5">
+                      {item.done ? (
+                        <CheckCircle2 className="h-4 w-4 shrink-0 text-priority-green" />
+                      ) : item.severity === "error" ? (
+                        <XCircle className="h-4 w-4 shrink-0 text-destructive" />
+                      ) : (
+                        <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
+                      )}
+                      <span className={`text-xs ${item.done ? "text-muted-foreground line-through" : "font-medium text-foreground"}`}>
+                        {item.item}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {whatsAppQuery.data?.missingRequired?.length > 0 && (
+              <div className="mt-5 rounded-xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+                <div className="font-semibold">Missing required environment variables:</div>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {whatsAppQuery.data.missingRequired.map((v) => (
+                    <span key={v} className="rounded-full bg-destructive/15 px-2.5 py-1 text-xs font-mono">{v}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {whatsAppQuery.data && !whatsAppQuery.data.configured && (
+              <div className="mt-5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-sm text-amber-700 dark:text-amber-300">
+                To enable live WhatsApp delivery, set WHATSAPP_PROVIDER=meta-cloud, WHATSAPP_ACCESS_TOKEN, and WHATSAPP_PHONE_NUMBER_ID in your .env file.
+              </div>
+            )}
+          </div>
+        </QueryBoundary>
+      )}
     </ModulePage>
+  );
+}
+
+function WhatsAppCheckItem({ label, configured }) {
+  return (
+    <div className="flex items-center justify-between rounded-lg border border-border/70 bg-background/70 px-3 py-2">
+      <span className="text-xs font-medium">{label}</span>
+      {configured ? (
+        <CheckCircle2 className="h-4 w-4 text-priority-green" />
+      ) : (
+        <XCircle className="h-4 w-4 text-destructive" />
+      )}
+    </div>
   );
 }
 
@@ -550,5 +2066,1082 @@ function EmptyMessage({ children }) {
     <div className="rounded-xl border border-dashed border-border bg-background/60 px-4 py-6 text-center text-sm text-muted-foreground">
       {children}
     </div>
+  );
+}
+
+const PRESCRIPTION_COLUMNS = [
+  { state: "prescribed", label: "Prescribed", color: "bg-blue-500/10 border-blue-500/30", badge: "bg-blue-500/15 text-blue-700 dark:text-blue-300" },
+  { state: "dispensing", label: "Dispensing", color: "bg-amber-500/10 border-amber-500/30", badge: "bg-amber-500/15 text-amber-700 dark:text-amber-300" },
+  { state: "ready", label: "Ready for Collection", color: "bg-emerald-500/10 border-emerald-500/30", badge: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" },
+  { state: "collected", label: "Collected", color: "bg-zinc-500/10 border-zinc-500/30", badge: "bg-zinc-500/15 text-zinc-600 dark:text-zinc-400" },
+];
+
+const NEXT_STATE_MAP = {
+  prescribed: "dispensing",
+  dispensing: "ready",
+  ready: "collected",
+};
+
+export function PharmacyPage() {
+  const { refreshToken } = useLiveRefresh();
+  const [search, setSearch] = useState("");
+  const [advancing, setAdvancing] = useState(null);
+  const [flagging, setFlagging] = useState(null);
+
+  const summaryLoader = useCallback(() => fetchPrescriptionSummary(), []);
+  const summaryQuery = useApiResource(summaryLoader, { enabled: isBrowser });
+
+  const stockSummaryLoader = useCallback(() => fetchStockSummary(), []);
+  const stockSummaryQuery = useApiResource(stockSummaryLoader, { enabled: isBrowser, refreshToken });
+
+  const prescriptionsLoader = useCallback(() => fetchPrescriptionsWithStock(), []);
+  const prescriptionsQuery = useApiResource(prescriptionsLoader, {
+    enabled: isBrowser,
+    refreshToken,
+  });
+
+  const advanceState = useApiAction(updatePrescriptionState);
+
+  const prescriptions = prescriptionsQuery.data ?? [];
+  const summary = summaryQuery.data;
+  const stockSummary = stockSummaryQuery.data;
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return prescriptions;
+    const q = search.toLowerCase();
+    return prescriptions.filter(
+      (p) =>
+        p.ticketCode?.toLowerCase().includes(q) ||
+        p.patientName?.toLowerCase().includes(q),
+    );
+  }, [prescriptions, search]);
+
+  const byState = useMemo(() => {
+    const map = {};
+    for (const col of PRESCRIPTION_COLUMNS) {
+      map[col.state] = filtered.filter((p) => p.state === col.state);
+    }
+    return map;
+  }, [filtered]);
+
+  async function handleAdvance(prescription) {
+    const next = NEXT_STATE_MAP[prescription.state];
+    if (!next) return;
+    setAdvancing(prescription.id);
+    try {
+      await advanceState.mutate(prescription.id, next);
+      prescriptionsQuery.refetch();
+      summaryQuery.refetch();
+    } finally {
+      setAdvancing(null);
+    }
+  }
+
+  async function handleStockFlag(prescription, item, inStock) {
+    setFlagging(item.id);
+    try {
+      await flagPrescriptionItem(prescription.id, item.id, inStock);
+      prescriptionsQuery.refetch();
+      stockSummaryQuery.refetch();
+    } finally {
+      setFlagging(null);
+    }
+  }
+
+  if (prescriptionsQuery.loading && !prescriptionsQuery.data) {
+    return <LoadingPanel label="Loading prescriptions…" />;
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Pharmacy</h1>
+          <p className="text-sm text-muted-foreground">
+            Manage prescriptions from prescribed to collection
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search ticket or patient…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-9 w-56 rounded-lg border border-input bg-background pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <button
+            onClick={() => {
+              prescriptionsQuery.refetch();
+              summaryQuery.refetch();
+            }}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-input bg-background px-3 text-sm font-medium hover:bg-accent"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {summary && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {PRESCRIPTION_COLUMNS.map((col) => (
+            <div
+              key={col.state}
+              className={`rounded-xl border p-4 ${col.color}`}
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {col.label}
+              </p>
+              <p className="mt-1 text-2xl font-bold">
+                {summary.byState?.[col.state] ?? 0}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {stockSummary && stockSummary.outOfStockCount > 0 && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+            <span className="text-sm font-semibold text-destructive">
+              {stockSummary.outOfStockCount} medication(s) out of stock
+            </span>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {stockSummary.outOfStockItems.map((item) => (
+              <span key={item.id} className="rounded-full bg-destructive/15 px-2.5 py-1 text-xs font-medium text-destructive">
+                {item.drugName}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+        {PRESCRIPTION_COLUMNS.map((col) => (
+          <div key={col.state} className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span
+                className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${col.badge}`}
+              >
+                {col.label}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {byState[col.state]?.length ?? 0}
+              </span>
+            </div>
+            <div className="space-y-2">
+              {byState[col.state]?.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
+                  No prescriptions
+                </div>
+              ) : (
+                byState[col.state].map((rx) => (
+                  <PrescriptionCard
+                    key={rx.id}
+                    prescription={rx}
+                    canAdvance={!!NEXT_STATE_MAP[rx.state]}
+                    onAdvance={() => handleAdvance(rx)}
+                    advancing={advancing === rx.id}
+                    onStockFlag={handleStockFlag}
+                    flagging={flagging}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PrescriptionCard({ prescription, canAdvance, onAdvance, advancing, onStockFlag, flagging }) {
+  const hasOutOfStock = prescription.hasOutOfStockItems || (prescription.items ?? []).some((i) => i.inStock === false);
+  return (
+    <div className={`rounded-lg border bg-card p-3 shadow-sm ${hasOutOfStock ? "border-destructive/40" : "border-border"}`}>
+      <div className="flex items-center justify-between">
+        <span className="font-mono text-sm font-bold">{prescription.ticketCode}</span>
+        <div className="flex items-center gap-1.5">
+          {hasOutOfStock && (
+            <span className="rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-bold text-destructive">
+              STOCK ISSUE
+            </span>
+          )}
+          <Pill className="h-4 w-4 text-muted-foreground" />
+        </div>
+      </div>
+      <p className="mt-1 text-sm font-medium">{prescription.patientName}</p>
+      <p className="text-xs text-muted-foreground">{prescription.department}</p>
+
+      {prescription.items?.length > 0 && (
+        <ul className="mt-2 space-y-1.5">
+          {prescription.items.map((item) => (
+            <li key={item.id} className="flex items-center justify-between text-xs">
+              <div className="min-w-0">
+                <span className={`font-medium ${item.inStock === false ? "text-destructive" : ""}`}>
+                  {item.drugName}
+                </span>
+                {" — "}
+                <span className="text-muted-foreground">{item.dosage}</span>
+                {item.quantity && (
+                  <span className="text-muted-foreground"> ({item.quantity})</span>
+                )}
+                {item.stockNotes && (
+                  <span className="block text-[10px] italic text-destructive">{item.stockNotes}</span>
+                )}
+              </div>
+              {onStockFlag && (
+                <button
+                  onClick={() => onStockFlag(prescription, item, item.inStock !== false ? false : true)}
+                  disabled={flagging === item.id}
+                  className={`ml-2 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold transition-colors ${
+                    item.inStock === false
+                      ? "bg-priority-green/15 text-priority-green hover:bg-priority-green/25"
+                      : "bg-destructive/10 text-destructive hover:bg-destructive/20"
+                  }`}
+                  title={item.inStock === false ? "Mark in stock" : "Flag as out of stock"}
+                >
+                  {flagging === item.id ? (
+                    <LoaderCircle className="h-3 w-3 animate-spin" />
+                  ) : item.inStock === false ? (
+                    "In Stock"
+                  ) : (
+                    "Out of Stock"
+                  )}
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {prescription.notes && (
+        <p className="mt-2 text-xs italic text-muted-foreground">
+          "{prescription.notes}"
+        </p>
+      )}
+
+      {prescription.prescribedBy && (
+        <p className="mt-2 text-[10px] text-muted-foreground">
+          Prescribed by {prescription.prescribedBy.name}
+        </p>
+      )}
+
+      {canAdvance && (
+        <button
+          onClick={onAdvance}
+          disabled={advancing}
+          className="mt-2 inline-flex h-7 w-full items-center justify-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+        >
+          {advancing ? (
+            <LoaderCircle className="h-3 w-3 animate-spin" />
+          ) : (
+            <>
+              <CheckCircle2 className="h-3 w-3" />
+              Advance to {NEXT_STATE_MAP[prescription.state]}
+            </>
+          )}
+        </button>
+      )}
+    </div>
+  );
+}
+
+const TEST_ORDER_COLUMNS = [
+  { state: "ordered", label: "Ordered", color: "bg-blue-500/10 border-blue-500/30", badge: "bg-blue-500/15 text-blue-700 dark:text-blue-300" },
+  { state: "sample-collected", label: "Sample Collected", color: "bg-cyan-500/10 border-cyan-500/30", badge: "bg-cyan-500/15 text-cyan-700 dark:text-cyan-300" },
+  { state: "in-progress", label: "In Progress", color: "bg-amber-500/10 border-amber-500/30", badge: "bg-amber-500/15 text-amber-700 dark:text-amber-300" },
+  { state: "completed", label: "Completed", color: "bg-violet-500/10 border-violet-500/30", badge: "bg-violet-500/15 text-violet-700 dark:text-violet-300" },
+  { state: "result-ready", label: "Result Ready", color: "bg-emerald-500/10 border-emerald-500/30", badge: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" },
+];
+
+const TEST_NEXT_STATE = {
+  ordered: "sample-collected",
+  "sample-collected": "in-progress",
+  "in-progress": "completed",
+  completed: "result-ready",
+};
+
+const TEST_TYPE_LABELS = {
+  "blood-count": "Full Blood Count",
+  "urinalysis": "Urinalysis",
+  "blood-glucose": "Blood Glucose",
+  "malaria-smear": "Malaria Smear",
+  "hiv-test": "HIV Test",
+  "tb-sputum": "TB Sputum",
+  "x-ray-chest": "Chest X-Ray",
+  "ultrasound": "Ultrasound",
+  "ct-scan": "CT Scan",
+  "other": "Other",
+};
+
+export function LabPage() {
+  const { refreshToken } = useLiveRefresh();
+  const [search, setSearch] = useState("");
+  const [advancing, setAdvancing] = useState(null);
+
+  const summaryLoader = useCallback(() => fetchTestOrderSummary(), []);
+  const summaryQuery = useApiResource(summaryLoader, { enabled: isBrowser });
+
+  const ordersLoader = useCallback(() => fetchTestOrders(), []);
+  const ordersQuery = useApiResource(ordersLoader, { enabled: isBrowser, refreshToken });
+
+  const advanceState = useApiAction(updateTestOrderState);
+
+  const orders = ordersQuery.data ?? [];
+  const summary = summaryQuery.data;
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return orders;
+    const q = search.toLowerCase();
+    return orders.filter(
+      (o) =>
+        o.ticketCode?.toLowerCase().includes(q) ||
+        o.patientName?.toLowerCase().includes(q) ||
+        TEST_TYPE_LABELS[o.testType]?.toLowerCase().includes(q),
+    );
+  }, [orders, search]);
+
+  const byState = useMemo(() => {
+    const map = {};
+    for (const col of TEST_ORDER_COLUMNS) {
+      map[col.state] = filtered.filter((o) => o.state === col.state);
+    }
+    return map;
+  }, [filtered]);
+
+  async function handleAdvance(order) {
+    const next = TEST_NEXT_STATE[order.state];
+    if (!next) return;
+    setAdvancing(order.id);
+    try {
+      await advanceState.mutate(order.id, next);
+      ordersQuery.refetch();
+      summaryQuery.refetch();
+    } finally {
+      setAdvancing(null);
+    }
+  }
+
+  if (ordersQuery.loading && !ordersQuery.data) {
+    return <LoadingPanel label="Loading test orders…" />;
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Laboratory &amp; Radiology</h1>
+          <p className="text-sm text-muted-foreground">
+            Track test orders from collection to result readiness
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search ticket, patient, test…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-9 w-64 rounded-lg border border-input bg-background pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <button
+            onClick={() => {
+              ordersQuery.refetch();
+              summaryQuery.refetch();
+            }}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-input bg-background px-3 text-sm font-medium hover:bg-accent"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Refresh
+          </button>
+        </div>
+      </div>
+
+      {summary && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          {TEST_ORDER_COLUMNS.map((col) => (
+            <div key={col.state} className={`rounded-xl border p-4 ${col.color}`}>
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {col.label}
+              </p>
+              <p className="mt-1 text-2xl font-bold">
+                {summary.byState?.[col.state] ?? 0}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {(byState["result-ready"]?.length ?? 0) > 0 && (
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+            <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+              {byState["result-ready"].length} result{byState["result-ready"].length !== 1 ? "s" : ""} ready for clinician review
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Patients have been notified via display board and WhatsApp to return for results.
+          </p>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+        {TEST_ORDER_COLUMNS.map((col) => (
+          <div key={col.state} className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span
+                className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${col.badge}`}
+              >
+                {col.label}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {byState[col.state]?.length ?? 0}
+              </span>
+            </div>
+            <div className="space-y-2">
+              {byState[col.state]?.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
+                  No orders
+                </div>
+              ) : (
+                byState[col.state].map((order) => (
+                  <TestOrderCard
+                    key={order.id}
+                    order={order}
+                    canAdvance={!!TEST_NEXT_STATE[order.state]}
+                    onAdvance={() => handleAdvance(order)}
+                    advancing={advancing === order.id}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TestOrderCard({ order, canAdvance, onAdvance, advancing }) {
+  const isResultReady = order.state === "result-ready";
+  return (
+    <div className={`rounded-lg border bg-card p-3 shadow-sm ${isResultReady ? "border-emerald-500/40 ring-1 ring-emerald-500/20" : "border-border"}`}>
+      <div className="flex items-center justify-between">
+        <span className="font-mono text-sm font-bold">{order.ticketCode}</span>
+        <FlaskConical className={`h-4 w-4 ${isResultReady ? "text-emerald-500" : "text-muted-foreground"}`} />
+      </div>
+      <p className="mt-1 text-sm font-medium">{order.patientName}</p>
+      <p className="text-xs font-medium text-primary">
+        {TEST_TYPE_LABELS[order.testType] ?? order.testType}
+      </p>
+      {order.priority && order.priority !== "routine" && (
+        <span className="mt-1 inline-block rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-700 dark:text-amber-300">
+          {order.priority}
+        </span>
+      )}
+      {order.notes && (
+        <p className="mt-1 text-xs italic text-muted-foreground">"{order.notes}"</p>
+      )}
+      {order.orderedBy && (
+        <p className="mt-2 text-[10px] text-muted-foreground">
+          Ordered by {order.orderedBy.name}
+        </p>
+      )}
+      {isResultReady && (
+        <div className="mt-2 rounded-md bg-emerald-500/10 px-2.5 py-2 text-xs">
+          <div className="flex items-center gap-1.5 font-semibold text-emerald-700 dark:text-emerald-300">
+            <CheckCircle2 className="h-3 w-3" />
+            Results ready
+          </div>
+          <p className="mt-0.5 text-muted-foreground">
+            Patient notified. Return to {order.orderingDepartment ?? "OPD"} for clinician review.
+          </p>
+        </div>
+      )}
+      {canAdvance && (
+        <button
+          onClick={onAdvance}
+          disabled={advancing}
+          className="mt-2 inline-flex h-7 w-full items-center justify-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+        >
+          {advancing ? (
+            <LoaderCircle className="h-3 w-3 animate-spin" />
+          ) : (
+            <>
+              <CheckCircle2 className="h-3 w-3" />
+              Advance to {TEST_NEXT_STATE[order.state]}
+            </>
+          )}
+        </button>
+      )}
+    </div>
+  );
+}
+
+const OI_STREAM_COLORS = {
+  waiting: "bg-blue-500/10 border-blue-500/30",
+  "in-session": "bg-amber-500/10 border-amber-500/30",
+  completed: "bg-emerald-500/10 border-emerald-500/30",
+  referred: "bg-purple-500/10 border-purple-500/30",
+};
+
+const OI_STREAM_BADGE = {
+  waiting: "bg-blue-500/15 text-blue-700 dark:text-blue-300",
+  "in-session": "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+  completed: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+  referred: "bg-purple-500/15 text-purple-700 dark:text-purple-300",
+};
+
+const OI_NEXT_STATE = {
+  waiting: "in-session",
+  "in-session": "completed",
+};
+
+export function OIClinicPage() {
+  const { refreshToken } = useLiveRefresh();
+  const [search, setSearch] = useState("");
+  const [advancing, setAdvancing] = useState(null);
+  const [selectedStream, setSelectedStream] = useState("all");
+  const [showVisitForm, setShowVisitForm] = useState(false);
+  const [visitForm, setVisitForm] = useState({ ticketCode: "", streamId: "", notes: "" });
+
+  const streamsLoader = useCallback(() => fetchOIClinicStreams(), []);
+  const streamsQuery = useApiResource(streamsLoader, { enabled: isBrowser });
+
+  const summaryLoader = useCallback(() => fetchOIClinicSummary(), []);
+  const summaryQuery = useApiResource(summaryLoader, { enabled: isBrowser, refreshToken });
+
+  const visitsLoader = useCallback(() => fetchOIClinicVisits(), []);
+  const visitsQuery = useApiResource(visitsLoader, { enabled: isBrowser, refreshToken });
+
+  const advanceState = useApiAction(updateOIClinicVisitState);
+  const createVisitMut = useApiAction(createOIClinicVisit, {
+    onSuccess: () => {
+      visitsQuery.refetch();
+      summaryQuery.refetch();
+      setShowVisitForm(false);
+      setVisitForm({ ticketCode: "", streamId: "", notes: "" });
+    },
+  });
+
+  const streams = streamsQuery.data?.streams ?? [];
+  const visits = visitsQuery.data ?? [];
+  const summary = summaryQuery.data;
+
+  function handleCreateVisit() {
+    if (!visitForm.ticketCode.trim() || !visitForm.streamId) return;
+    createVisitMut.mutate(visitForm.ticketCode.trim(), visitForm.streamId, visitForm.notes.trim());
+  }
+
+  const filtered = useMemo(() => {
+    let result = visits;
+    if (selectedStream !== "all") {
+      result = result.filter((v) => v.streamId === selectedStream);
+    }
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        (v) =>
+          v.ticketCode?.toLowerCase().includes(q) ||
+          v.patientName?.toLowerCase().includes(q),
+      );
+    }
+    return result;
+  }, [visits, search, selectedStream]);
+
+  const byState = useMemo(() => {
+    const states = ["waiting", "in-session", "completed", "referred"];
+    const map = {};
+    for (const state of states) {
+      map[state] = filtered.filter((v) => v.state === state);
+    }
+    return map;
+  }, [filtered]);
+
+  async function handleAdvance(visit) {
+    const next = OI_NEXT_STATE[visit.state];
+    if (!next) return;
+    setAdvancing(visit.id);
+    try {
+      await advanceState.mutate(visit.id, next);
+      visitsQuery.refetch();
+      summaryQuery.refetch();
+    } finally {
+      setAdvancing(null);
+    }
+  }
+
+  async function handleRefer(visit) {
+    setAdvancing(visit.id);
+    try {
+      await advanceState.mutate(visit.id, "referred", { referredTo: "OPD" });
+      visitsQuery.refetch();
+      summaryQuery.refetch();
+    } finally {
+      setAdvancing(null);
+    }
+  }
+
+  if (visitsQuery.loading && !visitsQuery.data) {
+    return <LoadingPanel label="Loading OI Clinic visits…" />;
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">OI Clinic</h1>
+          <p className="text-sm text-muted-foreground">
+            Manage ART, TB, viral load, counselling, and screening service streams
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <select
+            value={selectedStream}
+            onChange={(e) => setSelectedStream(e.target.value)}
+            className="h-9 rounded-lg border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="all">All streams</option>
+            {streams.map((s) => (
+              <option key={s.id} value={s.id}>{s.label}</option>
+            ))}
+          </select>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search ticket or patient…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="h-9 w-56 rounded-lg border border-input bg-background pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <button
+            onClick={() => {
+              visitsQuery.refetch();
+              summaryQuery.refetch();
+            }}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-input bg-background px-3 text-sm font-medium hover:bg-accent"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Refresh
+          </button>
+          <button
+            onClick={() => setShowVisitForm((v) => !v)}
+            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4" />
+            New visit
+          </button>
+        </div>
+      </div>
+
+      {showVisitForm && (
+        <div className="surface-panel p-5">
+          <div className="flex items-center justify-between">
+            <h3 className="font-display text-lg font-bold">Create OI Clinic visit</h3>
+            <button
+              type="button"
+              onClick={() => setShowVisitForm(false)}
+              className="rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-accent"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ticket code</label>
+              <input
+                type="text"
+                placeholder="e.g. OPD-001"
+                value={visitForm.ticketCode}
+                onChange={(e) => setVisitForm((p) => ({ ...p, ticketCode: e.target.value }))}
+                className="input-base h-9 text-sm"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Service stream</label>
+              <select
+                value={visitForm.streamId}
+                onChange={(e) => setVisitForm((p) => ({ ...p, streamId: e.target.value }))}
+                className="input-base h-9 text-sm"
+              >
+                <option value="">Select stream…</option>
+                {streams.map((s) => (
+                  <option key={s.id} value={s.id}>{s.label}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notes</label>
+              <input
+                type="text"
+                placeholder="Optional notes"
+                value={visitForm.notes}
+                onChange={(e) => setVisitForm((p) => ({ ...p, notes: e.target.value }))}
+                className="input-base h-9 text-sm"
+              />
+            </div>
+          </div>
+          {createVisitMut.isError && (
+            <p className="mt-3 text-xs text-destructive">{createVisitMut.error.message}</p>
+          )}
+          <div className="mt-4 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleCreateVisit}
+              disabled={createVisitMut.isPending || !visitForm.ticketCode.trim() || !visitForm.streamId}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              {createVisitMut.isPending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Stethoscope className="h-4 w-4" />}
+              Create visit
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowVisitForm(false)}
+              className="inline-flex h-9 items-center rounded-lg border border-border px-3 text-sm hover:bg-accent"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {summary && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {streams.map((stream) => (
+            <div
+              key={stream.id}
+              className="rounded-xl border border-border/70 bg-background/70 p-4"
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                {stream.label}
+              </p>
+              <div className="mt-1 flex items-baseline gap-2">
+                <p className="text-2xl font-bold">
+                  {summary.byStream?.[stream.id]?.total ?? 0}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  ({summary.byStream?.[stream.id]?.waiting ?? 0} waiting)
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
+        {Object.entries(byState).map(([state, stateVisits]) => (
+          <div key={state} className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span
+                className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${OI_STREAM_BADGE[state] ?? ""}`}
+              >
+                {state.replace(/-/g, " ")}
+              </span>
+              <span className="text-xs text-muted-foreground">
+                {stateVisits.length}
+              </span>
+            </div>
+            <div className="space-y-2">
+              {stateVisits.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
+                  No visits
+                </div>
+              ) : (
+                stateVisits.map((visit) => (
+                  <OIClinicVisitCard
+                    key={visit.id}
+                    visit={visit}
+                    streamLabel={streams.find((s) => s.id === visit.streamId)?.label ?? visit.streamLabel}
+                    canAdvance={!!OI_NEXT_STATE[visit.state]}
+                    canRefer={visit.state === "waiting" || visit.state === "in-session"}
+                    onAdvance={() => handleAdvance(visit)}
+                    onRefer={() => handleRefer(visit)}
+                    advancing={advancing === visit.id}
+                  />
+                ))
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function OIClinicVisitCard({ visit, streamLabel, canAdvance, canRefer, onAdvance, onRefer, advancing }) {
+  return (
+    <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
+      <div className="flex items-center justify-between">
+        <span className="font-mono text-sm font-bold">{visit.ticketCode}</span>
+      </div>
+      <p className="mt-1 text-sm font-medium">{visit.patientName}</p>
+      <p className="text-xs font-semibold text-primary">{streamLabel}</p>
+      {visit.notes && (
+        <p className="mt-1 text-xs italic text-muted-foreground">"{visit.notes}"</p>
+      )}
+      {visit.referredTo && (
+        <p className="mt-1 text-xs text-purple-600 dark:text-purple-300">
+          Referred to: {visit.referredTo}
+        </p>
+      )}
+      {visit.createdBy && (
+        <p className="mt-2 text-[10px] text-muted-foreground">
+          Created by {visit.createdBy.name}
+        </p>
+      )}
+      <div className="mt-2 flex gap-2">
+        {canAdvance && (
+          <button
+            onClick={onAdvance}
+            disabled={advancing}
+            className="inline-flex h-7 flex-1 items-center justify-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
+            {advancing ? (
+              <LoaderCircle className="h-3 w-3 animate-spin" />
+            ) : (
+              <>
+                <CheckCircle2 className="h-3 w-3" />
+                Advance to {OI_NEXT_STATE[visit.state]}
+              </>
+            )}
+          </button>
+        )}
+        {canRefer && (
+          <button
+            onClick={onRefer}
+            disabled={advancing}
+            className="inline-flex h-7 items-center justify-center gap-1.5 rounded-md border border-purple-500/30 bg-purple-500/10 px-3 text-xs font-medium text-purple-600 hover:bg-purple-500/20 dark:text-purple-300 disabled:opacity-50"
+          >
+            Refer
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function AdminMetricTile({ label, value, detail, icon: Icon, accent }) {
+  return (
+    <div className="surface-panel p-5">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
+        {Icon && <Icon className={`h-4 w-4 ${accent ?? "text-primary"}`} />}
+      </div>
+      <div className="mt-2 font-display text-3xl font-bold">{value}</div>
+      {detail && <p className="mt-1 text-xs text-muted-foreground">{detail}</p>}
+    </div>
+  );
+}
+
+export function AdminDashboardPage() {
+  const dashboardQuery = useDashboardSummary();
+  const hospitalInfoQuery = useApiResource(
+    useCallback(() => fetchHospitalInfo(), []),
+    { enabled: isBrowser },
+  );
+  const congestionQuery = useApiResource(
+    useCallback(() => fetchCongestionReport(), []),
+    { enabled: isBrowser },
+  );
+  const reassessmentQuery = useApiResource(
+    useCallback(() => fetchReassessmentAlerts(), []),
+    { enabled: isBrowser },
+  );
+  const bottleneckQuery = useApiResource(
+    useCallback(() => fetchBottleneckAnalysis(), []),
+    { enabled: isBrowser },
+  );
+
+  if (dashboardQuery.isLoading) {
+    return (
+      <ModulePage
+        eyebrow="Hospital management"
+        title="Admin Dashboard"
+        description="High-level operational overview for hospital managers and administrators."
+        icon={ShieldCheck}
+      >
+        <LoadingPanel title="Loading admin dashboard" message="Syncing hospital-wide metrics." />
+      </ModulePage>
+    );
+  }
+
+  const metrics = dashboardQuery.data?.metrics;
+  const hospital = hospitalInfoQuery.data?.current;
+  const congestion = congestionQuery.data;
+  const reassessment = reassessmentQuery.data;
+  const bottlenecks = bottleneckQuery.data;
+
+  const totalTickets = metrics?.total ?? 0;
+  const waiting = metrics?.waiting ?? 0;
+  const avgWait = metrics?.avgWait ?? 0;
+  const notificationsToday = metrics?.notificationsToday ?? 0;
+  const missedCount = metrics?.byStatus?.missed ?? 0;
+  const completedCount = metrics?.byStatus?.completed ?? 0;
+
+  const congestedDepts = congestion?.congestedDepartments ?? [];
+  const criticalBottlenecks = bottlenecks?.criticalBottlenecks ?? [];
+  const reassessmentAlerts = reassessment?.alerts ?? [];
+
+  return (
+    <ModulePage
+      eyebrow="Hospital management"
+      title="Admin Dashboard"
+      description="High-level operational overview for hospital managers and administrators."
+      icon={ShieldCheck}
+    >
+      {hospital && (
+        <div className="surface-panel mb-6 flex flex-wrap items-center justify-between gap-4 p-5">
+          <div className="flex items-center gap-3">
+            <span className="grid h-11 w-11 place-items-center rounded-xl bg-primary/15 text-primary">
+              <Building2 className="h-5 w-5" />
+            </span>
+            <div>
+              <div className="font-display text-lg font-bold">{hospital.name}</div>
+              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <MapPin className="h-3 w-3" />
+                {hospital.location}
+              </div>
+            </div>
+          </div>
+          <span className={`rounded-full px-3 py-1 text-xs font-bold ${hospital.active ? "bg-priority-green/15 text-priority-green" : "bg-destructive/15 text-destructive"}`}>
+            {hospital.active ? "Active" : "Inactive"}
+          </span>
+        </div>
+      )}
+
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <AdminMetricTile label="Total Tickets" value={totalTickets} detail="All time" icon={Users} />
+        <AdminMetricTile label="Waiting" value={waiting} detail="In queue now" icon={Clock3} accent="text-amber-500" />
+        <AdminMetricTile label="Avg Wait" value={`${avgWait}m`} detail="Average wait time" icon={Timer} />
+        <AdminMetricTile label="Completed" value={completedCount} detail="Tickets served" icon={CheckCircle2} accent="text-priority-green" />
+        <AdminMetricTile label="Missed" value={missedCount} detail="No-shows" icon={XCircle} accent="text-destructive" />
+        <AdminMetricTile label="Notifications" value={notificationsToday} detail="Sent today" icon={BellRing} />
+        <AdminMetricTile label="Congested Depts" value={congestedDepts.length} detail="High utilization" icon={AlertTriangle} accent={congestedDepts.length > 0 ? "text-destructive" : "text-priority-green"} />
+        <AdminMetricTile label="Reassessment Alerts" value={reassessmentAlerts.length} detail="Overdue patients" icon={ShieldCheck} accent={reassessmentAlerts.length > 0 ? "text-amber-500" : "text-priority-green"} />
+      </div>
+
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <div className="surface-panel p-5">
+          <h3 className="font-display text-lg font-bold">Critical Bottlenecks</h3>
+          {criticalBottlenecks.length > 0 ? (
+            <div className="mt-3 space-y-2">
+              {criticalBottlenecks.map((b) => (
+                <div key={b.department} className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold">{b.department}</span>
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${b.severity === "critical" ? "bg-destructive/15 text-destructive" : "bg-amber-500/15 text-amber-600 dark:text-amber-300"}`}>
+                      {b.severity}
+                    </span>
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {b.factors.map((f, i) => (
+                      <span key={i} className="rounded bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">{f}</span>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground">{b.recommendation}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-3 flex flex-col items-center py-6 text-center">
+              <CheckCircle2 className="h-8 w-8 text-priority-green" />
+              <p className="mt-2 text-sm text-muted-foreground">No critical bottlenecks detected.</p>
+            </div>
+          )}
+        </div>
+
+        <div className="surface-panel p-5">
+          <h3 className="font-display text-lg font-bold">Reassessment Alerts</h3>
+          {reassessmentAlerts.length > 0 ? (
+            <div className="mt-3 space-y-2">
+              {reassessmentAlerts.slice(0, 5).map((alert) => (
+                <div key={alert.id} className="flex items-center justify-between rounded-lg border border-border/70 bg-background/70 p-3">
+                  <div className="flex items-center gap-3">
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${alert.priority === "red" ? "bg-red-500/15 text-red-500" : "bg-amber-500/15 text-amber-600 dark:text-amber-300"}`}>
+                      {alert.priority}
+                    </span>
+                    <div>
+                      <div className="text-sm font-semibold">{alert.ticket}</div>
+                      <div className="text-xs text-muted-foreground">{alert.department}</div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm font-bold text-amber-500">{alert.waitMinutes}m</div>
+                    <div className="text-[10px] text-muted-foreground">threshold: {alert.thresholdMinutes}m</div>
+                  </div>
+                </div>
+              ))}
+              {reassessmentAlerts.length > 5 && (
+                <p className="text-center text-xs text-muted-foreground">+{reassessmentAlerts.length - 5} more alerts</p>
+              )}
+            </div>
+          ) : (
+            <div className="mt-3 flex flex-col items-center py-6 text-center">
+              <CheckCircle2 className="h-8 w-8 text-priority-green" />
+              <p className="mt-2 text-sm text-muted-foreground">No reassessment alerts. All patients within thresholds.</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {congestion && (
+        <div className="mt-6 surface-panel p-5">
+          <h3 className="font-display text-lg font-bold">Department Congestion Overview</h3>
+          <div className="mt-3 overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border/70 text-left text-xs uppercase tracking-wider text-muted-foreground">
+                  <th className="pb-2 pr-4">Department</th>
+                  <th className="pb-2 pr-4">Waiting</th>
+                  <th className="pb-2 pr-4">In Service</th>
+                  <th className="pb-2 pr-4">Avg Wait</th>
+                  <th className="pb-2 pr-4">Utilization</th>
+                  <th className="pb-2 pr-4">Level</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Object.entries(congestion.byDept ?? {}).map(([dept, d]) => (
+                  <tr key={dept} className="border-b border-border/40">
+                    <td className="py-2 pr-4 font-medium">{dept}</td>
+                    <td className="py-2 pr-4">{d.waiting}</td>
+                    <td className="py-2 pr-4">{d.inService}</td>
+                    <td className="py-2 pr-4">{d.avgWaitMinutes}m</td>
+                    <td className="py-2 pr-4">
+                      <div className="flex items-center gap-2">
+                        <div className="h-2 w-20 rounded-full bg-border/50">
+                          <div className={`h-2 rounded-full ${d.congestionLevel === "critical" ? "bg-destructive" : d.congestionLevel === "high" ? "bg-amber-500" : d.congestionLevel === "moderate" ? "bg-blue-500" : "bg-priority-green"}`} style={{ width: `${d.utilization}%` }} />
+                        </div>
+                        <span className="text-xs">{d.utilization}%</span>
+                      </div>
+                    </td>
+                    <td className="py-2 pr-4">
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${
+                        d.congestionLevel === "critical" ? "bg-destructive/15 text-destructive" :
+                        d.congestionLevel === "high" ? "bg-amber-500/15 text-amber-600 dark:text-amber-300" :
+                        d.congestionLevel === "moderate" ? "bg-blue-500/15 text-blue-600 dark:text-blue-300" :
+                        "bg-priority-green/15 text-priority-green"
+                      }`}>
+                        {d.congestionLevel}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </ModulePage>
   );
 }

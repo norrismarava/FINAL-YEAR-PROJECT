@@ -81,8 +81,20 @@ export default function StaffRegisterPage() {
       return;
     }
 
-    if (formData.password.length < 8) {
-      setError("Password must be at least 8 characters");
+    if (formData.password.length < 10) {
+      setError("Password must be at least 10 characters long.");
+      return;
+    }
+
+    const charGroups = [
+      /[a-z]/.test(formData.password),
+      /[A-Z]/.test(formData.password),
+      /\d/.test(formData.password),
+      /[^A-Za-z0-9]/.test(formData.password),
+    ].filter(Boolean).length;
+
+    if (charGroups < 3) {
+      setError("Password must include at least three of: uppercase letters, lowercase letters, numbers, and symbols.");
       return;
     }
 
@@ -116,8 +128,8 @@ export default function StaffRegisterPage() {
         title="Account created"
         subtitle="The staff profile is ready for secure WaitLess access."
         footer={
-          <Link to="/admin/login" className="font-semibold text-cyan-100 hover:text-white">
-            Sign in to the staff console
+          <Link to="/admin/dashboard" className="font-semibold text-cyan-100 hover:text-white">
+            Return to the staff dashboard
           </Link>
         }
       >
@@ -146,14 +158,7 @@ export default function StaffRegisterPage() {
       title="Create staff access"
       subtitle="Add a secure user profile with department and role permissions for the hospital workflow."
       wide
-      footer={
-        <>
-          Already registered?{" "}
-          <Link to="/admin/login" className="font-semibold text-cyan-100 hover:text-white">
-            Sign in
-          </Link>
-        </>
-      }
+      footer="Administrator-only account provisioning."
     >
       <form className="space-y-5" onSubmit={handleSubmit}>
         <AuthError icon={AlertCircle} message={error} />
@@ -283,8 +288,10 @@ export default function StaffRegisterPage() {
             name="password"
             type="password"
             required
-            minLength={8}
-            placeholder="Minimum 8 characters"
+            minLength={10}
+            maxLength={72}
+            autoComplete="new-password"
+            placeholder="10+ chars, 3 of: A-Z, a-z, 0-9, !@#"
             value={formData.password}
             onChange={(event) => setFormData({ ...formData, password: event.target.value })}
           />
@@ -295,11 +302,22 @@ export default function StaffRegisterPage() {
             name="confirmPassword"
             type="password"
             required
-            minLength={8}
-            placeholder="Repeat password"
+            minLength={10}
+            maxLength={72}
+            autoComplete="new-password"
+            placeholder="Repeat your password"
             value={formData.confirmPassword}
             onChange={(event) => setFormData({ ...formData, confirmPassword: event.target.value })}
           />
+
+          <div className="col-span-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-xs leading-relaxed text-slate-300">
+            <p className="font-semibold text-cyan-100/80">Password requirements:</p>
+            <ul className="mt-1.5 space-y-0.5">
+              <li>• At least 10 characters</li>
+              <li>• At least 3 of: uppercase letter, lowercase letter, number, symbol</li>
+              <li>• Not a commonly used password</li>
+            </ul>
+          </div>
         </div>
 
         <AuthButton type="submit" loading={loading}>

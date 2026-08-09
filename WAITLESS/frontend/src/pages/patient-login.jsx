@@ -1,13 +1,17 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { AlertCircle, ArrowRight, AtSign, Eye, EyeOff, Lock, Search } from "lucide-react";
+import { AlertCircle, ArrowRight, AtSign, Eye, EyeOff, Lock, Search, LoaderCircle } from "lucide-react";
 
 import { usePatientAuth } from "@/auth/PatientAuthProvider";
 import { PatientAuthShell } from "@/components/PatientAuthShell";
+import { useTranslation } from "@/i18n/useTranslation";
+import { LANGUAGES } from "@/i18n/I18nProvider";
+import waitlessLogoIcon from "@/assets/waitless-logo-icon.png";
 
 export default function PatientLoginPage() {
   const navigate = useNavigate();
   const { patientLogin } = usePatientAuth();
+  const { t, lang, changeLang } = useTranslation();
   const [form, setForm] = useState({ identifier: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -24,11 +28,11 @@ export default function PatientLoginPage() {
     setError("");
 
     if (!form.identifier.trim()) {
-      setError("Please enter your username or email address.");
+      setError(t("login.errorIdentifier"));
       return;
     }
     if (!form.password) {
-      setError("Please enter your password.");
+      setError(t("login.errorPassword"));
       return;
     }
 
@@ -40,7 +44,7 @@ export default function PatientLoginPage() {
       });
       navigate("/patient/dashboard");
     } catch (err) {
-      setError(err.message || "Unable to sign in. Please check your details.");
+      setError(err.message || t("login.errorGeneric"));
     } finally {
       setLoading(false);
     }
@@ -48,28 +52,28 @@ export default function PatientLoginPage() {
 
   return (
     <PatientAuthShell
-      eyebrow="User portal"
-      title="Welcome back"
-      subtitle="Sign in to view your tickets, track your queue position, and manage your visits."
+      eyebrow={t("login.eyebrow")}
+      title={t("login.title")}
+      subtitle={t("login.subtitle")}
       footer={
         <>
-          <Link to="/patient/register" className="font-semibold text-teal-700 hover:text-teal-800">
-            New user? Create an account
+          <Link to="/patient/register" className="font-semibold text-teal-300 hover:text-teal-200">
+            {t("login.newUser")}
           </Link>
-          <span className="text-slate-300">|</span>
+          <span className="text-white/20">|</span>
           <Link
             to="/track"
-            className="inline-flex items-center gap-1 rounded-full border border-slate-300 px-3 py-1 font-medium text-slate-600 transition-colors hover:border-teal-400 hover:text-teal-700"
+            className="inline-flex items-center gap-1 rounded-full border border-white/15 px-3 py-1 font-medium text-slate-300 transition-colors hover:border-teal-400/50 hover:text-teal-300"
           >
             <Search className="h-3 w-3" />
-            Track a ticket
+            {t("login.trackTicket")}
           </Link>
         </>
       }
     >
       <form className="space-y-5" onSubmit={handleSubmit}>
         {error ? (
-          <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+          <div className="flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-300">
             <AlertCircle className="h-4 w-4 shrink-0" />
             {error}
           </div>
@@ -77,8 +81,8 @@ export default function PatientLoginPage() {
 
         {/* Account identifier */}
         <div>
-          <label className="mb-1.5 block text-sm font-semibold text-slate-700">
-            Username or email
+          <label className="mb-1.5 block text-sm font-semibold text-white">
+            {t("login.identifier")}
           </label>
           <div className="relative">
             <AtSign className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -87,9 +91,9 @@ export default function PatientLoginPage() {
               name="identifier"
               value={form.identifier}
               onChange={handleChange}
-              placeholder="Username or you@example.com"
+              placeholder={t("login.identifierPlaceholder")}
               autoComplete="username"
-              className="h-12 w-full rounded-xl border border-slate-300 bg-white pl-11 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/25"
+              className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
               required
             />
           </div>
@@ -97,7 +101,7 @@ export default function PatientLoginPage() {
 
         {/* Password */}
         <div>
-          <label className="mb-1.5 block text-sm font-semibold text-slate-700">Password</label>
+          <label className="mb-1.5 block text-sm font-semibold text-white">{t("login.password")}</label>
           <div className="relative">
             <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
             <input
@@ -105,14 +109,14 @@ export default function PatientLoginPage() {
               name="password"
               value={form.password}
               onChange={handleChange}
-              placeholder="Enter your password"
-              className="h-12 w-full rounded-xl border border-slate-300 bg-white pl-11 pr-11 text-sm text-slate-900 placeholder:text-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/25"
+              placeholder={t("login.passwordPlaceholder")}
+              className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-11 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
               required
             />
             <button
               type="button"
               onClick={() => setShowPassword((s) => !s)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-700"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
@@ -121,38 +125,47 @@ export default function PatientLoginPage() {
 
         {/* Remember me + Forgot password */}
         <div className="flex items-center justify-between">
-          <label className="flex items-center gap-2 text-sm text-slate-600">
+          <label className="flex items-center gap-2 text-sm text-slate-300">
             <input
               type="checkbox"
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
-              className="h-4 w-4 rounded border-slate-300 text-teal-600 focus:ring-teal-600/25"
+              className="h-4 w-4 rounded border-white/20 text-teal-500 focus:ring-teal-400/20"
             />
-            Remember me
+            {t("login.rememberMe")}
           </label>
           <Link
             to="/admin/forgot-password"
-            className="text-sm font-medium text-teal-700 hover:text-teal-800"
+            className="text-sm font-medium text-teal-300 hover:text-teal-200"
           >
-            Forgot password?
+            {t("login.forgotPassword")}
           </Link>
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-teal-700 px-6 text-sm font-semibold text-white shadow-[0_14px_34px_-14px_rgba(13,148,136,0.7)] transition-all hover:-translate-y-0.5 hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-6 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(13,148,136,0.5)] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? (
-            "Signing in..."
+            t("login.signingIn")
           ) : (
             <>
-              Sign in
+              {t("login.signin")}
               <ArrowRight className="h-4 w-4" />
             </>
           )}
         </button>
       </form>
+
+      {loading && (
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#04141f]/90 backdrop-blur-md">
+          <img src={waitlessLogoIcon} alt="WaitLess" className="h-16 w-16 rounded-xl object-contain" />
+          <div className="mt-6 h-10 w-10 animate-spin rounded-full border-[3px] border-teal-400/20 border-t-teal-400" />
+          <div className="mt-4 text-sm font-semibold text-teal-300">{t("login.signingYouIn")}</div>
+          <div className="mt-1 text-xs text-slate-400">{t("login.loadingDashboard")}</div>
+        </div>
+      )}
     </PatientAuthShell>
   );
 }

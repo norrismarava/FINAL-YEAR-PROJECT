@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
+  AlertTriangle,
   ArrowRight,
   Clock3,
+  FlaskConical,
   LoaderCircle,
   MessageCircle,
+  Navigation,
+  Pill,
   Search,
   ShieldAlert,
+  Siren,
   Stethoscope,
   Timer,
   Wifi,
@@ -15,8 +20,9 @@ import { LoadingPanel } from "@/components/ui/system-loader";
 import { useLiveRefresh } from "@/context/LiveRefreshContext";
 import { useApiAction, useApiResource } from "@/hooks/useApiResource";
 import { PRIORITY_META, priorityChipClass } from "@/services/queueMeta";
-import { assignTicketPriority, fetchTickets } from "@/services/queueApi";
+import { assignTicketPriority, createPrescription, createTestOrder, fetchNextRoute, fetchPrescriptionsForTicket, fetchTestOrdersForTicket, fetchTickets, saveTriageAssessment } from "@/services/queueApi";
 import { useQueueRealtime } from "@/sockets/QueueRealtimeProvider";
+import { useFormDraft } from "@/utils/formDraft";
 
 const isBrowser = typeof window !== "undefined";
 const EMPTY_TICKETS = [];
@@ -58,6 +64,41 @@ export default function TriagePage() {
       onSuccess: refreshLiveData,
     },
   );
+
+  const assessmentMutation = useApiAction(
+    ({ id, payload }) => saveTriageAssessment(id, payload),
+    {
+      onSuccess: refreshLiveData,
+    },
+  );
+
+  const [assessment, setAssessment] = useState({
+    bloodPressureSystolic: "",
+    bloodPressureDiastolic: "",
+    heartRate: "",
+    temperature: "",
+    respiratoryRate: "",
+    oxygenSaturation: "",
+    symptoms: "",
+    painScore: 0,
+    severity: "",
+    notes: "",
+  });
+
+  const draftKey = selectedId ? `triage-assessment-${selectedId}` : "triage-assessment";
+  const formDraft = useFormDraft(draftKey, assessment);
+
+  useEffect(() => {
+    if (formDraft.hasDraft && formDraft.draft?.data) {
+      const saved = formDraft.draft.data;
+      const hasValues = Object.values(saved).some(
+        (v) => v !== "" && v !== 0 && v != null,
+      );
+      if (hasValues) {
+        setAssessment(saved);
+      }
+    }
+  }, [formDraft.draft?.savedAt]);
 
   const tickets = ticketsQuery.data ?? EMPTY_TICKETS;
   const filteredTickets = useMemo(() => {
@@ -123,9 +164,65 @@ export default function TriagePage() {
     }
   }, [tickets, filteredTickets, selectedId]);
 
+  function updateAssessment(key, value) {
+    setAssessment((prev) => ({ ...prev, [key]: value }));
+  }
+
+  const liveEmergencyTriggers = useMemo(() => {
+    const triggers = [];
+    const v = {
+      oxygenSaturation: assessment.oxygenSaturation ? Number(assessment.oxygenSaturation) : null,
+      heartRate: assessment.heartRate ? Number(assessment.heartRate) : null,
+      bloodPressureSystolic: assessment.bloodPressureSystolic ? Number(assessment.bloodPressureSystolic) : null,
+      temperature: assessment.temperature ? Number(assessment.temperature) : null,
+      respiratoryRate: assessment.respiratoryRate ? Number(assessment.respiratoryRate) : null,
+    };
+    const pain = assessment.painScore != null ? Number(assessment.painScore) : null;
+    if (v.oxygenSaturation != null && v.oxygenSaturation < 90) triggers.push("SpO2 below 90%");
+    if (v.heartRate != null && (v.heartRate > 130 || v.heartRate < 40)) triggers.push("Heart rate outside 40-130 bpm");
+    if (v.bloodPressureSystolic != null && (v.bloodPressureSystolic > 180 || v.bloodPressureSystolic < 80)) triggers.push("Systolic BP outside 80-180 mmHg");
+    if (v.temperature != null && v.temperature >= 39.5) triggers.push("Temperature at or above 39.5C");
+    if (v.respiratoryRate != null && (v.respiratoryRate > 30 || v.respiratoryRate < 8)) triggers.push("Respiratory rate outside 8-30 /min");
+    if (pain != null && pain >= 9) triggers.push("Pain score 9 or 10");
+    return triggers;
+  }, [assessment]);
+
   function assign(priority) {
     if (!selected) return;
-    assignMutation.mutate({ id: selected.id, priority });
+    assessmentMutation.mutate({
+      id: selected.id,
+      payload: {
+        priority,
+        vitals: {
+          bloodPressureSystolic: assessment.bloodPressureSystolic ? Number(assessment.bloodPressureSystolic) : null,
+          bloodPressureDiastolic: assessment.bloodPressureDiastolic ? Number(assessment.bloodPressureDiastolic) : null,
+          heartRate: assessment.heartRate ? Number(assessment.heartRate) : null,
+          temperature: assessment.temperature ? Number(assessment.temperature) : null,
+          respiratoryRate: assessment.respiratoryRate ? Number(assessment.respiratoryRate) : null,
+          oxygenSaturation: assessment.oxygenSaturation ? Number(assessment.oxygenSaturation) : null,
+        },
+        symptoms: assessment.symptoms,
+        painScore: assessment.painScore,
+        severity: assessment.severity,
+        notes: assessment.notes,
+      },
+    }, {
+      onSuccess: () => {
+        formDraft.clear();
+        setAssessment({
+          bloodPressureSystolic: "",
+          bloodPressureDiastolic: "",
+          heartRate: "",
+          temperature: "",
+          respiratoryRate: "",
+          oxygenSaturation: "",
+          symptoms: "",
+          painScore: 0,
+          severity: "",
+          notes: "",
+        });
+      },
+    });
   }
 
   return (
@@ -378,6 +475,153 @@ export default function TriagePage() {
                 </p>
               </div>
 
+              {selected.triageAssessment ? (
+                <div className="mt-6 rounded-2xl border border-primary/20 bg-primary-soft/30 px-5 py-5">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                    Previous assessment
+                  </div>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                    {selected.triageAssessment.vitals?.bloodPressureSystolic ? (
+                      <div className="text-sm"><span className="text-muted-foreground">BP:</span> <span className="font-semibold">{selected.triageAssessment.vitals.bloodPressureSystolic}/{selected.triageAssessment.vitals.bloodPressureDiastolic} mmHg</span></div>
+                    ) : null}
+                    {selected.triageAssessment.vitals?.heartRate ? (
+                      <div className="text-sm"><span className="text-muted-foreground">HR:</span> <span className="font-semibold">{selected.triageAssessment.vitals.heartRate} bpm</span></div>
+                    ) : null}
+                    {selected.triageAssessment.vitals?.temperature ? (
+                      <div className="text-sm"><span className="text-muted-foreground">Temp:</span> <span className="font-semibold">{selected.triageAssessment.vitals.temperature} C</span></div>
+                    ) : null}
+                    {selected.triageAssessment.vitals?.respiratoryRate ? (
+                      <div className="text-sm"><span className="text-muted-foreground">RR:</span> <span className="font-semibold">{selected.triageAssessment.vitals.respiratoryRate}/min</span></div>
+                    ) : null}
+                    {selected.triageAssessment.vitals?.oxygenSaturation ? (
+                      <div className="text-sm"><span className="text-muted-foreground">SpO2:</span> <span className="font-semibold">{selected.triageAssessment.vitals.oxygenSaturation}%</span></div>
+                    ) : null}
+                    {selected.triageAssessment.painScore != null ? (
+                      <div className="text-sm"><span className="text-muted-foreground">Pain:</span> <span className="font-semibold">{selected.triageAssessment.painScore}/10</span></div>
+                    ) : null}
+                  </div>
+                  {selected.triageAssessment.symptoms ? (
+                    <p className="mt-3 text-sm text-muted-foreground">{selected.triageAssessment.symptoms}</p>
+                  ) : null}
+                  {selected.triageAssessment.severity ? (
+                    <div className="mt-2 text-sm"><span className="text-muted-foreground">Severity:</span> <span className="font-semibold capitalize">{selected.triageAssessment.severity}</span></div>
+                  ) : null}
+                  {selected.triageAssessment.notes ? (
+                    <p className="mt-2 text-sm text-muted-foreground">{selected.triageAssessment.notes}</p>
+                  ) : null}
+                  <p className="mt-3 text-xs text-muted-foreground">Assessed at {new Date(selected.triageAssessment.assessedAt).toLocaleString()}</p>
+                </div>
+              ) : null}
+
+                            <div className="mt-6 surface-panel-muted px-5 py-5">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+                  Triage assessment
+                </div>
+                <h3 className="mt-2 font-display text-xl font-bold tracking-tight">Clinical intake form</h3>
+                <p className="mt-1 text-sm text-muted-foreground">Capture vitals, symptoms, and pain score before assigning severity.</p>
+
+                <div className="mt-5 grid gap-4 sm:grid-cols-3">
+                  <TriageField label="BP Systolic (mmHg)">
+                    <input type="number" value={assessment.bloodPressureSystolic} onChange={(e) => updateAssessment("bloodPressureSystolic", e.target.value)} placeholder="120" className="input-base" />
+                  </TriageField>
+                  <TriageField label="BP Diastolic (mmHg)">
+                    <input type="number" value={assessment.bloodPressureDiastolic} onChange={(e) => updateAssessment("bloodPressureDiastolic", e.target.value)} placeholder="80" className="input-base" />
+                  </TriageField>
+                  <TriageField label="Heart Rate (bpm)">
+                    <input type="number" value={assessment.heartRate} onChange={(e) => updateAssessment("heartRate", e.target.value)} placeholder="72" className="input-base" />
+                  </TriageField>
+                  <TriageField label="Temperature (C)">
+                    <input type="number" step="0.1" value={assessment.temperature} onChange={(e) => updateAssessment("temperature", e.target.value)} placeholder="36.8" className="input-base" />
+                  </TriageField>
+                  <TriageField label="Resp Rate (/min)">
+                    <input type="number" value={assessment.respiratoryRate} onChange={(e) => updateAssessment("respiratoryRate", e.target.value)} placeholder="16" className="input-base" />
+                  </TriageField>
+                  <TriageField label="SpO2 (%)">
+                    <input type="number" value={assessment.oxygenSaturation} onChange={(e) => updateAssessment("oxygenSaturation", e.target.value)} placeholder="98" className="input-base" />
+                  </TriageField>
+                </div>
+
+                <div className="mt-4">
+                  <TriageField label="Symptoms and clinical observations" full>
+                    <textarea value={assessment.symptoms} onChange={(e) => updateAssessment("symptoms", e.target.value)} rows={3} placeholder="Describe presenting symptoms, visible distress, relevant history..." className="input-base resize-none" />
+                  </TriageField>
+                </div>
+
+                <div className="mt-4">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">Pain score (0-10)</div>
+                  <div className="mt-3 flex items-center gap-2">
+                    {[0,1,2,3,4,5,6,7,8,9,10].map((score) => (
+                      <button
+                        key={score}
+                        type="button"
+                        onClick={() => updateAssessment("painScore", score)}
+                        className={`h-10 w-10 rounded-lg text-sm font-bold transition-all ${
+                          assessment.painScore === score
+                            ? score >= 7 ? "bg-red-500 text-white" : score >= 4 ? "bg-amber-500 text-white" : "bg-emerald-500 text-white"
+                            : "border border-border/70 bg-background/80 text-muted-foreground hover:bg-muted"
+                        }`}
+                      >{score}</button>
+                    ))}
+                  </div>
+                  <div className="mt-2 flex justify-between text-[10px] text-muted-foreground">
+                    <span>No pain</span><span>Moderate</span><span>Severe</span>
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <TriageField label="Severity assessment" full>
+                    <select value={assessment.severity} onChange={(e) => updateAssessment("severity", e.target.value)} className="input-base h-9 text-sm">
+                      <option value="">Select severity…</option>
+                      <option value="mild">Mild</option>
+                      <option value="moderate">Moderate</option>
+                      <option value="severe">Severe</option>
+                      <option value="critical">Critical</option>
+                      <option value="life-threatening">Life-threatening</option>
+                    </select>
+                  </TriageField>
+                </div>
+
+                <div className="mt-4">
+                  <TriageField label="Clinical notes" full>
+                    <textarea value={assessment.notes} onChange={(e) => updateAssessment("notes", e.target.value)} rows={2} placeholder="Additional clinical notes, allergies, medications..." className="input-base resize-none" />
+                  </TriageField>
+                </div>
+              </div>
+
+              {liveEmergencyTriggers.length > 0 ? (
+                <div className="mt-4 rounded-2xl border border-red-500/40 bg-red-500/10 px-5 py-4">
+                  <div className="flex items-start gap-3">
+                    <Siren className="mt-0.5 h-5 w-5 shrink-0 text-red-500" />
+                    <div>
+                      <div className="font-display text-sm font-bold uppercase tracking-[0.2em] text-red-500">Emergency fast-track triggered</div>
+                      <p className="mt-1 text-sm text-red-600/90">Vital signs indicate a critical condition. This patient will be auto-classified as <strong>Red</strong> on assignment.</p>
+                      <ul className="mt-2 space-y-1">
+                        {liveEmergencyTriggers.map((t) => (
+                          <li key={t} className="flex items-center gap-2 text-xs text-red-600/80"><AlertTriangle className="h-3 w-3" /> {t}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {assessmentMutation.data?.triageAssessment ? (
+                <div className="mt-4 rounded-2xl border border-primary/20 bg-primary-soft/30 px-5 py-4">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">Assessment saved</div>
+                  {assessmentMutation.data.triageAssessment.emergencyTriggers?.length > 0 ? (
+                    <p className="mt-2 text-sm font-semibold text-red-500">Auto-classified as Red due to: {assessmentMutation.data.triageAssessment.emergencyTriggers.join(", ")}</p>
+                  ) : (
+                    <p className="mt-2 text-sm text-muted-foreground">Priority set to {assessmentMutation.data.priority}. Vitals and assessment recorded.</p>
+                  )}
+                  {assessmentMutation.data.triageAssessment.autoClassified ? (
+                    <p className="mt-1 text-xs text-amber-600">Escalation alert broadcast to all connected staff dashboards.</p>
+                  ) : null}
+                  {selected.department !== assessmentMutation.data.department ? (
+                    <p className="mt-1 text-xs text-primary">Department auto-rerouted from {selected.department} to {assessmentMutation.data.department} based on chief complaint.</p>
+                  ) : null}
+                </div>
+              ) : null}
+
               <div className="mt-6">
                 <div className="flex items-center justify-between gap-3">
                   <div>
@@ -398,16 +642,16 @@ export default function TriagePage() {
                     const meta = PRIORITY_META[priority];
                     const isCurrent = selected.priority === priority;
                     const isPending =
-                      assignMutation.isPending &&
-                      activeAssignTarget?.id === selected.id &&
-                      activeAssignTarget?.priority === priority;
+                      assessmentMutation.isPending &&
+                      assessmentMutation.variables?.id === selected.id &&
+                      assessmentMutation.variables?.payload?.priority === priority;
 
                     return (
                       <button
                         key={priority}
                         type="button"
                         onClick={() => assign(priority)}
-                        disabled={assignMutation.isPending}
+                        disabled={assessmentMutation.isPending}
                         className={`surface-hover-card group rounded-3xl border-2 p-5 text-left disabled:translate-y-0 disabled:opacity-70 ${
                           isCurrent ? "border-foreground/40" : "border-transparent"
                         } ${priorityChipClass[priority]}`}
@@ -470,11 +714,15 @@ export default function TriagePage() {
                 </div>
               </div>
 
-              {assignMutation.isError && (
+              {assessmentMutation.isError && (
                 <div className="mt-4 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                  {assignMutation.error.message}
+                  {assessmentMutation.error.message}
                 </div>
               )}
+
+              <PrescriptionPanel ticketId={selected.id} />
+              <TestOrderPanel ticketId={selected.id} />
+              <RoutingSuggestionBanner ticketId={selected.id} />
             </>
           ) : (
             <div className="grid min-h-[22rem] place-items-center text-center">
@@ -580,4 +828,367 @@ function formatTime(value) {
     hour: "2-digit",
     minute: "2-digit",
   });
+}
+
+function TriageField({ label, full, children }) {
+  return (
+    <label className={`flex flex-col gap-2 ${full ? "sm:col-span-3" : ""}`}>
+      <span className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function PrescriptionPanel({ ticketId }) {
+  const { refreshToken } = useLiveRefresh();
+  const [items, setItems] = useState([{ drugName: "", dosage: "", quantity: "", instructions: "" }]);
+  const [notes, setNotes] = useState("");
+  const [showForm, setShowForm] = useState(false);
+
+  const loader = useCallback(() => fetchPrescriptionsForTicket(ticketId), [ticketId]);
+  const query = useApiResource(loader, { enabled: isBrowser && !!ticketId, refreshToken });
+
+  const createMut = useApiAction(
+    ({ id, payload }) => createPrescription(id, payload),
+    {
+      onSuccess: () => {
+        query.refetch();
+        setShowForm(false);
+        setItems([{ drugName: "", dosage: "", quantity: "", instructions: "" }]);
+        setNotes("");
+      },
+    },
+  );
+
+  function updateItem(idx, key, value) {
+    setItems((prev) => prev.map((it, i) => (i === idx ? { ...it, [key]: value } : it)));
+  }
+
+  function addItem() {
+    setItems((prev) => [...prev, { drugName: "", dosage: "", quantity: "", instructions: "" }]);
+  }
+
+  function removeItem(idx) {
+    setItems((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  function submit() {
+    const valid = items.filter((it) => it.drugName.trim());
+    if (valid.length === 0) return;
+    createMut.mutate({ id: ticketId, payload: { items: valid, notes } });
+  }
+
+  const prescriptions = query.data ?? [];
+
+  return (
+    <div className="mt-6 surface-panel-muted px-5 py-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+            Prescriptions
+          </div>
+          <h3 className="mt-2 font-display text-xl font-bold tracking-tight">Pharmacy orders</h3>
+        </div>
+        <Pill className="h-5 w-5 text-muted-foreground" />
+      </div>
+
+      {prescriptions.length > 0 && (
+        <div className="mt-4 space-y-2">
+          {prescriptions.map((rx) => (
+            <div key={rx.id} className="rounded-lg border border-border bg-card px-3 py-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wide rounded-full px-2 py-0.5 bg-primary/10 text-primary">
+                  {rx.state}
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  {new Date(rx.createdAt).toLocaleString()}
+                </span>
+              </div>
+              <ul className="mt-2 space-y-0.5">
+                {rx.items?.map((item) => (
+                  <li key={item.id} className="text-xs">
+                    <span className="font-medium">{item.drugName}</span>
+                    {" — "}{item.dosage}
+                    {item.quantity && ` (${item.quantity})`}
+                  </li>
+                ))}
+              </ul>
+              {rx.notes && <p className="mt-1 text-[10px] italic text-muted-foreground">"{rx.notes}"</p>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showForm ? (
+        <div className="mt-4 space-y-3">
+          {items.map((item, idx) => (
+            <div key={idx} className="grid gap-2 sm:grid-cols-[1fr_0.5fr_0.5fr_auto]">
+              <input
+                type="text"
+                placeholder="Drug name"
+                value={item.drugName}
+                onChange={(e) => updateItem(idx, "drugName", e.target.value)}
+                className="input-base h-9 text-sm"
+              />
+              <input
+                type="text"
+                placeholder="Dosage"
+                value={item.dosage}
+                onChange={(e) => updateItem(idx, "dosage", e.target.value)}
+                className="input-base h-9 text-sm"
+              />
+              <input
+                type="text"
+                placeholder="Qty"
+                value={item.quantity}
+                onChange={(e) => updateItem(idx, "quantity", e.target.value)}
+                className="input-base h-9 text-sm"
+              />
+              <button
+                type="button"
+                onClick={() => removeItem(idx)}
+                className="h-9 rounded-lg border border-border px-2 text-xs text-muted-foreground hover:bg-accent"
+              >
+                Remove
+              </button>
+              <input
+                type="text"
+                placeholder="Instructions (e.g. Take 1 tablet 3x daily)"
+                value={item.instructions}
+                onChange={(e) => updateItem(idx, "instructions", e.target.value)}
+                className="input-base h-9 text-sm sm:col-span-4"
+              />
+            </div>
+          ))}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={addItem}
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-xs font-medium hover:bg-accent"
+            >
+              + Add item
+            </button>
+          </div>
+          <input
+            type="text"
+            placeholder="Prescription notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="input-base h-9 text-sm"
+          />
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={submit}
+              disabled={createMut.isPending}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              {createMut.isPending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
+              Create prescription
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowForm(false)}
+              className="inline-flex h-9 items-center rounded-lg border border-border px-3 text-sm hover:bg-accent"
+            >
+              Cancel
+            </button>
+          </div>
+          {createMut.isError && (
+            <p className="text-xs text-destructive">{createMut.error.message}</p>
+          )}
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setShowForm(true)}
+          className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-4 text-sm font-medium text-primary hover:bg-primary/15"
+        >
+          <Pill className="h-4 w-4" />
+          New prescription
+        </button>
+      )}
+    </div>
+  );
+}
+
+const TEST_TYPE_OPTIONS = [
+  { value: "blood-count", label: "Full Blood Count" },
+  { value: "urinalysis", label: "Urinalysis" },
+  { value: "blood-glucose", label: "Blood Glucose" },
+  { value: "malaria-smear", label: "Malaria Smear" },
+  { value: "hiv-test", label: "HIV Test" },
+  { value: "tb-sputum", label: "TB Sputum" },
+  { value: "x-ray-chest", label: "Chest X-Ray" },
+  { value: "ultrasound", label: "Ultrasound" },
+  { value: "ct-scan", label: "CT Scan" },
+  { value: "other", label: "Other" },
+];
+
+function TestOrderPanel({ ticketId }) {
+  const { refreshToken } = useLiveRefresh();
+  const [testType, setTestType] = useState("");
+  const [priority, setPriority] = useState("routine");
+  const [notes, setNotes] = useState("");
+  const [showForm, setShowForm] = useState(false);
+
+  const loader = useCallback(() => fetchTestOrdersForTicket(ticketId), [ticketId]);
+  const query = useApiResource(loader, { enabled: isBrowser && !!ticketId, refreshToken });
+
+  const createMut = useApiAction(
+    ({ id, payload }) => createTestOrder(id, payload),
+    {
+      onSuccess: () => {
+        query.refetch();
+        setShowForm(false);
+        setTestType("");
+        setPriority("routine");
+        setNotes("");
+      },
+    },
+  );
+
+  function submit() {
+    if (!testType) return;
+    createMut.mutate({ id: ticketId, payload: { testType, priority, notes } });
+  }
+
+  const orders = query.data ?? [];
+
+  return (
+    <div className="mt-4 surface-panel-muted px-5 py-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+            Laboratory &amp; Radiology
+          </div>
+          <h3 className="mt-2 font-display text-xl font-bold tracking-tight">Test orders</h3>
+        </div>
+        <FlaskConical className="h-5 w-5 text-muted-foreground" />
+      </div>
+
+      {orders.length > 0 && (
+        <div className="mt-4 space-y-2">
+          {orders.map((order) => (
+            <div key={order.id} className="rounded-lg border border-border bg-card px-3 py-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold uppercase tracking-wide rounded-full px-2 py-0.5 bg-primary/10 text-primary">
+                  {order.state}
+                </span>
+                <span className="text-[10px] text-muted-foreground">
+                  {new Date(order.orderedAt).toLocaleString()}
+                </span>
+              </div>
+              <p className="mt-1 text-sm font-medium">
+                {TEST_TYPE_OPTIONS.find((t) => t.value === order.testType)?.label ?? order.testType}
+              </p>
+              {order.priority !== "routine" && (
+                <span className="mt-1 inline-block rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-700 dark:text-amber-300">
+                  {order.priority}
+                </span>
+              )}
+              {order.notes && <p className="mt-1 text-[10px] italic text-muted-foreground">"{order.notes}"</p>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showForm ? (
+        <div className="mt-4 space-y-3">
+          <select
+            value={testType}
+            onChange={(e) => setTestType(e.target.value)}
+            className="input-base h-9 text-sm"
+          >
+            <option value="">Select test type…</option>
+            {TEST_TYPE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+          <select
+            value={priority}
+            onChange={(e) => setPriority(e.target.value)}
+            className="input-base h-9 text-sm"
+          >
+            <option value="routine">Routine</option>
+            <option value="urgent">Urgent</option>
+            <option value="stat">STAT</option>
+          </select>
+          <input
+            type="text"
+            placeholder="Order notes"
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            className="input-base h-9 text-sm"
+          />
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={submit}
+              disabled={createMut.isPending || !testType}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            >
+              {createMut.isPending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : null}
+              Create test order
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowForm(false)}
+              className="inline-flex h-9 items-center rounded-lg border border-border px-3 text-sm hover:bg-accent"
+            >
+              Cancel
+            </button>
+          </div>
+          {createMut.isError && (
+            <p className="text-xs text-destructive">{createMut.error.message}</p>
+          )}
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setShowForm(true)}
+          className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 px-4 text-sm font-medium text-primary hover:bg-primary/15"
+        >
+          <FlaskConical className="h-4 w-4" />
+          New test order
+        </button>
+      )}
+    </div>
+  );
+}
+
+const PRIORITY_STYLES = {
+  high: "border-primary/40 bg-primary/10 text-primary",
+  medium: "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300",
+  low: "border-zinc-500/30 bg-zinc-500/10 text-muted-foreground",
+};
+
+function RoutingSuggestionBanner({ ticketId }) {
+  const { refreshToken } = useLiveRefresh();
+  const loader = useCallback(() => fetchNextRoute(ticketId), [ticketId]);
+  const query = useApiResource(loader, { enabled: isBrowser && !!ticketId, refreshToken });
+
+  const data = query.data;
+  if (!data || data.suggestions.length === 0) return null;
+
+  return (
+    <div className="mt-4 space-y-2">
+      <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+        <Navigation className="h-4 w-4" />
+        Suggested next route
+      </div>
+      {data.suggestions.map((s, idx) => (
+        <div
+          key={idx}
+          className={`flex items-center justify-between rounded-xl border px-4 py-3 ${PRIORITY_STYLES[s.priority] ?? PRIORITY_STYLES.low}`}
+        >
+          <div>
+            <span className="font-display text-sm font-bold">{s.department}</span>
+            <p className="text-xs opacity-80">{s.reason}</p>
+          </div>
+          <span className="text-[10px] font-bold uppercase tracking-wide">{s.priority}</span>
+        </div>
+      ))}
+    </div>
+  );
 }

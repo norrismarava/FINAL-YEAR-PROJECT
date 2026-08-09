@@ -9,11 +9,15 @@ import {
   resetPasswordController,
   staffRegisterController,
 } from "./controllers/authController.js";
+import { auditEventsController } from "./controllers/auditController.js";
 import {
   patientLoginController,
   patientMeController,
+  patientProfileCardController,
   patientRegisterController,
   patientTicketsController,
+  patientUpdateProfileController,
+  patientChangePasswordController,
 } from "./controllers/patientAuthController.js";
 
 import {
@@ -27,28 +31,117 @@ import {
   assignPriorityController,
   callNextController,
   dashboardController,
+  etaEstimatesController,
   healthController,
+  prescriptionsListController,
+  ticketPrescriptionsController,
+  createPrescriptionController,
+  updatePrescriptionStateController,
+  prescriptionSummaryController,
+  testOrdersListController,
+  ticketTestOrdersController,
+  createTestOrderController,
+  updateTestOrderStateController,
+  testOrderSummaryController,
+  suggestNextDepartmentController,
+  submitFeedbackController,
+  ticketFeedbackController,
+  confirmArrivalController,
+  kioskCheckInController,
+  kioskLookupController,
   metaController,
   notificationsController,
   patientSearchController,
   queueBoardController,
   queueEventsController,
   recallTicketController,
+  preRegisterController,
   registerController,
   retryNotificationController,
   selfRegisterController,
   retryNotificationsBulkController,
+  ticketETAController,
   ticketTrackingController,
+  triageAssessmentController,
   ticketsController,
   transferTicketController,
   updateTicketStatusController,
   whatsAppWebhookEventController,
   whatsAppWebhookVerificationController,
+  averageWaitReportController,
+  departmentPerformanceReportController,
+  noShowReportController,
+  triageReportController,
+  labTurnaroundReportController,
+  staffWorkloadReportController,
+  outOfStockReportController,
+  markOutOfStockController,
+  peakHoursReportController,
+  congestionReportController,
+  resourceAllocationReportController,
+  whatsAppStatusController,
+  reassessmentAlertsController,
 } from "./controllers/queueController.js";
-import { withStaffAuth } from "./middleware/auth.js";
+import {
+  hospitalInfoController,
+  hospitalListController,
+  hospitalDetailController,
+  hospitalCreateController,
+  hospitalUpdateController,
+} from "./controllers/hospitalController.js";
+import {
+  waitTimePredictionController,
+  bottleneckAnalysisController,
+  chatbotController,
+} from "./controllers/aiController.js";
+import {
+  getConfigController,
+  updateConfigController,
+  resetConfigController,
+} from "./controllers/configController.js";
+import {
+  syncExportController,
+  syncImportController,
+  syncBackupController,
+  syncStatusController,
+} from "./controllers/syncController.js";
+import {
+  stockListController,
+  stockSummaryController,
+  stockFlagController,
+  stockAddController,
+  stockRemoveController,
+  prescriptionsWithStockController,
+  flagPrescriptionItemController,
+} from "./controllers/pharmacyStockController.js";
+import {
+  oiStreamsController,
+  oiVisitsController,
+  oiCreateVisitController,
+  oiUpdateVisitController,
+  oiSummaryController,
+} from "./controllers/oiClinicController.js";
+import {
+  appointmentListController,
+  appointmentCreateController,
+  appointmentDetailController,
+  appointmentUpdateStatusController,
+  appointmentSummaryController,
+  appointmentMetaController,
+  appointmentAvailableSlotsController,
+  followUpCreateController,
+  followUpsForTicketController,
+  appointmentRemindersController,
+  markReminderSentController,
+  patientAppointmentListController,
+  patientAppointmentCreateController,
+  patientAppointmentCancelController,
+} from "./controllers/appointmentController.js";
+import { withStaffAuth, withPatientAuth } from "./middleware/auth.js";
 import { applyCors } from "./middleware/cors.js";
 import { initializeQueueRepository } from "./repositories/queueRepository.js";
 import { initializeNotificationDeliveryService } from "./services/notificationService.js";
+import { seedDefaultAdmin } from "./db/seedAdmin.js";
 import { HttpError, sendJson } from "./utils/http.js";
 import { createRouter } from "./utils/router.js";
 
@@ -63,7 +156,16 @@ router.register("GET", "/api/profile/avatar/:userId", getAvatarController);
 
 router.register("POST", "/api/auth/forgot-password", forgotPasswordController);
 router.register("POST", "/api/auth/reset-password", resetPasswordController);
-router.register("POST", "/api/auth/staff-register", staffRegisterController);
+router.register(
+  "POST",
+  "/api/auth/staff-register",
+  withStaffAuth(["admin"], staffRegisterController),
+);
+router.register(
+  "GET",
+  "/api/audit-events",
+  withStaffAuth(["admin"], auditEventsController),
+);
 
 router.register(
   "POST",
@@ -73,6 +175,21 @@ router.register(
 router.register("POST", "/api/patient/auth/login", patientLoginController);
 router.register("GET", "/api/patient/auth/me", patientMeController);
 router.register("GET", "/api/patient/tickets", patientTicketsController);
+router.register(
+  "GET",
+  "/api/patient/profile-card",
+  patientProfileCardController,
+);
+router.register(
+  "PATCH",
+  "/api/patient/profile",
+  patientUpdateProfileController,
+);
+router.register(
+  "PATCH",
+  "/api/patient/password",
+  patientChangePasswordController,
+);
 router.register("GET", "/api/meta", metaController);
 router.register(
   "GET",
@@ -85,6 +202,14 @@ router.register(
   withStaffAuth(["reception"], registerController),
 );
 router.register("POST", "/api/tickets/self-register", selfRegisterController);
+router.register("POST", "/api/tickets/pre-register", preRegisterController);
+router.register("POST", "/api/kiosk/lookup", kioskLookupController);
+router.register("POST", "/api/kiosk/check-in", kioskCheckInController);
+router.register(
+  "POST",
+  "/api/tickets/:id/confirm-arrival",
+  withStaffAuth(["reception"], confirmArrivalController),
+);
 router.register(
   "GET",
   "/api/patients/search",
@@ -94,6 +219,11 @@ router.register(
   "PATCH",
   "/api/tickets/:id/priority",
   withStaffAuth(["triage"], assignPriorityController),
+);
+router.register(
+  "POST",
+  "/api/tickets/:id/triage-assessment",
+  withStaffAuth(["triage"], triageAssessmentController),
 );
 router.register(
   "PATCH",
@@ -116,6 +246,53 @@ router.register(
   withStaffAuth(["triage", "clinician"], callNextController),
 );
 router.register("GET", "/api/queue/board", queueBoardController);
+router.register("GET", "/api/queue/staff-board", withStaffAuth(["reception", "triage", "clinician", "admin"], queueBoardController));
+router.register("GET", "/api/eta/estimates", etaEstimatesController);
+router.register("GET", "/api/tickets/:id/eta", ticketETAController);
+router.register("GET", "/api/prescriptions", withStaffAuth(["clinician", "triage"], prescriptionsListController));
+router.register("GET", "/api/prescriptions/summary", withStaffAuth(["clinician", "triage"], prescriptionSummaryController));
+router.register("GET", "/api/tickets/:id/prescriptions", withStaffAuth(["clinician", "triage"], ticketPrescriptionsController));
+router.register("POST", "/api/tickets/:id/prescriptions", withStaffAuth(["clinician"], createPrescriptionController));
+router.register("PATCH", "/api/prescriptions/:id/state", withStaffAuth(["clinician", "triage"], updatePrescriptionStateController));
+
+router.register("GET", "/api/pharmacy/stock", withStaffAuth(["clinician", "triage", "admin"], stockListController));
+router.register("GET", "/api/pharmacy/stock/summary", withStaffAuth(["clinician", "triage", "admin"], stockSummaryController));
+router.register("PATCH", "/api/pharmacy/stock/flag", withStaffAuth(["clinician", "triage", "admin"], stockFlagController));
+router.register("POST", "/api/pharmacy/stock", withStaffAuth(["admin"], stockAddController));
+router.register("DELETE", "/api/pharmacy/stock/:id", withStaffAuth(["admin"], stockRemoveController));
+router.register("GET", "/api/pharmacy/prescriptions", withStaffAuth(["clinician", "triage", "admin"], prescriptionsWithStockController));
+router.register("PATCH", "/api/prescriptions/:id/stock-flag", withStaffAuth(["clinician", "triage", "admin"], flagPrescriptionItemController));
+
+router.register("GET", "/api/oi-clinic/streams", withStaffAuth(["clinician", "triage", "admin"], oiStreamsController));
+router.register("GET", "/api/oi-clinic/visits", withStaffAuth(["clinician", "triage", "admin"], oiVisitsController));
+router.register("GET", "/api/oi-clinic/summary", withStaffAuth(["clinician", "triage", "admin"], oiSummaryController));
+router.register("POST", "/api/tickets/:id/oi-clinic-visit", withStaffAuth(["clinician", "triage"], oiCreateVisitController));
+router.register("PATCH", "/api/oi-clinic/visits/:id/state", withStaffAuth(["clinician", "triage"], oiUpdateVisitController));
+router.register("GET", "/api/appointments", withStaffAuth(["reception", "triage", "clinician", "admin"], appointmentListController));
+router.register("POST", "/api/appointments", withStaffAuth(["reception", "admin"], appointmentCreateController));
+router.register("GET", "/api/appointments/meta", withStaffAuth(["reception", "triage", "clinician", "admin"], appointmentMetaController));
+router.register("GET", "/api/appointments/summary", withStaffAuth(["reception", "triage", "clinician", "admin"], appointmentSummaryController));
+router.register("GET", "/api/appointments/available-slots", withStaffAuth(["reception", "triage", "clinician", "admin"], appointmentAvailableSlotsController));
+router.register("GET", "/api/appointments/:id", withStaffAuth(["reception", "triage", "clinician", "admin"], appointmentDetailController));
+router.register("PATCH", "/api/appointments/:id/status", withStaffAuth(["reception", "triage", "clinician", "admin"], appointmentUpdateStatusController));
+router.register("POST", "/api/appointments/follow-up", withStaffAuth(["clinician", "triage", "admin"], followUpCreateController));
+router.register("GET", "/api/appointments/reminders", withStaffAuth(["reception", "triage", "clinician", "admin"], appointmentRemindersController));
+router.register("PATCH", "/api/appointments/:id/reminder-sent", withStaffAuth(["reception", "triage", "clinician", "admin"], markReminderSentController));
+router.register("GET", "/api/tickets/:ticketId/follow-ups", withStaffAuth(["reception", "triage", "clinician", "admin"], followUpsForTicketController));
+
+router.register("GET", "/api/patient/appointments", withPatientAuth(patientAppointmentListController));
+router.register("POST", "/api/patient/appointments", withPatientAuth(patientAppointmentCreateController));
+router.register("PATCH", "/api/patient/appointments/:id/cancel", withPatientAuth(patientAppointmentCancelController));
+router.register("GET", "/api/patient/appointments/meta", withPatientAuth(appointmentMetaController));
+router.register("GET", "/api/patient/appointments/available-slots", withPatientAuth(appointmentAvailableSlotsController));
+router.register("GET", "/api/test-orders", withStaffAuth(["clinician", "triage"], testOrdersListController));
+router.register("GET", "/api/test-orders/summary", withStaffAuth(["clinician", "triage"], testOrderSummaryController));
+router.register("GET", "/api/tickets/:id/test-orders", withStaffAuth(["clinician", "triage"], ticketTestOrdersController));
+router.register("POST", "/api/tickets/:id/test-orders", withStaffAuth(["clinician"], createTestOrderController));
+router.register("PATCH", "/api/test-orders/:id/state", withStaffAuth(["clinician", "triage"], updateTestOrderStateController));
+router.register("GET", "/api/tickets/:id/next-route", withStaffAuth(["clinician", "triage"], suggestNextDepartmentController));
+router.register("POST", "/api/tickets/:id/feedback", submitFeedbackController);
+router.register("GET", "/api/tickets/:id/feedback", ticketFeedbackController);
 router.register(
   "GET",
   "/api/dashboard/summary",
@@ -152,6 +329,144 @@ router.register(
   whatsAppWebhookEventController,
 );
 router.register("GET", "/api/events", queueEventsController);
+
+router.register(
+  "GET",
+  "/api/reports/average-wait",
+  withStaffAuth(["triage", "clinician", "admin"], averageWaitReportController),
+);
+router.register(
+  "GET",
+  "/api/reports/department-performance",
+  withStaffAuth(["triage", "clinician", "admin"], departmentPerformanceReportController),
+);
+router.register(
+  "GET",
+  "/api/reports/no-show",
+  withStaffAuth(["triage", "clinician", "admin"], noShowReportController),
+);
+router.register(
+  "GET",
+  "/api/reports/triage",
+  withStaffAuth(["triage", "clinician", "admin"], triageReportController),
+);
+router.register(
+  "GET",
+  "/api/reports/lab-turnaround",
+  withStaffAuth(["triage", "clinician", "admin"], labTurnaroundReportController),
+);
+router.register(
+  "GET",
+  "/api/reports/staff-workload",
+  withStaffAuth(["triage", "clinician", "admin"], staffWorkloadReportController),
+);
+router.register(
+  "GET",
+  "/api/reports/out-of-stock",
+  withStaffAuth(["triage", "clinician", "admin"], outOfStockReportController),
+);
+router.register(
+  "GET",
+  "/api/reports/peak-hours",
+  withStaffAuth(["triage", "clinician", "admin"], peakHoursReportController),
+);
+router.register(
+  "GET",
+  "/api/reports/congestion",
+  withStaffAuth(["triage", "clinician", "admin"], congestionReportController),
+);
+router.register(
+  "GET",
+  "/api/reports/resource-allocation",
+  withStaffAuth(["triage", "clinician", "admin"], resourceAllocationReportController),
+);
+router.register(
+  "PATCH",
+  "/api/prescriptions/:prescriptionId/stock",
+  withStaffAuth(["clinician", "triage", "admin"], markOutOfStockController),
+);
+router.register(
+  "GET",
+  "/api/whatsapp/status",
+  withStaffAuth(["triage", "clinician", "admin"], whatsAppStatusController),
+);
+
+router.register(
+  "GET",
+  "/api/reassessment-alerts",
+  withStaffAuth(["triage", "clinician", "admin"], reassessmentAlertsController),
+);
+
+router.register(
+  "GET",
+  "/api/config",
+  withStaffAuth(["admin"], getConfigController),
+);
+router.register(
+  "PATCH",
+  "/api/config",
+  withStaffAuth(["admin"], updateConfigController),
+);
+router.register(
+  "POST",
+  "/api/config/reset",
+  withStaffAuth(["admin"], resetConfigController),
+);
+
+router.register("GET", "/api/hospital/info", hospitalInfoController);
+router.register(
+  "GET",
+  "/api/hospitals",
+  withStaffAuth(["admin"], hospitalListController),
+);
+router.register(
+  "GET",
+  "/api/hospitals/:id",
+  withStaffAuth(["admin"], hospitalDetailController),
+);
+router.register(
+  "POST",
+  "/api/hospitals",
+  withStaffAuth(["admin"], hospitalCreateController),
+);
+router.register(
+  "PATCH",
+  "/api/hospitals/:id",
+  withStaffAuth(["admin"], hospitalUpdateController),
+);
+
+router.register(
+  "GET",
+  "/api/ai/predict-wait",
+  withStaffAuth(["triage", "clinician", "admin"], waitTimePredictionController),
+);
+router.register(
+  "GET",
+  "/api/ai/bottlenecks",
+  withStaffAuth(["triage", "clinician", "admin"], bottleneckAnalysisController),
+);
+router.register("POST", "/api/ai/chatbot", chatbotController);
+
+router.register(
+  "GET",
+  "/api/sync/export",
+  withStaffAuth(["admin"], syncExportController),
+);
+router.register(
+  "POST",
+  "/api/sync/import",
+  withStaffAuth(["admin"], syncImportController),
+);
+router.register(
+  "POST",
+  "/api/sync/backup",
+  withStaffAuth(["admin"], syncBackupController),
+);
+router.register(
+  "GET",
+  "/api/sync/status",
+  withStaffAuth(["admin"], syncStatusController),
+);
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -202,6 +517,9 @@ async function startServer() {
   await verifyPortAvailable(env.port);
   await initializeQueueRepository();
   await initializeNotificationDeliveryService();
+  if (env.databaseProvider === "mysql") {
+    await seedDefaultAdmin();
+  }
 
   await new Promise((resolve, reject) => {
     function handleError(error) {

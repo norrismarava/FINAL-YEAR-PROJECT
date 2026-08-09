@@ -12,10 +12,16 @@ import {
 } from "../repositories/queueRepository.js";
 import { broadcastQueueEvent } from "../sockets/queueEvents.js";
 import { HttpError } from "../utils/http.js";
+import { recordAuditEventSafely } from "./auditService.js";
 import { sendWhatsAppMessage } from "./whatsAppProvider.js";
 
 const NEAR_TURN_WINDOW = 2;
 const scheduledRetries = new Map();
+
+function createTrackingUrl(ticketCode) {
+  const trackingPath = `/track?ticket=${encodeURIComponent(ticketCode)}`;
+  return `${env.publicAppUrl}${trackingPath}`;
+}
 
 function createNotificationPayload({
   ticket,
@@ -329,7 +335,7 @@ export async function dispatchRegistrationNotification(ticket) {
   return createWhatsAppNotification(ticket, {
     type: "queue-registered",
     title: `WhatsApp updates enabled for ${ticket.ticket}`,
-    message: `Hello ${ticket.patientName}, you are registered for ${ticket.department}. We will alert you again when your turn gets closer.`,
+    message: `Hello ${ticket.patientName}, your WaitLess queue token is ${ticket.ticket} for ${ticket.department}. Track your position at ${createTrackingUrl(ticket.ticket)}. We will alert you again when your turn gets closer.`,
   });
 }
 
@@ -408,6 +414,68 @@ export async function dispatchTransferNotification(ticket, previousDepartment) {
   return notifications;
 }
 
+export async function dispatchPrescriptionReadyNotification(ticket, prescription) {
+  const notifications = [];
+
+  notifications.push(
+    await createDisplayBoardNotification(ticket, {
+      type: "prescription-ready",
+      title: `${ticket.ticket} prescription ready`,
+      message: `${ticket.patientName}, your prescription ${prescription.ticketCode} is ready for collection at Pharmacy.`,
+      recipient: "Waiting area display",
+    }),
+  );
+
+  if (ticket.whatsApp) {
+    notifications.push(
+      await createWhatsAppNotification(ticket, {
+        type: "prescription-ready",
+        title: `Prescription ready for ${ticket.ticket}`,
+        message: `Hello ${ticket.patientName}, your prescription is now ready for collection at the Pharmacy. Please proceed to collect your medication. Track your status at ${createTrackingUrl(ticket.ticket)}.`,
+      }),
+    );
+  }
+
+  return notifications;
+}
+
+export async function dispatchTestResultReadyNotification(ticket, testOrder) {
+  const notifications = [];
+
+  const testLabel = testOrder.testType?.replace(/-/g, " ") ?? "test";
+  const routeBackDept = testOrder.orderingDepartment ?? "OPD";
+
+  notifications.push(
+    await createDisplayBoardNotification(ticket, {
+      type: "test-result-ready",
+      title: `${ticket.ticket} lab results ready`,
+      message: `${ticket.patientName}, your ${testLabel} results are ready. Please return to ${routeBackDept} for review.`,
+      recipient: "Waiting area display",
+    }),
+  );
+
+  if (ticket.whatsApp) {
+    notifications.push(
+      await createWhatsAppNotification(ticket, {
+        type: "test-result-ready",
+        title: `Lab results ready for ${ticket.ticket}`,
+        message: `Hello ${ticket.patientName}, your ${testLabel} results are now ready. Please return to ${routeBackDept} so your clinician can review them with you. Track your status at ${createTrackingUrl(ticket.ticket)}.`,
+      }),
+    );
+  }
+
+  broadcastQueueEvent("test-result.ready", {
+    ticketId: ticket.id,
+    ticketCode: ticket.ticket,
+    patientName: ticket.patientName,
+    department: routeBackDept,
+    testType: testOrder.testType,
+    testOrderId: testOrder.id,
+  });
+
+  return notifications;
+}
+
 export async function dispatchTurnReadinessNotifications(tickets) {
   const notifications = [];
   const alreadyNotified = new Set(
@@ -477,7 +545,7 @@ export async function getNotificationsForTicket(ticketId, limit = 10) {
     .slice(0, limit);
 }
 
-export async function retryNotification(notificationId) {
+export async function retryNotification(notificationId, staff) {
   const notification = await findNotificationById(notificationId);
 
   if (!notification) {
@@ -502,6 +570,15 @@ export async function retryNotification(notificationId) {
   }));
 
   if (updated) {
+    await recordAuditEventSafely({
+      actor: staff,
+      action: "notification.retry-requested",
+      entityType: "notification",
+      entityId: notificationId,
+      entityLabel: notification.ticket,
+      before: { status: notification.status, channel: notification.channel },
+      after: { status: updated.status, channel: updated.channel },
+    });
     broadcastNotificationEvent("notification.updated", updated);
   }
 
@@ -509,7 +586,7 @@ export async function retryNotification(notificationId) {
   return updated;
 }
 
-export async function retryNotificationsBulk(notificationIds) {
+export async function retryNotificationsBulk(notificationIds, staff) {
   const uniqueIds = [...new Set((notificationIds ?? []).filter(Boolean))];
 
   if (!uniqueIds.length) {
@@ -548,7 +625,7 @@ export async function retryNotificationsBulk(notificationIds) {
       continue;
     }
 
-    notifications.push(await retryNotification(notificationId));
+    notifications.push(await retryNotification(notificationId, staff));
   }
 
   return {

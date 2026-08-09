@@ -10,7 +10,9 @@ import {
   ChevronDown,
   Facebook,
   FileChartColumn,
+  FlaskConical,
   Globe,
+  HeartPulse,
   House,
   Instagram,
   LayoutDashboard,
@@ -21,10 +23,12 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Phone,
+  Pill,
   Search,
   Settings2,
   ShieldCheck,
   ShieldPlus,
+  ScrollText,
   Stethoscope,
   Ticket,
   UserRound,
@@ -35,7 +39,10 @@ import {
 
 import { AuthProvider, useAuth } from "@/auth/AuthProvider";
 import { PatientAuthProvider, usePatientAuth } from "@/auth/PatientAuthProvider";
+import ChatbotWidget from "@/components/ChatbotWidget";
+import OfflineIndicator from "@/components/OfflineIndicator";
 import { LoadingPanel } from "@/components/ui/system-loader";
+import { RouteLoadingBar } from "@/components/RouteLoadingBar";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -55,6 +62,7 @@ import {
 } from "@/services/staffProfilePrefs";
 import { QueueRealtimeProvider } from "@/sockets/QueueRealtimeProvider";
 import { resolveProfileImageUrl } from "@/utils/profileImage";
+import { useIdleTimer } from "@/hooks/useIdleTimer";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -110,6 +118,9 @@ const STAFF_WORKSPACE_ITEMS = [
   },
   { group: "Clinical", to: "/admin/departments", label: "Departments", icon: Building2 },
   { group: "Clinical", to: "/admin/appointments", label: "Appointments", icon: CalendarDays },
+  { group: "Clinical", to: "/admin/pharmacy", label: "Pharmacy", icon: Pill, roles: ["clinician", "triage"] },
+  { group: "Clinical", to: "/admin/laboratory", label: "Laboratory", icon: FlaskConical, roles: ["clinician", "triage"] },
+  { group: "Clinical", to: "/admin/oi-clinic", label: "OI Clinic", icon: HeartPulse, roles: ["clinician", "triage"] },
   { group: "Insights", to: "/admin/reports", label: "Reports", icon: FileChartColumn },
   {
     group: "Insights",
@@ -120,22 +131,30 @@ const STAFF_WORKSPACE_ITEMS = [
   { group: "Insights", to: "/admin/notifications", label: "Notifications", icon: BellRing },
   {
     group: "Admin",
+    to: "/admin/admin-dashboard",
+    label: "Admin Dashboard",
+    icon: ShieldCheck,
+    roles: ["admin"],
+  },
+  {
+    group: "Admin",
     to: "/admin/staff",
     label: "Staff",
     icon: UsersRound,
+    roles: ["admin"],
+  },
+  {
+    group: "Admin",
+    to: "/admin/audit",
+    label: "Audit Trail",
+    icon: ScrollText,
     roles: ["admin"],
   },
   { group: "Admin", to: "/admin/settings", label: "Settings", icon: Settings2 },
   { group: "Account", to: "/admin/profile", label: "My Profile", icon: UserRound },
 ];
 
-const AUTH_ROUTE_PREFIXES = [
-  "/admin/login",
-  "/admin/staff-register",
-  "/admin/staff-signup",
-  "/admin/forgot-password",
-  "/admin/reset-password",
-];
+const AUTH_ROUTE_PREFIXES = ["/admin/login", "/admin/forgot-password", "/admin/reset-password"];
 
 const STAFF_WORKSPACE_ROUTE_PREFIXES = ["/admin"];
 
@@ -147,7 +166,9 @@ function isPatientPortalPath(pathname) {
   return (
     pathname.startsWith("/track") ||
     pathname.startsWith("/queue") ||
+    pathname.startsWith("/department-board") ||
     pathname.startsWith("/self-register") ||
+    pathname.startsWith("/kiosk") ||
     pathname.startsWith("/patient/register") ||
     pathname.startsWith("/patient/login") ||
     pathname.startsWith("/patient/dashboard")
@@ -219,6 +240,54 @@ export function AppLayout() {
   );
 }
 
+function IdleLogoutManager() {
+  const auth = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isStaffRoute = location.pathname.startsWith("/admin");
+  const idle = useIdleTimer({ enabled: auth.isAuthenticated && isStaffRoute });
+
+  useEffect(() => {
+    if (!auth.isAuthenticated) return;
+    function handleIdleTimeout() {
+      auth.logout();
+      navigate("/login", { replace: true });
+    }
+    window.addEventListener("waitless:idle-timeout", handleIdleTimeout);
+    return () => window.removeEventListener("waitless:idle-timeout", handleIdleTimeout);
+  }, [auth, navigate]);
+
+  if (!auth.isAuthenticated || !isStaffRoute) return null;
+
+  return (
+    <AlertDialog open={idle.isWarning}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Session expiring due to inactivity</AlertDialogTitle>
+          <AlertDialogDescription>
+            You will be automatically logged out in{" "}
+            <span className="font-bold text-destructive">{idle.remainingSeconds}s</span>.{" "}
+            Click "Stay signed in" to continue your session.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={idle.dismissWarning}>
+            Stay signed in
+          </AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => {
+              auth.logout();
+              navigate("/login", { replace: true });
+            }}
+          >
+            Log out now
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 function AppScaffold() {
   const auth = useAuth();
   const patientAuth = usePatientAuth();
@@ -231,6 +300,31 @@ function AppScaffold() {
   const showStaffSidebar = isStaffWorkspaceTheme;
   const isHomeRoute = location.pathname === "/";
 
+  if (!auth.isReady && isWorkspaceRoute) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#04141f]">
+        <div className="flex flex-col items-center gap-5">
+          <img
+            src="/waitless-logo-icon.png"
+            alt="WaitLess"
+            className="h-16 w-16 rounded-xl object-contain"
+            style={{ animation: "preloader-pulse 1.8s ease-in-out infinite" }}
+          />
+          <div
+            className="h-9 w-9 rounded-full border-[3px] border-teal-400/15"
+            style={{
+              borderTopColor: "#2dd4bf",
+              animation: "preloader-spin 0.8s linear infinite",
+            }}
+          />
+          <span className="text-[0.8rem] font-semibold uppercase tracking-[0.24em] text-white/40">
+            Loading workspace
+          </span>
+        </div>
+      </div>
+    );
+  }
+
   if (isWorkspaceRoute && auth.isReady && !auth.isAuthenticated) {
     return <Navigate to="/admin/login" replace />;
   }
@@ -238,6 +332,7 @@ function AppScaffold() {
   if (isPatientPortalRoute) {
     return (
       <div className="relative min-h-screen overflow-hidden bg-[#eef7f8] text-slate-900">
+        <RouteLoadingBar />
         <div className="pointer-events-none absolute inset-x-0 top-0 h-[30rem] bg-[linear-gradient(180deg,rgba(204,251,241,0.78),rgba(219,234,254,0.62)_45%,rgba(248,250,252,0))]" />
         <div className="pointer-events-none absolute -left-24 top-16 h-80 w-80 rounded-full bg-teal-300/18 blur-3xl" />
         <div className="pointer-events-none absolute right-0 top-12 h-96 w-96 rounded-full bg-blue-400/16 blur-3xl" />
@@ -265,6 +360,7 @@ function AppScaffold() {
             : ""
       }`}
     >
+      <RouteLoadingBar />
       {isAuthRoute ? (
         <>
           <div className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-gradient-to-b from-[#081523] via-[#092138]/75 to-transparent" />
@@ -301,6 +397,9 @@ function AppScaffold() {
           )}
         </main>
         {isStaffWorkspaceTheme ? null : <Footer />}
+        <IdleLogoutManager />
+        <ChatbotWidget />
+        <OfflineIndicator />
       </div>
     </div>
   );
@@ -468,27 +567,7 @@ function Header() {
                     Back to workspace
                   </Link>
                 ) : null}
-                {!isStaffWorkspaceTheme && !isAuthRoute && !auth.isAuthenticated ? (
-                  patientAuth.isPatientAuthenticated ? (
-                    <PatientAccountMenu
-                      patientAuth={patientAuth}
-                      isPublicGlassRoute={isPublicGlassRoute}
-                    />
-                  ) : (
-                    <Link
-                      to="/patient/login"
-                      className={`inline-flex h-11 items-center gap-2 rounded-full px-4 text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5 ${
-                        isPublicGlassRoute
-                          ? "border border-teal-200/50 bg-white/40 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_6px_18px_rgba(15,118,110,0.08)] backdrop-blur-md hover:bg-white/55"
-                          : "border border-primary/20 bg-primary-soft/70 text-primary hover:border-primary/30 hover:bg-primary-soft"
-                      }`}
-                    >
-                      <UserRound className="h-3.5 w-3.5" />
-                      Sign in
-                    </Link>
-                  )
-                ) : null}
-                {!isStaffWorkspaceTheme && !isAuthRoute ? (
+                {!isStaffWorkspaceTheme && !isAuthRoute && !patientAuth.isPatientAuthenticated ? (
                   <Link
                     to={headerPrimaryAction.to}
                     className={`inline-flex h-11 items-center gap-2 rounded-xl px-5 text-sm font-semibold text-primary-foreground shadow-elegant transition-transform hover:-translate-y-0.5 ${

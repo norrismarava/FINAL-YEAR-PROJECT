@@ -9,10 +9,12 @@ import {
   MessageCircle,
   MonitorSmartphone,
   PhoneCall,
+  Printer,
   QrCode,
   RefreshCw,
   ScanLine,
   Search,
+  Share2,
   ShieldCheck,
   User,
   X,
@@ -20,12 +22,20 @@ import {
 
 import { DEPARTMENTS, PATIENT_CATEGORIES } from "@/services/queueMeta";
 import {
+  confirmArrival,
   fetchPatientMatches,
+  fetchTickets,
   fetchQueueMeta,
   registerPatient,
 } from "@/services/queueApi";
 import { useLiveRefresh } from "@/context/LiveRefreshContext";
 import { useApiAction, useApiResource } from "@/hooks/useApiResource";
+import {
+  buildTrackingUrl,
+  printQueueTicket,
+  shareQueueTicket,
+} from "@/services/queueTicketHandoff";
+import { useFormDraft } from "@/utils/formDraft";
 
 const isBrowser = typeof window !== "undefined";
 const INITIAL_FORM = {
@@ -49,10 +59,37 @@ export default function RegisterPage() {
   const { refreshLiveData } = useLiveRefresh();
   const [submitted, setSubmitted] = useState(null);
   const [form, setForm] = useState(INITIAL_FORM);
+
+  const formDraft = useFormDraft("register-patient", form);
+
+  useEffect(() => {
+    if (formDraft.hasDraft && formDraft.draft?.data && !submitted) {
+      const saved = formDraft.draft.data;
+      const hasValues = saved.fullName || saved.nationalId || saved.phone;
+      if (hasValues) {
+        setForm(saved);
+      }
+    }
+  }, [formDraft.draft?.savedAt]);
   const [lookupTerm, setLookupTerm] = useState("");
   const [appliedPatientId, setAppliedPatientId] = useState(null);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [handoffState, setHandoffState] = useState("");
+  const [showPreRegistered, setShowPreRegistered] = useState(false);
+
+  const loadPreRegistered = useCallback(
+    () => fetchTickets({ status: "pre-registered" }),
+    [],
+  );
+  const preRegisteredQuery = useApiResource(loadPreRegistered, {
+    enabled: false,
+  });
+  const confirmArrivalMutation = useApiAction(confirmArrival, {
+    onSuccess: () => {
+      refreshLiveData();
+      preRegisteredQuery.refetch();
+    },
+  });
 
   const loadMeta = useCallback(() => fetchQueueMeta(), []);
   const metaQuery = useApiResource(loadMeta, { enabled: isBrowser });
@@ -64,6 +101,7 @@ export default function RegisterPage() {
       setAppliedPatientId(null);
       setLookupTerm("");
       setHandoffState("");
+      formDraft.clear();
       refreshLiveData();
     },
   });
@@ -132,7 +170,27 @@ export default function RegisterPage() {
     }
   }
 
+  async function handlePrintTicket() {
+    try {
+      setHandoffState("Preparing printable ticket...");
+      await printQueueTicket(submitted);
+      setHandoffState("Print dialog opened.");
+    } catch (error) {
+      setHandoffState(error.message || "The ticket could not be printed.");
+    }
+  }
+
+  async function handleShareTicket() {
+    try {
+      setHandoffState(await shareQueueTicket(submitted));
+    } catch (error) {
+      setHandoffState(error.message || "The ticket could not be shared.");
+    }
+  }
+
   if (submitted) {
+    const channels = submitted.handoff?.channels ?? {};
+
     return (
       <section className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
         <div className="surface-panel p-8 sm:p-10">
@@ -213,7 +271,29 @@ export default function RegisterPage() {
                 <HandoffMeta label="Ticket code" value={submitted.ticket} />
                 <HandoffMeta
                   label="Tracking link"
-                  value={buildTrackingUrl(submitted.ticket)}
+                  value={buildTrackingUrl(submitted)}
+                />
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                <ChannelDeliveryStatus
+                  label="Print"
+                  status={channels.print?.status ?? "ready"}
+                />
+                <ChannelDeliveryStatus
+                  label="Phone"
+                  status={channels.phone?.status ?? "ready"}
+                />
+                <ChannelDeliveryStatus
+                  label="WhatsApp"
+                  status={
+                    channels.whatsapp?.status ??
+                    (submitted.whatsApp ? "queued" : "disabled")
+                  }
+                />
+                <ChannelDeliveryStatus
+                  label="Display"
+                  status={channels.displayBoard?.status ?? "synced"}
                 />
               </div>
 
@@ -232,7 +312,7 @@ export default function RegisterPage() {
                   type="button"
                   onClick={() =>
                     copyRegistrationValue(
-                      buildTrackingUrl(submitted.ticket),
+                      buildTrackingUrl(submitted),
                       "Tracking link copied.",
                     )
                   }
@@ -240,6 +320,22 @@ export default function RegisterPage() {
                 >
                   <Copy className="h-4 w-4 text-primary" />
                   Copy tracking link
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePrintTicket}
+                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-background/80 px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+                >
+                  <Printer className="h-4 w-4 text-primary" />
+                  Print ticket
+                </button>
+                <button
+                  type="button"
+                  onClick={handleShareTicket}
+                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-background/80 px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+                >
+                  <Share2 className="h-4 w-4 text-primary" />
+                  Send to phone
                 </button>
               </div>
 
@@ -301,6 +397,18 @@ export default function RegisterPage() {
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+      <PreRegisteredArrivals
+        show={showPreRegistered}
+        onToggle={() => {
+          setShowPreRegistered(!showPreRegistered);
+          if (!showPreRegistered) preRegisteredQuery.refetch();
+        }}
+        tickets={preRegisteredQuery.data ?? []}
+        loading={preRegisteredQuery.loading}
+        onConfirm={(id) => confirmArrivalMutation.mutate(id)}
+        confirmingId={confirmArrivalMutation.variables}
+        error={confirmArrivalMutation.error?.message}
+      />
       <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
         <aside className="surface-panel-dark p-6 sm:p-8">
           <div className="text-[11px] font-bold uppercase tracking-[0.28em] text-primary-foreground/70">
@@ -707,6 +815,25 @@ function HandoffMeta({ label, value }) {
   );
 }
 
+function ChannelDeliveryStatus({ label, status }) {
+  const isDisabled = status === "disabled";
+
+  return (
+    <div className="rounded-xl border border-border/70 bg-background/70 px-3 py-3">
+      <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+        {label}
+      </div>
+      <div
+        className={`mt-1 text-xs font-bold capitalize ${
+          isDisabled ? "text-muted-foreground" : "text-priority-green"
+        }`}
+      >
+        {status}
+      </div>
+    </div>
+  );
+}
+
 function HandoffSupportCard({ icon: Icon, title, body }) {
   return (
     <div className="rounded-2xl border border-border/70 bg-background/80 px-4 py-4">
@@ -935,16 +1062,6 @@ function Field({ label, children, required, full }) {
   );
 }
 
-function buildTrackingUrl(ticketCode) {
-  const targetPath = `/track?ticket=${encodeURIComponent(ticketCode)}`;
-
-  if (typeof window === "undefined") {
-    return targetPath;
-  }
-
-  return `${window.location.origin}${targetPath}`;
-}
-
 async function copyTextToClipboard(value) {
   if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
     await navigator.clipboard.writeText(value);
@@ -968,4 +1085,90 @@ async function copyTextToClipboard(value) {
   } finally {
     document.body.removeChild(textarea);
   }
+}
+
+function PreRegisteredArrivals({ show, onToggle, tickets, loading, onConfirm, confirmingId, error }) {
+  return (
+    <div className="mb-6 surface-panel overflow-hidden">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center justify-between border-b border-border/70 px-5 py-4 text-left sm:px-6"
+      >
+        <div>
+          <div className="eyebrow">Online pre-registrations</div>
+          <h2 className="mt-1.5 font-display text-xl font-bold tracking-tight">Pre-registered arrivals</h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Verify patient identity and confirm arrival to activate their queue ticket.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          {tickets.length > 0 ? (
+            <span className="rounded-full bg-amber-500/15 px-3 py-1 text-xs font-bold text-amber-600">
+              {tickets.length} pending
+            </span>
+          ) : null}
+          <span className="text-sm font-semibold text-muted-foreground">
+            {show ? "Hide" : "Show"}
+          </span>
+        </div>
+      </button>
+      {show ? (
+        <div className="px-5 py-4 sm:px-6">
+          {loading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <LoaderCircle className="h-4 w-4 animate-spin" />
+              Loading pre-registered patients...
+            </div>
+          ) : tickets.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No pre-registered patients awaiting arrival.</p>
+          ) : (
+            <div className="space-y-3">
+              {tickets.map((ticket) => (
+                <div
+                  key={ticket.id}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-background/80 px-4 py-4"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="grid h-10 w-16 place-items-center rounded-xl bg-amber-500/12 font-display text-sm font-bold text-amber-600">
+                      {ticket.ticket}
+                    </span>
+                    <div>
+                      <div className="font-semibold">{ticket.patientName}</div>
+                      <div className="mt-0.5 text-xs text-muted-foreground">
+                        {ticket.department} &middot; {ticket.chiefComplaint || "No complaint recorded"}
+                      </div>
+                      <div className="mt-0.5 text-xs text-muted-foreground">
+                        {ticket.phone} &middot; Pre-registered {new Date(ticket.registeredAt).toLocaleDateString()}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onConfirm(ticket.id)}
+                    disabled={confirmingId === ticket.id}
+                    className="rounded-xl gradient-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-elegant disabled:opacity-60"
+                  >
+                    {confirmingId === ticket.id ? (
+                      <span className="flex items-center gap-2">
+                        <LoaderCircle className="h-4 w-4 animate-spin" />
+                        Confirming...
+                      </span>
+                    ) : (
+                      "Confirm arrival"
+                    )}
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          {error ? (
+            <div className="mt-3 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+              {error}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
 }

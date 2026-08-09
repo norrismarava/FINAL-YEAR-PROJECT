@@ -1,36 +1,15 @@
 import crypto from "node:crypto";
-import fs from "node:fs";
-import path from "node:path";
+
+import bcrypt from "bcryptjs";
 
 import { env } from "../config/env.js";
+import { getPool } from "../db/db.js";
 import { HttpError } from "../utils/http.js";
+import * as filePatient from "./filePatientStore.js";
+
+const useFile = env.databaseProvider === "file";
 
 const patientSessions = new Map();
-
-const patientsFilePath = path.join(process.cwd(), "data", "patient-users.json");
-
-let patientUsers = [];
-
-if (fs.existsSync(patientsFilePath)) {
-  try {
-    const data = fs.readFileSync(patientsFilePath, "utf8");
-    patientUsers = JSON.parse(data);
-  } catch (error) {
-    console.error("Failed to load patient users from file:", error);
-  }
-}
-
-function savePatientUsers() {
-  try {
-    const dataDir = path.dirname(patientsFilePath);
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
-    fs.writeFileSync(patientsFilePath, JSON.stringify(patientUsers, null, 2));
-  } catch (error) {
-    console.error("Failed to save patient users:", error);
-  }
-}
 
 function normalizeEmail(email) {
   return email?.trim().toLowerCase() ?? "";
@@ -44,40 +23,15 @@ function publicPatientUser(user) {
   return {
     id: user.id,
     username: user.username ?? "",
-    fullName: user.fullName,
+    fullName: user.full_name,
     email: user.email,
     phone: user.phone,
-    nationalId: user.nationalId ?? "",
-    dob: user.dob ?? "",
+    nationalId: user.national_id ?? "",
+    dob: user.dob ? String(user.dob).slice(0, 10) : "",
     gender: user.gender ?? "unknown",
-    createdAt: user.createdAt,
-    lastLoginAt: user.lastLoginAt ?? null,
+    createdAt: user.created_at,
+    lastLoginAt: user.last_login_at ?? null,
   };
-}
-
-function findPatientByUsername(username) {
-  const normalizedUsername = normalizeUsername(username);
-  return patientUsers.find(
-    (user) => normalizeUsername(user.username) === normalizedUsername,
-  );
-}
-
-function findPatientByEmail(email) {
-  const normalizedEmail = normalizeEmail(email);
-  return patientUsers.find(
-    (user) => normalizeEmail(user.email) === normalizedEmail,
-  );
-}
-
-function findPatientById(id) {
-  return patientUsers.find((user) => user.id === id);
-}
-
-function verifyPassword(user, password) {
-  if (!user || typeof password !== "string") {
-    return false;
-  }
-  return user.password === password;
 }
 
 function createPatientSession(user) {
@@ -106,7 +60,7 @@ function pruneExpiredPatientSessions() {
   }
 }
 
-export function registerPatientAccount({
+export async function registerPatientAccount({
   fullName,
   username,
   email,
@@ -142,57 +96,112 @@ export function registerPatientAccount({
     throw new HttpError(400, "Password must be at least 6 characters.");
   }
 
-  const existingUsername = findPatientByUsername(normalizedUsername);
-  if (existingUsername) {
-    throw new HttpError(
-      400,
-      "A patient account with this username already exists.",
-    );
+  if (useFile) {
+    const existing = await filePatient.findPatientUserByUsername(normalizedUsername);
+    if (existing) {
+      throw new HttpError(400, "A patient account with this username or email already exists.");
+    }
+    const existingEmail = await filePatient.findPatientUserByUsername(normalizedEmail);
+    if (existingEmail) {
+      throw new HttpError(400, "A patient account with this email already exists.");
+    }
+
+    const newUser = await filePatient.createPatientUserRecord({
+      fullName: trimmedName,
+      username: normalizedUsername,
+      email: normalizedEmail,
+      phone: phone.trim(),
+      nationalId: nationalId?.trim() || null,
+      dob: dob || null,
+      gender: gender ?? "unknown",
+      password,
+    });
+
+    await filePatient.updatePatientLastLogin(newUser.id);
+    return createPatientSession(newUser);
   }
 
-  const existingEmail = findPatientByEmail(normalizedEmail);
-  if (existingEmail) {
-    throw new HttpError(
-      400,
-      "A patient account with this email already exists.",
-    );
+  const pool = getPool();
+  const [usernameRows] = await pool.execute(
+    "SELECT id FROM patient_users WHERE username = ?",
+    [normalizedUsername],
+  );
+  if (usernameRows.length) {
+    throw new HttpError(400, "A patient account with this username already exists.");
   }
 
-  const newPatient = {
-    id: crypto.randomUUID(),
-    username: normalizedUsername,
-    fullName: trimmedName,
-    email: normalizedEmail,
-    phone: phone.trim(),
-    nationalId: nationalId?.trim() ?? "",
-    dob: dob ?? "",
-    gender: gender ?? "unknown",
-    password,
-    createdAt: new Date().toISOString(),
-    lastLoginAt: null,
-  };
+  const [emailRows] = await pool.execute(
+    "SELECT id FROM patient_users WHERE email = ?",
+    [normalizedEmail],
+  );
+  if (emailRows.length) {
+    throw new HttpError(400, "A patient account with this email already exists.");
+  }
 
-  patientUsers.push(newPatient);
-  savePatientUsers();
+  const passwordHash = await bcrypt.hash(password, 10);
+  const id = crypto.randomUUID();
 
-  const session = createPatientSession(newPatient);
-  newPatient.lastLoginAt = new Date().toISOString();
-  savePatientUsers();
+  await pool.query(
+    `INSERT INTO patient_users (
+      id, username, email, password_hash, full_name, phone,
+      national_id, dob, gender, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+    [
+      id,
+      normalizedUsername,
+      normalizedEmail,
+      passwordHash,
+      trimmedName,
+      phone.trim(),
+      nationalId?.trim() || null,
+      dob || null,
+      gender ?? "unknown",
+    ],
+  );
 
-  return session;
+  const [newRows] = await pool.execute(
+    "SELECT * FROM patient_users WHERE id = ? LIMIT 1",
+    [id],
+  );
+
+  const newUser = newRows[0];
+
+  await pool.execute(
+    "UPDATE patient_users SET last_login_at = NOW() WHERE id = ?",
+    [id],
+  );
+
+  return createPatientSession(newUser);
 }
 
-export function loginPatient({ identifier, password }) {
+export async function loginPatient({ identifier, password }) {
   pruneExpiredPatientSessions();
 
-  const user =
-    findPatientByUsername(identifier) ?? findPatientByEmail(identifier);
-  if (!verifyPassword(user, password)) {
+  if (useFile) {
+    const user = await filePatient.findPatientUserByUsername(identifier ?? "");
+    if (!user || !(await filePatient.verifyPatientPassword(password, user.password_hash))) {
+      throw new HttpError(401, "Invalid username, email, or password.");
+    }
+    await filePatient.updatePatientLastLogin(user.id);
+    return createPatientSession(user);
+  }
+
+  const pool = getPool();
+
+  const [rows] = await pool.execute(
+    "SELECT * FROM patient_users WHERE username = ? OR email = ? LIMIT 1",
+    [identifier?.trim().toLowerCase() ?? "", identifier?.trim().toLowerCase() ?? ""],
+  );
+
+  const user = rows[0];
+  if (!user || !(await bcrypt.compare(password, user.password_hash))) {
     throw new HttpError(401, "Invalid username, email, or password.");
   }
 
-  user.lastLoginAt = new Date().toISOString();
-  savePatientUsers();
+  await pool.execute(
+    "UPDATE patient_users SET last_login_at = NOW() WHERE id = ?",
+    [user.id],
+  );
 
   return createPatientSession(user);
 }
@@ -225,4 +234,103 @@ export function requirePatientSession(req) {
   return session;
 }
 
-export { findPatientById, publicPatientUser };
+export { publicPatientUser };
+
+export async function updatePatientProfile(req, patch) {
+  const session = requirePatientSession(req);
+  const userId = session.user.id;
+
+  if (useFile) {
+    const updated = await filePatient.updatePatientUserRecord(userId, patch);
+    const newSession = createPatientSession(updated);
+    return newSession;
+  }
+
+  const pool = getPool();
+  const fields = [];
+  const values = [];
+
+  if (typeof patch.fullName === "string") {
+    fields.push("full_name = ?");
+    values.push(patch.fullName.trim());
+  }
+  if (typeof patch.email === "string") {
+    fields.push("email = ?");
+    values.push(patch.email.trim().toLowerCase());
+  }
+  if (typeof patch.phone === "string") {
+    fields.push("phone = ?");
+    values.push(patch.phone.trim());
+  }
+  if (typeof patch.nationalId === "string") {
+    fields.push("national_id = ?");
+    values.push(patch.nationalId.trim() || null);
+  }
+  if (typeof patch.dob === "string") {
+    fields.push("dob = ?");
+    values.push(patch.dob || null);
+  }
+  if (typeof patch.gender === "string") {
+    fields.push("gender = ?");
+    values.push(patch.gender);
+  }
+
+  if (fields.length === 0) {
+    return session;
+  }
+
+  values.push(userId);
+  await pool.execute(
+    `UPDATE patient_users SET ${fields.join(", ")} WHERE id = ?`,
+    values,
+  );
+
+  const [rows] = await pool.execute(
+    "SELECT * FROM patient_users WHERE id = ? LIMIT 1",
+    [userId],
+  );
+  const updatedUser = rows[0];
+  const newSession = createPatientSession(updatedUser);
+  return newSession;
+}
+
+export async function changePatientPassword(req, currentPassword, newPassword) {
+  const session = requirePatientSession(req);
+  const userId = session.user.id;
+
+  if (!newPassword || newPassword.length < 6) {
+    throw new HttpError(400, "New password must be at least 6 characters.");
+  }
+
+  if (useFile) {
+    const user = await filePatient.findPatientUserById(userId);
+    if (!user) {
+      throw new HttpError(404, "Patient not found.");
+    }
+    const valid = await filePatient.verifyPatientPassword(currentPassword, user.password_hash);
+    if (!valid) {
+      throw new HttpError(401, "Current password is incorrect.");
+    }
+    await filePatient.updatePatientPasswordRecord(userId, newPassword);
+    return;
+  }
+
+  const pool = getPool();
+  const [rows] = await pool.execute(
+    "SELECT * FROM patient_users WHERE id = ? LIMIT 1",
+    [userId],
+  );
+  const user = rows[0];
+  if (!user) {
+    throw new HttpError(404, "Patient not found.");
+  }
+  if (!(await bcrypt.compare(currentPassword, user.password_hash))) {
+    throw new HttpError(401, "Current password is incorrect.");
+  }
+
+  const newHash = await bcrypt.hash(newPassword, 10);
+  await pool.execute(
+    "UPDATE patient_users SET password_hash = ? WHERE id = ?",
+    [newHash, userId],
+  );
+}

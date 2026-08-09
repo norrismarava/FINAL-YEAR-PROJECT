@@ -1,22 +1,9 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import {
-  AlertCircle,
-  ArrowRight,
-  Eye,
-  EyeOff,
-  Lock,
-  ShieldCheck,
-  UserRound,
-} from "lucide-react";
+import { AlertCircle, ArrowRight, Eye, EyeOff, Lock, ShieldCheck, UserRound } from "lucide-react";
 
 import { useAuth } from "@/auth/AuthProvider";
-import {
-  AuthButton,
-  AuthError,
-  AuthInput,
-  AuthShell,
-} from "@/components/AuthShell";
+import { AuthButton, AuthError, AuthInput, AuthShell } from "@/components/AuthShell";
 import { resolveStaffLandingPath } from "@/services/staffProfilePrefs";
 
 export default function LoginPage() {
@@ -64,10 +51,7 @@ export default function LoginPage() {
 
       navigate(resolveStaffLandingPath(session.user));
     } catch (err) {
-      setError(
-        err?.message ||
-          "Unable to sign in. Please confirm your details and try again.",
-      );
+      setError(err?.message || "Unable to sign in. Please confirm your details and try again.");
     } finally {
       setLoading(false);
     }
@@ -78,18 +62,7 @@ export default function LoginPage() {
       eyebrow="Staff access"
       title="Welcome back"
       subtitle="Sign in to the hospital operations console and continue managing live patient flow."
-      footer={
-        <>
-          New staff member?{" "}
-          <Link
-            to="/admin/staff-register"
-            className="inline-flex items-center gap-1 font-semibold text-cyan-100 transition hover:text-white"
-          >
-            Create staff account
-            <ArrowRight className="h-4 w-4" />
-          </Link>
-        </>
-      }
+      footer="Staff accounts are created by an authorised administrator."
     >
       <form className="space-y-5" onSubmit={handleSubmit}>
         <AuthError icon={AlertCircle} message={error} />
@@ -134,9 +107,7 @@ export default function LoginPage() {
                 <ShieldCheck className="h-3.5 w-3.5 scale-0 text-[#022c2d] transition peer-checked:scale-100" />
               </span>
             </span>
-            <span className="transition group-hover:text-white">
-              Keep me signed in
-            </span>
+            <span className="transition group-hover:text-white">Keep me signed in</span>
           </label>
 
           <Link

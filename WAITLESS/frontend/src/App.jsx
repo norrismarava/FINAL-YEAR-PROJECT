@@ -1,44 +1,71 @@
+import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout, NotFoundPage } from "@/layouts/AppLayout";
-import DashboardPage from "@/pages/dashboard";
-import ForgotPasswordPage from "@/pages/forgot-password";
 import Home from "@/pages/index";
-import LoginPage from "@/pages/login";
-import ProfilePage from "@/pages/profile";
-import QueuePage from "@/pages/queue";
-import RegisterPage from "@/pages/register";
-import SelfRegisterPage from "@/pages/self-register";
-import PatientRegisterPage from "@/pages/patient-register";
-import PatientLoginPage from "@/pages/patient-login";
-import PatientDashboardPage from "@/pages/patient-dashboard";
-import ResetPasswordPage from "@/pages/reset-password";
-import SettingsPage from "@/pages/settings";
-import StaffRegisterPage from "@/pages/staff-register";
-import {
-  AppointmentsPage,
-  DepartmentsPage,
-  NotificationsPage,
-  QueueAnalyticsPage,
-  ReportsPage,
-  StaffQueueBoardPage,
-} from "@/pages/staff-modules";
-import TrackPage from "@/pages/track";
-import TriagePage from "@/pages/triage";
+import { I18nProvider } from "@/i18n/I18nProvider";
+import { LoadingPanel } from "@/components/ui/system-loader";
+
+const DashboardPage = lazy(() => import("@/pages/dashboard"));
+const AuditTrailPage = lazy(() => import("@/pages/audit-trail"));
+const ForgotPasswordPage = lazy(() => import("@/pages/forgot-password"));
+const LoginPage = lazy(() => import("@/pages/login"));
+const ProfilePage = lazy(() => import("@/pages/profile"));
+const QueuePage = lazy(() => import("@/pages/queue"));
+const RegisterPage = lazy(() => import("@/pages/register"));
+const SelfRegisterPage = lazy(() => import("@/pages/self-register"));
+const KioskPage = lazy(() => import("@/pages/kiosk"));
+const PatientRegisterPage = lazy(() => import("@/pages/patient-register"));
+const PatientLoginPage = lazy(() => import("@/pages/patient-login"));
+const PatientDashboardPage = lazy(() => import("@/pages/patient-dashboard"));
+const PatientProfilePage = lazy(() => import("@/pages/patient-profile"));
+const PatientSettingsPage = lazy(() => import("@/pages/patient-settings"));
+const PatientBookingsPage = lazy(() => import("@/pages/patient-bookings"));
+const PatientFeedbackPage = lazy(() => import("@/pages/patient-feedback"));
+const PatientPortalLayout = lazy(() => import("@/layouts/PatientPortalLayout"));
+const ResetPasswordPage = lazy(() => import("@/pages/reset-password"));
+const SettingsPage = lazy(() => import("@/pages/settings"));
+const StaffRegisterPage = lazy(() => import("@/pages/staff-register"));
+const TrackPage = lazy(() => import("@/pages/track"));
+const TriagePage = lazy(() => import("@/pages/triage"));
+const DepartmentBoardPage = lazy(() => import("@/pages/department-board"));
+
+const StaffModules = lazy(() => import("@/pages/staff-modules"));
+const AdminDashboardPage = () => <StaffModules.AdminDashboardPage />;
+const AppointmentsPage = () => <StaffModules.AppointmentsPage />;
+const DepartmentsPage = () => <StaffModules.DepartmentsPage />;
+const LabPage = () => <StaffModules.LabPage />;
+const NotificationsPage = () => <StaffModules.NotificationsPage />;
+const OIClinicPage = () => <StaffModules.OIClinicPage />;
+const PharmacyPage = () => <StaffModules.PharmacyPage />;
+const QueueAnalyticsPage = () => <StaffModules.QueueAnalyticsPage />;
+const ReportsPage = () => <StaffModules.ReportsPage />;
+const StaffQueueBoardPage = () => <StaffModules.StaffQueueBoardPage />;
 
 export default function App() {
   return (
+    <I18nProvider>
+    <Suspense fallback={<LoadingPanel />}>
     <Routes>
       <Route element={<AppLayout />}>
         {/* Public routes */}
         <Route index element={<Home />} />
         <Route path="track" element={<TrackPage />} />
         <Route path="queue" element={<QueuePage />} />
+        <Route path="department-board" element={<DepartmentBoardPage />} />
         <Route path="self-register" element={<SelfRegisterPage />} />
+        <Route path="kiosk" element={<KioskPage />} />
         <Route path="patient/register" element={<PatientRegisterPage />} />
         <Route path="patient/login" element={<PatientLoginPage />} />
-        <Route path="patient/dashboard" element={<PatientDashboardPage />} />
+        <Route path="patient" element={<PatientPortalLayout />}>
+          <Route index element={<PatientDashboardPage />} />
+          <Route path="dashboard" element={<PatientDashboardPage />} />
+          <Route path="profile" element={<PatientProfilePage />} />
+          <Route path="settings" element={<PatientSettingsPage />} />
+          <Route path="bookings" element={<PatientBookingsPage />} />
+          <Route path="feedback" element={<PatientFeedbackPage />} />
+        </Route>
 
         {/* Staff routes under /admin */}
         <Route path="admin">
@@ -99,6 +126,38 @@ export default function App() {
             }
           />
           <Route
+            path="pharmacy"
+            element={
+              <ProtectedRoute roles={["clinician", "triage"]}>
+                <PharmacyPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="laboratory"
+            element={
+              <ProtectedRoute roles={["clinician", "triage"]}>
+                <LabPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="oi-clinic"
+            element={
+              <ProtectedRoute roles={["clinician", "triage"]}>
+                <OIClinicPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="admin-dashboard"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <AdminDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="reports"
             element={
               <ProtectedRoute>
@@ -131,6 +190,14 @@ export default function App() {
             }
           />
           <Route
+            path="audit"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <AuditTrailPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="settings"
             element={
               <ProtectedRoute roles={["admin", "triage", "clinician", "reception"]}>
@@ -149,8 +216,8 @@ export default function App() {
           <Route path="login" element={<LoginPage />} />
           <Route path="forgot-password" element={<ForgotPasswordPage />} />
           <Route path="reset-password" element={<ResetPasswordPage />} />
-          <Route path="staff-register" element={<StaffRegisterPage />} />
-          <Route path="staff-signup" element={<Navigate to="/admin/staff-register" replace />} />
+          <Route path="staff-register" element={<Navigate to="/admin/staff" replace />} />
+          <Route path="staff-signup" element={<Navigate to="/admin/staff" replace />} />
         </Route>
 
         {/* Legacy redirects */}
@@ -162,12 +229,14 @@ export default function App() {
         <Route path="login" element={<Navigate to="/admin/login" replace />} />
         <Route path="forgot-password" element={<Navigate to="/admin/forgot-password" replace />} />
         <Route path="reset-password" element={<Navigate to="/admin/reset-password" replace />} />
-        <Route path="staff-register" element={<Navigate to="/admin/staff-register" replace />} />
-        <Route path="staff-signup" element={<Navigate to="/admin/staff-register" replace />} />
+        <Route path="staff-register" element={<Navigate to="/admin/staff" replace />} />
+        <Route path="staff-signup" element={<Navigate to="/admin/staff" replace />} />
 
         <Route path="home" element={<Navigate to="/" replace />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
-    </Routes>
+      </Routes>
+    </Suspense>
+    </I18nProvider>
   );
 }

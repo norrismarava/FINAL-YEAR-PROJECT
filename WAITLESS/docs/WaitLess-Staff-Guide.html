@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WaitLess — Staff Guide</title>
+<style>
+  @page {
+    size: A4;
+    margin: 18mm 16mm 20mm 16mm;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    color: #1e293b;
+    line-height: 1.65;
+    font-size: 11pt;
+    background: #fff;
+  }
+
+  /* ── Cover Page ── */
+  .cover {
+    page-break-after: always;
+    min-height: 250mm;
+    background: linear-gradient(160deg, #1e293b 0%, #0f766e 100%);
+    color: #fff;
+    padding: 40mm 20mm;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+  .cover-logo {
+    width: 80px; height: 80px;
+    margin: 0 auto 16px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 36px; font-weight: 900;
+    letter-spacing: -2px;
+  }
+  .cover h1 {
+    font-size: 42pt;
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 8px;
+  }
+  .cover h2 {
+    font-size: 16pt;
+    font-weight: 400;
+    opacity: 0.9;
+    margin-bottom: 40px;
+  }
+  .cover-badge {
+    display: inline-block;
+    padding: 6px 18px;
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 999px;
+    font-size: 9pt;
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    margin-bottom: 30px;
+  }
+  .cover-info {
+    font-size: 10pt;
+    opacity: 0.8;
+    line-height: 1.8;
+  }
+  .cover-info strong { display: block; font-size: 11pt; margin-bottom: 4px; }
+
+  /* ── Section Headings ── */
+  h2.section-title {
+    font-size: 20pt;
+    color: #0f766e;
+    margin-top: 0;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e2e8f0;
+  }
+  h3 {
+    font-size: 13pt;
+    color: #1e293b;
+    margin-top: 22px;
+    margin-bottom: 8px;
+  }
+  h4 {
+    font-size: 11pt;
+    color: #0f766e;
+    margin-top: 16px;
+    margin-bottom: 6px;
+  }
+  p { margin-bottom: 10px; }
+  ul, ol { margin-bottom: 12px; padding-left: 20px; }
+  li { margin-bottom: 5px; }
+
+  /* ── Callout Boxes ── */
+  .tip {
+    background: #ecfdf5;
+    border-left: 4px solid #0f766e;
+    padding: 12px 16px;
+    margin: 14px 0;
+    border-radius: 0 8px 8px 0;
+    font-size: 10pt;
+  }
+  .tip strong { color: #0f766e; }
+  .note {
+    background: #eff6ff;
+    border-left: 4px solid #2563eb;
+    padding: 12px 16px;
+    margin: 14px 0;
+    border-radius: 0 8px 8px 0;
+    font-size: 10pt;
+  }
+  .note strong { color: #2563eb; }
+  .warning {
+    background: #fef2f2;
+    border-left: 4px solid #dc2626;
+    padding: 12px 16px;
+    margin: 14px 0;
+    border-radius: 0 8px 8px 0;
+    font-size: 10pt;
+  }
+  .warning strong { color: #dc2626; }
+
+  /* ── Step Cards ── */
+  .step {
+    display: flex;
+    gap: 14px;
+    margin: 14px 0;
+    padding: 14px;
+    background: #f8fafc;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+  }
+  .step-num {
+    flex-shrink: 0;
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, #1e293b, #0f766e);
+    color: #fff;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    font-size: 13pt;
+  }
+  .step-body { flex: 1; }
+  .step-body h4 { margin-top: 0; }
+
+  /* ── Table ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 10pt;
+  }
+  th {
+    background: #1e293b;
+    color: #fff;
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 600;
+  }
+  td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  tr:nth-child(even) td { background: #f8fafc; }
+
+  /* ── Role Cards ── */
+  .role-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 14px 0;
+  }
+  .role-card {
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    font-size: 10pt;
+  }
+  .role-card strong { display: block; font-size: 12pt; margin-bottom: 4px; color: #0f766e; }
+
+  /* ── Page Break ── */
+  .page-break { page-break-before: always; }
+
+  /* ── Footer ── */
+  .footer-note {
+    margin-top: 40px;
+    padding-top: 16px;
+    border-top: 1px solid #e2e8f0;
+    font-size: 9pt;
+    color: #64748b;
+    text-align: center;
+  }
+
+  /* ── Keyboard Shortcut ── */
+  kbd {
+    display: inline-block;
+    padding: 2px 8px;
+    background: #1e293b;
+    color: #fff;
+    border-radius: 4px;
+    font-size: 9pt;
+    font-family: monospace;
+  }
+
+  /* ── Screen Diagram ── */
+  .screen-diagram {
+    background: #0f172a;
+    color: #e2e8f0;
+    border-radius: 12px;
+    padding: 20px;
+    margin: 14px 0;
+    font-size: 9pt;
+    font-family: 'Courier New', monospace;
+  }
+  .screen-diagram .header {
+    color: #0f766e;
+    font-weight: bold;
+    margin-bottom: 8px;
+    font-size: 10pt;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ COVER PAGE ═══════════════ -->
+<div class="cover">
+  <div>
+    <div class="cover-logo">W</div>
+    <div class="cover-badge">Staff & Administrator Guide</div>
+    <h1>WaitLess</h1>
+    <h2>Digital Hospital Queue Management System</h2>
+  </div>
+  <div class="cover-info">
+    <strong>Chinhoyi Provincial Hospital</strong>
+    Complete operational manual for all staff roles.<br>
+    Version 1.0 &nbsp;|&nbsp; August 2026<br><br>
+    <strong>What's Inside</strong>
+    Login & Security &bull; Reception &bull; Triage &bull; Clinician Workflow<br>
+    Pharmacy &bull; Laboratory &bull; OI Clinic &bull; Admin &bull; Reports<br>
+    Notifications &bull; Display Boards &bull; Troubleshooting
+  </div>
+</div>
+
+<!-- ═══════════════ TABLE OF CONTENTS ═══════════════ -->
+<h2 class="section-title">Table of Contents</h2>
+<ol>
+  <li><strong>System Overview</strong> — How WaitLess works end to end</li>
+  <li><strong>Logging In & Security</strong> — Account access and roles</li>
+  <li><strong>For Reception Staff</strong> — Patient registration and search</li>
+  <li><strong>For Triage Nurses</strong> — Assessment and priority assignment</li>
+  <li><strong>For Clinicians</strong> — Calling patients, transfers, test orders</li>
+  <li><strong>For Pharmacists</strong> — Prescription workflow and stock</li>
+  <li><strong>For Lab Technicians</strong> — Test order lifecycle</li>
+  <li><strong>For OI Clinic Staff</strong> — Confidential service streams</li>
+  <li><strong>For Administrators</strong> — Staff management, audit, config</li>
+  <li><strong>Reports & Analytics</strong> — 10 report types with exports</li>
+  <li><strong>Notifications & Display Boards</strong> — WhatsApp, push, screens</li>
+  <li><strong>Appointments</strong> — Booking and follow-up management</li>
+  <li><strong>Troubleshooting</strong> — Common issues and solutions</li>
+</ol>
+
+<!-- ═══════════════ SECTION 1 ═══════════════ -->
+<div class="page-break"></div>
+<h2 class="section-title">1. System Overview</h2>
+<p>
+  WaitLess is a digital queue management system that replaces paper tickets with real-time digital tracking.
+  Patients register, get triaged, wait in a virtual queue, receive WhatsApp notifications, and are called by staff —
+  all managed through a web-based interface accessible on desktops, tablets, and phones.
+</p>
+
+<h3>The Patient Journey</h3>
+<div class="screen-diagram">
+  <div class="header">━━ PATIENT FLOW ━━</div>
+  Registration → Triage Assessment → Queue Waiting → Called by Clinician<br>
+  → Consultation → [Transfer to Lab/Pharmacy/Radiology if needed]<br>
+  → Completion → Feedback
+</div>
+
+<h3>Key Components</h3>
+<ul>
+  <li><strong>Backend server</strong> — Node.js, runs on hospital LAN (port 4242)</li>
+  <li><strong>Frontend</strong> — React web app, works in any modern browser</li>
+  <li><strong>Database</strong> — MySQL for production, file-based JSON for development</li>
+  <li><strong>Real-time</strong> — Server-Sent Events (SSE) push live updates to all screens</li>
+  <li><strong>Notifications</strong> — WhatsApp Cloud API with automatic retry queue</li>
+  <li><strong>AI Service</strong> — Wait time prediction, bottleneck analysis, patient chatbot</li>
+  <li><strong>Audit Trail</strong> — SHA-256 hash-chained, tamper-evident action log</li>
+</ul>
+
+<h3>Staff Roles</h3>
+<div class="role-grid">
+  <div class="role-card">
+    <strong>Administrator</strong>
+    Full access. Manages staff, configuration, hospitals, audit trail, sync/backup.
+  </div>
+  <div class="role-card">
+    <strong>Receptionist</strong>
+    Patient registration, search, ticket generation, kiosk management.
+  </div>
+  <div class="role-card">
+    <strong>Nurse (Triage)</strong>
+    Triage assessment, vital signs, priority assignment, reassessment alerts.
+  </div>
+  <div class="role-card">
+    <strong>Doctor (Clinician)</strong>
+    Call next patient, consultations, transfers, test orders, prescriptions, completion.
+  </div>
+  <div class="role-card">
+    <strong>Pharmacist</strong>
+    Pharmacy queue, prescription dispensing, stock flags, ready/collected states.
+  </div>
+  <div class="role-card">
+    <strong>Lab Technician</strong>
+    Lab queue, test order lifecycle, turnaround tracking, result-ready notifications.
+  </div>
+  <div class="role-card">
+    <strong>Radiologist</strong>
+    Radiology queue, imaging orders, result routing back to clinician.
+  </div>
+  <div class="role-card">
+    <strong>All Staff</strong>
+    Dashboard access, queue visibility, notification panel, profile management.
+  </div>
+</div>
+
+<!-- ═══════════════ SECTION 2 ═══════════════ -->
+<div class="page-break"></div>
+<h2 class="section-title">2. Logging In & Security</h2>
+
+<h3>Logging In</h3>
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-body">
+    <h4>Open the staff login page</h4>
+    <p>Navigate to <kbd>/admin/login</kbd> in your browser. Enter your username or email and password.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-body">
+    <h4>You are redirected to your role's landing page</h4>
+    <p>Receptionists go to registration, triage nurses to triage, clinicians to dashboard, admins to admin dashboard.</p>
+  </div>
+</div>
+
+<h3>Password Requirements</h3>
+<ul>
+  <li>Minimum 10 characters</li>
+  <li>At least 3 of: uppercase letters, lowercase letters, numbers, symbols</li>
+  <li>Cannot be a commonly used password</li>
+  <li>Passwords are hashed with bcrypt (12 rounds) — never stored in plain text</li>
+</ul>
+
+<div class="warning">
+  <strong>Security notes:</strong>
+  <ul>
+    <li>Your session automatically logs out after 8 hours of inactivity</li>
+    <li>Never share your login credentials with another staff member</li>
+    <li>All actions are recorded in the audit trail with your identity</li>
+    <li>Only administrators can create new staff accounts</li>
+  </ul>
+</div>
+
+<h3>Forgot Password?</h3>
+<p>Click "Forgot password?" on the login page. Enter your email address. A reset link will be generated. See your administrator if you need help resetting your password.</p>
+
+<!-- ═══════════════ SECTION 3 ═══════════════ -->
+<div class="page-break"></div>
+<h2 class="section-title">3. For Reception Staff</h2>
+
+<h3>Registering a New Patient</h3>
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-body">
+    <h4>Open the registration page</h4>
+    <p>Click "Register" in the sidebar navigation. The patient registration form appears.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-body">
+    <h4>Search for returning patients first</h4>
+    <p>Use the search bar to look up existing patients by name, phone, national ID, patient number, or scan their QR code. If found, reuse their profile — avoid creating duplicates.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-body">
+    <h4>Capture patient details for new patients</h4>
+    <p>Fill in all required fields:</p>
+    <ul>
+      <li>Full name, national ID, date of birth, gender</li>
+      <li>Phone number (for WhatsApp notifications)</li>
+      <li>Address</li>
+      <li>Patient category: Walk-in, Referred, Emergency, Elderly, Pregnant, Child, Disabled, or Chronic</li>
+      <li>Next of kin name and phone number</li>
+      <li>Chief complaint (what's wrong)</li>
+      <li>Target department: OPD, Casualty, Pharmacy, Lab, Radiology, or OI Clinic</li>
+      <li>Notification consent checkbox</li>
+    </ul>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">4</div>
+  <div class="step-body">
+    <h4>Submit and print ticket</h4>
+    <p>Click "Register Patient". A ticket is generated (e.g., <strong>OPD-205</strong>) with a QR code. Print the 80mm ticket or share to the patient's phone. The patient appears in the queue immediately.</p>
+  </div>
+</div>
+
+<div class="tip">
+  <strong>Form auto-save:</strong> If your browser crashes or you accidentally close the tab, the form data is automatically saved. When you return, your entries will be restored.
+</div>
+
+<h3>Managing Patient Search</h3>
+<ul>
+  <li>Search by any identifier: name, phone, national ID, patient number, or QR code</li>
+  <li>Click on a patient to see their visit history and current tickets</li>
+  <li>Always search before creating a new record to avoid duplicates</li>
+</ul>
+
+<!-- ═══════════════ SECTION 4 ═══════════════ -->
+<div class="page-break"></div>
+<h2 class="section-title">4. For Triage Nurses</h2>
+
+<h3>Performing a Triage Assessment</h3>
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-body">
+    <h4>Open the triage console</h4>
+    <p>Click "Triage" in the sidebar. You see all waiting patients sorted by arrival time.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-body">
+    <h4>Select a patient</h4>
+    <p>Click on a patient to open the triage assessment form.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-body">
+    <h4>Capture clinical data</h4>
+    <p>Record:</p>
+    <ul>
+      <li><strong>Chief complaint</strong> — what the patient reports</li>
+      <li><strong>Vital signs:</strong> Blood pressure, pulse, temperature, respiratory rate, oxygen saturation</li>
+      <li><strong>Pain level:</strong> 0–10 scale</li>
+      <li><strong>Symptoms and severity</strong></li>
+      <li><strong>Emergency indicators</strong> — system auto-detects critical thresholds</li>
+    </ul>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">4</div>
+  <div class="step-body">
+    <h4>Assign priority</h4>
+    <p>Choose one:</p>
+    <ul>
+      <li><strong>RED</strong> — Resuscitation (immediate, life-threatening). Patient jumps to front of queue.</li>
+      <li><strong>YELLOW</strong> — Urgent (should be seen within 60 minutes)</li>
+      <li><strong>GREEN</strong> — Standard (routine queue order)</li>
+      <li><strong>BLACK</strong> — Deceased/expectant</li>
+    </ul>
+    <p>The queue automatically re-sorts by priority. RED patients go to the front immediately.</p>
+  </div>
+</div>
+
+<h3>Responding to Reassessment Alerts</h3>
+<div class="warning">
+  <strong>Critical safety feature:</strong> If a RED or YELLOW patient has been waiting longer than the safe threshold,
+  a reassessment alert appears on the staff dashboard. Click the alert to re-evaluate the patient's condition.
+  You can upgrade their priority if their condition has worsened.
+</div>
+
+<!-- ═══════════════ SECTION 5 ═══════════════ -->
+<div class="page-break"></div>
+<h2 class="section-title">5. For Clinicians</h2>
+
+<h3>Calling the Next Patient</h3>
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-body">
+    <h4>Open the staff dashboard</h4>
+    <p>Navigate to <kbd>/admin/dashboard</kbd>. You see the live queue for your department with priority colors and wait times.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-body">
+    <h4>Click "Call Next"</h4>
+    <p>The system calls the highest-priority, longest-waiting patient. The patient's ticket appears on the public board as "Now Serving".</p>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-body">
+    <h4>Patient is notified</h4>
+    <p>A WhatsApp "called" notification is sent. Audio announcement plays (if enabled). The patient proceeds to your room.</p>
+  </div>
+</div>
+
+<h3>After Consultation — Your Options</h3>
+<table>
+  <tr>
+    <th>Action</th>
+    <th>What happens</th>
+  </tr>
+  <tr>
+    <td><strong>Mark Complete</strong></td>
+    <td>Patient visit is finished. Patient can now give feedback via portal.</td>
+  </tr>
+  <tr>
+    <td><strong>Transfer to Department</strong></td>
+    <td>Patient moves to Lab, Pharmacy, Radiology, or OI Clinic queue. Gets new ticket number and WhatsApp notification.</td>
+  </tr>
+  <tr>
+    <td><strong>Order Tests</strong></td>
+    <td>Create lab or radiology orders with test type and priority. Orders appear in the Lab/Radiology module.</td>
+  </tr>
+  <tr>
+    <td><strong>Prescribe</strong></td>
+    <td>Route prescription to pharmacy. Patient appears in Pharmacy queue.</td>
+  </tr>
+</table>
+
+<h3>Managing Missed Patients</h3>
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-body">
+    <h4>Mark as missed</h4>
+    <p>If a patient doesn't respond when called, click "Mark as Missed". The patient moves to the "Missed" lane on the board. A missed-turn WhatsApp notification is sent.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-body">
+    <h4>Recall when patient returns</h4>
+    <p>When the patient returns, click "Recall" to reinsert them into the queue fairly — they don't go to the back of the line.</p>
+  </div>
+</div>
+
+<!-- ═══════════════ SECTION 6 ═══════════════ -->
+<div class="page-break"></div>
+<h2 class="section-title">6. For Pharmacists</h2>
+
+<h3>Pharmacy Workflow</h3>
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-body">
+    <h4>Open the Pharmacy module</h4>
+    <p>Navigate to <kbd>/admin/pharmacy</kbd>. See all patients in the pharmacy queue with prescription status.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-body">
+    <h4>Check prescription details</h4>
+    <p>Click on a patient to see their prescription items, dosages, and quantities.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-body">
+    <h4>Check stock availability</h4>
+    <p>If an item is out of stock, flag it. The patient is automatically notified. The out-of-stock event is recorded for reports.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">4</div>
+  <div class="step-body">
+    <h4>Dispense and mark ready</h4>
+    <p>Once medication is dispensed, mark the prescription as "Ready". The patient receives a WhatsApp notification: "Your prescription is ready at the Pharmacy window."</p>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">5</div>
+  <div class="step-body">
+    <h4>Mark as collected</h4>
+    <p>When the patient picks up their medication, mark as "Collected" to complete the pharmacy visit.</p>
+  </div>
+</div>
+
+<!-- ═══════════════ SECTION 7 ═══════════════ -->
+<div class="page-break"></div>
+<h2 class="section-title">7. For Lab Technicians</h2>
+
+<h3>Laboratory Workflow</h3>
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-body">
+    <h4>Open the Laboratory module</h4>
+    <p>Navigate to <kbd>/admin/laboratory</kbd>. See all pending test orders with patient and test details.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-body">
+    <h4>Update test lifecycle</h4>
+    <p>Track each test through its lifecycle:</p>
+    <ul>
+      <li><strong>Pending</strong> — Order received from clinician</li>
+      <li><strong>Sample Collected</strong> — Specimen obtained from patient</li>
+      <li><strong>In Progress</strong> — Test is running</li>
+      <li><strong>Completed / Result Ready</strong> — Results available</li>
+    </ul>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-body">
+    <h4>Notify when results are ready</h4>
+    <p>When you mark a test as "Result Ready", the system automatically:
+      <ul>
+        <li>Sends a WhatsApp notification to the patient</li>
+        <li>Routes the patient back to the doctor's queue for follow-up</li>
+      </ul>
+    </p>
+  </div>
+</div>
+
+<div class="tip">
+  <strong>Turnaround time tracking:</strong> The system records the time at each lifecycle stage.
+  Lab turnaround reports show average time from order to result, helping identify slow tests.
+</div>
+
+<!-- ═══════════════ SECTION 8 ═══════════════ -->
+<div class="page-break"></div>
+<h2 class="section-title">8. For OI Clinic Staff</h2>
+
+<h3>OI Clinic Workflow</h3>
+<p>The OI (Opportunistic Infection) Clinic handles sensitive services including HIV/TB care. Patient privacy is protected through confidential handling.</p>
+
+<h3>Service Streams</h3>
+<table>
+  <tr>
+    <th>Stream</th>
+    <th>Description</th>
+  </tr>
+  <tr>
+    <td>ART</td>
+    <td>Antiretroviral Therapy management and refills</td>
+  </tr>
+  <tr>
+    <td>TB</td>
+    <td>Tuberculosis screening and treatment</td>
+  </tr>
+  <tr>
+    <td>Viral Load</td>
+    <td>Viral load monitoring and testing</td>
+  </tr>
+  <tr>
+    <td>Counselling</td>
+    <td>Patient counselling sessions</td>
+  </tr>
+  <tr>
+    <td>Cervical Screening</td>
+    <td>Cervical cancer screening</td>
+  </tr>
+</table>
+
+<div class="warning">
+  <strong>Confidentiality:</strong> OI Clinic patients have masked routing on public display boards.
+  Their personal details are only visible to authorized OI Clinic staff.
+</div>
+
+<h3>Managing OI Visits</h3>
+<ul>
+  <li>View patients by service stream</li>
+  <li>Create new OI visits linked to patient tickets</li>
+  <li>Update visit status and outcomes</li>
+  <li>View OI summary dashboard for the day</li>
+</ul>
+
+<!-- ═══════════════ SECTION 9 ═══════════════ -->
+<div class="page-break"></div>
+<h2 class="section-title">9. For Administrators</h2>
+
+<h3>Creating Staff Accounts</h3>
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-body">
+    <h4>Go to staff registration</h4>
+    <p>Navigate to <kbd>/admin/staff-register</kbd>. This page is only accessible to administrators.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-body">
+    <h4>Fill in staff details</h4>
+    <p>Enter: full name, username, email, phone, employee ID, department, role, password (10+ chars with 3 of 4 character types), and optionally a profile photo.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-body">
+    <h4>Submit</h4>
+    <p>Click "Create staff account". The new staff member can now log in with their credentials. The creation is recorded in the audit trail.</p>
+  </div>
+</div>
+
+<h3>Viewing the Audit Trail</h3>
+<ul>
+  <li>Navigate to <kbd>/admin/audit</kbd></li>
+  <li>See every action taken in the system: who did it, when, what changed</li>
+  <li>The audit log is SHA-256 hash-chained — any tampering is mathematically detectable</li>
+  <li>Filter by action type, staff member, or date range</li>
+</ul>
+
+<h3>System Configuration</h3>
+<ul>
+  <li>Navigate to <kbd>/admin/settings</kbd></li>
+  <li>Configure hospital information (name, location, contact)</li>
+  <li>Manage departments and their settings</li>
+  <li>Configure notification preferences</li>
+  <li>Reset configuration to defaults if needed</li>
+</ul>
+
+<h3>Multi-Hospital Management</h3>
+<ul>
+  <li>Navigate to the hospitals management section</li>
+  <li>View, create, and update hospital profiles</li>
+  <li>Each hospital has its own configuration and departments</li>
+</ul>
+
+<h3>Backup and Sync</h3>
+<ul>
+  <li><strong>Export</strong> — Download all system data as a JSON backup</li>
+  <li><strong>Import</strong> — Restore from a previous backup file</li>
+  <li><strong>Backup</strong> — Create a server-side backup</li>
+  <li><strong>Status</strong> — Check sync status and data integrity</li>
+</ul>
+
+<!-- ═══════════════ SECTION 10 ═══════════════ -->
+<div class="page-break"></div>
+<h2 class="section-title">10. Reports & Analytics</h2>
+
+<p>WaitLess generates 10 types of operational reports, all exportable to CSV, Excel (XLSX), and PDF.</p>
+
+<table>
+  <tr>
+    <th>Report</th>
+    <th>What it shows</th>
+  </tr>
+  <tr>
+    <td>Average Wait Time</td>
+    <td>Average waiting time per department with historical trends</td>
+  </tr>
+  <tr>
+    <td>Department Performance</td>
+    <td>Patients served, service time, queue length per department</td>
+  </tr>
+  <tr>
+    <td>No-Show Report</td>
+    <td>Missed turns correlated with notification delivery status</td>
+  </tr>
+  <tr>
+    <td>Triage Report</td>
+    <td>Triage assessments with timing, outcomes, and override tracking</td>
+  </tr>
+  <tr>
+    <td>Lab Turnaround</td>
+    <td>Time from test order to result ready, per test type</td>
+  </tr>
+  <tr>
+    <td>Staff Workload</td>
+    <td>Patients handled per staff member, service time, productivity</td>
+  </tr>
+  <tr>
+    <td>Out-of-Stock</td>
+    <td>Pharmacy stock flags with frequency and affected patients</td>
+  </tr>
+  <tr>
+    <td>Peak Hours</td>
+    <td>Patient arrival patterns by hour and day for resource planning</td>
+  </tr>
+  <tr>
+    <td>Congestion Report</td>
+    <td>AI-powered queue congestion prediction per department</td>
+  </tr>
+  <tr>
+    <td>Resource Allocation</td>
+    <td>AI-powered suggestions for staff deployment</td>
+  </tr>
+</table>
+
+<h3>Generating a Report</h3>
+<div class="step">
+  <div class="step-num">1</div>
+  <div class="step-body">
+    <h4>Go to Reports</h4>
+    <p>Navigate to <kbd>/admin/reports</kbd>. Select the report type from the sidebar.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">2</div>
+  <div class="step-body">
+    <h4>Select date range</h4>
+    <p>Choose the start and end dates for the report period.</p>
+  </div>
+</div>
+<div class="step">
+  <div class="step-num">3</div>
+  <div class="step-body">
+    <h4>View and export</h4>
+    <p>Results appear in tables and charts. Click "Export CSV", "Export Excel", or "Export PDF" to download.</p>
+  </div>
+</div>
+
+<h3>AI Analytics</h3>
+<ul>
+  <li><strong>Wait Time Prediction</strong> — Predicts how long new patients will wait based on historical data</li>
+  <li><strong>Bottleneck Analysis</strong> — Identifies which departments are congested and recommends actions</li>
+  <li><strong>Resource Allocation</strong> — Suggests where to deploy staff for maximum impact</li>
+</ul>
+
+<!-- ═══════════════ SECTION 11 ═══════════════ -->
+<div class="page-break"></div>
+<h2 class="section-title">11. Notifications & Display Boards</h2>
+
+<h3>WhatsApp Notifications</h3>
+<p>The system sends WhatsApp messages automatically at key points in the patient journey. You can monitor delivery status on the dashboard.</p>
+
+<table>
+  <tr>
+    <th>Trigger</th>
+    <th>Message sent</th>
+  </tr>
+  <tr>
+    <td>Patient registered</td>
+    <td>Confirmation with ticket code and tracking URL</td>
+  </tr>
+  <tr>
+    <td>Near turn (2-3 ahead)</td>
+    <td>"Your turn is approaching. Please return to [department]."</td>
+  </tr>
+  <tr>
+    <td>Patient called</td>
+    <td>"[Ticket], please proceed to [room]."</td>
+  </tr>
+  <tr>
+    <td>Missed turn</td>
+    <td>"You missed your turn. Please see reception."</td>
+  </tr>
+  <tr>
+    <td>Transferred</td>
+    <td>"You have been moved to [department]. New ticket: [code]."</td>
+  </tr>
+  <tr>
+    <td>Prescription ready</td>
+    <td>"Your prescription is ready at the Pharmacy window."</td>
+  </tr>
+  <tr>
+    <td>Lab results ready</td>
+    <td>"Your lab results are ready. Please return to the doctor."</td>
+  </tr>
+</table>
+
+<h3>Notification Retry</h3>
+<div class="note">
+  <strong>Automatic retry:</strong> If a WhatsApp message fails to send (e.g., internet outage), it enters a retry queue.
+  The system retries at 15 seconds, 60 seconds, and 5 minutes. You can also manually retry from the dashboard notification panel.
+</div>
+
+<h3>Display Boards</h3>
+<table>
+  <tr>
+    <th>Screen</th>
+    <th>URL</th>
+    <th>Where to display</th>
+  </tr>
+  <tr>
+    <td>Public Queue Board</td>
+    <td><kbd>/queue</kbd></td>
+    <td>Large TV in main waiting area</td>
+  </tr>
+  <tr>
+    <td>Department Board</td>
+    <td><kbd>/department-board</kbd></td>
+    <td>TV at each department's waiting area</td>
+  </tr>
+</table>
+
+<div class="tip">
+  <strong>Setup tip:</strong> Set display board browsers to kiosk mode (full screen, no address bar) for a clean public display.
+  The boards update in real time via Server-Sent Events — no page refresh needed.
+</div>
+
+<!-- ═══════════════ SECTION 12 ═══════════════ -->
+<div class="page-break"></div>
+<h2 class="section-title">12. Appointments</h2>
+
+<h3>Viewing Appointments</h3>
+<ul>
+  <li>Navigate to <kbd>/admin/appointments</kbd></li>
+  <li>View all appointments across departments</li>
+  <li>Filter by date, department, or status</li>
+  <li>See appointment summary statistics</li>
+</ul>
+
+<h3>Managing Appointments</h3>
+<ul>
+  <li>View appointment details and patient information</li>
+  <li>Update appointment status (confirmed, cancelled, completed, no-show)</li>
+  <li>View available slots per date and service category</li>
+  <li>Track appointment reminders sent to patients</li>
+</ul>
+
+<h3>Follow-Up Appointments</h3>
+<ul>
+  <li>Create follow-up appointments linked to completed visits</li>
+  <li>View all follow-ups for a specific patient ticket</li>
+  <li>Track reminder delivery for follow-up appointments</li>
+</ul>
+
+<!-- ═══════════════ SECTION 13 ═══════════════ -->
+<div class="page-break"></div>
+<h2 class="section-title">13. Troubleshooting</h2>
+
+<h3>"Unable to connect to the server"</h3>
+<p>The backend server is not running or is unreachable. Check:</p>
+<ul>
+  <li>Is the backend server process running? (Should be on port 4242)</li>
+  <li>Is the hospital LAN connected?</li>
+  <li>Is the correct API URL configured in the frontend?</li>
+</ul>
+
+<h3>WhatsApp messages not being sent</h3>
+<ul>
+  <li>Check WhatsApp status at <kbd>/admin/notifications</kbd></li>
+  <li>Verify WHATSAPP_PROVIDER is set to "cloud" (not "mock") in backend .env</li>
+  <li>Ensure WHATSAPP_ACCESS_TOKEN and WHATSAPP_PHONE_NUMBER_ID are set</li>
+  <li>Check that the patient has WhatsApp consent and a valid phone number</li>
+  <li>Messages in the retry queue will send automatically when connectivity returns</li>
+</ul>
+
+<h3>Staff account creation fails</h3>
+<ul>
+  <li>Password must be 10+ characters with at least 3 of: uppercase, lowercase, number, symbol</li>
+  <li>Username must be 3-32 characters, only letters, numbers, dots, underscores, hyphens</li>
+  <li>Check for duplicate username, email, or employee ID</li>
+  <li>Only administrators can create staff accounts</li>
+</ul>
+
+<h3>Display board not updating</h3>
+<ul>
+  <li>Check that the backend server is running (SSE events stream from /api/events)</li>
+  <li>Refresh the display board page</li>
+  <li>Check browser console for EventSource connection errors</li>
+</ul>
+
+<h3>Patient not appearing in queue</h3>
+<ul>
+  <li>Verify the patient was registered to the correct department</li>
+  <li>Check the queue board filter settings</li>
+  <li>Ensure the patient's status is "waiting" (not "completed" or "missed")</li>
+</ul>
+
+<h3>Form data lost after browser crash</h3>
+<p>WaitLess auto-saves form drafts. When you return to the registration or triage page, your previous entries should be restored. If not, the auto-save may have been interrupted — re-enter the data.</p>
+
+<h3>AI chatbot not responding</h3>
+<ul>
+  <li>The chatbot requires the backend server to be running</li>
+  <li>Check that the /api/ai/chatbot endpoint is accessible</li>
+  <li>The chatbot uses keyword matching — try rephrasing your question</li>
+  <li>Topics supported: wait times, ticket tracking, prescriptions, lab tests, appointments, emergency guidance</li>
+</ul>
+
+<div class="footer-note">
+  WaitLess — Digital Hospital Queue Management System<br>
+  Built for Chinhoyi Provincial Hospital &bull; Version 1.0 &bull; August 2026<br>
+  Replacing confusion with a queue patients can trust.
+</div>
+
+</body>
+</html>

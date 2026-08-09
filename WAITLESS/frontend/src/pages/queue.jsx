@@ -7,10 +7,11 @@ import {
   Clock3,
   Inbox,
   MessageCircle,
-  MonitorSmartphone,
   ShieldCheck,
   UserCheck,
   Users,
+  Volume2,
+  VolumeX,
   Wifi,
 } from "lucide-react";
 
@@ -23,6 +24,7 @@ import {
 import { fetchQueueBoard } from "@/services/queueApi";
 import { useQueueRealtime } from "@/sockets/QueueRealtimeProvider";
 import { useApiResource } from "@/hooks/useApiResource";
+import { useAudioCall } from "@/hooks/useAudioCall";
 import authBackground from "@/assets/BACKG.png";
 import waitlessLogoIcon from "@/assets/waitless-logo-icon.png";
 
@@ -94,6 +96,8 @@ function ordinal(n) {
 export default function QueuePage() {
   const [now, setNow] = useState(new Date());
   const realtime = useQueueRealtime();
+  const audio = useAudioCall();
+  const lastProcessedEventRef = useRef(null);
 
   const loadQueueBoard = useCallback(() => fetchQueueBoard(), []);
   const queueQuery = useApiResource(loadQueueBoard, { enabled: isBrowser });
@@ -102,6 +106,24 @@ export default function QueuePage() {
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    if (!realtime.lastEvent) return;
+    if (lastProcessedEventRef.current === realtime.lastEvent.timestamp) return;
+    lastProcessedEventRef.current = realtime.lastEvent.timestamp;
+
+    if (realtime.lastEvent.type === "ticket.called") {
+      const payload = realtime.lastEvent.payload ?? {};
+      const ticketCode = payload.ticket ?? "";
+      const department = payload.department ?? "";
+      if (ticketCode) {
+        const message = department
+          ? `Ticket ${ticketCode}, please proceed to ${department}`
+          : `Ticket ${ticketCode}, please proceed to the service desk`;
+        audio.speak(message);
+      }
+    }
+  }, [realtime.lastEvent, audio]);
 
   const serving = queueQuery.data?.nowServing ?? [];
   const waiting = queueQuery.data?.waiting ?? [];
@@ -143,7 +165,7 @@ export default function QueuePage() {
         </div>
 
         {/* Dark glass card wrapper */}
-        <div className="relative overflow-hidden rounded-2xl bg-[#04141f]/80 shadow-[0_32px_80px_-28px_rgba(2,8,20,0.50)] backdrop-blur-2xl">
+        <div className="relative overflow-hidden rounded-2xl bg-[#04141f]/60 shadow-[0_32px_80px_-28px_rgba(2,8,20,0.45)] backdrop-blur-2xl">
           {/* Circulating gradient ribbon */}
           <QueueRibbonCirculation />
 
@@ -242,35 +264,21 @@ export default function QueuePage() {
                 />
               </div>
 
-              <div className="relative mt-5 rounded-2xl border border-white/12 bg-white/10 p-4">
-                <div className="flex items-start gap-3">
-                  <MonitorSmartphone className="mt-0.5 h-5 w-5 shrink-0 text-white/80" />
-                  <div>
-                    <div className="font-semibold text-white">
-                      Display guidance
-                    </div>
-                    <p className="mt-1 text-sm leading-6 text-slate-300">
-                      Patients receiving WhatsApp alerts can wait more
-                      comfortably while staff still call the next ticket in
-                      order.
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <AudioCallPanel audio={audio} />
             </div>
           </div>
         </header>
 
         {/* ─── NOW SERVING SECTION ──────────────────────── */}
-        <div className="mt-6 page-section-rise page-section-rise-delay-1">
+        <div className="mt-6 page-section-rise page-section-rise-delay-1 px-5 sm:px-8">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
-              <div className="eyebrow">Now serving</div>
-              <h2 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">
+              <div className="text-[0.7rem] font-bold uppercase tracking-[0.24em] text-teal-300">Now serving</div>
+              <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">
                 Current service windows
               </h2>
             </div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/80 px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-slate-300">
               <Clock3 className="h-3.5 w-3.5" />
               Live service feed
             </div>
@@ -283,7 +291,7 @@ export default function QueuePage() {
               title="Loading the live queue"
             />
           ) : queueQuery.isError ? (
-            <div className="surface-panel mt-4 border-destructive/30 bg-destructive/10 px-5 py-6 text-sm text-destructive">
+            <div className="mt-4 rounded-2xl border border-red-500/30 bg-red-500/10 px-5 py-6 text-sm text-red-300">
               {queueQuery.error.message}
             </div>
           ) : serving.length ? (
@@ -293,15 +301,15 @@ export default function QueuePage() {
               ))}
             </div>
           ) : (
-            <div className="surface-panel mt-4">
+            <div className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03]">
               <div className="queue-empty-state">
                 <div className="queue-empty-state-icon">
                   <UserCheck className="h-7 w-7" />
                 </div>
-                <div className="font-display text-lg font-bold tracking-tight">
+                <div className="font-display text-lg font-bold tracking-tight text-white">
                   No active service
                 </div>
-                <p className="max-w-sm text-sm leading-6 text-muted-foreground">
+                <p className="max-w-sm text-sm leading-6 text-slate-400">
                   No patient is currently being served. The next ticket will
                   appear here when a staff member calls it.
                 </p>
@@ -311,19 +319,19 @@ export default function QueuePage() {
         </div>
 
         {/* ─── WAITING QUEUE SECTION ────────────────────── */}
-        <article className="surface-panel page-section-rise page-section-rise-delay-2 mt-6 overflow-hidden">
-          <div className="flex flex-wrap items-start justify-between gap-4 border-b border-border/70 px-5 py-5 sm:px-6">
+        <article className="page-section-rise page-section-rise-delay-2 mt-6 mx-5 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03] sm:mx-8">
+          <div className="flex flex-wrap items-start justify-between gap-4 border-b border-white/10 px-5 py-5 sm:px-6">
             <div>
-              <div className="eyebrow">Up next</div>
-              <h2 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">
+              <div className="text-[0.7rem] font-bold uppercase tracking-[0.24em] text-teal-300">Up next</div>
+              <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">
                 Waiting queue
               </h2>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
+              <p className="mt-2 text-sm leading-6 text-slate-400">
                 Patients closer to the front of the line appear first. Red and
                 yellow priorities always outrank routine tickets.
               </p>
             </div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-border/70 bg-background/80 px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-slate-300">
               <Users className="h-3.5 w-3.5" />
               {waiting.length} patients waiting
             </div>
@@ -338,7 +346,7 @@ export default function QueuePage() {
               title="Loading the waiting list"
             />
           ) : queueQuery.isError ? (
-            <div className="px-5 py-6 text-sm text-destructive sm:px-6">
+            <div className="px-5 py-6 text-sm text-red-300 sm:px-6">
               {queueQuery.error.message}
             </div>
           ) : waiting.length ? (
@@ -357,7 +365,7 @@ export default function QueuePage() {
               {/* Desktop table (≥ lg) */}
               <div className="hidden overflow-x-auto lg:block">
                 <table className="w-full text-left">
-                  <thead className="bg-muted/50 text-xs uppercase tracking-[0.22em] text-muted-foreground">
+                  <thead className="bg-white/[0.04] text-xs uppercase tracking-[0.22em] text-slate-400">
                     <tr>
                       <th className="px-4 py-3 text-center w-16">#</th>
                       <th className="px-6 py-3">Ticket</th>
@@ -368,15 +376,15 @@ export default function QueuePage() {
                       <th className="px-6 py-3 text-right">Wait</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-border/70">
+                  <tbody className="divide-y divide-white/10">
                     {waiting.map((ticket, index) => (
                       <tr
                         key={ticket.id}
                         className={`queue-row-accent ${PRIORITY_ROW_ACCENT[ticket.priority] ?? ""} ${
                           index % 2 === 0
-                            ? "bg-background/70"
-                            : "bg-muted/20"
-                        } transition-[background-color,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-primary-soft/25`}
+                            ? "bg-white/[0.02]"
+                            : "bg-white/[0.04]"
+                        } transition-[background-color,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:bg-teal-500/10`}
                       >
                         <td className="px-4 py-4 text-center">
                           <span className="queue-position-badge">
@@ -391,21 +399,21 @@ export default function QueuePage() {
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <div className="font-medium">
+                          <div className="font-medium text-white">
                             Token {ticket.ticket}
                           </div>
                           {ticket.whatsApp && (
-                            <div className="mt-1 inline-flex items-center gap-1 text-[11px] text-accent">
+                            <div className="mt-1 inline-flex items-center gap-1 text-[11px] text-teal-300">
                               <MessageCircle className="h-3 w-3" />
                               WhatsApp on
                             </div>
                           )}
                         </td>
-                        <td className="px-6 py-4 text-sm text-muted-foreground">
+                        <td className="px-6 py-4 text-sm text-slate-400">
                           {ticket.department}
                         </td>
                         <td className="px-6 py-4 text-sm">
-                          <span className="inline-flex items-center gap-1.5">
+                          <span className="inline-flex items-center gap-1.5 text-slate-300">
                             <span
                               className={`inline-block h-2 w-2 rounded-full ${
                                 {
@@ -413,7 +421,7 @@ export default function QueuePage() {
                                   yellow: "bg-priority-yellow",
                                   green: "bg-priority-green",
                                   black: "bg-priority-black",
-                                }[ticket.priority] ?? "bg-muted"
+                                }[ticket.priority] ?? "bg-slate-500"
                               }`}
                             />
                             {PRIORITY_META[ticket.priority].short}
@@ -427,8 +435,8 @@ export default function QueuePage() {
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
-                          <span className="inline-flex items-center gap-1 font-semibold tabular-nums">
-                            <Clock3 className="h-3 w-3 text-muted-foreground" />
+                          <span className="inline-flex items-center gap-1 font-semibold tabular-nums text-white">
+                            <Clock3 className="h-3 w-3 text-slate-400" />
                             {ticket.waitMinutes}m
                           </span>
                         </td>
@@ -439,14 +447,14 @@ export default function QueuePage() {
               </div>
             </>
           ) : (
-            <div className="queue-empty-state">
+            <div className="queue-empty-state px-5 py-8">
               <div className="queue-empty-state-icon">
                 <Inbox className="h-7 w-7" />
               </div>
-              <div className="font-display text-lg font-bold tracking-tight">
+              <div className="font-display text-lg font-bold tracking-tight text-white">
                 Queue is clear
               </div>
-              <p className="max-w-sm text-sm leading-6 text-muted-foreground">
+              <p className="max-w-sm text-sm leading-6 text-slate-400">
                 Nobody is waiting in the queue right now. New patients will
                 appear here as they register.
               </p>
@@ -456,22 +464,22 @@ export default function QueuePage() {
 
         {/* ─── MISSED TURNS SECTION ─────────────────────── */}
         {missed.length > 0 && (
-          <article className="surface-panel queue-missed-pulse page-section-rise page-section-rise-delay-3 mt-6 border-priority-yellow/30 px-5 py-5 sm:px-6">
+          <article className="queue-missed-pulse page-section-rise page-section-rise-delay-3 mt-6 mx-5 rounded-2xl border border-amber-500/20 bg-amber-500/[0.06] px-5 py-5 sm:mx-8 sm:px-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
-                <div className="eyebrow flex items-center gap-2">
-                  <AlertTriangle className="h-3.5 w-3.5 text-priority-yellow" />
+                <div className="flex items-center gap-2 text-[0.7rem] font-bold uppercase tracking-[0.24em] text-amber-400">
+                  <AlertTriangle className="h-3.5 w-3.5" />
                   Missed turns
                 </div>
-                <h2 className="mt-2 font-display text-2xl font-bold tracking-tight">
+                <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-white">
                   Return to the department desk
                 </h2>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                <p className="mt-2 text-sm leading-6 text-slate-400">
                   These token numbers were called but not present. Staff can
                   recall them fairly from the department console.
                 </p>
               </div>
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-priority-yellow/20 px-3 py-1.5 text-xs font-semibold text-foreground">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/20 px-3 py-1.5 text-xs font-semibold text-amber-200">
                 <span className="queue-live-dot queue-live-dot--amber" />
                 {missed.length} missed
               </span>
@@ -480,15 +488,15 @@ export default function QueuePage() {
               {missed.map((ticket) => (
                 <div
                   key={ticket.id}
-                  className="surface-hover-card group rounded-2xl border border-priority-yellow/30 bg-priority-yellow/10 px-4 py-3"
+                  className="surface-hover-card group rounded-2xl border border-amber-500/25 bg-amber-500/10 px-4 py-3"
                 >
                   <div className="flex items-start gap-2">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-priority-yellow opacity-60 transition-opacity group-hover:opacity-100" />
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-400 opacity-60 transition-opacity group-hover:opacity-100" />
                     <div>
-                      <div className="font-display text-2xl font-bold tracking-tight">
+                      <div className="font-display text-2xl font-bold tracking-tight text-white">
                         {ticket.ticket}
                       </div>
-                      <div className="mt-1 text-xs text-muted-foreground">
+                      <div className="mt-1 text-xs text-slate-400">
                         {ticket.department}
                       </div>
                     </div>
@@ -498,6 +506,13 @@ export default function QueuePage() {
             </div>
           </article>
         )}
+
+        {/* Security footer */}
+        <div className="mt-6 flex items-center justify-center gap-2 px-5 text-xs text-slate-500 sm:px-8">
+          <ShieldCheck className="h-3.5 w-3.5 text-teal-400/60" />
+          <span>Secure queue display · Data is real-time and encrypted in transit</span>
+        </div>
+
           </div>
         </div>
       </div>
@@ -514,32 +529,32 @@ function ServingCard({ ticket }) {
 
   return (
     <article
-      className={`queue-serving-shine surface-hover-card relative rounded-[1.75rem] border border-current/12 p-6 ${glowClass} ${priorityChipClass[ticket.priority]}`}
+      className={`queue-serving-shine surface-hover-card relative rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-6 ${glowClass} ${priorityChipClass[ticket.priority]}`}
     >
       {/* Priority color ribbon */}
       <div className={`queue-priority-ribbon ${ribbonClass}`} />
 
       <div className="flex items-start justify-between gap-2">
-        <div className="text-[11px] font-bold uppercase tracking-[0.28em] opacity-80">
+        <div className="text-[11px] font-bold uppercase tracking-[0.28em] text-slate-300">
           {PRIORITY_META[ticket.priority].short} priority
         </div>
-        <Activity className="h-4 w-4 opacity-40" />
+        <Activity className="h-4 w-4 text-slate-400" />
       </div>
 
-      <div className="mt-2 font-display text-6xl font-bold tracking-tight sm:text-7xl">
+      <div className="mt-2 font-display text-6xl font-bold tracking-tight text-white sm:text-7xl">
         {ticket.ticket}
       </div>
 
-      <div className="mt-4 text-sm opacity-90">Token {ticket.ticket}</div>
-      <div className="mt-1 text-xs opacity-80">{ticket.department}</div>
+      <div className="mt-4 text-sm text-slate-300">Token {ticket.ticket}</div>
+      <div className="mt-1 text-xs text-slate-400">{ticket.department}</div>
 
       <div className="mt-5 flex items-center justify-between gap-3 text-xs font-semibold">
-        <span className="inline-flex items-center gap-1.5 rounded-full border border-current/15 px-2.5 py-1 uppercase tracking-[0.18em]">
+        <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 px-2.5 py-1 uppercase tracking-[0.18em] text-slate-200">
           <span className="queue-status-pulse" />
           {STATUS_META[ticket.status]?.label ?? ticket.status}
         </span>
-        <span className="inline-flex items-center gap-1">
-          <Clock3 className="h-3 w-3 opacity-60" />
+        <span className="inline-flex items-center gap-1 text-slate-300">
+          <Clock3 className="h-3 w-3 text-slate-400" />
           {ticket.waitMinutes}m in flow
         </span>
       </div>
@@ -553,7 +568,7 @@ function ServingCard({ ticket }) {
 function WaitingMobileCard({ ticket, position }) {
   return (
     <article
-      className={`surface-hover-card queue-row-accent ${PRIORITY_ROW_ACCENT[ticket.priority] ?? ""} rounded-2xl border border-border/70 bg-background/80 px-4 py-4`}
+      className={`surface-hover-card queue-row-accent ${PRIORITY_ROW_ACCENT[ticket.priority] ?? ""} rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-4`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
@@ -566,19 +581,19 @@ function WaitingMobileCard({ ticket, position }) {
             {ticket.ticket}
           </span>
           <div>
-            <div className="font-semibold">Token {ticket.ticket}</div>
-            <div className="text-xs text-muted-foreground">
+            <div className="font-semibold text-white">Token {ticket.ticket}</div>
+            <div className="text-xs text-slate-400">
               {ticket.department}
             </div>
           </div>
         </div>
-        <span className="inline-flex items-center gap-1 text-sm font-semibold tabular-nums">
-          <Clock3 className="h-3 w-3 text-muted-foreground" />
+        <span className="inline-flex items-center gap-1 text-sm font-semibold tabular-nums text-white">
+          <Clock3 className="h-3 w-3 text-slate-400" />
           {ticket.waitMinutes}m
         </span>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-muted-foreground">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400">
         <span className="inline-flex items-center gap-1.5">
           <span
             className={`inline-block h-2 w-2 rounded-full ${
@@ -587,13 +602,13 @@ function WaitingMobileCard({ ticket, position }) {
                 yellow: "bg-priority-yellow",
                 green: "bg-priority-green",
                 black: "bg-priority-black",
-              }[ticket.priority] ?? "bg-muted"
+              }[ticket.priority] ?? "bg-slate-500"
             }`}
           />
           {PRIORITY_META[ticket.priority].label}
         </span>
         {ticket.whatsApp && (
-          <span className="inline-flex items-center gap-1 text-accent">
+          <span className="inline-flex items-center gap-1 text-teal-300">
             <MessageCircle className="h-3 w-3" />
             WhatsApp on
           </span>
@@ -610,10 +625,10 @@ function WaitingMobileCard({ ticket, position }) {
 const PARTICLE_COLORS = [
   { r: 20, g: 184, b: 166 },   // teal-500
   { r: 45, g: 212, b: 191 },   // teal-400
-  { r: 37, g: 99, b: 235 },    // blue-600
-  { r: 96, g: 165, b: 250 },   // blue-400
-  { r: 14, g: 165, b: 233 },   // sky-500
-  { r: 15, g: 118, b: 110 },   // teal-700 (primary)
+  { r: 94, g: 234, b: 212 },   // teal-300
+  { r: 15, g: 118, b: 110 },   // teal-700
+  { r: 13, g: 148, b: 136 },   // teal-600
+  { r: 153, g: 246, b: 228 },  // teal-200
 ];
 
 const PARTICLE_COUNT = 68;
@@ -823,13 +838,107 @@ function QueueStat({ label, value, icon, liveDot, enterClass = "" }) {
     <div
       className={`rounded-2xl border border-white/12 bg-white/10 px-4 py-3 ${enterClass}`}
     >
-      <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-primary-foreground/65">
+      <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.22em] text-slate-400">
         {icon && <span className="opacity-60">{icon}</span>}
         {label}
         {liveDot && <span className="queue-live-dot ml-auto" />}
       </div>
-      <div className="mt-1 font-display text-3xl font-bold tracking-tight text-primary-foreground">
+      <div className="mt-1 font-display text-3xl font-bold tracking-tight text-white">
         {value}
+      </div>
+    </div>
+  );
+}
+
+/* ================================================================
+   QUEUE RIBBON CIRCULATION — animated gradient strands
+   ================================================================ */
+function QueueRibbonCirculation() {
+  return (
+    <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
+      <span className="patient-ribbon-strand patient-ribbon-strand--one" />
+      <span className="patient-ribbon-strand patient-ribbon-strand--two" />
+      <span className="patient-ribbon-strand patient-ribbon-strand--three" />
+    </div>
+  );
+}
+
+/* ================================================================
+   AUDIO CALL PANEL — text-to-speech announcement controls
+   ================================================================ */
+function AudioCallPanel({ audio }) {
+  if (!audio.supported) {
+    return (
+      <div className="relative mt-5 rounded-2xl border border-white/12 bg-white/10 p-4">
+        <div className="flex items-start gap-3">
+          <VolumeX className="mt-0.5 h-5 w-5 shrink-0 text-white/60" />
+          <div>
+            <div className="font-semibold text-white/80">Audio calls unavailable</div>
+            <p className="mt-1 text-sm leading-6 text-slate-400">
+              This browser does not support text-to-speech announcements.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative mt-5 rounded-2xl border border-white/12 bg-white/10 p-4">
+      <div className="flex items-start gap-3">
+        <Volume2 className={`mt-0.5 h-5 w-5 shrink-0 ${audio.enabled ? "text-teal-400" : "text-white/60"} ${audio.isSpeaking ? "animate-pulse" : ""}`} />
+        <div className="flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <div className="font-semibold text-white">Audio announcements</div>
+            <button
+              type="button"
+              onClick={audio.enabled ? audio.disableAudio : audio.enableAudio}
+              className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
+                audio.enabled
+                  ? "bg-teal-500/20 text-teal-200 border border-teal-400/30"
+                  : "bg-white/10 text-slate-300 border border-white/15"
+              }`}
+            >
+              {audio.enabled ? "Enabled" : "Enable audio"}
+            </button>
+          </div>
+          <p className="mt-1 text-sm leading-6 text-slate-300">
+            {audio.enabled
+              ? "Spoken announcements will play when a ticket is called."
+              : "Click \"Enable audio\" to hear spoken ticket calls in the waiting area."}
+          </p>
+          {audio.enabled && (
+            <div className="mt-3 space-y-2">
+              <label className="flex items-center gap-2 text-xs text-slate-400">
+                <span className="shrink-0 w-14">Voice</span>
+                <select
+                  value={audio.selectedVoiceURI ?? ""}
+                  onChange={(e) => audio.setSelectedVoiceURI(e.target.value)}
+                  className="flex-1 rounded-lg border border-white/15 bg-white/10 px-2 py-1 text-xs text-white outline-none focus:border-teal-400/40"
+                >
+                  {audio.voices.map((voice) => (
+                    <option key={voice.voiceURI} value={voice.voiceURI} className="bg-slate-800">
+                      {voice.name} ({voice.lang})
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex items-center gap-2 text-xs text-slate-400">
+                <span className="shrink-0 w-14">Speed</span>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="1.5"
+                  step="0.1"
+                  value={audio.rate}
+                  onChange={(e) => audio.setRate(Number(e.target.value))}
+                  className="flex-1 accent-teal-400"
+                />
+                <span className="shrink-0 w-8 text-right tabular-nums text-slate-300">{audio.rate.toFixed(1)}</span>
+              </label>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -115,3 +115,59 @@ CREATE TABLE IF NOT EXISTS notification_attempts (
     REFERENCES notifications(id)
     ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS staff_users (
+  id CHAR(36) PRIMARY KEY,
+  username VARCHAR(32) NOT NULL UNIQUE,
+  email VARCHAR(120) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  full_name VARCHAR(160) NOT NULL,
+  role VARCHAR(40) NOT NULL DEFAULT 'reception',
+  department VARCHAR(80) NOT NULL DEFAULT '',
+  phone VARCHAR(80) NULL,
+  employee_id VARCHAR(80) NULL,
+  avatar_url TEXT NULL,
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  last_login_at DATETIME(3) NULL,
+  INDEX idx_staff_users_username (username),
+  INDEX idx_staff_users_email (email)
+);
+
+CREATE TABLE IF NOT EXISTS patient_users (
+  id CHAR(36) PRIMARY KEY,
+  username VARCHAR(32) NOT NULL UNIQUE,
+  email VARCHAR(120) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  full_name VARCHAR(160) NOT NULL,
+  phone VARCHAR(80) NOT NULL,
+  national_id VARCHAR(80) NULL,
+  dob DATE NULL,
+  gender VARCHAR(40) NOT NULL DEFAULT 'unknown',
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  last_login_at DATETIME(3) NULL,
+  INDEX idx_patient_users_username (username),
+  INDEX idx_patient_users_email (email)
+);
+
+CREATE TABLE IF NOT EXISTS audit_events (
+  id CHAR(36) PRIMARY KEY,
+  occurred_at DATETIME(3) NOT NULL,
+  actor_id CHAR(36) NULL,
+  actor_name VARCHAR(160) NULL,
+  actor_role VARCHAR(40) NULL,
+  actor_department VARCHAR(80) NULL,
+  action VARCHAR(100) NOT NULL,
+  entity_type VARCHAR(80) NOT NULL,
+  entity_id VARCHAR(80) NULL,
+  entity_label VARCHAR(160) NULL,
+  outcome VARCHAR(40) NOT NULL DEFAULT 'success',
+  before_state JSON NULL,
+  after_state JSON NULL,
+  metadata JSON NULL,
+  previous_hash CHAR(64) NULL,
+  event_hash CHAR(64) NOT NULL UNIQUE,
+  INDEX idx_audit_events_occurred_at (occurred_at),
+  INDEX idx_audit_events_actor_id (actor_id),
+  INDEX idx_audit_events_action (action),
+  INDEX idx_audit_events_entity (entity_type, entity_id)
+);

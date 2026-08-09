@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
@@ -8,14 +8,25 @@ import {
   LoaderCircle,
   MessageCircle,
   PhoneCall,
+  Printer,
+  QrCode,
   Search,
+  Share2,
+  ShieldCheck,
   Ticket,
   UserRound,
 } from "lucide-react";
+import QRCode from "qrcode";
 
+import authBackground from "@/assets/BACKG.png";
+import waitlessLogoIcon from "@/assets/waitless-logo-icon.png";
 import { DEPARTMENTS } from "@/services/queueMeta";
-import { selfRegisterPatient } from "@/services/queueApi";
+import { selfRegisterPatient, preRegisterPatient } from "@/services/queueApi";
 import { useLiveRefresh } from "@/context/LiveRefreshContext";
+import {
+  printQueueTicket,
+  shareQueueTicket,
+} from "@/services/queueTicketHandoff";
 
 const INITIAL_FORM = {
   fullName: "",
@@ -33,6 +44,7 @@ export default function SelfRegisterPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(null);
+  const [handoffState, setHandoffState] = useState("");
 
   function updateField(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -64,48 +76,171 @@ export default function SelfRegisterPage() {
     }
   }
 
+  async function handlePreRegister(event) {
+    event.preventDefault();
+    setError("");
+
+    if (!form.fullName.trim()) {
+      setError("Please enter your full name.");
+      return;
+    }
+
+    if (!form.phone.trim()) {
+      setError("Please enter your phone number for queue notifications.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const ticket = await preRegisterPatient(form);
+      refreshLiveData();
+      setSuccess(ticket);
+    } catch (err) {
+      setError(err.message || "Pre-registration failed. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const qrCanvasRef = useRef(null);
+
+  async function handlePrintTicket() {
+    try {
+      setHandoffState("Preparing printable ticket...");
+      await printQueueTicket(success);
+      setHandoffState("Print dialog opened.");
+    } catch (err) {
+      setHandoffState(err.message || "The ticket could not be printed.");
+    }
+  }
+
+  async function handleShareTicket() {
+    try {
+      setHandoffState(await shareQueueTicket(success));
+    } catch (err) {
+      setHandoffState(err.message || "The ticket could not be shared.");
+    }
+  }
+
+  useEffect(() => {
+    if (success?.patientNumber && qrCanvasRef.current) {
+      QRCode.toCanvas(qrCanvasRef.current, success.patientNumber, {
+        width: 180,
+        margin: 2,
+        color: { dark: "#04141f", light: "#ffffff" },
+      });
+    }
+  }, [success]);
+
   if (success) {
     return (
-      <section className="mx-auto max-w-2xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="surface-panel overflow-hidden rounded-3xl p-8 text-center shadow-[0_24px_60px_-30px_rgba(15,118,110,0.22)] sm:p-10">
-          <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-emerald-500/12 text-emerald-600">
-            <CheckCircle2 className="h-10 w-10" />
+      <section className="relative isolate min-h-screen overflow-hidden px-4 py-6 text-white sm:px-6 lg:px-8">
+        {/* Background image */}
+        <div className="pointer-events-none absolute inset-0 -z-20 hidden lg:block">
+          <img src={authBackground} alt="" className="h-full w-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#04141f]/82 via-[#062a35]/72 to-[#0a1f2e]/78" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#04141f]/60 via-transparent to-[#04141f]/30" />
+        </div>
+        <div className="pointer-events-none absolute inset-0 -z-10 hidden opacity-[0.05] lg:block [background-image:linear-gradient(rgba(148,163,184,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.4)_1px,transparent_1px)] [background-size:82px_82px]" />
+        <div className="absolute inset-0 -z-10 bg-[#04141f] lg:hidden" />
+
+        <div className="relative mx-auto flex w-full max-w-2xl flex-col pb-8">
+          {/* Logo header */}
+          <div className="mb-6 flex items-center justify-center gap-3">
+            <img src={waitlessLogoIcon} alt="WaitLess" className="h-11 w-11 rounded-lg object-contain" />
+            <div className="text-center">
+              <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-teal-400">Self-service</div>
+              <div className="text-sm font-medium text-white/70">Smarter Queues, Better Care</div>
+            </div>
           </div>
 
-          <div className="mt-6 eyebrow">You're in the queue</div>
-          <h1 className="mt-3 font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-            Your ticket has been issued
-          </h1>
+          <div className="relative overflow-hidden rounded-2xl bg-[#04141f]/60 shadow-[0_32px_80px_-28px_rgba(2,8,20,0.45)] backdrop-blur-2xl">
+            <div className="relative z-10 p-8 text-center sm:p-10">
+              <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-emerald-500/12 text-emerald-400">
+                <CheckCircle2 className="h-10 w-10" />
+              </div>
 
-          <div className="mt-6 inline-flex items-center gap-3 rounded-2xl border border-primary/15 bg-primary-soft/40 px-6 py-4">
-            <Ticket className="h-6 w-6 text-primary" />
-            <span className="font-display text-3xl font-bold tracking-wide text-primary">
-              {success.ticket}
-            </span>
+              <div className="mt-6 text-[0.7rem] font-bold uppercase tracking-[0.24em] text-teal-300">
+                {success.status === "pre-registered" ? "Pre-registered" : "You're in the queue"}
+              </div>
+              <h1 className="mt-3 font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                {success.status === "pre-registered" ? "You're pre-registered!" : "Your ticket has been issued"}
+              </h1>
+
+              <div className="mt-6 inline-flex items-center gap-3 rounded-2xl border border-teal-200/12 bg-teal-100/[0.07] px-6 py-4">
+                <Ticket className="h-6 w-6 text-teal-300" />
+                <span className="font-display text-3xl font-bold tracking-wide text-teal-200">
+                  {success.ticket}
+                </span>
+              </div>
+
+              <p className="mt-5 max-w-md mx-auto text-sm leading-6 text-slate-400">
+                {success.status === "pre-registered" ? ("Your ticket is pre-issued. Visit the reception desk to confirm your arrival and enter the live queue. Bring this ticket code.") : ("Save your ticket code. You'll receive WhatsApp updates as your position changes. Present this code at the service desk when called.")}
+              </p>
+
+              {success.patientNumber ? (
+                <div className="mt-6 rounded-2xl border border-teal-200/12 bg-teal-100/[0.07] px-6 py-5">
+                  <div className="flex items-center justify-center gap-1.5 text-[0.7rem] font-bold uppercase tracking-[0.2em] text-teal-300">
+                    <QrCode className="h-3.5 w-3.5" />
+                    Save for next visit
+                  </div>
+                  <div className="mt-3 flex justify-center">
+                    <canvas ref={qrCanvasRef} className="rounded-lg bg-white p-2" />
+                  </div>
+                  <p className="mt-3 text-xs text-slate-400">
+                    Scan this QR code at the kiosk next time for instant check-in.
+                  </p>
+                </div>
+              ) : null}
+
+              <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+                <Link
+                  to={`/track?ticket=${encodeURIComponent(success.ticket)}`}
+                  className="inline-flex h-12 items-center gap-2 rounded-xl bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-6 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(13,148,136,0.5)] transition-transform hover:-translate-y-0.5"
+                >
+                  Track your ticket
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+                <button
+                  type="button"
+                  onClick={handlePrintTicket}
+                  className="inline-flex h-12 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-5 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08]"
+                >
+                  <Printer className="h-4 w-4" />
+                  Print
+                </button>
+                <button
+                  type="button"
+                  onClick={handleShareTicket}
+                  className="inline-flex h-12 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-5 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08]"
+                >
+                  <Share2 className="h-4 w-4" />
+                  Send to phone
+                </button>
+                <button
+                  onClick={() => {
+                    setSuccess(null);
+                    setForm(INITIAL_FORM);
+                    setHandoffState("");
+                  }}
+                  className="inline-flex h-12 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-6 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08]"
+                >
+                  Register another patient
+                </button>
+              </div>
+
+              <div className="mt-4 min-h-5 text-xs font-semibold text-teal-300">
+                {handoffState ||
+                  (success.whatsApp
+                    ? "Your token is synced to WhatsApp and the live display."
+                    : "Your token is synced to the live display.")}
+              </div>
+            </div>
           </div>
 
-          <p className="mt-5 max-w-md mx-auto text-sm leading-6 text-muted-foreground">
-            Save your ticket code. You'll receive WhatsApp updates as your
-            position changes. Present this code at the service desk when called.
-          </p>
-
-          <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-            <Link
-              to={`/track?ticket=${encodeURIComponent(success.ticket)}`}
-              className="inline-flex h-12 items-center gap-2 rounded-xl gradient-primary px-6 text-sm font-semibold text-primary-foreground shadow-elegant transition-transform hover:-translate-y-0.5"
-            >
-              Track your ticket
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <button
-              onClick={() => {
-                setSuccess(null);
-                setForm(INITIAL_FORM);
-              }}
-              className="inline-flex h-12 items-center gap-2 rounded-xl border border-border bg-card px-6 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
-            >
-              Register another patient
-            </button>
+          <div className="mt-6 flex items-center justify-center gap-2 text-xs text-slate-500">
+            <ShieldCheck className="h-3.5 w-3.5 text-teal-400/60" />
+            <span>Secure self-service registration · Data is encrypted in transit</span>
           </div>
         </div>
       </section>
@@ -113,166 +248,214 @@ export default function SelfRegisterPage() {
   }
 
   return (
-    <section className="mx-auto max-w-2xl px-4 py-10 sm:px-6 lg:px-8">
-      <div className="surface-panel overflow-hidden rounded-3xl shadow-[0_24px_60px_-30px_rgba(15,118,110,0.22)]">
-        {/* Header */}
-        <div className="border-b border-border bg-gradient-to-br from-primary-soft/50 to-transparent px-6 py-7 sm:px-8">
-          <div className="flex items-center gap-3">
-            <span className="grid h-11 w-11 place-items-center rounded-xl bg-primary/12 text-primary">
-              <ClipboardList className="h-5 w-5" />
-            </span>
-            <div>
-              <div className="eyebrow">Patient self-service</div>
-              <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-foreground">
-                Book your spot in the queue
-              </h1>
-            </div>
+    <section className="relative isolate min-h-screen overflow-hidden px-4 py-6 text-white sm:px-6 lg:px-8">
+      {/* Background image */}
+      <div className="pointer-events-none absolute inset-0 -z-20 hidden lg:block">
+        <img src={authBackground} alt="" className="h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#04141f]/82 via-[#062a35]/72 to-[#0a1f2e]/78" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#04141f]/60 via-transparent to-[#04141f]/30" />
+      </div>
+      <div className="pointer-events-none absolute inset-0 -z-10 hidden opacity-[0.05] lg:block [background-image:linear-gradient(rgba(148,163,184,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.4)_1px,transparent_1px)] [background-size:82px_82px]" />
+      <div className="absolute inset-0 -z-10 bg-[#04141f] lg:hidden" />
+
+      <div className="relative mx-auto flex w-full max-w-2xl flex-col pb-8">
+        {/* Logo header */}
+        <div className="mb-6 flex items-center justify-center gap-3">
+          <img src={waitlessLogoIcon} alt="WaitLess" className="h-11 w-11 rounded-lg object-contain" />
+          <div className="text-center">
+            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-teal-400">Self-service</div>
+            <div className="text-sm font-medium text-white/70">Smarter Queues, Better Care</div>
           </div>
-          <p className="mt-4 text-sm leading-6 text-muted-foreground">
-            Fill in your details to get a ticket number. You'll see your live
-            queue position and receive updates on your phone.
-          </p>
         </div>
 
-        {/* Form */}
-        <form className="space-y-5 px-6 py-7 sm:px-8" onSubmit={handleSubmit}>
-          {error ? (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
-              {error}
+        <div className="relative overflow-hidden rounded-2xl bg-[#04141f]/60 shadow-[0_32px_80px_-28px_rgba(2,8,20,0.45)] backdrop-blur-2xl">
+          <div className="relative z-10">
+            {/* Header */}
+            <div className="border-b border-white/10 bg-[linear-gradient(135deg,rgba(4,20,31,0.82)_0%,rgba(6,42,53,0.72)_48%,rgba(10,31,46,0.78)_100%)] px-6 py-7 sm:px-8">
+              <div className="flex items-center gap-3">
+                <span className="grid h-11 w-11 place-items-center rounded-xl bg-teal-500/12 text-teal-300">
+                  <ClipboardList className="h-5 w-5" />
+                </span>
+                <div>
+                  <div className="text-[0.7rem] font-bold uppercase tracking-[0.24em] text-teal-300">Patient self-service</div>
+                  <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-white">
+                    Book your spot in the queue
+                  </h1>
+                </div>
+              </div>
+              <p className="mt-4 text-sm leading-6 text-slate-400">
+                Fill in your details to get a ticket number. You'll see your live
+                queue position and receive updates on your phone.
+              </p>
             </div>
-          ) : null}
 
-          {/* Full name */}
-          <div>
-            <label className="mb-1.5 block text-sm font-semibold text-foreground">
-              Full name <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <UserRound className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                type="text"
-                value={form.fullName}
-                onChange={(e) => updateField("fullName", e.target.value)}
-                placeholder="e.g. Tendai Mukamuri"
-                className="h-12 w-full rounded-xl border border-border bg-card pl-11 pr-4 text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                required
-              />
-            </div>
+            {/* Form */}
+            <form className="space-y-5 px-6 py-7 sm:px-8" onSubmit={handleSubmit}>
+              {error ? (
+                <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-300">
+                  {error}
+                </div>
+              ) : null}
+
+              {/* Full name */}
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-white">
+                  Full name <span className="text-red-400">*</span>
+                </label>
+                <div className="relative">
+                  <UserRound className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    value={form.fullName}
+                    onChange={(e) => updateField("fullName", e.target.value)}
+                    placeholder="e.g. Tendai Mukamuri"
+                    className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Phone */}
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-white">
+                  Phone number <span className="text-red-400">*</span>
+                </label>
+                <div className="relative">
+                  <PhoneCall className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="tel"
+                    value={form.phone}
+                    onChange={(e) => updateField("phone", e.target.value)}
+                    placeholder="e.g. 077 123 4567"
+                    className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
+                    required
+                  />
+                </div>
+                <p className="mt-1.5 text-xs text-slate-500">
+                  Used for WhatsApp queue notifications.
+                </p>
+              </div>
+
+              {/* Department */}
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-white">
+                  Department <span className="text-red-400">*</span>
+                </label>
+                <select
+                  value={form.dept}
+                  onChange={(e) => updateField("dept", e.target.value)}
+                  className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm text-white focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
+                >
+                  {DEPARTMENTS.map((dept) => (
+                    <option key={dept} value={dept} className="bg-[#04141f] text-white">
+                      {dept}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Chief complaint */}
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-white">
+                  Reason for visit
+                </label>
+                <textarea
+                  value={form.chiefComplaint}
+                  onChange={(e) => updateField("chiefComplaint", e.target.value)}
+                  placeholder="Briefly describe your symptoms or reason for visiting"
+                  rows={3}
+                  className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
+                />
+              </div>
+
+              {/* Notification consent */}
+              <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3.5">
+                <input
+                  type="checkbox"
+                  id="notificationConsent"
+                  checked={form.notificationConsent}
+                  onChange={(e) => {
+                    updateField("notificationConsent", e.target.checked);
+                    updateField("whatsApp", e.target.checked);
+                  }}
+                  className="mt-0.5 h-4 w-4 rounded border-white/20 text-teal-500 focus:ring-teal-400/20"
+                />
+                <label htmlFor="notificationConsent" className="text-sm leading-5 text-slate-200">
+                  <span className="flex items-center gap-1.5 font-semibold">
+                    <MessageCircle className="h-3.5 w-3.5 text-teal-300" />
+                    Send me WhatsApp updates
+                  </span>
+                  <span className="mt-0.5 block text-xs text-slate-500">
+                    Get notified when it's almost your turn.
+                  </span>
+                </label>
+              </div>
+
+              {/* Submit */}
+              <button
+                type="submit"
+                disabled={submitting}
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-6 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(13,148,136,0.5)] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {submitting ? (
+                  <>
+                    <LoaderCircle className="h-4 w-4 animate-spin" />
+                    Issuing your ticket...
+                  </>
+                ) : (
+                  <>
+                    Get my ticket
+                    <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={handlePreRegister}
+                disabled={submitting}
+                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-6 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {submitting ? (
+                  <LoaderCircle className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    Pre-register for later
+                    <Clock3 className="h-4 w-4" />
+                  </>
+                )}
+              </button>
+
+              <p className="text-center text-xs text-slate-500">
+                Pre-register online and confirm your arrival at the reception desk to enter the queue.
+              </p>
+
+              <div className="flex items-center justify-center gap-4 pt-2 text-xs text-slate-500">
+                <Link
+                  to="/track"
+                  className="inline-flex items-center gap-1.5 font-medium text-teal-300 hover:text-teal-200"
+                >
+                  <Search className="h-3.5 w-3.5" />
+                  Track an existing ticket
+                </Link>
+                <span className="text-white/20">|</span>
+                <Link
+                  to="/queue"
+                  className="inline-flex items-center gap-1.5 font-medium text-teal-300 hover:text-teal-200"
+                >
+                  <Clock3 className="h-3.5 w-3.5" />
+                  View queue board
+                </Link>
+              </div>
+            </form>
           </div>
+        </div>
 
-          {/* Phone */}
-          <div>
-            <label className="mb-1.5 block text-sm font-semibold text-foreground">
-              Phone number <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <PhoneCall className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                type="tel"
-                value={form.phone}
-                onChange={(e) => updateField("phone", e.target.value)}
-                placeholder="e.g. 077 123 4567"
-                className="h-12 w-full rounded-xl border border-border bg-card pl-11 pr-4 text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-                required
-              />
-            </div>
-            <p className="mt-1.5 text-xs text-muted-foreground">
-              Used for WhatsApp queue notifications.
-            </p>
-          </div>
-
-          {/* Department */}
-          <div>
-            <label className="mb-1.5 block text-sm font-semibold text-foreground">
-              Department <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={form.dept}
-              onChange={(e) => updateField("dept", e.target.value)}
-              className="h-12 w-full rounded-xl border border-border bg-card px-4 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-            >
-              {DEPARTMENTS.map((dept) => (
-                <option key={dept} value={dept}>
-                  {dept}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Chief complaint */}
-          <div>
-            <label className="mb-1.5 block text-sm font-semibold text-foreground">
-              Reason for visit
-            </label>
-            <textarea
-              value={form.chiefComplaint}
-              onChange={(e) => updateField("chiefComplaint", e.target.value)}
-              placeholder="Briefly describe your symptoms or reason for visiting"
-              rows={3}
-              className="w-full rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
-            />
-          </div>
-
-          {/* Notification consent */}
-          <div className="flex items-start gap-3 rounded-xl bg-primary-soft/30 px-4 py-3.5">
-            <input
-              type="checkbox"
-              id="notificationConsent"
-              checked={form.notificationConsent}
-              onChange={(e) => {
-                updateField("notificationConsent", e.target.checked);
-                updateField("whatsApp", e.target.checked);
-              }}
-              className="mt-0.5 h-4 w-4 rounded border-border text-primary focus:ring-primary/20"
-            />
-            <label htmlFor="notificationConsent" className="text-sm leading-5 text-foreground">
-              <span className="flex items-center gap-1.5 font-semibold">
-                <MessageCircle className="h-3.5 w-3.5 text-primary" />
-                Send me WhatsApp updates
-              </span>
-              <span className="mt-0.5 block text-xs text-muted-foreground">
-                Get notified when it's almost your turn.
-              </span>
-            </label>
-          </div>
-
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={submitting}
-            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl gradient-primary px-6 text-sm font-semibold text-primary-foreground shadow-elegant transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {submitting ? (
-              <>
-                <LoaderCircle className="h-4 w-4 animate-spin" />
-                Issuing your ticket...
-              </>
-            ) : (
-              <>
-                Get my ticket
-                <ArrowRight className="h-4 w-4" />
-              </>
-            )}
-          </button>
-
-          <div className="flex items-center justify-center gap-4 pt-2 text-xs text-muted-foreground">
-            <Link
-              to="/track"
-              className="inline-flex items-center gap-1.5 font-medium text-primary hover:text-primary/80"
-            >
-              <Search className="h-3.5 w-3.5" />
-              Track an existing ticket
-            </Link>
-            <span className="text-border">|</span>
-            <Link
-              to="/queue"
-              className="inline-flex items-center gap-1.5 font-medium text-primary hover:text-primary/80"
-            >
-              <Clock3 className="h-3.5 w-3.5" />
-              View queue board
-            </Link>
-          </div>
-        </form>
+        {/* Security footer */}
+        <div className="mt-6 flex items-center justify-center gap-2 text-xs text-slate-500">
+          <ShieldCheck className="h-3.5 w-3.5 text-teal-400/60" />
+          <span>Secure self-service registration · Data is encrypted in transit</span>
+        </div>
       </div>
     </section>
   );

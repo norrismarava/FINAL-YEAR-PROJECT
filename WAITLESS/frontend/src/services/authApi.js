@@ -24,3 +24,10 @@ export async function uploadStaffAvatar(avatarBase64) {
     body: { avatarBase64 },
   });
 }
+
+export async function saveStaffProfile(payload) {
+  return apiRequest("/api/profile", {
+    method: "POST",
+    body: payload,
+  });
+}

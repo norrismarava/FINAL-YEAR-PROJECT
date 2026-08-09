@@ -984,6 +984,26 @@ export async function findPatientById(id) {
   });
 }
 
+export async function findPatientByPhone(phone) {
+  return withConnection(async (connection) => {
+    const [rows] = await connection.execute(
+      "SELECT * FROM patient_profiles WHERE REPLACE(phone, ' ', '') = ? LIMIT 1",
+      [phone?.replace(/\s/g, "") ?? ""],
+    );
+    return rows.length ? clonePatient(mapPatientRow(rows[0])) : null;
+  });
+}
+
+export async function findPatientByPatientNumber(patientNumber) {
+  return withConnection(async (connection) => {
+    const [rows] = await connection.execute(
+      "SELECT * FROM patient_profiles WHERE patient_number = ? LIMIT 1",
+      [patientNumber ?? ""],
+    );
+    return rows.length ? clonePatient(mapPatientRow(rows[0])) : null;
+  });
+}
+
 export async function createPatient(patient) {
   await withConnection((connection) => insertPatient(connection, patient));
   return clonePatient(patient);

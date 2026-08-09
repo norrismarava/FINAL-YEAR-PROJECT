@@ -1,6 +1,8 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 import { fetchCurrentPatient, loginPatientAccount } from "@/services/patientAuthApi";
+import { useIdleTimeout } from "@/hooks/useIdleTimeout";
+import { IdleTimeoutModal } from "@/components/ui/IdleTimeoutModal";
 import {
   clearPatientSession,
   getStoredPatientExpiry,
@@ -69,6 +71,15 @@ export function PatientAuthProvider({ children }) {
     setPatientUser(null);
   }
 
+  const handleIdleTimeout = useCallback(() => {
+    patientLogout();
+  }, []);
+
+  const { warning, secondsLeft, dismiss } = useIdleTimeout({
+    onTimeout: handleIdleTimeout,
+    enabled: Boolean(patientUser && patientToken),
+  });
+
   return (
     <PatientAuthContext.Provider
       value={{
@@ -81,6 +92,12 @@ export function PatientAuthProvider({ children }) {
       }}
     >
       {children}
+      <IdleTimeoutModal
+        show={warning}
+        secondsLeft={secondsLeft}
+        onDismiss={dismiss}
+        onLogout={patientLogout}
+      />
     </PatientAuthContext.Provider>
   );
 }

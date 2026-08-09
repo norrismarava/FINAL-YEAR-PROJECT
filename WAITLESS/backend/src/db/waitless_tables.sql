@@ -23,14 +23,8 @@ CREATE TABLE IF NOT EXISTS staff_users (
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
--- Insert a default admin user (password: 'admin123').
--- IMPORTANT: In a real deployment, use BCrypt hash.
--- For this demo, we use a generic BCrypt hash for 'admin123'.
-INSERT INTO staff_users (username, email, password_hash, full_name, role, department) 
-VALUES 
-('admin', 'admin@waitless.local', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Admin', 'admin', 'Administration'),
-('triage1', 'triage@waitless.local', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Nurse Triage', 'triage_officer', 'Casualty'),
-('doctor1', 'doctor@waitless.local', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Dr. Smith', 'doctor', 'OPD');
+-- Create the initial administrator through the application bootstrap using
+-- INITIAL_ADMIN_PASSWORD. Do not place reusable credentials in SQL files.
 
 -- =============================================
 -- TABLE: patients
@@ -200,4 +194,4 @@ DELIMITER ;
 -- =============================================
 SELECT 'Database setup completed successfully!' AS message;
 SELECT 'Tables created: staff_users, patients, triage_records, queue_records, notifications, service_logs' AS tables_created;
-SELECT 'Default users added: admin (admin123), triage1 (admin123), doctor1 (admin123)' AS default_users;
+SELECT 'Create the initial administrator through the secure application bootstrap.' AS admin_setup;

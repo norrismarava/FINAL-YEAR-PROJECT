@@ -16,6 +16,8 @@ const state = {
   nextPatientSequence: INITIAL_PATIENT_SEQUENCE,
   notifications: [],
   nextNotificationSequence: INITIAL_NOTIFICATION_SEQUENCE,
+  prescriptions: [],
+  nextPrescriptionSequence: 1,
   ready: false,
 };
 
@@ -42,6 +44,8 @@ function createInitialState() {
     nextPatientSequence: INITIAL_PATIENT_SEQUENCE,
     notifications: [],
     nextNotificationSequence: INITIAL_NOTIFICATION_SEQUENCE,
+    prescriptions: [],
+    nextPrescriptionSequence: 1,
   };
 }
 
@@ -365,6 +369,23 @@ export async function findPatientById(id) {
   return patient ? clonePatient(patient) : null;
 }
 
+export async function findPatientByPhone(phone) {
+  assertReady();
+  const normalized = (phone ?? "").replace(/\s/g, "");
+  const patient = state.patients.find(
+    (entry) => (entry.phone ?? "").replace(/\s/g, "") === normalized,
+  );
+  return patient ? clonePatient(patient) : null;
+}
+
+export async function findPatientByPatientNumber(patientNumber) {
+  assertReady();
+  const patient = state.patients.find(
+    (entry) => entry.patientNumber === patientNumber,
+  );
+  return patient ? clonePatient(patient) : null;
+}
+
 export async function createPatient(patient) {
   assertReady();
   state.patients.push(clonePatient(patient));
@@ -446,4 +467,91 @@ export async function getNextNotificationSequence() {
   state.nextNotificationSequence += 1;
   persistState();
   return sequence;
+}
+
+export function listPrescriptions() {
+  assertReady();
+  return state.prescriptions.map((p) => ({ ...p }));
+}
+
+export function findPrescriptionById(id) {
+  assertReady();
+  return state.prescriptions.find((p) => p.id === id) ?? null;
+}
+
+export function findPrescriptionsByTicketId(ticketId) {
+  assertReady();
+  return state.prescriptions.filter((p) => p.ticketId === ticketId).map((p) => ({ ...p }));
+}
+
+export function createPrescription(prescription) {
+  assertReady();
+  const created = { ...prescription, id: crypto.randomUUID() };
+  state.prescriptions.push(created);
+  persistState();
+  return { ...created };
+}
+
+export function updatePrescription(id, updater) {
+  assertReady();
+  const idx = state.prescriptions.findIndex((p) => p.id === id);
+  if (idx < 0) return null;
+  const updated = updater({ ...state.prescriptions[idx] });
+  state.prescriptions[idx] = updated;
+  persistState();
+  return { ...updated };
+}
+
+export function listTestOrders() {
+  assertReady();
+  return (state.testOrders ?? []).map((t) => ({ ...t }));
+}
+
+export function findTestOrderById(id) {
+  assertReady();
+  return (state.testOrders ?? []).find((t) => t.id === id) ?? null;
+}
+
+export function findTestOrdersByTicketId(ticketId) {
+  assertReady();
+  return (state.testOrders ?? []).filter((t) => t.ticketId === ticketId).map((t) => ({ ...t }));
+}
+
+export function createTestOrder(testOrder) {
+  assertReady();
+  if (!state.testOrders) state.testOrders = [];
+  const created = { ...testOrder, id: crypto.randomUUID() };
+  state.testOrders.push(created);
+  persistState();
+  return { ...created };
+}
+
+export function updateTestOrder(id, updater) {
+  assertReady();
+  if (!state.testOrders) state.testOrders = [];
+  const idx = state.testOrders.findIndex((t) => t.id === id);
+  if (idx < 0) return null;
+  const updated = updater({ ...state.testOrders[idx] });
+  state.testOrders[idx] = updated;
+  persistState();
+  return { ...updated };
+}
+
+export function listFeedback() {
+  assertReady();
+  return (state.feedback ?? []).map((f) => ({ ...f }));
+}
+
+export function findFeedbackByTicketId(ticketId) {
+  assertReady();
+  return (state.feedback ?? []).filter((f) => f.ticketId === ticketId).map((f) => ({ ...f }));
+}
+
+export function createFeedback(feedback) {
+  assertReady();
+  if (!state.feedback) state.feedback = [];
+  const created = { ...feedback, id: crypto.randomUUID() };
+  state.feedback.push(created);
+  persistState();
+  return { ...created };
 }

@@ -6,6 +6,7 @@ import { buildApiUrl } from "@/services/api";
 const QueueRealtimeContext = createContext({
   status: "connecting",
   lastEventAt: null,
+  lastEvent: null,
 });
 
 const WAIT_TIME_REFRESH_MS = 60000;
@@ -62,6 +63,7 @@ export function QueueRealtimeProvider({ children }) {
   const { refreshLiveData } = useLiveRefresh();
   const [status, setStatus] = useState("connecting");
   const [lastEventAt, setLastEventAt] = useState(null);
+  const [lastEvent, setLastEvent] = useState(null);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -86,7 +88,9 @@ export function QueueRealtimeProvider({ children }) {
       stopRealtime = connectQueueEventStream({
         onStatusChange: setStatus,
         onEvent: (payload) => {
-          setLastEventAt(payload.timestamp ?? new Date().toISOString());
+          const event = { type: payload.type, payload: payload.payload ?? payload, timestamp: payload.timestamp ?? new Date().toISOString() };
+          setLastEvent(event);
+          setLastEventAt(event.timestamp);
           refreshLiveData();
         },
       });
@@ -116,7 +120,7 @@ export function QueueRealtimeProvider({ children }) {
 
 
   return (
-    <QueueRealtimeContext.Provider value={{ status, lastEventAt }}>
+    <QueueRealtimeContext.Provider value={{ status, lastEventAt, lastEvent }}>
       {children}
     </QueueRealtimeContext.Provider>
   );

@@ -11,3 +11,17 @@ createRoot(document.getElementById('root')).render(
     </BrowserRouter>
   </StrictMode>,
 )
+
+requestAnimationFrame(() => {
+  const preloader = document.getElementById('app-preloader')
+  if (preloader) {
+    preloader.classList.add('fade-out')
+    setTimeout(() => preloader.remove(), 500)
+  }
+})
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {})
+  })
+}

@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
 import { LogOut, User } from "lucide-react";
+import { resolveProfileImageUrl } from "@/utils/profileImage";
 
 export function DashboardLayout({ children }) {
   const { isAuthenticated, isReady, user, logout } = useAuth();
@@ -42,8 +43,8 @@ export function DashboardLayout({ children }) {
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
                 <div className="flex items-center justify-center h-8 w-8 overflow-hidden rounded-full bg-indigo-100">
-                  {user?.avatarUrl ? (
-                    <img src={user.avatarUrl} alt="User avatar" className="h-full w-full object-cover" />
+                  {resolveProfileImageUrl(user?.avatarUrl) ? (
+                    <img src={resolveProfileImageUrl(user?.avatarUrl)} alt="User avatar" className="h-full w-full object-cover" />
                   ) : (
                     <User className="h-5 w-5 text-indigo-600" />
                   )}
