@@ -78,8 +78,9 @@
   --destructive-foreground: #ffffff;
 
   --border: #e2e8f0;
-  --input: #cbd5e1;
+  --input: #e2e8f0;
   --ring: #0f766e;
+  --ring-offset: #f8fafc;
 
   --priority-red: #dc2626;
   --priority-red-foreground: #ffffff;
@@ -1977,6 +1978,250 @@
   }
 
   .staff-dashboard-focus::after {
+    animation: none;
+  }
+}
+
+/* =========================================================
+   QUEUE BOARD — premium display styles
+   (ported from the legacy theme so queue/department boards
+   render with their intended triage glow, ribbons & motion)
+   ========================================================= */
+
+@keyframes queueGlowRed {
+  0%, 100% {
+    box-shadow:
+      0 0 0 0 color-mix(in oklab, var(--priority-red) 0%, transparent),
+      0 18px 50px color-mix(in oklab, var(--priority-red) 12%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 28px 6px color-mix(in oklab, var(--priority-red) 18%, transparent),
+      0 18px 50px color-mix(in oklab, var(--priority-red) 22%, transparent);
+  }
+}
+
+@keyframes queueGlowYellow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 0 color-mix(in oklab, var(--priority-yellow) 0%, transparent),
+      0 18px 50px color-mix(in oklab, var(--priority-yellow) 12%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 28px 6px color-mix(in oklab, var(--priority-yellow) 18%, transparent),
+      0 18px 50px color-mix(in oklab, var(--priority-yellow) 22%, transparent);
+  }
+}
+
+@keyframes queueGlowGreen {
+  0%, 100% {
+    box-shadow:
+      0 0 0 0 color-mix(in oklab, var(--priority-green) 0%, transparent),
+      0 18px 50px color-mix(in oklab, var(--priority-green) 12%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 28px 6px color-mix(in oklab, var(--priority-green) 18%, transparent),
+      0 18px 50px color-mix(in oklab, var(--priority-green) 22%, transparent);
+  }
+}
+
+@keyframes queueGlowBlack {
+  0%, 100% {
+    box-shadow:
+      0 0 0 0 color-mix(in oklab, var(--priority-black) 0%, transparent),
+      0 18px 50px color-mix(in oklab, var(--priority-black) 12%, transparent);
+  }
+  50% {
+    box-shadow:
+      0 0 28px 6px color-mix(in oklab, var(--priority-black) 14%, transparent),
+      0 18px 50px color-mix(in oklab, var(--priority-black) 22%, transparent);
+  }
+}
+
+.queue-card-pulse-red { animation: queueGlowRed 2.4s ease-in-out infinite; }
+.queue-card-pulse-yellow { animation: queueGlowYellow 2.4s ease-in-out infinite; }
+.queue-card-pulse-green { animation: queueGlowGreen 2.4s ease-in-out infinite; }
+.queue-card-pulse-black { animation: queueGlowBlack 2.4s ease-in-out infinite; }
+
+@keyframes queueLiveDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.75); }
+}
+
+.queue-live-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--priority-green);
+  animation: queueLiveDot 1.6s ease-in-out infinite;
+  box-shadow: 0 0 6px color-mix(in oklab, var(--priority-green) 40%, transparent);
+}
+
+.queue-live-dot--amber {
+  background: var(--priority-yellow);
+  box-shadow: 0 0 6px color-mix(in oklab, var(--priority-yellow) 40%, transparent);
+}
+
+.queue-position-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 28px;
+  border-radius: 10px;
+  font-size: 12px;
+  font-weight: 800;
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+  background: color-mix(in oklab, var(--primary) 8%, white);
+  color: var(--primary);
+  border: 1px solid color-mix(in oklab, var(--primary) 14%, white);
+}
+
+.queue-priority-ribbon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: 28px 28px 0 0;
+}
+
+.queue-priority-ribbon--red {
+  background: linear-gradient(90deg, var(--priority-red), #ef4444);
+}
+.queue-priority-ribbon--yellow {
+  background: linear-gradient(90deg, var(--priority-yellow), #fbbf24);
+}
+.queue-priority-ribbon--green {
+  background: linear-gradient(90deg, var(--priority-green), #22c55e);
+}
+.queue-priority-ribbon--black {
+  background: linear-gradient(90deg, var(--priority-black), #334155);
+}
+
+@keyframes queueMissedPulse {
+  0%, 100% {
+    border-color: color-mix(in oklab, var(--priority-yellow) 20%, transparent);
+    box-shadow: 0 0 0 0 color-mix(in oklab, var(--priority-yellow) 0%, transparent);
+  }
+  50% {
+    border-color: color-mix(in oklab, var(--priority-yellow) 45%, transparent);
+    box-shadow: 0 0 18px -4px color-mix(in oklab, var(--priority-yellow) 16%, transparent);
+  }
+}
+
+.queue-missed-pulse { animation: queueMissedPulse 2.8s ease-in-out infinite; }
+
+@keyframes queueStatEnter {
+  0% { opacity: 0; transform: translateY(12px) scale(0.95); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.queue-stat-enter { animation: queueStatEnter 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.queue-stat-enter-1 { animation-delay: 0.06s; }
+.queue-stat-enter-2 { animation-delay: 0.12s; }
+.queue-stat-enter-3 { animation-delay: 0.18s; }
+
+.queue-row-accent {
+  border-left: 4px solid transparent;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+.queue-row-accent--red { border-left-color: var(--priority-red); }
+.queue-row-accent--yellow { border-left-color: var(--priority-yellow); }
+.queue-row-accent--green { border-left-color: var(--priority-green); }
+.queue-row-accent--black { border-left-color: var(--priority-black); }
+
+.queue-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.queue-empty-state-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: color-mix(in oklab, var(--primary) 8%, white);
+  color: var(--primary);
+}
+
+.queue-serving-shine {
+  position: relative;
+  overflow: hidden;
+}
+
+.queue-serving-shine::after {
+  content: "";
+  position: absolute;
+  inset: -120% auto auto -40%;
+  width: 42%;
+  height: 300%;
+  transform: rotate(25deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+  animation: shineSweep 7s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.queue-ecg-line {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 36px;
+  opacity: 0.12;
+  background-image: url("data:image/svg+xml,%3Csvg width='900' height='44' viewBox='0 0 900 44' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 24H145L160 24L171 8L185 36L198 24H340L352 24L363 14L377 31L391 24H900' fill='none' stroke='%232dd4bf' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-size: 900px 36px;
+  background-repeat: repeat-x;
+  animation: ecgMove 18s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 currentColor; }
+  50% { opacity: 0.7; box-shadow: 0 0 0 4px transparent; }
+}
+
+.queue-status-pulse {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  animation: statusPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes ecgMove {
+  from { background-position-x: 0; }
+  to { background-position-x: 900px; }
+}
+
+@keyframes shineSweep {
+  0%, 55% { transform: translateX(-220%) rotate(25deg); }
+  80%, 100% { transform: translateX(420%) rotate(25deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .queue-card-pulse-red,
+  .queue-card-pulse-yellow,
+  .queue-card-pulse-green,
+  .queue-card-pulse-black,
+  .queue-live-dot,
+  .queue-missed-pulse,
+  .queue-stat-enter,
+  .queue-serving-shine::after,
+  .queue-ecg-line,
+  .queue-status-pulse {
     animation: none;
   }
 }

@@ -32,6 +32,7 @@ const TriagePage = lazy(() => import("@/pages/triage"));
 const DepartmentBoardPage = lazy(() => import("@/pages/department-board"));
 
 const StaffModules = lazy(() => import("@/pages/staff-modules"));
+const StaffModulesExtra = lazy(() => import("@/pages/staff-modules-extra"));
 const AdminDashboardPage = () => <StaffModules.AdminDashboardPage />;
 const AppointmentsPage = () => <StaffModules.AppointmentsPage />;
 const DepartmentsPage = () => <StaffModules.DepartmentsPage />;
@@ -42,6 +43,11 @@ const PharmacyPage = () => <StaffModules.PharmacyPage />;
 const QueueAnalyticsPage = () => <StaffModules.QueueAnalyticsPage />;
 const ReportsPage = () => <StaffModules.ReportsPage />;
 const StaffQueueBoardPage = () => <StaffModules.StaffQueueBoardPage />;
+const HospitalsPage = () => <StaffModulesExtra.HospitalsPage />;
+const AIInsightsPage = () => <StaffModulesExtra.AIInsightsPage />;
+const SyncPage = () => <StaffModulesExtra.SyncPage />;
+const AppointmentRemindersPage = () => <StaffModulesExtra.AppointmentRemindersPage />;
+const FollowUpsPage = () => <StaffModulesExtra.FollowUpsPage />;
 
 export default function App() {
   return (
@@ -170,6 +176,46 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <QueueAnalyticsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="ai-insights"
+            element={
+              <ProtectedRoute>
+                <AIInsightsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="hospitals"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <HospitalsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="sync"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <SyncPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="reminders"
+            element={
+              <ProtectedRoute>
+                <AppointmentRemindersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="follow-ups"
+            element={
+              <ProtectedRoute>
+                <FollowUpsPage />
               </ProtectedRoute>
             }
           />

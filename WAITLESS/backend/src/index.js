@@ -273,10 +273,10 @@ router.register("POST", "/api/appointments", withStaffAuth(["reception", "admin"
 router.register("GET", "/api/appointments/meta", withStaffAuth(["reception", "triage", "clinician", "admin"], appointmentMetaController));
 router.register("GET", "/api/appointments/summary", withStaffAuth(["reception", "triage", "clinician", "admin"], appointmentSummaryController));
 router.register("GET", "/api/appointments/available-slots", withStaffAuth(["reception", "triage", "clinician", "admin"], appointmentAvailableSlotsController));
+router.register("GET", "/api/appointments/reminders", withStaffAuth(["reception", "triage", "clinician", "admin"], appointmentRemindersController));
+router.register("POST", "/api/appointments/follow-up", withStaffAuth(["clinician", "triage", "admin"], followUpCreateController));
 router.register("GET", "/api/appointments/:id", withStaffAuth(["reception", "triage", "clinician", "admin"], appointmentDetailController));
 router.register("PATCH", "/api/appointments/:id/status", withStaffAuth(["reception", "triage", "clinician", "admin"], appointmentUpdateStatusController));
-router.register("POST", "/api/appointments/follow-up", withStaffAuth(["clinician", "triage", "admin"], followUpCreateController));
-router.register("GET", "/api/appointments/reminders", withStaffAuth(["reception", "triage", "clinician", "admin"], appointmentRemindersController));
 router.register("PATCH", "/api/appointments/:id/reminder-sent", withStaffAuth(["reception", "triage", "clinician", "admin"], markReminderSentController));
 router.register("GET", "/api/tickets/:ticketId/follow-ups", withStaffAuth(["reception", "triage", "clinician", "admin"], followUpsForTicketController));
 
