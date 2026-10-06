@@ -12,6 +12,7 @@ import {
   MessageCircle,
   RefreshCw,
   Shield,
+  Sparkles,
   Timer,
   Users,
   XCircle,
@@ -104,36 +105,36 @@ const PRIORITY_ORDER = {
 const STATUS_META = {
   waiting: {
     label: "Waiting",
-    className: "bg-blue-500/15 text-blue-300",
-    dotClassName: "bg-blue-400",
+    className: "bg-sky-500/15 text-sky-300 ring-1 ring-inset ring-sky-400/20",
+    dotClassName: "bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.6)]",
   },
   called: {
     label: "Called",
-    className: "bg-amber-500/15 text-amber-300",
-    dotClassName: "bg-amber-400",
+    className: "bg-amber-500/15 text-amber-300 ring-1 ring-inset ring-amber-400/20",
+    dotClassName: "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]",
   },
   "in-service": {
     label: "Serving",
-    className: "bg-teal-500/15 text-teal-300",
-    dotClassName: "bg-teal-400",
+    className: "bg-teal-500/15 text-teal-300 ring-1 ring-inset ring-teal-400/20",
+    dotClassName: "bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.6)]",
   },
   missed: {
     label: "Missed",
-    className: "bg-red-500/15 text-red-300",
-    dotClassName: "bg-red-400",
+    className: "bg-rose-500/15 text-rose-300 ring-1 ring-inset ring-rose-400/20",
+    dotClassName: "bg-rose-400 shadow-[0_0_8px_rgba(251,113,133,0.6)]",
   },
   completed: {
     label: "Completed",
-    className: "bg-green-500/15 text-green-300",
-    dotClassName: "bg-green-400",
+    className: "bg-emerald-500/15 text-emerald-300 ring-1 ring-inset ring-emerald-400/20",
+    dotClassName: "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]",
   },
 };
 
 const PRIORITY_META = {
-  red: "bg-red-500/20 text-red-300",
-  yellow: "bg-amber-500/20 text-amber-300",
-  green: "bg-green-500/20 text-green-300",
-  black: "bg-slate-500/20 text-slate-300",
+  red: "bg-rose-500/20 text-rose-200 ring-1 ring-inset ring-rose-400/30",
+  yellow: "bg-amber-500/20 text-amber-200 ring-1 ring-inset ring-amber-400/30",
+  green: "bg-emerald-500/20 text-emerald-200 ring-1 ring-inset ring-emerald-400/30",
+  black: "bg-slate-500/20 text-slate-200 ring-1 ring-inset ring-slate-400/30",
 };
 
 const DEPARTMENT_COLORS = [
@@ -527,7 +528,7 @@ export default function DashboardPage() {
 
   if (dashboardQuery.isLoading) {
     return (
-      <section className="min-h-screen bg-[#0c1220] px-4 py-5 sm:px-6">
+      <section className="min-h-screen bg-[#0a0f1c] px-4 py-5 sm:px-6">
         <LoadingPanel
           title="Loading the live dashboard"
           message="Syncing queue, department, safety and notification activity."
@@ -538,8 +539,8 @@ export default function DashboardPage() {
 
   if (dashboardQuery.isError) {
     return (
-      <section className="min-h-screen bg-[#0c1220] px-4 py-5 sm:px-6">
-        <div className="rounded-2xl border border-red-500/20 bg-red-500/10 px-5 py-6 text-sm text-red-300">
+      <section className="min-h-screen bg-[#0a0f1c] px-4 py-5 sm:px-6">
+        <div className="mx-auto max-w-2xl rounded-2xl border border-rose-500/20 bg-rose-500/10 px-5 py-6 text-sm text-rose-300">
           {dashboardQuery.error.message}
         </div>
       </section>
@@ -547,16 +548,25 @@ export default function DashboardPage() {
   }
 
   return (
-    <section className="min-h-screen bg-[#0c1220] px-4 py-5 text-slate-200 sm:px-5 lg:px-6">
+    <section className="min-h-screen bg-[#0a0f1c] px-4 py-5 text-slate-200 sm:px-5 lg:px-6">
       <style>{`
         @keyframes waitlessPulse {
           0%, 100% { opacity: 1; transform: scale(1); }
           50% { opacity: .42; transform: scale(.82); }
         }
 
+        @keyframes waitlessFadeUp {
+          from { opacity: 0; transform: translateY(8px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        .waitless-fade-up {
+          animation: waitlessFadeUp 0.5s ease-out both;
+        }
+
         .waitless-dashboard-scrollbar::-webkit-scrollbar {
-          width: 5px;
-          height: 5px;
+          width: 6px;
+          height: 6px;
         }
 
         .waitless-dashboard-scrollbar::-webkit-scrollbar-track {
@@ -564,8 +574,12 @@ export default function DashboardPage() {
         }
 
         .waitless-dashboard-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(148, 163, 184, .18);
+          background: rgba(148, 163, 184, .22);
           border-radius: 999px;
+        }
+
+        .waitless-dashboard-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(148, 163, 184, .4);
         }
       `}</style>
 
@@ -587,6 +601,7 @@ export default function DashboardPage() {
             value={metrics.total}
             description={`${completedCount} completed · ${missedCount} missed`}
             tone="navy"
+            index={0}
           />
 
           <KpiCard
@@ -595,6 +610,7 @@ export default function DashboardPage() {
             value={metrics.waiting}
             description="Across all departments"
             tone="teal"
+            index={1}
           />
 
           <KpiCard
@@ -603,6 +619,7 @@ export default function DashboardPage() {
             value={`${metrics.avgWait}m`}
             description={metrics.waiting ? `${metrics.waiting} patient${metrics.waiting === 1 ? "" : "s"} in queue` : "No patients waiting"}
             tone="purple"
+            index={2}
           />
 
           <KpiCard
@@ -611,6 +628,7 @@ export default function DashboardPage() {
             value={servingCount}
             description={`${missedCount} missed turn${missedCount === 1 ? "" : "s"}`}
             tone="brown"
+            index={3}
           />
         </div>
 
@@ -619,7 +637,7 @@ export default function DashboardPage() {
           total={metrics.total}
         />
 
-        <div className="mt-5 grid items-start gap-5 xl:grid-cols-3">
+        <div className="waitless-fade-up mt-5 grid items-start gap-5 xl:grid-cols-3">
           <div className="xl:col-span-2">
             <QueueOverview tickets={queueRows} />
           </div>
@@ -639,13 +657,13 @@ export default function DashboardPage() {
           />
         </div>
 
-        <div className="mt-5 grid items-start gap-5 xl:grid-cols-2">
+        <div className="waitless-fade-up mt-5 grid items-start gap-5 xl:grid-cols-2">
           <QueueTrend data={chartData} />
 
           <DepartmentLoad departments={departmentSummaries} />
         </div>
 
-        <div className="mt-5 grid items-start gap-5 xl:grid-cols-2">
+        <div className="waitless-fade-up mt-5 grid items-start gap-5 xl:grid-cols-2">
           <RecentActivity
             activity={recentActivity}
             onRefresh={refreshLiveData}
@@ -657,14 +675,19 @@ export default function DashboardPage() {
           />
         </div>
 
-        <footer className="mt-6 flex flex-col items-center justify-between gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-5 py-4 sm:flex-row">
-          <div className="flex items-center gap-2 text-[11px] text-white/30">
+        <footer className="mt-6 flex flex-col items-center justify-between gap-3 rounded-2xl border border-white/[0.08] bg-white/[0.025] px-5 py-4 shadow-[0_12px_40px_rgba(0,0,0,0.18)] sm:flex-row">
+          <div className="flex items-center gap-2 text-[11px] text-white/35">
             <span
               className={`h-2 w-2 rounded-full ${
                 realtime.status === "connected"
-                  ? "bg-teal-400 shadow-[0_0_8px_rgba(45,212,191,0.5)]"
+                  ? "bg-teal-400 shadow-[0_0_10px_rgba(45,212,191,0.6)]"
                   : "bg-amber-400"
               }`}
+              style={
+                realtime.status === "connected"
+                  ? { animation: "waitlessPulse 1.8s ease-in-out infinite" }
+                  : undefined
+              }
             />
             {realtime.status === "connected"
               ? "Live sync active"
@@ -694,24 +717,30 @@ function HeroGreeting({
   const greeting = getGreeting();
 
   return (
-    <header className="relative overflow-hidden rounded-2xl bg-[linear-gradient(135deg,#0f766e_0%,#0e7490_47%,#1e3a5f_100%)]">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(20,184,166,0.6)_0%,transparent_50%),radial-gradient(circle_at_80%_20%,rgba(6,182,212,0.4)_0%,transparent_50%)] opacity-20" />
+    <header className="relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,#0f766e_0%,#0e7490_47%,#1e3a5f_100%)] shadow-[0_20px_60px_-15px_rgba(15,118,110,0.5)]">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_50%,rgba(20,184,166,0.6)_0%,transparent_50%),radial-gradient(circle_at_80%_20%,rgba(6,182,212,0.4)_0%,transparent_50%)] opacity-25" />
 
       <div
-        className="absolute inset-0 opacity-10"
+        className="absolute inset-0 opacity-[0.08]"
         style={{
           backgroundImage:
-            "linear-gradient(rgba(255,255,255,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.06) 1px, transparent 1px)",
-          backgroundSize: "48px 48px",
+            "linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px)",
+          backgroundSize: "52px 52px",
         }}
       />
 
-      <div className="relative flex flex-col gap-5 px-5 py-6 sm:px-7 lg:flex-row lg:items-center lg:justify-between">
+      <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-cyan-400/10 blur-3xl" />
+      <div className="absolute -bottom-32 -left-20 h-72 w-72 rounded-full bg-teal-400/10 blur-3xl" />
+
+      <div className="relative flex flex-col gap-6 px-6 py-7 sm:px-8 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-teal-100/60">
-              Hospital operations
-            </p>
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 backdrop-blur">
+              <Sparkles className="h-3 w-3 text-teal-100" />
+              <span className="text-[11px] font-semibold uppercase tracking-[0.28em] text-teal-50/90">
+                Hospital operations
+              </span>
+            </span>
             <span
               className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] ${
                 realtimeStatus === "connected"
@@ -730,11 +759,11 @@ function HeroGreeting({
             </span>
           </div>
 
-          <h1 className="mt-1 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+          <h1 className="mt-3 text-2xl font-bold tracking-tight text-white sm:text-3xl">
             {greeting}, {staffName}
           </h1>
 
-          <p className="mt-1.5 text-sm text-teal-100/70">
+          <p className="mt-2 text-sm text-teal-50/80">
             Live queue across {departmentCount} department
             {departmentCount === 1 ? "" : "s"} ·{" "}
             {new Date().toLocaleDateString([], {
@@ -763,12 +792,12 @@ function HeroGreeting({
 
 function HeroMetric({ label, value }) {
   return (
-    <div className="min-w-[150px] rounded-xl border border-white/15 bg-white/10 px-5 py-3 text-center backdrop-blur">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-teal-100/60">
+    <div className="min-w-[150px] rounded-2xl border border-white/15 bg-white/10 px-5 py-3.5 text-center backdrop-blur transition hover:bg-white/15">
+      <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-teal-50/70">
         {label}
       </div>
 
-      <div className="mt-1 font-mono text-2xl font-medium text-white">
+      <div className="mt-1.5 font-mono text-2xl font-semibold text-white">
         {value}
       </div>
     </div>
@@ -782,17 +811,17 @@ function PriorityBreakdown({ byPriority, total }) {
   }));
 
   return (
-    <div className="mt-4 flex items-center gap-3 rounded-xl border border-white/[0.06] bg-white/[0.02] px-4 py-3">
-      <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/30">
+    <div className="waitless-fade-up mt-4 flex items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.025] px-4 py-3 shadow-[0_12px_40px_rgba(0,0,0,0.18)]">
+      <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/35">
         Priority Mix
       </span>
 
-      <div className="flex h-2 flex-1 overflow-hidden rounded-full bg-white/[0.04]">
+      <div className="flex h-2 flex-1 overflow-hidden rounded-full bg-white/[0.05]">
         {counts.map((item) =>
           item.count > 0 ? (
             <div
               key={item.key}
-              className={item.className}
+              className={`${item.className} transition-all duration-700`}
               style={{
                 width: `${total ? (item.count / total) * 100 : 0}%`,
               }}
@@ -821,31 +850,32 @@ function KpiCard({
   value,
   description,
   tone,
+  index = 0,
 }) {
   const tones = {
     navy: {
       card:
-        "border-sky-400/10 bg-[linear-gradient(135deg,#0b3154_0%,#0b3a67_100%)]",
-      glow: "bg-sky-300/10",
-      iconWrap: "border-sky-200/10 bg-sky-300/10 text-sky-100",
+        "border-sky-400/15 bg-[linear-gradient(135deg,#0b3154_0%,#0b3a67_100%)]",
+      glow: "bg-sky-300/15",
+      iconWrap: "border-sky-200/15 bg-sky-300/10 text-sky-100",
     },
     teal: {
       card:
-        "border-cyan-300/10 bg-[linear-gradient(135deg,#0a424b_0%,#075764_100%)]",
-      glow: "bg-cyan-200/10",
-      iconWrap: "border-cyan-100/10 bg-cyan-200/10 text-cyan-100",
+        "border-cyan-300/15 bg-[linear-gradient(135deg,#0a424b_0%,#075764_100%)]",
+      glow: "bg-cyan-200/15",
+      iconWrap: "border-cyan-100/15 bg-cyan-200/10 text-cyan-100",
     },
     purple: {
       card:
-        "border-violet-300/10 bg-[linear-gradient(135deg,#2c2067_0%,#392a82_100%)]",
-      glow: "bg-violet-200/10",
-      iconWrap: "border-violet-100/10 bg-violet-200/10 text-violet-100",
+        "border-violet-300/15 bg-[linear-gradient(135deg,#2c2067_0%,#392a82_100%)]",
+      glow: "bg-violet-200/15",
+      iconWrap: "border-violet-100/15 bg-violet-200/10 text-violet-100",
     },
     brown: {
       card:
-        "border-orange-300/10 bg-[linear-gradient(135deg,#4b2a18_0%,#66381f_100%)]",
-      glow: "bg-orange-200/10",
-      iconWrap: "border-orange-100/10 bg-orange-100/10 text-orange-100",
+        "border-orange-300/15 bg-[linear-gradient(135deg,#4b2a18_0%,#66381f_100%)]",
+      glow: "bg-orange-200/15",
+      iconWrap: "border-orange-100/15 bg-orange-100/10 text-orange-100",
     },
   };
 
@@ -853,12 +883,15 @@ function KpiCard({
 
   return (
     <article
-      className={`group relative min-h-[120px] overflow-hidden rounded-2xl border p-5 shadow-[0_18px_45px_rgba(0,0,0,0.16)] transition duration-300 hover:-translate-y-0.5 hover:shadow-[0_24px_55px_rgba(0,0,0,0.22)] ${selectedTone.card}`}
+      className={`group relative min-h-[124px] overflow-hidden rounded-2xl border p-5 shadow-[0_18px_45px_rgba(0,0,0,0.18)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_28px_60px_rgba(0,0,0,0.28)] ${selectedTone.card}`}
+      style={{
+        animation: `waitlessFadeUp 0.5s ease-out ${index * 0.08}s both`,
+      }}
     >
       <div
-        className={`pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full ${selectedTone.glow}`}
+        className={`pointer-events-none absolute -right-10 -top-12 h-32 w-32 rounded-full blur-2xl transition group-hover:scale-125 ${selectedTone.glow}`}
       />
-      <div className="pointer-events-none absolute inset-y-0 right-[26%] w-px rotate-[8deg] bg-white/[0.025]" />
+      <div className="pointer-events-none absolute inset-y-0 right-[26%] w-px rotate-[8deg] bg-white/[0.03]" />
 
       <div className="relative flex h-full items-center justify-between gap-5">
         <div className="min-w-0">
@@ -876,7 +909,7 @@ function KpiCard({
         </div>
 
         <span
-          className={`relative flex h-14 w-14 shrink-0 items-center justify-center rounded-full border ${selectedTone.iconWrap}`}
+          className={`relative flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border transition group-hover:scale-110 ${selectedTone.iconWrap}`}
         >
           <Icon className="h-7 w-7" strokeWidth={2} />
         </span>
@@ -887,7 +920,7 @@ function KpiCard({
 
 function QueueOverview({ tickets }) {
   return (
-    <article className="overflow-hidden rounded-2xl border border-white/[0.07] bg-[#111827]">
+    <article className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#111827] shadow-[0_12px_40px_rgba(0,0,0,0.18)]">
       <PanelHeader
         eyebrow="Live data"
         title="Queue Overview"
@@ -916,7 +949,7 @@ function QueueOverview({ tickets }) {
           <div className="waitless-dashboard-scrollbar hidden overflow-x-auto lg:block">
             <table className="w-full min-w-[860px] text-sm">
               <thead>
-                <tr className="border-b border-white/[0.05]">
+                <tr className="border-b border-white/[0.06] bg-white/[0.02]">
                   {[
                     "Ticket",
                     "Patient",
@@ -975,16 +1008,22 @@ function QueueTableRow({ ticket }) {
       </td>
 
       <td className="px-6 py-4">
-        <div className="font-medium text-white/85">
-          {ticket.patientName}
-        </div>
-
-        {ticket.whatsApp ? (
-          <div className="mt-1 flex items-center gap-1 text-[10px] text-teal-400/80">
-            <MessageCircle className="h-3 w-3" />
-            WhatsApp
+        <div className="flex items-center gap-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-teal-500/30 to-cyan-500/20 text-[11px] font-semibold text-teal-100 ring-1 ring-inset ring-white/10">
+            {getInitials(ticket.patientName)}
+          </span>
+          <div>
+            <div className="font-medium text-white/90">
+              {ticket.patientName}
+            </div>
+            {ticket.whatsApp ? (
+              <div className="mt-0.5 flex items-center gap-1 text-[10px] text-teal-400/80">
+                <MessageCircle className="h-3 w-3" />
+                WhatsApp
+              </div>
+            ) : null}
           </div>
-        ) : null}
+        </div>
       </td>
 
       <td className="px-6 py-4 text-sm text-white/45">
@@ -1032,7 +1071,7 @@ function QueueMobileCard({ ticket }) {
     ticket.priority;
 
   return (
-    <div className="rounded-xl border border-white/[0.06] bg-white/[0.025] p-4">
+    <div className="rounded-xl border border-white/[0.07] bg-white/[0.03] p-4 transition hover:bg-white/[0.05]">
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3">
           <span
@@ -1042,10 +1081,10 @@ function QueueMobileCard({ ticket }) {
           </span>
 
           <div>
-            <div className="font-medium text-white/85">
+            <div className="font-medium text-white/90">
               {ticket.patientName}
             </div>
-            <div className="mt-1 text-xs text-white/40">
+            <div className="mt-1 text-xs text-white/45">
               {ticket.department}
             </div>
           </div>
@@ -1076,7 +1115,7 @@ function QueueMobileCard({ ticket }) {
 
 function QueueTrend({ data }) {
   return (
-    <article className="rounded-2xl border border-white/[0.07] bg-[#111827] p-5 sm:p-6">
+    <article className="rounded-2xl border border-white/[0.08] bg-[#111827] shadow-[0_12px_40px_rgba(0,0,0,0.18)] p-5 sm:p-6">
       <div className="mb-5 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/35">
@@ -1117,7 +1156,7 @@ function QueueTrend({ data }) {
                 <stop
                   offset="5%"
                   stopColor="#14b8a6"
-                  stopOpacity={0.25}
+                  stopOpacity={0.3}
                 />
                 <stop
                   offset="95%"
@@ -1136,7 +1175,7 @@ function QueueTrend({ data }) {
                 <stop
                   offset="5%"
                   stopColor="#6366f1"
-                  stopOpacity={0.2}
+                  stopOpacity={0.25}
                 />
                 <stop
                   offset="95%"
@@ -1173,13 +1212,14 @@ function QueueTrend({ data }) {
             <Tooltip
               contentStyle={{
                 background: "#1a2540",
-                border: "1px solid rgba(255,255,255,0.1)",
+                border: "1px solid rgba(255,255,255,0.12)",
                 borderRadius: 12,
                 fontSize: 12,
                 color: "#e2e8f0",
+                boxShadow: "0 10px 30px rgba(0,0,0,0.4)",
               }}
               cursor={{
-                stroke: "rgba(255,255,255,0.1)",
+                stroke: "rgba(255,255,255,0.12)",
               }}
             />
 
@@ -1187,18 +1227,20 @@ function QueueTrend({ data }) {
               type="monotone"
               dataKey="registered"
               stroke="#14b8a6"
-              strokeWidth={2}
+              strokeWidth={2.5}
               fill="url(#registeredGradient)"
               dot={false}
+              activeDot={{ r: 5, fill: "#14b8a6", stroke: "#0a0f1c", strokeWidth: 2 }}
             />
 
             <Area
               type="monotone"
               dataKey="served"
               stroke="#6366f1"
-              strokeWidth={2}
+              strokeWidth={2.5}
               fill="url(#servedGradient)"
               dot={false}
+              activeDot={{ r: 5, fill: "#6366f1", stroke: "#0a0f1c", strokeWidth: 2 }}
             />
 
             <Area
@@ -1231,7 +1273,7 @@ function ChartLegend({ color, label }) {
 
 function RecentActivity({ activity, onRefresh }) {
   return (
-    <article className="rounded-2xl border border-white/[0.07] bg-[#111827] p-5 sm:p-6">
+    <article className="rounded-2xl border border-white/[0.08] bg-[#111827] shadow-[0_12px_40px_rgba(0,0,0,0.18)] p-5 sm:p-6">
       <div className="flex items-center justify-between border-b border-white/[0.05] pb-4">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-white/35">
@@ -1246,7 +1288,7 @@ function RecentActivity({ activity, onRefresh }) {
         <button
           type="button"
           onClick={onRefresh}
-          className="flex items-center gap-1.5 text-xs font-medium text-teal-400 transition hover:text-teal-300"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500/20 bg-teal-500/10 px-3 py-1.5 text-xs font-medium text-teal-300 transition hover:bg-teal-500/20 hover:text-teal-200"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           Refresh
@@ -1307,17 +1349,17 @@ function ActivityItem({ item, isLast }) {
   return (
     <li className="relative flex gap-3 pb-5">
       {!isLast ? (
-        <div className="absolute bottom-0 left-[13px] top-7 w-px bg-white/[0.05]" />
+        <div className="absolute bottom-0 left-[15px] top-8 w-px bg-gradient-to-b from-white/10 to-transparent" />
       ) : null}
 
       <div
-        className="relative z-10 mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full"
+        className="relative z-10 mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full ring-2 ring-[#111827]"
         style={{
-          backgroundColor: `${meta.color}20`,
+          backgroundColor: `${meta.color}25`,
         }}
       >
         <Icon
-          className="h-3.5 w-3.5"
+          className="h-4 w-4"
           style={{ color: meta.color }}
         />
       </div>
@@ -1357,7 +1399,7 @@ function DepartmentLoad({ departments }) {
   );
 
   return (
-    <article className="rounded-2xl border border-white/[0.07] bg-[#111827] p-5 sm:p-6">
+    <article className="rounded-2xl border border-white/[0.08] bg-[#111827] shadow-[0_12px_40px_rgba(0,0,0,0.18)] p-5 sm:p-6">
       <PanelHeader
         compact
         eyebrow="Operations"
@@ -1371,17 +1413,17 @@ function DepartmentLoad({ departments }) {
 
       <div className="mt-5 space-y-4">
         {departments.map((department) => (
-          <div key={department.name}>
+          <div key={department.name} className="group">
             <div className="mb-1.5 flex items-center justify-between gap-4">
               <div className="flex min-w-0 items-center gap-2">
                 <span
-                  className="h-2.5 w-2.5 shrink-0 rounded-full"
+                  className="h-2.5 w-2.5 shrink-0 rounded-full ring-2 ring-white/5"
                   style={{
                     backgroundColor: department.color,
                   }}
                 />
 
-                <span className="truncate text-sm text-white/65">
+                <span className="truncate text-sm text-white/70 transition group-hover:text-white/90">
                   {department.name}
                 </span>
               </div>
@@ -1407,13 +1449,13 @@ function DepartmentLoad({ departments }) {
               </div>
             </div>
 
-            <div className="h-2 overflow-hidden rounded-full bg-white/[0.06]">
+            <div className="h-2.5 overflow-hidden rounded-full bg-white/[0.06]">
               <div
-                className="h-full rounded-full transition-all duration-700"
+                className="h-full rounded-full transition-all duration-700 ease-out"
                 style={{
                   width: `${(department.total / maximum) * 100}%`,
-                  backgroundColor: department.color,
-                  opacity: 0.78,
+                  background: `linear-gradient(90deg, ${department.color}99, ${department.color})`,
+                  boxShadow: `0 0 12px ${department.color}55`,
                 }}
               />
             </div>
@@ -1428,14 +1470,14 @@ function SystemAlerts({ id, alerts }) {
   return (
     <article
       id={id}
-      className="rounded-2xl border border-white/[0.07] bg-[#111827] p-5 sm:p-6"
+      className="rounded-2xl border border-white/[0.08] bg-[#111827] shadow-[0_12px_40px_rgba(0,0,0,0.18)] p-5 sm:p-6"
     >
       <PanelHeader
         compact
         eyebrow="Safety"
         title="System Alerts"
         trailing={
-          <span className="rounded-full bg-red-500/15 px-2.5 py-1 text-[10px] font-semibold text-red-400">
+          <span className="rounded-full bg-rose-500/15 px-2.5 py-1 text-[10px] font-semibold text-rose-400 ring-1 ring-inset ring-rose-400/20">
             {alerts.length} active
           </span>
         }
@@ -1448,16 +1490,16 @@ function SystemAlerts({ id, alerts }) {
           ))}
         </div>
       ) : (
-        <div className="mt-5 rounded-xl border border-green-500/15 bg-green-500/10 px-4 py-4">
+        <div className="mt-5 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-4">
           <div className="flex items-start gap-3">
-            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-green-400" />
+            <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" />
 
             <div>
-              <div className="text-sm font-semibold text-green-300">
+              <div className="text-sm font-semibold text-emerald-300">
                 No active system alerts
               </div>
 
-              <p className="mt-1 text-xs leading-5 text-white/35">
+              <p className="mt-1 text-xs leading-5 text-white/40">
                 Queue safety and notification delivery are stable.
               </p>
             </div>
@@ -1470,21 +1512,27 @@ function SystemAlerts({ id, alerts }) {
 
 function AlertItem({ alert }) {
   const tones = {
-    critical:
-      "border-red-500/20 bg-red-500/10 text-red-400",
-    warning:
-      "border-amber-500/20 bg-amber-500/10 text-amber-400",
-    info:
-      "border-blue-500/20 bg-blue-500/10 text-blue-400",
+    critical: {
+      wrap: "border-rose-500/25 bg-rose-500/10 text-rose-400",
+      icon: "text-rose-400",
+    },
+    warning: {
+      wrap: "border-amber-500/25 bg-amber-500/10 text-amber-400",
+      icon: "text-amber-400",
+    },
+    info: {
+      wrap: "border-sky-500/25 bg-sky-500/10 text-sky-400",
+      icon: "text-sky-400",
+    },
   };
 
   const tone = tones[alert.severity] ?? tones.info;
 
   return (
     <div
-      className={`flex items-start gap-3 rounded-xl border px-4 py-4 ${tone}`}
+      className={`flex items-start gap-3 rounded-xl border px-4 py-4 transition hover:brightness-110 ${tone.wrap}`}
     >
-      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+      <AlertTriangle className={`mt-0.5 h-5 w-5 shrink-0 ${tone.icon}`} />
 
       <div className="min-w-0 flex-1">
         <p className="text-sm leading-6 text-white/70">
@@ -1515,7 +1563,7 @@ function QuickActions({
   onExport,
 }) {
   return (
-    <article className="rounded-2xl border border-white/[0.07] bg-[#111827] p-5 sm:p-6">
+    <article className="rounded-2xl border border-white/[0.08] bg-[#111827] shadow-[0_12px_40px_rgba(0,0,0,0.18)] p-5 sm:p-6">
       <PanelHeader
         compact
         eyebrow="Staff actions"
@@ -1527,7 +1575,7 @@ function QuickActions({
           icon={Zap}
           title="Call next patient"
           description={busiestDepartment.name}
-          className="border-teal-500/15 bg-teal-500/12 text-teal-400"
+          className="border-teal-500/20 bg-teal-500/12 text-teal-300 hover:bg-teal-500/20"
           disabled={
             callNextMutation.isPending ||
             !busiestDepartment.waiting
@@ -1544,7 +1592,7 @@ function QuickActions({
           description={`${failedCount} notification${
             failedCount === 1 ? "" : "s"
           }`}
-          className="border-amber-500/15 bg-amber-500/12 text-amber-400"
+          className="border-amber-500/20 bg-amber-500/12 text-amber-300 hover:bg-amber-500/20"
           disabled={
             retryFailedMutation.isPending ||
             !failedNotificationIds.length
@@ -1561,7 +1609,7 @@ function QuickActions({
           description={`${safetyCount} overdue ticket${
             safetyCount === 1 ? "" : "s"
           }`}
-          className="border-red-500/15 bg-red-500/12 text-red-400"
+          className="border-rose-500/20 bg-rose-500/12 text-rose-300 hover:bg-rose-500/20"
           disabled={!safetyCount}
           onClick={onReviewSafety}
         />
@@ -1570,7 +1618,7 @@ function QuickActions({
           icon={FileText}
           title="Export today's report"
           description={`CSV · ${ticketCount} entries`}
-          className="border-indigo-500/15 bg-indigo-500/12 text-indigo-400"
+          className="border-indigo-500/20 bg-indigo-500/12 text-indigo-300 hover:bg-indigo-500/20"
           disabled={!ticketCount}
           onClick={onExport}
         />
@@ -1593,7 +1641,7 @@ function ActionButton({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className={`flex min-h-[72px] w-full items-center gap-4 rounded-xl border px-5 py-4 text-left transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45 ${className}`}
+      className={`group flex min-h-[72px] w-full items-center gap-4 rounded-xl border px-5 py-4 text-left transition duration-300 hover:-translate-y-0.5 hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:translate-y-0 ${className}`}
     >
       {loading ? (
         <LoaderCircle className="h-5 w-5 shrink-0 animate-spin" />
@@ -1602,16 +1650,16 @@ function ActionButton({
       )}
 
       <div className="min-w-0 flex-1">
-        <div className="text-sm font-semibold text-white/80">
+        <div className="text-sm font-semibold text-white/85">
           {title}
         </div>
 
-        <div className="mt-1 text-xs text-white/40">
+        <div className="mt-1 text-xs text-white/45">
           {description}
         </div>
       </div>
 
-      <ArrowRight className="h-4 w-4 shrink-0 opacity-45" />
+      <ArrowRight className="h-4 w-4 shrink-0 opacity-45 transition group-hover:translate-x-1 group-hover:opacity-90" />
     </button>
   );
 }
@@ -1651,6 +1699,18 @@ function EmptyPanel({ message }) {
       {message}
     </div>
   );
+}
+
+function getInitials(name) {
+  if (!name) return "?";
+
+  const parts = String(name).trim().split(/\s+/);
+
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
 function getGreeting() {
