@@ -5,6 +5,15 @@ const puppeteer = require("puppeteer");
 
 const CHAPTERS_DIR = path.join(__dirname, "chapters");
 const OUTPUT_DIR = path.join(__dirname, "pdfs");
+const MERMAID_PATH = require.resolve("mermaid/dist/mermaid.min.js");
+const BACKGROUND_PATH = path.join(
+  __dirname,
+  "assets",
+  "diagram-hospital-watermark.jpg",
+);
+const BACKGROUND_DATA_URL = `data:image/jpeg;base64,${fs
+  .readFileSync(BACKGROUND_PATH)
+  .toString("base64")}`;
 
 const CHAPTERS = [
   { file: "chapter-3-system-analysis-design.md", title: "Chapter 3: System Analysis & Design" },
@@ -126,13 +135,38 @@ const CSS = `
     margin: 20px 0;
   }
   .mermaid {
+    position: relative;
+    isolation: isolate;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 90mm;
+    max-height: 238mm;
+    overflow: hidden;
     text-align: center;
-    margin: 20px 0;
+    margin: 14px 0 20px;
+    padding: 9mm 7mm;
+    border: 1px solid #b8d8df;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.92);
     page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  .mermaid::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: url("${BACKGROUND_DATA_URL}") center / cover no-repeat;
+    opacity: 0.075;
+    filter: grayscale(18%) saturate(0.75);
   }
   .mermaid svg {
     max-width: 100%;
-    height: auto;
+    max-height: 220mm;
+    width: auto;
+    height: auto !important;
+    display: block;
   }
 `;
 
@@ -143,6 +177,18 @@ function buildHtml(mdContent, title) {
     linkify: true,
   });
 
+  const defaultFence = md.renderer.rules.fence;
+  md.renderer.rules.fence = (tokens, index, options, env, renderer) => {
+    const token = tokens[index];
+    const language = token.info.trim().split(/\s+/)[0];
+
+    if (language === "mermaid") {
+      return `<div class="mermaid">${md.utils.escapeHtml(token.content)}</div>`;
+    }
+
+    return defaultFence(tokens, index, options, env, renderer);
+  };
+
   let html = md.render(mdContent);
 
   return `<!DOCTYPE html>
@@ -152,24 +198,9 @@ function buildHtml(mdContent, title) {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${title}</title>
   <style>${CSS}</style>
-  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.0/dist/mermaid.min.js"></script>
 </head>
 <body>
 ${html}
-<script>
-  mermaid.initialize({
-    startOnLoad: true,
-    theme: 'default',
-    securityLevel: 'loose',
-    flowchart: { useMaxWidth: true, htmlLabels: true, curve: 'basis' },
-    sequence: { useMaxWidth: true, actorMargin: 50, boxMargin: 10, messageMargin: 35 },
-    gantt: { useMaxWidth: true },
-    journey: { useMaxWidth: true },
-    er: { useMaxWidth: true },
-    class: { useMaxWidth: true },
-    state: { useMaxWidth: true },
-  });
-</script>
 </body>
 </html>`;
 }
@@ -197,7 +228,63 @@ async function generatePdfs() {
     const html = buildHtml(mdContent, chapter.title);
 
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: "networkidle0", timeout: 120000 });
+    await page.setContent(html, { waitUntil: "domcontentloaded", timeout: 120000 });
+
+    const mermaidCount = await page.$$eval(".mermaid", (nodes) => nodes.length);
+    if (mermaidCount) {
+      await page.addScriptTag({ path: MERMAID_PATH });
+      await page.evaluate(async () => {
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: "base",
+          securityLevel: "loose",
+          themeVariables: {
+            background: "#ffffff",
+            primaryColor: "#e7f8f7",
+            primaryTextColor: "#123247",
+            primaryBorderColor: "#0f8f95",
+            secondaryColor: "#edf5ff",
+            secondaryTextColor: "#123247",
+            secondaryBorderColor: "#2f78c4",
+            tertiaryColor: "#f8fafc",
+            tertiaryTextColor: "#123247",
+            tertiaryBorderColor: "#94a3b8",
+            lineColor: "#45647a",
+            textColor: "#123247",
+            mainBkg: "#e7f8f7",
+            nodeBorder: "#0f8f95",
+            clusterBkg: "#f8fbfd",
+            clusterBorder: "#a8c7d5",
+            actorBkg: "#e7f8f7",
+            actorBorder: "#0f8f95",
+            actorTextColor: "#123247",
+            signalColor: "#164e63",
+            signalTextColor: "#123247",
+            noteBkgColor: "#fff8dd",
+            noteBorderColor: "#d4a72c",
+            noteTextColor: "#473b14",
+            fontFamily: "Segoe UI, Arial, sans-serif",
+            fontSize: "14px",
+          },
+          flowchart: {
+            useMaxWidth: false,
+            htmlLabels: true,
+            curve: "basis",
+            nodeSpacing: 34,
+            rankSpacing: 42,
+            wrappingWidth: 150,
+          },
+          sequence: {
+            useMaxWidth: false,
+            actorMargin: 50,
+            boxMargin: 10,
+            messageMargin: 28,
+          },
+          er: { useMaxWidth: false, diagramPadding: 12 },
+        });
+        await mermaid.run({ querySelector: ".mermaid" });
+      });
+    }
 
     // Wait for mermaid to render all diagrams
     await page.waitForFunction(

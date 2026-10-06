@@ -1,10 +1,10 @@
-# Chapter 5: Testing and Evaluation
+# Chapter 5: Presentation of Results
 
 ## 5.1 Introduction
 
-This chapter presents the testing strategy, test cases, results, and evaluation of the WaitLess Digital Queue Management System. Testing was conducted to verify that the system meets its functional and non-functional requirements, operates reliably under expected conditions, and provides a usable experience for hospital staff and patients.
+This chapter presents the results produced during verification and evaluation of the WaitLess Digital Queue Management System. The results are organised around the original problem: fragmented patient flow, weak triage visibility, missed queue turns, and the absence of dependable operational information. Testing examined whether the prototype behaved as designed; it did not attempt to claim a measured clinical impact before a live hospital pilot.
 
-The testing approach combines automated unit tests for backend services with manual functional testing of the frontend user interface. Performance, security, and usability evaluations are also documented.
+The evidence combined automated backend tests with documented functional walkthroughs of the frontend interface. Production-build, API, performance, security, and usability-readiness findings are also reported. Where a result came from a local development environment or a planned instrument rather than an independent hospital study, that boundary is stated explicitly.
 
 ---
 
@@ -189,6 +189,8 @@ Three test suites have been implemented:
 
 ### 5.4.2 Manual Test Results
 
+The manual cases were executed as controlled prototype walkthroughs using synthetic records. They provided repeatable acceptance evidence for the demonstrated workflows, but they were not automated regression tests and were not an independent user-acceptance study. They must therefore be repeated with authorised hospital participants before deployment.
+
 | Module | Tests | Passed | Failed | Pass Rate |
 |--------|-------|--------|--------|-----------|
 | Authentication | 6 | 6 | 0 | 100% |
@@ -206,9 +208,9 @@ Three test suites have been implemented:
 
 | Verification | Command | Result |
 |-------------|---------|--------|
-| Frontend production build | `npm run build` in `frontend/` | ✅ Success — 2,618 modules transformed |
-| Frontend CSS output | — | 279 KB (40.9 KB gzipped) |
-| Frontend JS output | — | 2,485 KB (614.7 KB gzipped) |
+| Frontend production build | `npm run build` in `frontend/` | Success - 2,633 modules transformed |
+| Frontend CSS output | - | 290.2 KB (42.2 KB gzipped) |
+| Frontend JavaScript output | - | 2,440.6 KB across 65 files (660.6 KB gzipped in total) |
 | Backend startup | `npm start` in `backend/` | ✅ Success — "WaitLess backend listening on http://localhost:4242" |
 | API health check | `GET /api/health` | ✅ 200 OK — `{ status: "ok" }` |
 | API metadata | `GET /api/meta` | ✅ 200 OK — departments, priorities, statuses returned |
@@ -293,15 +295,15 @@ The System Usability Scale is a 10-item questionnaire providing a global view of
 
 | Metric | Value | Assessment |
 |--------|-------|------------|
-| Total modules | 2,618 | Large but expected for full-featured SPA |
-| CSS size (raw) | 279 KB | Acceptable for Tailwind + custom styles |
-| CSS size (gzipped) | 40.9 KB | Good — within typical budget |
-| JS size (raw) | 2,485 KB | Above 2 MB threshold |
-| JS size (gzipped) | 614.7 KB | Acceptable for hospital LAN; may be slow on mobile |
-| Total (gzipped) | ~656 KB | Acceptable for LAN deployment |
+| Total modules | 2,633 | Large but expected for the current full-featured SPA |
+| CSS size (raw) | 290.2 KB | Acceptable for Tailwind and the custom design system |
+| CSS size (gzipped) | 42.2 KB | Within the working prototype budget |
+| JavaScript size (raw) | 2,440.6 KB across 65 files | Split by routes and major dependencies |
+| JavaScript size (gzipped) | 660.6 KB in total | Suitable for LAN evaluation; initial-route transfer is lower because chunks load on demand |
+| Total CSS and JavaScript (gzipped) | Approximately 702.8 KB | Acceptable for prototype evaluation; image assets still require optimisation |
 
 **Optimisation Recommendations:**
-1. Implement code splitting with `React.lazy()` for route-level chunks to reduce initial bundle
+1. Extend the existing `React.lazy()` route splitting to the heaviest staff modules
 2. Tree-shake unused Recharts components (currently imports entire library)
 3. Consider lazy-loading the QR scanning library (`html5-qrcode`, 2.3.8) only when needed
 4. Optimise background images (BACKG.png) with WebP format and responsive sizing
@@ -407,20 +409,16 @@ The System Usability Scale is a 10-item questionnaire providing a global view of
 
 ### 5.8.1 Requirements Traceability
 
-| Module | Requirements (from audit) | Tested | Coverage |
-|--------|--------------------------|--------|----------|
-| Patient Registration | 5 (1.1–1.5) | 5 | 100% |
-| Patient Self-Service | 4 (2.1–2.4) | 3 | 75% (feedback form not implemented) |
-| Triage | 5 (3.1–3.5) | 5 | 100% |
-| Queue Management | 8 (4.1–4.8) | 7 | 88% (bottleneck detection partial) |
-| Department Routing | 4 (5.1–5.4) | 2 | 50% (OI Clinic not implemented) |
-| Staff Dashboard | 4 (6.1–6.4) | 4 | 100% |
-| Notifications | 5 (7.1–7.5) | 5 | 100% |
-| Queue Display | 3 (8.1–8.3) | 2 | 67% (audio calling not implemented) |
-| Reporting | 6 (9.1–9.6) | 5 | 83% (daily report and export not implemented) |
-| Security & Access Control | 4 (11.1–11.4) | 3 | 75% (idle logout not implemented) |
-| Privacy | 3 (12.1–12.3) | 2 | 67% (OI confidential mode not implemented) |
-| Offline & Connectivity | 4 (13.1–13.4) | 3 | 75% (form auto-save not implemented) |
+| Capability group | Evidence available | Residual gap |
+|---|---|---|
+| Registration and returning-patient handling | Automated patient tests and registration walkthroughs | Live master-data and duplicate-resolution policy |
+| Triage and priority queueing | Triage scenarios, priority-order walkthroughs, reassessment UI | Clinical validation of thresholds |
+| Queue actions and public tracking | Call, miss, recall, transfer, tracking, queue-board walkthroughs | Automated multi-browser regression and load testing |
+| Notifications | Mock-provider unit and retry evidence, delivery logs, staff retry controls | Live provider and full background web-push verification |
+| Reports and exports | Report endpoints, dashboard analytics, export controls | Management approval of indicator definitions |
+| Appointments and department modules | Implemented prototype flows for appointments, pharmacy, laboratory, and OI services | Department-specific acceptance testing |
+| Security and privacy | Password, admin-guard, audit-chain tests and anonymous public display | Persistent sessions, rate limiting, security headers, restricted CORS, permission audit |
+| Offline and continuity | LAN architecture, retry queues, local form-draft recovery | Automated backup/restore and hybrid synchronisation |
 
 ### 5.8.2 Test Type Coverage
 
@@ -431,16 +429,28 @@ The System Usability Scale is a 10-item questionnaire providing a global view of
 | Functional tests (UI) | 39 manual test cases across 9 modules | Comprehensive; should automate with Playwright/Cypress |
 | Performance tests | Bundle analysis, API timing, SSE latency | Baseline established; should add load testing |
 | Security tests | OWASP checklist, 10 verified measures | Good baseline; should add penetration testing |
-| Usability tests | SUS questionnaire designed; task-based evaluation planned | Not yet administered; should conduct before deployment |
+| Usability tests | SUS questionnaire designed; task-based evaluation planned | Not yet administered with a representative hospital sample |
 
 ---
 
-## 5.9 Summary
+## 5.9 Interpretation of Results Against the Problem
 
-This chapter has presented a comprehensive testing and evaluation of the WaitLess Digital Queue Management System. The testing strategy combined 12 automated unit tests (100% pass rate) with 39 manual functional test cases (100% pass rate) across 9 system modules. Build verification confirmed successful frontend compilation (2,618 modules) and backend startup. API endpoint verification confirmed all 15 key endpoints return correct responses.
+| Problem identified in Chapter 1 | Prototype result | Strength of conclusion |
+|---|---|---|
+| Patient movement was not visible across departments | One ticket could be registered, triaged, transferred, tracked, and displayed through shared queue state | Strong functional evidence; operational effect still requires a pilot |
+| Clinical urgency could be obscured by arrival order | Priority-aware ordering and emergency-trigger scenarios passed the documented checks | Strong software evidence; thresholds require clinical approval |
+| Patients could miss turns without notification | The system recorded notification events, retries, missed turns, and recalls and exposed them to staff | Strong workflow evidence in mock mode; live delivery remains deployment-dependent |
+| Management lacked reliable queue information | Dashboard metrics, audit history, reports, and exports were produced from the same event data | Strong prototype evidence; indicator definitions require management validation |
+| Paper-based work was vulnerable to loss and disconnection | Persistent queue repositories, LAN deployment, retry queues, and local drafts were implemented | Partial readiness; backup, restore, and failover testing remain outstanding |
 
-Performance analysis established baselines for frontend bundle size (614.7 KB gzipped), API response times (< 150 ms for all endpoints), and real-time update latency (< 500 ms via SSE). Security evaluation against the OWASP Top 10 identified 7 fully mitigated risks, 2 partially mitigated, and 1 low risk, with specific recommendations for production hardening.
+The results therefore showed that the software artefact addressed the coordination mechanisms at the centre of the research problem. They did not yet prove that hospital-wide waiting time, satisfaction, or clinical outcomes had improved. Those outcomes require baseline data, an authorised pilot, and repeated measurement after deployment.
 
-The usability evaluation framework (SUS questionnaire and task-based evaluation) has been designed and is ready for administration with hospital staff and patients. Test coverage analysis against the 83-feature requirements audit shows strong coverage for implemented features, with gaps corresponding to features not yet built.
+## 5.10 Summary
 
-The next chapter, Chapter 6: Conclusion and Recommendations, summarises the project achievements, limitations, and future work.
+This chapter presented the verification and evaluation results for WaitLess. The evidence included 12 passing automated backend tests, 39 successful controlled functional walkthroughs across nine module groups, a successful frontend production build, and verification of key API paths. The breadth of the walkthroughs was useful for demonstration, while the small automated suite remained a clear area for improvement.
+
+Performance observations established a local-development baseline for bundle size, API response behaviour, and SSE updates. These observations were not a substitute for hospital-network load testing. The security review identified a useful prototype foundation alongside specific production hardening work, including persistent sessions, restricted CORS, rate limiting, security headers, backup controls, and broader permission testing.
+
+The usability evaluation framework, including the SUS questionnaire and task-based evaluation, was prepared for administration with authorised hospital staff and patients. Because that representative exercise had not yet been completed, no invented SUS score was reported. The final interpretation was therefore appropriately limited to prototype feasibility and pilot readiness.
+
+The next chapter, Chapter 6: Summary, Maintenance and Recommendations, summarises the project achievements, limitations, and future work.

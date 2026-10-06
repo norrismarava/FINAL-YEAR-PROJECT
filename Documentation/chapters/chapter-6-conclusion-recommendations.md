@@ -1,8 +1,8 @@
-# Chapter 6: Conclusion and Recommendations
+# Chapter 6: Summary, Maintenance and Recommendations
 
 ## 6.1 Introduction
 
-This chapter concludes the documentation of the WaitLess Digital Queue Management System by summarising the project's achievements, assessing the system against its original objectives, identifying limitations, and presenting recommendations for future work. The discussion is grounded in the actual implementation as verified through codebase analysis, automated testing, and a comprehensive 83-feature requirements audit.
+This chapter concludes the documentation of the WaitLess Digital Queue Management System by summarising the project's achievements, assessing the system against its original objectives, identifying limitations, and presenting recommendations for maintenance and future work. The discussion is grounded in the implemented prototype, source-code review, automated tests, documented functional walkthroughs, and production-build verification. Claims about hospital outcomes are deliberately separated from claims about software behaviour.
 
 ---
 
@@ -26,6 +26,9 @@ WaitLess is a full-stack web application built with React 19 and Node.js, featur
 - **Patient self-service** including self-registration, kiosk check-in, ticket tracking, and patient portal
 - **Public and department-specific display boards** showing now-serving, waiting, and missed columns
 - **Reporting** with average wait time, department performance, no-show, and triage reports
+- **Extended hospital workflows** for appointments, pharmacy stock and dispensing, laboratory orders, and OI service streams
+- **Accessible queue communication** through anonymous boards, audio calls, multilingual interface support, and browser notification controls
+- **Administrative tools** for staff profiles, profile images, system settings, exports, and operational navigation
 - **Immutable audit trail** with SHA-256 hash chain for tamper detection
 - **Dual-mode storage** supporting both MySQL and file-based JSON persistence
 
@@ -50,29 +53,31 @@ WaitLess is a full-stack web application built with React 19 and Node.js, featur
 |-----------|--------|----------|
 | Replace manual queue with digital system | ✅ Achieved | Full registration-to-completion workflow implemented |
 | Real-time queue updates | ✅ Achieved | SSE with < 500 ms latency; polling fallback |
-| Reduce patient wait times | ✅ Achieved (design) | Priority ordering, ETA display, tracking page |
-| Improve patient experience | ✅ Achieved | Self-registration, kiosk, tracking, WhatsApp notifications |
+| Support reduction of patient wait times | ✅ Functionally supported | Priority ordering, ETA display, tracking, bottleneck visibility; a live hospital pilot is still required to measure the actual reduction |
+| Improve patient experience | ✅ Implemented at prototype level | Self-registration, kiosk, tracking, queue boards, audio calls, and notification workflows; representative user evaluation remains outstanding |
 | Role-based staff access | ✅ Achieved | Four roles with route-level and data-level enforcement |
 | Triage integration | ✅ Achieved | Triage assessment with emergency auto-classification |
-| WhatsApp notifications | ✅ Achieved (mock) | Cloud API integration with retry; live delivery requires production credentials |
-| Reporting and analytics | ✅ Achieved | Four report types with date filtering |
+| WhatsApp notifications | ⚠️ Deployment-dependent | Cloud API adapter, logs, and retry workflow were implemented; live provider verification requires approved production credentials |
+| Reporting and analytics | ✅ Achieved | Operational, wait-time, department, triage, notification, and export workflows implemented |
 | Audit trail | ✅ Achieved | Hash-chained, tamper-detectable, admin-only access |
-| Offline operation | ⚠️ Partial | Core operations work without internet; form auto-save and hybrid sync not implemented |
+| Constrained-network operation | ⚠️ Partial | Core LAN workflows, retry queues, and local draft recovery were implemented; hybrid local/cloud synchronisation remains future work |
 
-### 6.3.2 Requirements Coverage
+### 6.3.2 Requirements Coverage at Documentation Freeze
 
-Based on the 83-feature requirements audit:
+The earlier progress audit was useful while the prototype was being built, but its numerical percentage became stale as extended modules were added. The final assessment therefore reports capability coverage and remaining deployment risk instead of presenting an outdated weighted score.
 
-| Status | Count | Percentage |
-|--------|-------|------------|
-| Complete | 25 | 30.1% |
-| Partial | 29 | 34.9% |
-| Not Started | 29 | 34.9% |
-| **Weighted Progress** | — | **47.6%** |
+| Capability group | Final assessment | Remaining qualification |
+|---|---|---|
+| Registration, returning-patient handling, and ticketing | Implemented | Requires live master-data governance |
+| Triage, reassessment, and priority queueing | Implemented | Clinical rules require hospital approval before deployment |
+| Queue actions, transfer, recall, tracking, and displays | Implemented | Concurrent load testing remains outstanding |
+| Notifications and delivery analytics | Partially production-ready | Live WhatsApp and full push delivery require provider credentials and deployment verification |
+| Reports and exports | Implemented | Report definitions require management sign-off |
+| Appointments, pharmacy, laboratory, and OI workflows | Implemented as prototype modules | Requires department-specific acceptance testing |
+| Authentication, role access, and audit history | Implemented with hardening work remaining | Persistent sessions, rate limiting, security headers, and a restricted CORS policy are still required |
+| Offline and operational continuity | Partially implemented | Backup automation, restore drills, and local/cloud synchronisation remain outstanding |
 
-The weighted progress calculation is: `(25 complete + 0.5 × 29 partial) / 83 = 47.6%`.
-
-This indicates that the core operational MVP is functional, but production readiness and expanded scope features remain incomplete.
+The prototype therefore covered the intended academic scope and supported an end-to-end demonstration, while production deployment remained conditional on operational, security, and user-acceptance work.
 
 ### 6.3.3 Key Achievements
 
@@ -82,7 +87,7 @@ This indicates that the core operational MVP is functional, but production readi
 4. **Dual-mode persistence** — Repository pattern abstracts MySQL and file storage, enabling development without database setup
 5. **Patient self-service** — Self-registration, kiosk check-in, ticket tracking, and patient portal reduce reception workload
 6. **Automated test coverage** — 12 unit tests covering critical security and patient-handling paths, all passing
-7. **Production build verified** — Frontend compiles successfully (2,618 modules); backend starts and serves all endpoints
+7. **Production build verified** — Frontend compiles successfully (2,633 modules transformed on 10 August 2026); backend starts and serves the documented endpoints
 
 ---
 
@@ -97,7 +102,7 @@ This indicates that the core operational MVP is functional, but production readi
 | CORS configured as `*` | Allows any origin; must be restricted for production | High |
 | No security headers (HSTS, X-Frame-Options) | Missing browser-level protections | Medium |
 | Frontend bundle > 2 MB (raw) | Slower initial load on low-bandwidth connections | Medium |
-| No form draft auto-save | Data lost if page refreshed during form completion | Medium |
+| Some operational modules retain JSON-backed persistence | Data management is split across persistence mechanisms | Medium |
 | ETA uses fixed formula, not predictive | Less accurate during unusual load patterns | Low |
 | No automated UI tests | Frontend regressions detected manually only | Medium |
 
@@ -106,15 +111,13 @@ This indicates that the core operational MVP is functional, but production readi
 | Limitation | Impact | Severity |
 |-----------|--------|----------|
 | WhatsApp delivery unverified with live credentials | Notification reliability unknown in production | High |
-| No appointment scheduling | Patients cannot book future visits | Medium |
-| No laboratory/radiology order management | Department-specific workflows incomplete | Medium |
-| No pharmacy prescription workflow | Medication collection queue not managed | Medium |
-| No OI (Ophthalmology) confidential mode | Privacy requirements for sensitive departments not met | Medium |
-| No audio calling on display board | Patients may miss visual-only calls in noisy environments | Medium |
+| Full web-push backend delivery is incomplete | Browser controls exist, but background delivery is not production-ready | Medium |
+| Department-level permission rules need full acceptance testing | A role may receive broader access than intended if configuration is wrong | High |
+| Advanced wait prediction uses limited prototype data | Estimates may be inaccurate during unusual demand | Medium |
 | No feedback collection | No patient satisfaction data captured | Low |
 | No staff shift management | Workload distribution not tracked | Low |
 | No multi-hospital tenancy | System supports single hospital only | Low |
-| No multi-language support | English-only interface | Low |
+| Translation coverage requires clinical review | Some translated labels may need terminology approval | Low |
 
 ### 6.4.3 Operational Limitations
 
@@ -122,7 +125,7 @@ This indicates that the core operational MVP is functional, but production readi
 |-----------|--------|----------|
 | No hybrid cloud/local sync | Cannot failover between local and cloud deployment | Medium |
 | No automated backup/restore | Data loss risk if manual backups not performed | High |
-| No deployment documentation | Operations team lacks formal runbook | Medium |
+| Deployment guidance has not been validated by a hospital IT team | The documented runbook may need local environment changes | Medium |
 | No load testing performed | System behaviour under concurrent load unknown | Medium |
 | Usability testing not yet administered | SUS scores and user feedback not collected | Medium |
 
@@ -134,7 +137,7 @@ This indicates that the core operational MVP is functional, but production readi
 
 1. **Custom router over Express** — Building a lightweight HTTP router (92 lines) provided full control over request processing, path parameter extraction, and middleware composition. This avoided framework overhead and deepened understanding of Node.js HTTP internals. However, it also meant missing built-in features like rate limiting, request validation, and OpenAPI documentation that frameworks provide.
 
-2. **SSE over WebSocket** — Server-Sent Events proved sufficient for the unidirectional update pattern (server-to-client queue updates). The EventSource API is simpler than WebSocket, works through proxies, and includes automatic reconnection. The trade-off is no client-to-server streaming, which was not needed.
+2. **SSE over WebSocket** — Server-Sent Events proved sufficient for the unidirectional update pattern used by the prototype. EventSource provided automatic reconnection and a simpler client model. The trade-off was the absence of client-to-server streaming, which the queue workflow did not require.
 
 3. **Dual-mode repository pattern** — Abstracting storage behind a repository interface with file and MySQL implementations was valuable for development and testing. Tests run against file storage without database setup, while production uses MySQL. The pattern added minimal complexity and significant flexibility.
 
@@ -144,7 +147,7 @@ This indicates that the core operational MVP is functional, but production readi
 
 ### 6.5.2 Project Management Lessons
 
-1. **Requirements traceability** — Maintaining an 83-feature audit matrix from the start ensured no requirements were silently dropped. Each feature was tracked with status (complete, partial, not started) and evidence.
+1. **Requirements traceability** — Maintaining a feature audit matrix helped prevent requirements from being silently dropped. The experience also showed that status counts had to be refreshed before publication; a percentage without a current evidence date could quickly become misleading.
 
 2. **Iterative development** — Building the core queue management loop first (register → triage → call → complete) provided a demonstrable MVP early, allowing stakeholder feedback before expanding scope.
 
@@ -154,7 +157,7 @@ This indicates that the core operational MVP is functional, but production readi
 
 ---
 
-## 6.6 Recommendations
+## 6.6 System Maintenance and Recommendations
 
 ### 6.6.1 Immediate Actions (Pre-Production)
 
@@ -165,7 +168,7 @@ These items must be completed before deploying WaitLess in a real hospital envir
 | P0 | Restrict CORS origin to hospital LAN IP range | Security — prevents cross-origin attacks | 1 hour |
 | P0 | Implement database-backed session persistence | Reliability — sessions survive server restart | 1–2 days |
 | P0 | Verify WhatsApp Cloud API with live credentials | Functionality — confirms notification delivery | 1 day |
-| P0 | Create deployment runbook and backup procedure | Operations — ensures recoverability | 1 day |
+| P0 | Validate the deployment runbook and complete a backup/restore drill | Operations — proves recoverability in the target environment | 1–2 days |
 | P1 | Add rate limiting on `/api/auth/login` | Security — prevents brute-force attacks | 4 hours |
 | P1 | Add security headers (HSTS, X-Content-Type-Options, X-Frame-Options) | Security — hardens browser protections | 2 hours |
 | P1 | Conduct load testing (50+ concurrent users) | Reliability — validates performance under load | 1–2 days |
@@ -173,19 +176,18 @@ These items must be completed before deploying WaitLess in a real hospital envir
 | P2 | Implement automated database backups | Reliability — prevents data loss | 1 day |
 | P2 | Add automated UI tests (Playwright or Cypress) | Quality — catches frontend regressions | 3–5 days |
 
-### 6.6.2 Short-Term Enhancements (Next 3 Months)
+### 6.6.2 Short-Term Pilot Work (Next 3 Months)
 
 | Priority | Recommendation | Rationale |
 |----------|---------------|-----------|
-| P1 | Complete appointment scheduling and follow-up reminders | Reduces no-shows; improves patient flow planning |
-| P1 | Implement laboratory/radiology order lifecycle | Completes department-specific workflows |
-| P1 | Add pharmacy prescription workflow | Manages medication collection queue |
-| P2 | Add audio calling on display board | Ensures patients hear calls in noisy environments |
-| P2 | Implement form draft auto-save | Prevents data loss during form completion |
-| P2 | Add daily operational report with PDF/CSV export | Provides printable summaries for hospital administration |
-| P2 | Implement OI confidential mode | Privacy compliance for sensitive departments |
-| P3 | Add patient feedback collection | Captures satisfaction data for continuous improvement |
-| P3 | Add staff shift and workload management | Tracks staff allocation and workload distribution |
+| P1 | Run department-specific acceptance tests for appointments, laboratory, pharmacy, and OI workflows | Confirms that prototype states match real departmental practice |
+| P1 | Complete persistent session storage and department-level permission tests | Prevents avoidable account and access-control failures |
+| P1 | Complete production web-push configuration or formally remove it from the pilot scope | Keeps the deployed promise aligned with actual capability |
+| P2 | Review Shona and Ndebele clinical terminology with hospital staff | Prevents ambiguous or unsafe wording |
+| P2 | Validate report definitions and exports with hospital management | Ensures that indicators support actual decisions |
+| P2 | Add automated end-to-end browser tests for the critical patient journey | Reduces regression risk across pages |
+| P3 | Pilot patient feedback collection with an approved consent process | Provides evidence for usability and satisfaction |
+| P3 | Add staff shift and workload analysis | Supports staffing review after reliable operational data exist |
 
 ### 6.6.3 Medium-Term Enhancements (3–6 Months)
 
@@ -197,7 +199,7 @@ These items must be completed before deploying WaitLess in a real hospital envir
 | Add code splitting and bundle optimisation | Reduces initial load time for low-bandwidth connections |
 | Implement idle logout with client-side detection | Enhances security by logging out inactive sessions |
 | Add CSRF protection for state-changing operations | Defends against cross-site request forgery attacks |
-| Integrate web push notifications | Provides an additional notification channel beyond WhatsApp |
+| Complete and monitor standards-based web push delivery | Provides an additional channel beyond WhatsApp |
 
 ### 6.6.4 Long-Term Vision (6–12 Months)
 
@@ -248,25 +250,12 @@ The WaitLess Digital Queue Management System demonstrates that modern web techno
 
 The WaitLess Digital Queue Management System was conceived to replace manual queue management at Chinhoyi Provincial Hospital with a real-time, web-based platform. The system successfully delivers a functional queue management core — patient registration, triage assessment, priority-based ordering, real-time updates, WhatsApp notifications, patient self-service, display boards, reporting, and audit trail — built on a modern technology stack (React 19, Node.js, MySQL, SSE).
 
-At the time of this documentation, the system achieves 47.6% weighted progress against 83 audited requirements, with 25 features complete and 29 partially implemented. The core operational MVP is functional and verified through 12 automated unit tests (100% pass rate), 39 manual functional test cases (100% pass rate), and successful production build verification.
+At the documentation freeze, the core operational workflow was functional and had been verified through 12 passing automated backend tests, a documented set of 39 functional walkthroughs, and a successful frontend production build. Extended modules for appointments, pharmacy, laboratory work, OI services, reports, multilingual presentation, audio calls, profile management, and offline draft recovery had also been added. The manual walkthroughs remained repeatable acceptance evidence rather than a substitute for automated end-to-end testing or formal hospital UAT.
 
-The system is not yet production-ready. Critical security hardening (CORS restriction, session persistence, rate limiting), live WhatsApp verification, deployment documentation, load testing, and usability evaluation must be completed before real-patient deployment. Functional gaps in appointment scheduling, specialist department workflows, and offline continuity also remain.
+The system was not yet ready for unsupervised use with real patient data. Critical work remained in CORS restriction, persistent sessions, rate limiting, security headers, live WhatsApp verification, web-push completion, backup and restore testing, load testing, and formal usability evaluation. Several extended modules also required department-specific acceptance testing and consolidation into the production persistence model.
 
 Nevertheless, the architecture provides a solid, extensible foundation. The recommendations in this chapter outline a clear path from the current state to a production-ready system, followed by short-term functional enhancements and a long-term vision for multi-hospital deployment, AI-assisted optimisation, and HIS integration.
 
 The WaitLess system demonstrates that thoughtful application of modern web technologies, combined with a deep understanding of the operational context, can produce meaningful improvements in healthcare service delivery — even in resource-limited environments.
 
 ---
-
-## References
-
-1. React Documentation. (2025). *React 19*. Retrieved from https://react.dev
-2. Vite Documentation. (2025). *Vite 7*. Retrieved from https://vite.dev
-3. Tailwind CSS Documentation. (2025). *Tailwind CSS v4*. Retrieved from https://tailwindcss.com
-4. Meta Platforms. (2025). *WhatsApp Cloud API Documentation, v23.0*. Retrieved from https://developers.facebook.com/docs/whatsapp/cloud-api
-5. MDN Web Docs. (2025). *Server-Sent Events*. Retrieved from https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events
-6. OWASP Foundation. (2023). *OWASP Top 10*. Retrieved from https://owasp.org/www-project-top-ten/
-7. Node.js Documentation. (2025). *Node.js Test Runner*. Retrieved from https://nodejs.org/api/test.html
-8. Brooke, J. (1996). *SUS: A 'quick and dirty' usability scale*.
-9. MySQL Documentation. (2025). *MySQL 8.0 Reference Manual*. Retrieved from https://dev.mysql.com/doc/refman/8.0/en/
-10. bcrypt Documentation. (2025). *bcryptjs*. Retrieved from https://github.com/dcodeIO/bcrypt.js

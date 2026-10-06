@@ -1101,11 +1101,11 @@ npm run build  # Output to dist/
 npm run preview  # Preview production build
 ```
 
-The Vite production build:
-- Transforms 2,618 modules
+The production build verified on 10 August 2026:
+- Transformed 2,633 modules
 - Output: `dist/index.html` + `dist/assets/` (CSS, JS, images)
-- CSS: 279 KB (40.9 KB gzipped)
-- JS: 2,485 KB (614.7 KB gzipped)
+- CSS: 290.2 KB (42.2 KB gzipped)
+- JavaScript: 2,440.6 KB across 65 lazy-loaded files (660.6 KB gzipped in total)
 - Assets: Logo images, background images (BACKG.png, etc.)
 
 ### 4.8.4 LAN Deployment

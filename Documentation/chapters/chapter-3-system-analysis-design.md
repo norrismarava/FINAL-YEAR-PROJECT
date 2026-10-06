@@ -2,13 +2,15 @@
 
 ## 3.1 Introduction
 
-This chapter presents a comprehensive analysis and design of the WaitLess Digital Queue Management System. It details the functional and non-functional requirements, use case modelling, system architecture, data design, process flows, user interface design, and security design. The analysis is grounded in the actual implementation of the system, which has been built and verified against an 83-feature requirements traceability matrix.
+This chapter presents the analysis and design of the WaitLess Digital Queue Management System. It details the functional and non-functional requirements, use case modelling, system architecture, data design, process flows, user interface design, and security design. The analysis is grounded in the implemented prototype and the requirements baseline derived from the project proposal and amendments.
 
 The system was designed for Chinhoyi Provincial Hospital in Zimbabwe, with the goal of replacing manual queue management with a real-time, web-based solution that streamlines patient flow from registration through triage, service delivery, and completion.
 
 ---
 
 ## 3.2 Requirements Analysis
+
+The status values in this section describe the prototype at the documentation freeze on 10 August 2026. A status of **Complete** means that the feature was represented in the prototype and available for controlled verification; it does not by itself indicate production accreditation or completion of a live hospital pilot. **Partial** identifies a usable foundation that still depended on provider configuration, broader acceptance testing, infrastructure hardening, or another stated control.
 
 ### 3.2.1 Functional Requirements
 
@@ -31,7 +33,7 @@ The functional requirements are organised by module, with each requirement assig
 | 2.1 | The system shall allow online pre-registration with arrival activation by reception staff. | Medium | Partial |
 | 2.2 | The system shall provide a self-service kiosk for check-in by QR code scan or phone number lookup, collecting department and visit reason, and issuing a queue token. | High | Complete |
 | 2.3 | The system shall provide a live patient queue-status tracking page showing token, department, position, patients ahead, ETA, progress, directions, and notification history. | High | Complete |
-| 2.4 | The system shall provide a patient feedback form for satisfaction, cleanliness, communication, and wait-time feedback. | Low | Not Started |
+| 2.4 | The system shall provide a patient feedback form for satisfaction, cleanliness, communication, and wait-time feedback. | Low | Complete |
 
 #### Module 3: Triage
 
@@ -61,9 +63,9 @@ The functional requirements are organised by module, with each requirement assig
 | ID | Requirement | Priority | Status |
 |----|-------------|----------|--------|
 | 5.1 | The system shall support automatic department routing based on chief complaint keyword matching. | Medium | Partial |
-| 5.2 | The system shall support doctor-to-laboratory test order workflow with lifecycle states (ordered, sample-collected, in-progress, completed, result-ready). | Medium | Partial |
-| 5.3 | The system shall support doctor-to-pharmacy prescription workflow with lifecycle states (prescribed, dispensing, ready, collected). | Medium | Partial |
-| 5.4 | The system shall support OI Clinic service streams (ART, TB, viral load, counselling, screening). | Low | Not Started |
+| 5.2 | The system shall support doctor-to-laboratory test order workflow with lifecycle states (ordered, sample-collected, in-progress, completed, result-ready). | Medium | Complete |
+| 5.3 | The system shall support doctor-to-pharmacy prescription workflow with lifecycle states (prescribed, dispensing, ready, collected). | Medium | Complete |
+| 5.4 | The system shall support OI Clinic service streams (ART, TB, viral load, counselling, screening). | Low | Complete |
 
 #### Module 6: Staff Dashboard
 
@@ -72,14 +74,14 @@ The functional requirements are organised by module, with each requirement assig
 | 6.1 | The system shall provide a live queue dashboard with real-time metrics, queue tables, patient actions, alerts, and automatic refresh. | High | Complete |
 | 6.2 | The system shall provide department-scoped dashboards that filter data by staff department assignment. | Medium | Complete |
 | 6.3 | The system shall provide an administrator dashboard with staff management, audit trail, queue overview, reports, and settings. | High | Complete |
-| 6.4 | The system shall display operational alerts including critical metrics, reassessment alerts, and notification failures. | Medium | Partial |
+| 6.4 | The system shall display operational alerts including critical metrics, reassessment alerts, and notification failures. | Medium | Complete |
 
 #### Module 7: Notifications
 
 | ID | Requirement | Priority | Status |
 |----|-------------|----------|--------|
 | 7.1 | The system shall send WhatsApp notifications for registration, turn readiness, call, missed turn, and transfer events. | High | Partial |
-| 7.2 | The system shall support web push notifications. | Low | Not Started |
+| 7.2 | The system shall support web push notifications. | Low | Partial |
 | 7.3 | The system shall provide automatic and manual notification retry with configurable retry delays and attempt limits. | High | Complete |
 | 7.4 | The system shall maintain a notification delivery log with status, timestamps, provider message ID, and error details. | High | Complete |
 | 7.5 | The system shall send a missed-turn notification when a called ticket is marked missed. | High | Complete |
@@ -90,26 +92,26 @@ The functional requirements are organised by module, with each requirement assig
 |----|-------------|----------|--------|
 | 8.1 | The system shall provide a public waiting-area display board showing now-serving, waiting, and missed token numbers without patient names. | High | Complete |
 | 8.2 | The system shall provide department-specific display boards accessible via URL with department query parameter. | Medium | Complete |
-| 8.3 | The system shall support audio calling of token numbers. | Low | Not Started |
+| 8.3 | The system shall support audio calling of token numbers. | Low | Complete |
 
 #### Module 9: Reporting
 
 | ID | Requirement | Priority | Status |
 |----|-------------|----------|--------|
-| 9.1 | The system shall generate a daily report by department, service, gender, age, and triage priority. | Medium | Not Started |
+| 9.1 | The system shall generate a daily report by department, service, gender, age, and triage priority. | Medium | Complete |
 | 9.2 | The system shall generate an average waiting time report by department with date filtering. | High | Complete |
 | 9.3 | The system shall generate a department performance report with throughput, missed rate, and priority breakdown. | High | Complete |
 | 9.4 | The system shall generate a no-show report with notification delivery correlation per missed ticket. | High | Complete |
 | 9.5 | The system shall generate a triage report with triage rate, timing, outcomes, overrides, and trends. | High | Complete |
-| 9.6 | The system shall support PDF, Excel, and CSV export of reports. | Low | Not Started |
+| 9.6 | The system shall support PDF, Excel, and CSV export of reports. | Low | Complete |
 
 #### Module 10: Analytics
 
 | ID | Requirement | Priority | Status |
 |----|-------------|----------|--------|
-| 10.1 | The system shall provide peak-hours analysis of patient arrivals and service patterns. | Low | Not Started |
-| 10.2 | The system shall provide queue-congestion prediction. | Low | Not Started |
-| 10.3 | The system shall provide resource-allocation suggestions based on current load. | Low | Not Started |
+| 10.1 | The system shall provide peak-hours analysis of patient arrivals and service patterns. | Low | Complete |
+| 10.2 | The system shall provide queue-congestion prediction. | Low | Partial |
+| 10.3 | The system shall provide resource-allocation suggestions based on current load. | Low | Partial |
 
 #### Module 11: Security and Access Control
 
@@ -118,7 +120,7 @@ The functional requirements are organised by module, with each requirement assig
 | 11.1 | The system shall enforce role-based access control with roles: admin, reception, triage, and clinician. | High | Complete |
 | 11.2 | The system shall provide secure individual login with bcrypt password hashing and action attribution. | High | Complete |
 | 11.3 | The system shall maintain an immutable, hash-chained audit trail of all operational actions. | High | Complete |
-| 11.4 | The system shall implement automatic idle logout with inactivity timeout. | Medium | Not Started |
+| 11.4 | The system shall implement automatic idle logout with inactivity timeout. | Medium | Complete |
 
 #### Module 12: Privacy and Confidentiality
 
@@ -126,7 +128,7 @@ The functional requirements are organised by module, with each requirement assig
 |----|-------------|----------|--------|
 | 12.1 | The system shall display anonymous token numbers on public displays, never patient names. | High | Complete |
 | 12.2 | The system shall capture and honour notification consent preferences. | High | Complete |
-| 12.3 | The system shall provide confidential OI mode with masked routing and restricted data views. | Low | Not Started |
+| 12.3 | The system shall provide confidential OI mode with masked routing and restricted data views. | Low | Partial |
 
 #### Module 13: Offline and Connectivity
 
@@ -135,7 +137,7 @@ The functional requirements are organised by module, with each requirement assig
 | 13.1 | The system shall support local-network hosting within a hospital LAN. | Medium | Partial |
 | 13.2 | The system shall maintain core queue operation without internet connectivity. | Medium | Partial |
 | 13.3 | The system shall queue notifications for delivery when internet connectivity returns. | Medium | Partial |
-| 13.4 | The system shall provide local form auto-save with IndexedDB draft recovery. | Low | Not Started |
+| 13.4 | The system shall provide local form auto-save with IndexedDB draft recovery. | Low | Complete |
 
 #### Module 14–21: Additional Modules
 
@@ -147,7 +149,7 @@ Additional modules covering Appointment Management, OI Clinic, Pharmacy, Laborat
 |----|----------|-------------|
 | NFR-01 | Performance | The system shall load the public queue board within 3 seconds on a standard hospital LAN connection. |
 | NFR-02 | Performance | The system shall deliver real-time queue updates to connected clients within 2 seconds of a state change via Server-Sent Events. |
-| NFR-03 | Performance | The frontend production build shall not exceed 3 MB uncompressed (current: 2.49 MB). |
+| NFR-03 | Performance | The frontend production JavaScript output shall remain below 3 MB uncompressed and shall use lazy-loaded chunks for major routes. |
 | NFR-04 | Security | All passwords shall be hashed using bcrypt with a minimum cost factor of 12. |
 | NFR-05 | Security | Staff sessions shall expire after 8 hours of inactivity. |
 | NFR-06 | Security | The audit trail shall be tamper-evident using SHA-256 hash chaining. |
@@ -179,7 +181,7 @@ Additional modules covering Appointment Management, OI Clinic, Pharmacy, Laborat
 ### 3.3.1 System-Wide Use Case Diagram
 
 ```mermaid
-graph TB
+graph LR
     Patient((Patient))
     Reception((Reception Staff))
     TriageNurse((Triage Nurse))
@@ -1443,8 +1445,8 @@ The WaitLess user interface is designed with the following principles:
 ### 3.8.4 Navigation Structure
 
 ```mermaid
-graph TD
-    Root[/ WaitLess]
+graph LR
+    Root[WaitLess]
 
     Root --> Public[Public Pages]
     Root --> Patient[Patient Portal]
