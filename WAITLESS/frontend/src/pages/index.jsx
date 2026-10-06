@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   Activity,
@@ -27,9 +28,61 @@ import { usePatientAuth } from "@/auth/PatientAuthProvider";
 import { resolveStaffLandingPath } from "@/services/staffProfilePrefs";
 import { PRIORITY_META } from "@/services/queueMeta";
 
+const REVEAL_STYLES = `
+  @keyframes wl-reveal-up {
+    from { opacity: 0; transform: translateY(18px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .wl-reveal { opacity: 0; }
+  .wl-reveal.is-revealed {
+    animation: wl-reveal-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .wl-reveal { opacity: 1; }
+    .wl-reveal.is-revealed { animation: none; }
+  }
+`;
+
+function Reveal({ children, delay = 0, className = "" }) {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node || typeof IntersectionObserver === "undefined") {
+      setVisible(true);
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.12, rootMargin: "0px 0px -40px 0px" },
+    );
+
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div
+      ref={ref}
+      className={`wl-reveal ${visible ? "is-revealed" : ""} ${className}`}
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      {children}
+    </div>
+  );
+}
+
 export default function Home() {
   return (
     <>
+      <style>{REVEAL_STYLES}</style>
       <Hero />
       <LandingLightCanvas>
         <Stats />
@@ -194,6 +247,18 @@ function Hero() {
               </>
             )}
           </div>
+
+          {!isStaff && !isPatient ? (
+            <p className="mt-4 text-sm text-muted-foreground">
+              Already at the hospital?{" "}
+              <Link
+                to="/self-register"
+                className="font-semibold text-primary underline-offset-4 transition-colors hover:text-teal-700 hover:underline"
+              >
+                Check in instantly — no account needed
+              </Link>
+            </p>
+          ) : null}
 
           <div className="mt-10 grid max-w-2xl gap-4 sm:grid-cols-3">
             {heroHighlights.map((item) => (
@@ -502,23 +567,25 @@ function Stats() {
             </h2>
           </div>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {items.map((item) => (
-              <div key={item.label} className="flex items-center gap-3 rounded-2xl border border-border/70 bg-background/80 px-4 py-3">
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">
-                  <item.icon className="h-5 w-5" />
-                </span>
-                <div>
-                  <div className="font-display text-xl font-bold leading-none">
-                    {item.value}
+            {items.map((item, index) => (
+              <Reveal key={item.label} delay={index * 70}>
+                <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-background/80 px-4 py-3 transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_-18px_rgba(37,99,235,0.25)]">
+                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">
+                    <item.icon className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <div className="font-display text-xl font-bold leading-none">
+                      {item.value}
+                    </div>
+                    <div className="mt-1 text-xs text-muted-foreground">{item.label}</div>
                   </div>
-                  <div className="mt-1 text-xs text-muted-foreground">{item.label}</div>
                 </div>
-              </div>
+              </Reveal>
             ))}
           </div>
         </div>
 
-        <div className="mt-6 overflow-hidden rounded-2xl border border-primary/15 bg-[linear-gradient(135deg,rgba(204,251,241,0.58),rgba(255,255,255,0.56)_36%,rgba(219,234,254,0.52))] py-3 shadow-[0_18px_44px_-34px_rgba(37,99,235,0.26)] backdrop-blur">
+        <Reveal delay={120} className="mt-6 overflow-hidden rounded-2xl border border-primary/15 bg-[linear-gradient(135deg,rgba(204,251,241,0.58),rgba(255,255,255,0.56)_36%,rgba(219,234,254,0.52))] py-3 shadow-[0_18px_44px_-34px_rgba(37,99,235,0.26)] backdrop-blur">
           <div className="flex w-max gap-3 whitespace-nowrap px-3 [animation:auth-ticker_34s_linear_infinite]">
             {[...tickerItems, ...tickerItems].map((item, index) => (
               <span
@@ -530,13 +597,16 @@ function Stats() {
               </span>
             ))}
           </div>
-        </div>
+        </Reveal>
       </div>
     </section>
   );
 }
 
 function TriageStrip() {
+  const auth = useAuth();
+  const canOpenTriage = auth.hasRole(["triage", "clinician", "admin"]);
+
   const priorityCardStyles = {
     red: {
       shell:
@@ -595,10 +665,10 @@ function TriageStrip() {
               registration and used to route every patient.
             </p>
             <Link
-              to="/admin/triage"
-              className="mt-5 inline-flex items-center gap-2 rounded-xl gradient-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-elegant"
+              to={canOpenTriage ? "/admin/triage" : "/track"}
+              className="mt-5 inline-flex items-center gap-2 rounded-xl gradient-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-elegant transition-transform hover:-translate-y-0.5"
             >
-              Open triage console
+              {canOpenTriage ? "Open triage console" : "Track a ticket"}
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>
@@ -638,13 +708,13 @@ function TriageStrip() {
         </div>
 
         <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {Object.keys(PRIORITY_META).map((priority) => {
+          {Object.keys(PRIORITY_META).map((priority, index) => {
             const meta = PRIORITY_META[priority];
             const styles = priorityCardStyles[priority];
 
             return (
+              <Reveal key={priority} delay={index * 80}>
               <div
-                key={priority}
                 className={`group overflow-hidden rounded-[1.6rem] border bg-white/18 backdrop-blur-xl transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1 ${styles.shell}`}
               >
                 <div
@@ -672,6 +742,7 @@ function TriageStrip() {
                   </div>
                 </div>
               </div>
+              </Reveal>
             );
           })}
         </div>
@@ -735,9 +806,9 @@ function Features() {
             </p>
 
             <div className="mt-6 space-y-3">
-              {reasons.map((reason) => (
+              {reasons.map((reason, index) => (
+                <Reveal key={reason} delay={index * 90}>
                 <div
-                  key={reason}
                   className="flex gap-3 rounded-[1.7rem] border border-white/65 bg-[linear-gradient(135deg,rgba(255,255,255,0.64),rgba(255,255,255,0.50)_46%,rgba(219,234,254,0.32))] px-4 py-3 shadow-[0_22px_52px_-38px_rgba(37,99,235,0.24)] backdrop-blur-xl"
                 >
                   <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-white/70 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.95),rgba(204,251,241,0.72)_42%,rgba(20,184,166,0.92))] text-white shadow-[0_10px_28px_-14px_rgba(20,184,166,0.7)]">
@@ -745,14 +816,15 @@ function Features() {
                   </span>
                   <p className="text-sm leading-6 text-muted-foreground">{reason}</p>
                 </div>
+                </Reveal>
               ))}
             </div>
           </div>
 
           <div className="grid gap-5 md:grid-cols-2">
-            {items.map((feature) => (
+            {items.map((feature, index) => (
+              <Reveal key={feature.title} delay={(index % 2) * 90}>
               <div
-                key={feature.title}
                 className="group relative overflow-hidden rounded-[1.9rem] border border-white/70 bg-[linear-gradient(145deg,rgba(255,255,255,0.68),rgba(255,255,255,0.52)_48%,rgba(219,234,254,0.34)_100%)] p-6 shadow-[0_26px_62px_-36px_rgba(37,99,235,0.22)] backdrop-blur-xl transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1 hover:border-white/85 hover:shadow-[0_30px_70px_-34px_rgba(37,99,235,0.3)]"
               >
                 <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.22),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(191,219,254,0.24),transparent_34%)] opacity-90" />
@@ -767,6 +839,7 @@ function Features() {
                   {feature.body}
                 </p>
               </div>
+              </Reveal>
             ))}
           </div>
         </div>
@@ -828,23 +901,27 @@ function Flow() {
 
             <ol className="mt-8 grid flex-1 gap-3">
               {steps.map((step, index) => (
-                <li key={step.t} className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 rounded-2xl border border-white/10 bg-white/8 px-5 py-4">
-                  <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-cyan-200 text-sm font-bold text-slate-950">
-                    {index + 1}
-                  </span>
-                  <div className="min-w-0">
-                    <div className="font-display font-bold">{step.t}</div>
-                    <p className="mt-0.5 text-sm text-slate-300">{step.body}</p>
+                <li key={step.t}>
+                  <Reveal delay={index * 70}>
+                  <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 rounded-2xl border border-white/10 bg-white/8 px-5 py-4 transition-colors hover:border-cyan-200/20 hover:bg-white/10">
+                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-cyan-200 text-sm font-bold text-slate-950">
+                      {index + 1}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="font-display font-bold">{step.t}</div>
+                      <p className="mt-0.5 text-sm text-slate-300">{step.body}</p>
+                    </div>
+                    <span className="whitespace-nowrap rounded-full bg-cyan-200/10 px-2.5 py-1 text-xs font-semibold text-cyan-100">
+                      {step.d}
+                    </span>
                   </div>
-                  <span className="whitespace-nowrap rounded-full bg-cyan-200/10 px-2.5 py-1 text-xs font-semibold text-cyan-100">
-                    {step.d}
-                  </span>
+                  </Reveal>
                 </li>
               ))}
             </ol>
           </div>
 
-          <div className="relative flex flex-col overflow-hidden rounded-[2rem] border border-cyan-200/10 bg-[linear-gradient(180deg,rgba(26,48,70,0.94),rgba(19,39,59,0.98))] p-5 shadow-[0_30px_90px_rgba(0,0,0,0.42)] lg:mt-[12.5rem] lg:h-[calc(100%-12.5rem)]">
+          <Reveal delay={140} className="relative flex flex-col overflow-hidden rounded-[2rem] border border-cyan-200/10 bg-[linear-gradient(180deg,rgba(26,48,70,0.94),rgba(19,39,59,0.98))] p-5 shadow-[0_30px_90px_rgba(0,0,0,0.42)] lg:mt-[12.5rem] lg:h-[calc(100%-12.5rem)]">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(96,165,250,0.16),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(20,184,166,0.12),transparent_24%)]" />
             <div className="pointer-events-none absolute inset-0 opacity-[0.14] [background-image:linear-gradient(rgba(125,211,252,0.22)_1px,transparent_1px),linear-gradient(90deg,rgba(125,211,252,0.16)_1px,transparent_1px)] [background-size:72px_72px]" />
             <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/70 to-transparent" />
@@ -881,21 +958,21 @@ function Flow() {
                   ticket: "R-104",
                   department: "Casualty",
                   status: "Call now",
-                  to: "/dashboard",
+                  to: "/queue",
                   className: "bg-priority-red text-priority-red-foreground",
                 },
                 {
                   ticket: "Y-118",
                   department: "Observation",
                   status: "In service",
-                  to: "/dashboard",
+                  to: "/queue",
                   className: "bg-priority-yellow text-priority-yellow-foreground",
                 },
                 {
                   ticket: "G-203",
                   department: "Pharmacy",
                   status: "WhatsApp sent",
-                  to: "/dashboard",
+                  to: "/queue",
                   className: "bg-priority-green text-priority-green-foreground",
                 },
               ].map(({ ticket, department, status, to, className }) => (
@@ -918,7 +995,7 @@ function Flow() {
                 </Link>
               ))}
             </div>
-          </div>
+          </Reveal>
         </div>
       </div>
     </section>
@@ -1023,11 +1100,11 @@ function CTA() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-3">
-              {ctaCards.map(([title, body, to, Icon]) => (
+              {ctaCards.map(([title, body, to, Icon], index) => (
+                <Reveal key={title} delay={index * 90}>
                 <Link
-                  key={title}
                   to={to}
-                  className="group rounded-[1.6rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.04))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition-all hover:-translate-y-1 hover:border-cyan-200/20 hover:bg-[linear-gradient(180deg,rgba(20,184,166,0.16),rgba(37,99,235,0.10))]"
+                  className="group block h-full rounded-[1.6rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.04))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition-all hover:-translate-y-1 hover:border-cyan-200/20 hover:bg-[linear-gradient(180deg,rgba(20,184,166,0.16),rgba(37,99,235,0.10))]"
                 >
                   <span className="grid h-11 w-11 place-items-center rounded-xl bg-cyan-200/16 text-cyan-100 transition-colors group-hover:bg-cyan-200/22">
                     <Icon className="h-5 w-5" />
@@ -1039,6 +1116,7 @@ function CTA() {
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                   </span>
                 </Link>
+                </Reveal>
               ))}
             </div>
           </div>
