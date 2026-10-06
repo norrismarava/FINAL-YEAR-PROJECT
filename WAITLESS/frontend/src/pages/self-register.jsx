@@ -1,10 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
+  AlertCircle,
   ArrowRight,
+  Check,
   CheckCircle2,
   ClipboardList,
   Clock3,
+  Copy,
+  House,
   LoaderCircle,
   MessageCircle,
   PhoneCall,
@@ -37,6 +41,20 @@ const INITIAL_FORM = {
   whatsApp: true,
 };
 
+const SUCCESS_STYLES = `
+  @keyframes self-reg-pop {
+    0% { opacity: 0; transform: scale(0.92) translateY(12px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  @keyframes self-reg-check {
+    0% { transform: scale(0) rotate(-18deg); }
+    62% { transform: scale(1.14) rotate(4deg); }
+    100% { transform: scale(1) rotate(0deg); }
+  }
+  .self-reg-success-card { animation: self-reg-pop 0.55s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .self-reg-check-badge { animation: self-reg-check 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both; }
+`;
+
 export default function SelfRegisterPage() {
   const navigate = useNavigate();
   const { refreshLiveData } = useLiveRefresh();
@@ -45,6 +63,7 @@ export default function SelfRegisterPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(null);
   const [handoffState, setHandoffState] = useState("");
+  const [copied, setCopied] = useState(false);
 
   function updateField(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -104,6 +123,17 @@ export default function SelfRegisterPage() {
 
   const qrCanvasRef = useRef(null);
 
+  async function handleCopyTicket() {
+    if (!success?.ticket) return;
+    try {
+      await navigator.clipboard.writeText(success.ticket);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setHandoffState("Could not copy — write the code down.");
+    }
+  }
+
   async function handlePrintTicket() {
     try {
       setHandoffState("Preparing printable ticket...");
@@ -135,6 +165,7 @@ export default function SelfRegisterPage() {
   if (success) {
     return (
       <section className="relative isolate min-h-screen overflow-hidden px-4 py-6 text-white sm:px-6 lg:px-8">
+        <style>{SUCCESS_STYLES}</style>
         {/* Background image */}
         <div className="pointer-events-none absolute inset-0 -z-20 hidden lg:block">
           <img src={authBackground} alt="" className="h-full w-full object-cover" />
@@ -154,9 +185,9 @@ export default function SelfRegisterPage() {
             </div>
           </div>
 
-          <div className="relative overflow-hidden rounded-2xl bg-[#04141f]/60 shadow-[0_32px_80px_-28px_rgba(2,8,20,0.45)] backdrop-blur-2xl">
+          <div className="self-reg-success-card relative overflow-hidden rounded-2xl bg-[#04141f]/60 shadow-[0_32px_80px_-28px_rgba(2,8,20,0.45)] backdrop-blur-2xl">
             <div className="relative z-10 p-8 text-center sm:p-10">
-              <div className="mx-auto grid h-20 w-20 place-items-center rounded-full bg-emerald-500/12 text-emerald-400">
+              <div className="self-reg-check-badge mx-auto grid h-20 w-20 place-items-center rounded-full bg-emerald-500/12 text-emerald-400">
                 <CheckCircle2 className="h-10 w-10" />
               </div>
 
@@ -167,11 +198,22 @@ export default function SelfRegisterPage() {
                 {success.status === "pre-registered" ? "You're pre-registered!" : "Your ticket has been issued"}
               </h1>
 
-              <div className="mt-6 inline-flex items-center gap-3 rounded-2xl border border-teal-200/12 bg-teal-100/[0.07] px-6 py-4">
+              <button
+                type="button"
+                onClick={handleCopyTicket}
+                title="Copy ticket code"
+                className="group mt-6 inline-flex items-center gap-3 rounded-2xl border border-teal-200/12 bg-teal-100/[0.07] px-6 py-4 transition-all hover:border-teal-200/25 hover:bg-teal-100/[0.11]"
+              >
                 <Ticket className="h-6 w-6 text-teal-300" />
                 <span className="font-display text-3xl font-bold tracking-wide text-teal-200">
                   {success.ticket}
                 </span>
+                <span className="grid h-8 w-8 place-items-center rounded-lg border border-white/10 bg-white/[0.05] text-slate-300 transition-colors group-hover:border-teal-300/30 group-hover:text-teal-200">
+                  {copied ? <Check className="h-4 w-4 text-emerald-300" /> : <Copy className="h-4 w-4" />}
+                </span>
+              </button>
+              <div className="mt-2 h-4 text-[0.65rem] font-semibold uppercase tracking-[0.18em] text-emerald-300">
+                {copied ? "Copied to clipboard" : "Tap to copy"}
               </div>
 
               <p className="mt-5 max-w-md mx-auto text-sm leading-6 text-slate-400">
@@ -222,6 +264,7 @@ export default function SelfRegisterPage() {
                     setSuccess(null);
                     setForm(INITIAL_FORM);
                     setHandoffState("");
+                    setCopied(false);
                   }}
                   className="inline-flex h-12 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-6 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08]"
                 >
@@ -292,7 +335,8 @@ export default function SelfRegisterPage() {
             {/* Form */}
             <form className="space-y-5 px-6 py-7 sm:px-8" onSubmit={handleSubmit}>
               {error ? (
-                <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-300">
+                <div className="flex items-center gap-2.5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-300">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
                   {error}
                 </div>
               ) : null}
@@ -445,6 +489,14 @@ export default function SelfRegisterPage() {
                 >
                   <Clock3 className="h-3.5 w-3.5" />
                   View queue board
+                </Link>
+                <span className="text-white/20">|</span>
+                <Link
+                  to="/"
+                  className="inline-flex items-center gap-1.5 font-medium text-teal-300 hover:text-teal-200"
+                >
+                  <House className="h-3.5 w-3.5" />
+                  Home
                 </Link>
               </div>
             </form>
