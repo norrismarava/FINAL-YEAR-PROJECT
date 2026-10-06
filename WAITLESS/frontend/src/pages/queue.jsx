@@ -30,6 +30,40 @@ import waitlessLogoIcon from "@/assets/waitless-logo-icon.png";
 
 const isBrowser = typeof window !== "undefined";
 
+/* ── Health education carousel content ───────────────────────── */
+const HEALTH_TIPS = [
+  {
+    title: "Hand Hygiene",
+    content: "Wash your hands with soap and water for at least 20 seconds, especially before eating and after using the restroom.",
+    icon: "🧼",
+  },
+  {
+    title: "Stay Hydrated",
+    content: "Drink plenty of water throughout the day. Proper hydration helps your body function optimally.",
+    icon: "💧",
+  },
+  {
+    title: "Mental Health",
+    content: "Take breaks when needed. Your mental well-being is just as important as your physical health.",
+    icon: "🧠",
+  },
+  {
+    title: "Vaccination",
+    content: "Keep your vaccinations up to date. Vaccines protect you and those around you from preventable diseases.",
+    icon: "💉",
+  },
+  {
+    title: "Healthy Eating",
+    content: "Include fruits and vegetables in your daily diet. A balanced diet supports overall health.",
+    icon: "🥗",
+  },
+  {
+    title: "Physical Activity",
+    content: "Aim for at least 30 minutes of moderate exercise daily. Walking, stretching, and light activities count.",
+    icon: "🏃",
+  },
+];
+
 /* ── Live-connection status badge config ────────────────────── */
 const LIVE_STATUS_META = {
   connected: {
@@ -95,6 +129,7 @@ function ordinal(n) {
    ================================================================ */
 export default function QueuePage() {
   const [now, setNow] = useState(new Date());
+  const [currentTipIndex, setCurrentTipIndex] = useState(0);
   const realtime = useQueueRealtime();
   const audio = useAudioCall();
   const lastProcessedEventRef = useRef(null);
@@ -104,6 +139,13 @@ export default function QueuePage() {
 
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setCurrentTipIndex((prev) => (prev + 1) % HEALTH_TIPS.length);
+    }, 8000);
     return () => clearInterval(id);
   }, []);
 
@@ -269,8 +311,41 @@ export default function QueuePage() {
           </div>
         </header>
 
+        {/* ─── HEALTH EDUCATION CAROUSEL ─────────────────────── */}
+        <div className="mt-6 page-section-rise page-section-rise-delay-1 mx-5 rounded-2xl border border-teal-500/20 bg-[linear-gradient(135deg,rgba(20,184,166,0.08),rgba(13,148,136,0.05)_50%,rgba(6,78,59,0.04))] px-6 py-5 sm:mx-8 sm:px-8">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 text-[0.7rem] font-bold uppercase tracking-[0.24em] text-teal-300">
+                <span className="text-xl">{HEALTH_TIPS[currentTipIndex].icon}</span>
+                Health tip
+              </div>
+              <h3 className="mt-2 font-display text-xl font-bold tracking-tight text-white sm:text-2xl">
+                {HEALTH_TIPS[currentTipIndex].title}
+              </h3>
+              <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-300 sm:text-base">
+                {HEALTH_TIPS[currentTipIndex].content}
+              </p>
+            </div>
+            <div className="flex gap-1">
+              {HEALTH_TIPS.map((_, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => setCurrentTipIndex(index)}
+                  className={`h-1.5 w-1.5 rounded-full transition-all ${
+                    index === currentTipIndex
+                      ? "bg-teal-400 w-6"
+                      : "bg-white/20 hover:bg-white/40"
+                  }`}
+                  aria-label={`Show health tip ${index + 1}`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* ─── NOW SERVING SECTION ──────────────────────── */}
-        <div className="mt-6 page-section-rise page-section-rise-delay-1 px-5 sm:px-8">
+        <div className="mt-6 page-section-rise page-section-rise-delay-2 px-5 sm:px-8">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div>
               <div className="text-[0.7rem] font-bold uppercase tracking-[0.24em] text-teal-300">Now serving</div>

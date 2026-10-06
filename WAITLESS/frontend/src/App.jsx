@@ -18,6 +18,8 @@ const SelfRegisterPage = lazy(() => import("@/pages/self-register"));
 const KioskPage = lazy(() => import("@/pages/kiosk"));
 const PatientRegisterPage = lazy(() => import("@/pages/patient-register"));
 const PatientLoginPage = lazy(() => import("@/pages/patient-login"));
+const PatientForgotPasswordPage = lazy(() => import("@/pages/patient-forgot-password"));
+const PatientResetPasswordPage = lazy(() => import("@/pages/patient-reset-password"));
 const PatientDashboardPage = lazy(() => import("@/pages/patient-dashboard"));
 const PatientProfilePage = lazy(() => import("@/pages/patient-profile"));
 const PatientSettingsPage = lazy(() => import("@/pages/patient-settings"));
@@ -64,6 +66,8 @@ export default function App() {
         <Route path="kiosk" element={<KioskPage />} />
         <Route path="patient/register" element={<PatientRegisterPage />} />
         <Route path="patient/login" element={<PatientLoginPage />} />
+        <Route path="patient/forgot-password" element={<PatientForgotPasswordPage />} />
+        <Route path="patient/reset-password" element={<PatientResetPasswordPage />} />
         <Route path="patient" element={<PatientPortalLayout />}>
           <Route index element={<PatientDashboardPage />} />
           <Route path="dashboard" element={<PatientDashboardPage />} />

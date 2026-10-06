@@ -1094,6 +1094,7 @@ function StatusSummaryCard({ queue, summary, latestStatusTimestamp, ticket }) {
         : "Done";
   const waitValue =
     ticket.status === "waiting" ? `${queue.estimatedWaitMinutes}m` : "Now";
+  const isCalled = ticket.status === "called" || ticket.status === "in-service";
 
   return (
     <PortalCard icon={Clock3} eyebrow="Status summary" title="Current ticket lane">
@@ -1106,7 +1107,11 @@ function StatusSummaryCard({ queue, summary, latestStatusTimestamp, ticket }) {
 
       <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <SummaryMiniCard label="Ahead" value={`${queue.patientsAhead}`} />
-        <SummaryMiniCard label="Position" value={positionValue} />
+        <SummaryMiniCard
+          label="Position"
+          value={positionValue}
+          isCalled={isCalled}
+        />
         <SummaryMiniCard label="Est. wait" value={waitValue} />
         <SummaryMiniCard
           label="Updated"
@@ -1386,18 +1391,25 @@ function ActiveNowCard({ activeEntries, queue, ticket }) {
   );
 }
 
-function SummaryMiniCard({ label, value, centered = false }) {
+function SummaryMiniCard({ label, value, centered = false, isCalled = false }) {
   return (
     <div
       className={`rounded-[1.1rem] border border-white/10 bg-white/[0.04] px-4 py-4 ${
         centered ? "text-center" : ""
-      }`}
+      } ${isCalled ? "relative overflow-hidden" : ""}`}
     >
-      <div className="text-[0.72rem] font-semibold uppercase tracking-[0.26em] text-slate-400">
-        {label}
-      </div>
-      <div className="mt-2 font-display text-[2.15rem] font-bold leading-none tracking-tight text-white">
-        {value}
+      {isCalled && (
+        <div className="absolute inset-0 animate-pulse bg-emerald-500/20" />
+      )}
+      <div className="relative">
+        <div className="text-[0.72rem] font-semibold uppercase tracking-[0.26em] text-slate-400">
+          {label}
+        </div>
+        <div className={`mt-2 font-display text-[2.15rem] font-bold leading-none tracking-tight ${
+          isCalled ? "text-emerald-300" : "text-white"
+        }`}>
+          {value}
+        </div>
       </div>
     </div>
   );

@@ -52,6 +52,9 @@ coverage/
 .cache/
 .parcel-cache/
 .temp/
+.complete-build/
+__pycache__/
+*.pyc
 .vite/
 .npm
 .eslintcache

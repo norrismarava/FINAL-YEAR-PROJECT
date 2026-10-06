@@ -46,6 +46,7 @@ import ChatbotWidget from "@/components/ChatbotWidget";
 import OfflineIndicator from "@/components/OfflineIndicator";
 import { LoadingPanel } from "@/components/ui/system-loader";
 import { RouteLoadingBar } from "@/components/RouteLoadingBar";
+import { useQueueRealtime } from "@/sockets/QueueRealtimeProvider";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -429,6 +430,7 @@ function Header() {
   const auth = useAuth();
   const patientAuth = usePatientAuth();
   const location = useLocation();
+  const realtime = useQueueRealtime();
   const isHomeRoute = location.pathname === "/";
   const isAuthRoute = isAuthPath(location.pathname);
   const isWorkspaceRoute = isStaffWorkspacePath(location.pathname);
@@ -450,6 +452,15 @@ function Header() {
       ? { to: "/patient/dashboard", label: "My dashboard" }
       : { to: "/patient/register", label: "Get started" };
   const visibleNavItems = navItems.filter((item) => !item.roles || auth.hasRole(item.roles));
+
+  const connectionMeta = {
+    connected: { label: "Live", className: "bg-emerald-500/12 text-emerald-300 border-emerald-500/30" },
+    connecting: { label: "Connecting", className: "bg-slate-500/12 text-slate-300 border-slate-500/30" },
+    reconnecting: { label: "Reconnecting", className: "bg-amber-500/12 text-amber-300 border-amber-500/30" },
+    polling: { label: "Polling", className: "bg-slate-500/12 text-slate-300 border-slate-500/30" },
+    closed: { label: "Offline", className: "bg-rose-500/12 text-rose-300 border-rose-500/30" },
+  };
+  const connStatus = connectionMeta[realtime.status] ?? connectionMeta.connecting;
 
   return (
     <header
@@ -504,6 +515,14 @@ function Header() {
                   }
                 />
               </Link>
+
+              <span
+                className={`hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.18em] lg:flex ${connStatus.className}`}
+                aria-live="polite"
+              >
+                <span className={`h-1.5 w-1.5 rounded-full ${realtime.status === "connected" ? "bg-emerald-400 animate-pulse" : "bg-current"}`} />
+                {connStatus.label}
+              </span>
 
               {isStaffWorkspaceTheme ? (
                 <div className="hidden items-center gap-3 text-slate-100 lg:flex">

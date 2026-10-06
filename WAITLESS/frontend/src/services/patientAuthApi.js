@@ -18,6 +18,20 @@ export async function fetchCurrentPatient() {
   return apiRequest("/api/patient/auth/me");
 }
 
+export async function requestPatientPasswordReset(identifier) {
+  return apiRequest("/api/patient/auth/forgot-password", {
+    method: "POST",
+    body: { identifier },
+  });
+}
+
+export async function resetPatientPassword(payload) {
+  return apiRequest("/api/patient/auth/reset-password", {
+    method: "POST",
+    body: payload,
+  });
+}
+
 export async function fetchPatientTickets() {
   const response = await apiRequest("/api/patient/tickets");
   return response.tickets;

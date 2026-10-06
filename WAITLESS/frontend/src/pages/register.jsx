@@ -680,18 +680,23 @@ export default function RegisterPage() {
               />
             </Field>
 
-            <Field label="Department">
-              <select
-                value={form.dept}
-                onChange={(event) => setForm({ ...form, dept: event.target.value })}
-                className="input-base"
-              >
+            <Field label="Department" full>
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
                 {departments.map((department) => (
-                  <option key={department} value={department}>
+                  <button
+                    key={department}
+                    type="button"
+                    onClick={() => setForm({ ...form, dept: department })}
+                    className={`rounded-xl border px-4 py-3 text-sm font-semibold transition-all ${
+                      form.dept === department
+                        ? "border-primary bg-primary-soft text-primary shadow-sm"
+                        : "border-border bg-background text-foreground hover:border-primary/50 hover:bg-primary-soft/50"
+                    }`}
+                  >
                     {department}
-                  </option>
+                  </button>
                 ))}
-              </select>
+              </div>
             </Field>
 
             <Field label="Chief complaint" full>

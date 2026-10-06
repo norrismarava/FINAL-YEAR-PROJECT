@@ -135,7 +135,7 @@ export default function PatientLoginPage() {
             {t("login.rememberMe")}
           </label>
           <Link
-            to="/admin/forgot-password"
+            to="/patient/forgot-password"
             className="text-sm font-medium text-teal-300 hover:text-teal-200"
           >
             {t("login.forgotPassword")}
