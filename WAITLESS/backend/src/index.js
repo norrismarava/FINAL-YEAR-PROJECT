@@ -18,6 +18,8 @@ import {
   patientTicketsController,
   patientUpdateProfileController,
   patientChangePasswordController,
+  patientForgotPasswordController,
+  patientResetPasswordController,
 } from "./controllers/patientAuthController.js";
 
 import {
@@ -139,6 +141,8 @@ import {
 } from "./controllers/appointmentController.js";
 import { withStaffAuth, withPatientAuth } from "./middleware/auth.js";
 import { applyCors } from "./middleware/cors.js";
+import { withChatbotRateLimit } from "./middleware/chatbotRateLimit.js";
+import { withRateLimit } from "./middleware/requestRateLimit.js";
 import { initializeQueueRepository } from "./repositories/queueRepository.js";
 import { initializeNotificationDeliveryService } from "./services/notificationService.js";
 import { seedDefaultAdmin } from "./db/seedAdmin.js";
@@ -147,15 +151,40 @@ import { createRouter } from "./utils/router.js";
 
 const router = createRouter();
 
+const loginRateLimit = (handler) =>
+  withRateLimit(handler, {
+    windowMs: 15 * 60_000,
+    maxRequests: 20,
+    message: "Too many login attempts. Please wait 15 minutes and try again.",
+  });
+const registrationRateLimit = (handler) =>
+  withRateLimit(handler, {
+    windowMs: 15 * 60_000,
+    maxRequests: 10,
+    message: "Too many registration attempts. Please wait and try again.",
+  });
+const passwordResetRateLimit = (handler) =>
+  withRateLimit(handler, {
+    windowMs: 15 * 60_000,
+    maxRequests: 5,
+    message: "Too many password reset requests. Please wait and try again.",
+  });
+const publicQueueRateLimit = (handler) =>
+  withRateLimit(handler, {
+    windowMs: 60_000,
+    maxRequests: 60,
+    message: "Too many queue requests. Please wait a moment and try again.",
+  });
+
 router.register("GET", "/api/health", healthController);
-router.register("POST", "/api/auth/login", loginController);
+router.register("POST", "/api/auth/login", loginRateLimit(loginController));
 router.register("GET", "/api/auth/me", getMeController);
 router.register("POST", "/api/profile", saveProfileController);
 router.register("POST", "/api/profile/avatar", saveAvatarController);
 router.register("GET", "/api/profile/avatar/:userId", getAvatarController);
 
-router.register("POST", "/api/auth/forgot-password", forgotPasswordController);
-router.register("POST", "/api/auth/reset-password", resetPasswordController);
+router.register("POST", "/api/auth/forgot-password", passwordResetRateLimit(forgotPasswordController));
+router.register("POST", "/api/auth/reset-password", passwordResetRateLimit(resetPasswordController));
 router.register(
   "POST",
   "/api/auth/staff-register",
@@ -170,10 +199,20 @@ router.register(
 router.register(
   "POST",
   "/api/patient/auth/register",
-  patientRegisterController,
+  registrationRateLimit(patientRegisterController),
 );
-router.register("POST", "/api/patient/auth/login", patientLoginController);
+router.register("POST", "/api/patient/auth/login", loginRateLimit(patientLoginController));
 router.register("GET", "/api/patient/auth/me", patientMeController);
+router.register(
+  "POST",
+  "/api/patient/auth/forgot-password",
+  passwordResetRateLimit(patientForgotPasswordController),
+);
+router.register(
+  "POST",
+  "/api/patient/auth/reset-password",
+  passwordResetRateLimit(patientResetPasswordController),
+);
 router.register("GET", "/api/patient/tickets", patientTicketsController);
 router.register(
   "GET",
@@ -201,10 +240,10 @@ router.register(
   "/api/tickets/register",
   withStaffAuth(["reception"], registerController),
 );
-router.register("POST", "/api/tickets/self-register", selfRegisterController);
-router.register("POST", "/api/tickets/pre-register", preRegisterController);
-router.register("POST", "/api/kiosk/lookup", kioskLookupController);
-router.register("POST", "/api/kiosk/check-in", kioskCheckInController);
+router.register("POST", "/api/tickets/self-register", registrationRateLimit(selfRegisterController));
+router.register("POST", "/api/tickets/pre-register", publicQueueRateLimit(preRegisterController));
+router.register("POST", "/api/kiosk/lookup", publicQueueRateLimit(kioskLookupController));
+router.register("POST", "/api/kiosk/check-in", publicQueueRateLimit(kioskCheckInController));
 router.register(
   "POST",
   "/api/tickets/:id/confirm-arrival",
@@ -445,7 +484,7 @@ router.register(
   "/api/ai/bottlenecks",
   withStaffAuth(["triage", "clinician", "admin"], bottleneckAnalysisController),
 );
-router.register("POST", "/api/ai/chatbot", chatbotController);
+router.register("POST", "/api/ai/chatbot", withChatbotRateLimit(chatbotController));
 
 router.register(
   "GET",

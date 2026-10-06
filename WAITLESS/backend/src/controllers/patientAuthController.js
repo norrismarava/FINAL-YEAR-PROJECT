@@ -5,6 +5,8 @@ import {
   requirePatientSession,
   updatePatientProfile,
   changePatientPassword,
+  requestPatientPasswordReset,
+  resetPatientPassword,
 } from "../services/patientAuthService.js";
 import { getTickets } from "../services/queueService.js";
 import {
@@ -324,6 +326,29 @@ export async function patientUpdateProfileController({ req, body }) {
   return {
     status: 200,
     body: session,
+  };
+}
+
+export async function patientForgotPasswordController({ body }) {
+  const result = await requestPatientPasswordReset({
+    identifier: body?.identifier ?? body?.email ?? body?.username,
+  });
+
+  return {
+    status: 200,
+    body: result,
+  };
+}
+
+export async function patientResetPasswordController({ body }) {
+  const result = await resetPatientPassword({
+    token: body?.token,
+    password: body?.password,
+  });
+
+  return {
+    status: 200,
+    body: result,
   };
 }
 

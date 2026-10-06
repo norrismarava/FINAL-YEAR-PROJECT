@@ -12,6 +12,7 @@ import { HttpError } from "../utils/http.js";
 import * as fileStaff from "./fileStaffStore.js";
 
 const useFileStaff = env.databaseProvider === "file";
+const useDatabase = env.databaseProvider === "mysql";
 
 function publicStaffUserFromRow(user) {
   return {

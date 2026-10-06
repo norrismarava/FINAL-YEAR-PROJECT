@@ -1,5 +1,7 @@
 import { DEPARTMENTS } from "../modules/queue/queue.constants.js";
 import { listTickets, listPrescriptions, listTestOrders } from "../repositories/queueRepository.js";
+import { getTicketTracking } from "./queueService.js";
+import { HttpError } from "../utils/http.js";
 
 function enrichTicket(ticket) {
   const now = Date.now();
@@ -220,8 +222,124 @@ const CHATBOT_RESPONSES = [
   },
 ];
 
+const MAX_CHATBOT_MESSAGE_LENGTH = 500;
+const MAX_CHATBOT_CONTEXT_LENGTH = 80;
+const DEPARTMENT_ALIASES = [
+  ["OPD", ["opd", "outpatient"]],
+  ["Casualty / Triage", ["casualty", "triage", "emergency"]],
+  ["Pharmacy", ["pharmacy", "medicine", "medication"]],
+  ["Laboratory", ["laboratory", "lab"]],
+  ["Radiology", ["radiology", "x-ray", "xray", "scan", "imaging"]],
+  ["OI Clinic", ["oi clinic", "oi", "arv", "hiv clinic"]],
+];
+
+function normalizeTicketCode(ticketCode) {
+  return typeof ticketCode === "string" ? ticketCode.trim().toUpperCase() : "";
+}
+
+function extractTicketCode(message) {
+  const match = String(message ?? "")
+    .toUpperCase()
+    .match(/\b[A-Z]{1,6}(?:[-\s])\d{2,6}\b|\b[A-Z]{1,6}\d{2,6}\b/);
+
+  return match ? match[0].replace(/\s+/g, "-") : "";
+}
+
+function findDepartment(message, requestedDepartment) {
+  if (DEPARTMENTS.includes(requestedDepartment)) {
+    return requestedDepartment;
+  }
+
+  const lowerMessage = String(message ?? "").toLowerCase();
+  return DEPARTMENT_ALIASES.find(([, aliases]) =>
+    aliases.some((alias) => lowerMessage.includes(alias)),
+  )?.[0] ?? null;
+}
+
+function safeTicketTrackingData(tracking) {
+  const ticket = tracking.ticket;
+  const queue = tracking.queue ?? {};
+
+  return {
+    ticket: ticket.ticket,
+    department: ticket.department,
+    status: ticket.status,
+    queuePosition: queue.departmentPosition,
+    patientsAhead: queue.patientsAhead,
+    estimatedWaitMinutes: queue.estimatedWaitMinutes,
+    totalWaitingInDepartment: queue.totalWaitingInDepartment,
+    lastUpdatedAt: tracking.lastUpdatedAt,
+  };
+}
+
+function formatTicketStatus(status) {
+  return {
+    "pre-registered": "pre-registered",
+    waiting: "waiting",
+    called: "called",
+    "in-service": "in service",
+    missed: "missed",
+    completed: "completed",
+  }[status] ?? status;
+}
+
+async function respondWithTicketTracking(ticketCode) {
+  try {
+    const tracking = await getTicketTracking(ticketCode);
+    const data = safeTicketTrackingData(tracking);
+    const status = formatTicketStatus(data.status);
+
+    if (data.status === "waiting") {
+      return {
+        data,
+        response: `Ticket ${data.ticket} is ${status} in ${data.department}. It is currently position ${data.queuePosition}, with ${data.patientsAhead} patient${data.patientsAhead === 1 ? "" : "s"} ahead. The estimated wait is about ${data.estimatedWaitMinutes} minutes.`,
+      };
+    }
+
+    if (data.status === "missed") {
+      return {
+        data,
+        response: `Ticket ${data.ticket} was marked as missed in ${data.department}. Please speak to the reception or triage desk so staff can advise you about the next step.`,
+      };
+    }
+
+    if (data.status === "completed") {
+      return {
+        data,
+        response: `Ticket ${data.ticket} is completed. Your visit has been closed in the ${data.department} queue.`,
+      };
+    }
+
+    return {
+      data,
+      response: `Ticket ${data.ticket} is ${status} in ${data.department}. Please remain nearby and follow the instructions from the department staff.`,
+    };
+  } catch (error) {
+    if (error instanceof HttpError && error.status === 404) {
+      return {
+        data: null,
+        response: `I couldn't find ticket ${normalizeTicketCode(ticketCode)}. Please check the code printed on your ticket and try again.`,
+      };
+    }
+
+    throw error;
+  }
+}
+
 export async function processChatbotMessage(message, context = {}) {
-  const lowerMessage = (message ?? "").toLowerCase().trim();
+  if (message !== undefined && message !== null && typeof message !== "string") {
+    throw new HttpError(400, "message must be a string.");
+  }
+
+  const normalizedMessage = (message ?? "").trim();
+  if (normalizedMessage.length > MAX_CHATBOT_MESSAGE_LENGTH) {
+    throw new HttpError(
+      400,
+      `Please keep chatbot messages under ${MAX_CHATBOT_MESSAGE_LENGTH} characters.`,
+    );
+  }
+
+  const lowerMessage = normalizedMessage.toLowerCase();
 
   if (!lowerMessage) {
     return {
@@ -230,15 +348,55 @@ export async function processChatbotMessage(message, context = {}) {
     };
   }
 
+  const requestedTicketCode = normalizeTicketCode(context?.ticketCode);
+  if (requestedTicketCode.length > MAX_CHATBOT_CONTEXT_LENGTH) {
+    throw new HttpError(400, "Please provide a valid ticket code.");
+  }
+
+  const ticketCode = requestedTicketCode || extractTicketCode(normalizedMessage);
+  const department = findDepartment(normalizedMessage, context?.department);
+
   for (const entry of CHATBOT_RESPONSES) {
     const matched = entry.keywords.some((kw) => lowerMessage.includes(kw));
     if (matched) {
       const intent = entry.keywords[0];
+
+      if ((intent === "wait" || intent === "ticket") && ticketCode) {
+        const tracking = await respondWithTicketTracking(ticketCode);
+        return {
+          ...tracking,
+          intent: intent === "wait" ? "wait" : "track",
+        };
+      }
+
+      if (intent === "wait" && department) {
+        const prediction = await getWaitTimePrediction(department);
+        return {
+          response: `The current estimate for ${department} is about ${prediction.predictedWaitMinutes} minutes, with ${prediction.patientsAhead} patient${prediction.patientsAhead === 1 ? "" : "s"} waiting or in service. Confidence is ${prediction.confidence}.`,
+          intent,
+          data: {
+            department: prediction.department,
+            patientsAhead: prediction.patientsAhead,
+            predictedWaitMinutes: prediction.predictedWaitMinutes,
+            confidence: prediction.confidence,
+            lastUpdatedAt: prediction.lastUpdatedAt,
+          },
+        };
+      }
+
       return {
-        response: entry.respond(context),
+        response: entry.respond({ ...context, department }),
         intent,
       };
     }
+  }
+
+  if (ticketCode) {
+    const tracking = await respondWithTicketTracking(ticketCode);
+    return {
+      ...tracking,
+      intent: "track",
+    };
   }
 
   return {

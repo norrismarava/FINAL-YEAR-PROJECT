@@ -10,6 +10,7 @@ import * as filePatient from "./filePatientStore.js";
 const useFile = env.databaseProvider === "file";
 
 const patientSessions = new Map();
+const patientPasswordResetTokens = new Map();
 
 function normalizeEmail(email) {
   return email?.trim().toLowerCase() ?? "";
@@ -204,6 +205,72 @@ export async function loginPatient({ identifier, password }) {
   );
 
   return createPatientSession(user);
+}
+
+export async function requestPatientPasswordReset({ identifier }) {
+  const normalized = normalizeEmail(identifier);
+
+  let user = null;
+  if (useFile) {
+    user = await filePatient.findPatientUserByUsername(normalized);
+  } else {
+    const pool = getPool();
+    const [rows] = await pool.execute(
+      "SELECT id FROM patient_users WHERE username = ? OR email = ? LIMIT 1",
+      [normalized, normalized],
+    );
+    user = rows[0] ?? null;
+  }
+
+  if (user) {
+    const token = crypto.randomBytes(32).toString("hex");
+    const expiresAt = new Date(Date.now() + 3600000).toISOString();
+
+    patientPasswordResetTokens.set(token, {
+      userId: user.id,
+      expiresAt,
+    });
+
+    console.log(
+      `Patient password reset link for ${normalized}: http://localhost:3000/patient/reset-password?token=${token}`,
+    );
+  }
+
+  return {
+    message:
+      "If an account with these details exists, a password reset link has been sent.",
+  };
+}
+
+export async function resetPatientPassword({ token, password }) {
+  const resetData = patientPasswordResetTokens.get(token);
+
+  if (!resetData || new Date(resetData.expiresAt).getTime() < Date.now()) {
+    patientPasswordResetTokens.delete(token);
+    throw new HttpError(400, "Invalid or expired reset token.");
+  }
+
+  if (!password || password.length < 6) {
+    throw new HttpError(400, "Password must be at least 6 characters.");
+  }
+
+  if (useFile) {
+    await filePatient.updatePatientPasswordRecord(resetData.userId, password);
+  } else {
+    const pool = getPool();
+    const passwordHash = await bcrypt.hash(password, 10);
+    const [result] = await pool.execute(
+      "UPDATE patient_users SET password_hash = ? WHERE id = ?",
+      [passwordHash, resetData.userId],
+    );
+    if (result.affectedRows === 0) {
+      throw new HttpError(400, "User not found.");
+    }
+  }
+
+  patientPasswordResetTokens.delete(token);
+
+  return { message: "Password reset successfully" };
 }
 
 export function getPatientSessionFromRequest(req) {
