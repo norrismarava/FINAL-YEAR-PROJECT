@@ -7,7 +7,10 @@ import {
   loginController,
   meController,
   resetPasswordController,
+  staffAccessCodeCreateController,
+  staffAccessCodeListController,
   staffRegisterController,
+  staffSelfRegisterController,
 } from "./controllers/authController.js";
 import { auditEventsController } from "./controllers/auditController.js";
 import {
@@ -189,6 +192,21 @@ router.register(
   "POST",
   "/api/auth/staff-register",
   withStaffAuth(["admin"], staffRegisterController),
+);
+router.register(
+  "POST",
+  "/api/auth/staff-self-register",
+  registrationRateLimit(staffSelfRegisterController),
+);
+router.register(
+  "POST",
+  "/api/auth/staff-access-codes",
+  withStaffAuth(["admin"], staffAccessCodeCreateController),
+);
+router.register(
+  "GET",
+  "/api/auth/staff-access-codes",
+  withStaffAuth(["admin"], staffAccessCodeListController),
 );
 router.register(
   "GET",

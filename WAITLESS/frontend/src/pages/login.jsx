@@ -62,7 +62,14 @@ export default function LoginPage() {
       eyebrow="Staff access"
       title="Welcome back"
       subtitle="Sign in to the hospital operations console and continue managing live patient flow."
-      footer="Staff accounts are created by an authorised administrator."
+      footer={
+        <span>
+          New staff member?{" "}
+          <Link to="/admin/staff-signup" className="font-semibold text-cyan-100 hover:text-white">
+            Register with your access code
+          </Link>
+        </span>
+      }
     >
       <form className="space-y-5" onSubmit={handleSubmit}>
         <AuthError icon={AlertCircle} message={error} />

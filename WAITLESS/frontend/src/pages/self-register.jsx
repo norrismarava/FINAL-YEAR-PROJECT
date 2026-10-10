@@ -25,6 +25,7 @@ import QRCode from "qrcode";
 import authBackground from "@/assets/BACKG.png";
 import waitlessLogoIcon from "@/assets/waitless-logo-icon.png";
 import { DEPARTMENTS } from "@/services/queueMeta";
+import GlowToggle from "@/components/GlowToggle";
 import { selfRegisterPatient, preRegisterPatient } from "@/services/queueApi";
 import { useLiveRefresh } from "@/context/LiveRefreshContext";
 import {
@@ -51,8 +52,13 @@ const SUCCESS_STYLES = `
     62% { transform: scale(1.14) rotate(4deg); }
     100% { transform: scale(1) rotate(0deg); }
   }
+  @keyframes self-reg-enter {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
   .self-reg-success-card { animation: self-reg-pop 0.55s cubic-bezier(0.16, 1, 0.3, 1) both; }
   .self-reg-check-badge { animation: self-reg-check 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both; }
+  .self-reg-enter { animation: self-reg-enter 0.65s cubic-bezier(0.16, 1, 0.3, 1) both; }
 `;
 
 export default function SelfRegisterPage() {
@@ -175,17 +181,20 @@ export default function SelfRegisterPage() {
         <div className="pointer-events-none absolute inset-0 -z-10 hidden opacity-[0.05] lg:block [background-image:linear-gradient(rgba(148,163,184,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.4)_1px,transparent_1px)] [background-size:82px_82px]" />
         <div className="absolute inset-0 -z-10 bg-[#04141f] lg:hidden" />
 
-        <div className="relative mx-auto flex w-full max-w-[24rem] flex-col pb-8">
+        <div className="relative mx-auto flex w-full max-w-lg flex-col pb-8">
+          {/* ambient glow behind the card */}
+          <div className="pointer-events-none absolute -inset-x-10 top-24 -z-10 h-96 rounded-full bg-teal-400/[0.08] blur-[80px]" />
+
           {/* Logo header */}
-          <div className="mb-4 flex items-center justify-center gap-3">
-            <img src={waitlessLogoIcon} alt="WaitLess" className="h-9 w-9 rounded-lg object-contain" />
+          <div className="self-reg-enter mb-4 flex items-center justify-center gap-3">
+            <img src={waitlessLogoIcon} alt="WaitLess" className="h-9 w-9 rounded-lg object-contain drop-shadow-[0_0_14px_rgba(45,212,191,0.4)]" />
             <div className="text-center">
-              <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-teal-400">Self-service</div>
+              <div className="bg-gradient-to-r from-teal-300 to-cyan-300 bg-clip-text text-[10px] font-black uppercase tracking-[0.26em] text-transparent">Self-service</div>
               <div className="text-xs font-medium text-white/70">Smarter Queues, Better Care</div>
             </div>
           </div>
 
-          <div className="self-reg-success-card relative overflow-hidden rounded-2xl bg-[#04141f]/60 shadow-[0_32px_80px_-28px_rgba(2,8,20,0.45)] backdrop-blur-2xl">
+          <div className="self-reg-success-card relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#04141f]/60 shadow-[0_32px_80px_-28px_rgba(2,8,20,0.45)] ring-1 ring-inset ring-teal-400/[0.08] backdrop-blur-2xl">
             <div className="relative z-10 p-6 text-center sm:p-8">
               <div className="self-reg-check-badge mx-auto grid h-16 w-16 place-items-center rounded-full bg-emerald-500/12 text-emerald-400">
                 <CheckCircle2 className="h-8 w-8" />
@@ -301,17 +310,20 @@ export default function SelfRegisterPage() {
       <div className="pointer-events-none absolute inset-0 -z-10 hidden opacity-[0.05] lg:block [background-image:linear-gradient(rgba(148,163,184,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.4)_1px,transparent_1px)] [background-size:82px_82px]" />
       <div className="absolute inset-0 -z-10 bg-[#04141f] lg:hidden" />
 
-      <div className="relative mx-auto flex w-full max-w-[24rem] flex-col pb-8">
+      <div className="relative mx-auto flex w-full max-w-lg flex-col pb-8">
+        {/* ambient glow behind the card */}
+        <div className="pointer-events-none absolute -inset-x-10 top-24 -z-10 h-96 rounded-full bg-teal-400/[0.08] blur-[80px]" />
+
         {/* Logo header */}
-        <div className="mb-4 flex items-center justify-center gap-3">
-          <img src={waitlessLogoIcon} alt="WaitLess" className="h-9 w-9 rounded-lg object-contain" />
+        <div className="self-reg-enter mb-4 flex items-center justify-center gap-3">
+          <img src={waitlessLogoIcon} alt="WaitLess" className="h-9 w-9 rounded-lg object-contain drop-shadow-[0_0_14px_rgba(45,212,191,0.4)]" />
           <div className="text-center">
-            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-teal-400">Self-service</div>
+            <div className="bg-gradient-to-r from-teal-300 to-cyan-300 bg-clip-text text-[10px] font-black uppercase tracking-[0.26em] text-transparent">Self-service</div>
             <div className="text-xs font-medium text-white/70">Smarter Queues, Better Care</div>
           </div>
         </div>
 
-        <div className="relative overflow-hidden rounded-2xl bg-[#04141f]/60 shadow-[0_32px_80px_-28px_rgba(2,8,20,0.45)] backdrop-blur-2xl">
+        <div className="self-reg-enter relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#04141f]/60 shadow-[0_32px_80px_-28px_rgba(2,8,20,0.45)] ring-1 ring-inset ring-teal-400/[0.08] backdrop-blur-2xl" style={{ animationDelay: "0.12s" }}>
           <div className="relative z-10">
             {/* Header */}
             <div className="border-b border-white/10 bg-[linear-gradient(135deg,rgba(4,20,31,0.82)_0%,rgba(6,42,53,0.72)_48%,rgba(10,31,46,0.78)_100%)] px-5 py-4 sm:px-6">
@@ -330,6 +342,13 @@ export default function SelfRegisterPage() {
                 Fill in your details to get a ticket number. You'll see your live
                 queue position and receive updates on your phone.
               </p>
+              <div className="mt-3.5 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35">
+                <span className="inline-flex items-center gap-1.5"><span className="grid h-4 w-4 place-items-center rounded-full bg-teal-400/15 text-[9px] font-bold text-teal-300">1</span>Your details</span>
+                <span className="h-px flex-1 bg-white/10" />
+                <span className="inline-flex items-center gap-1.5"><span className="grid h-4 w-4 place-items-center rounded-full bg-teal-400/15 text-[9px] font-bold text-teal-300">2</span>Get ticket</span>
+                <span className="h-px flex-1 bg-white/10" />
+                <span className="inline-flex items-center gap-1.5"><span className="grid h-4 w-4 place-items-center rounded-full bg-teal-400/15 text-[9px] font-bold text-teal-300">3</span>Get notified</span>
+              </div>
             </div>
 
             {/* Form */}
@@ -341,44 +360,44 @@ export default function SelfRegisterPage() {
                 </div>
               ) : null}
 
-              {/* Full name */}
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-white">
-                  Full name <span className="text-red-400">*</span>
-                </label>
-                <div className="relative">
-                  <UserRound className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    value={form.fullName}
-                    onChange={(e) => updateField("fullName", e.target.value)}
-                    placeholder="e.g. Tendai Mukamuri"
-                    className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
-                    required
-                  />
+              {/* Full name + phone */}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-white">
+                    Full name <span className="text-red-400">*</span>
+                  </label>
+                  <div className="relative">
+                    <UserRound className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      value={form.fullName}
+                      onChange={(e) => updateField("fullName", e.target.value)}
+                      placeholder="e.g. Tendai Mukamuri"
+                      className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
+                      required
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-white">
+                    Phone number <span className="text-red-400">*</span>
+                  </label>
+                  <div className="relative">
+                    <PhoneCall className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="tel"
+                      value={form.phone}
+                      onChange={(e) => updateField("phone", e.target.value)}
+                      placeholder="e.g. 077 123 4567"
+                      className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
+                      required
+                    />
+                  </div>
                 </div>
               </div>
-
-              {/* Phone */}
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-white">
-                  Phone number <span className="text-red-400">*</span>
-                </label>
-                <div className="relative">
-                  <PhoneCall className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="tel"
-                    value={form.phone}
-                    onChange={(e) => updateField("phone", e.target.value)}
-                    placeholder="e.g. 077 123 4567"
-                    className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
-                    required
-                  />
-                </div>
-                <p className="mt-1.5 text-xs text-slate-500">
-                  Used for WhatsApp queue notifications.
-                </p>
-              </div>
+              <p className="-mt-1 text-xs text-slate-500">
+                Phone number is used for WhatsApp queue notifications.
+              </p>
 
               {/* Department */}
               <div>
@@ -413,18 +432,8 @@ export default function SelfRegisterPage() {
               </div>
 
               {/* Notification consent */}
-              <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
-                <input
-                  type="checkbox"
-                  id="notificationConsent"
-                  checked={form.notificationConsent}
-                  onChange={(e) => {
-                    updateField("notificationConsent", e.target.checked);
-                    updateField("whatsApp", e.target.checked);
-                  }}
-                  className="mt-0.5 h-4 w-4 rounded border-white/20 text-teal-500 focus:ring-teal-400/20"
-                />
-                <label htmlFor="notificationConsent" className="text-sm leading-5 text-slate-200">
+              <div className="flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3.5">
+                <div className="text-sm leading-5 text-slate-200">
                   <span className="flex items-center gap-1.5 font-semibold">
                     <MessageCircle className="h-3.5 w-3.5 text-teal-300" />
                     Send me WhatsApp updates
@@ -432,43 +441,53 @@ export default function SelfRegisterPage() {
                   <span className="mt-0.5 block text-xs text-slate-500">
                     Get notified when it's almost your turn.
                   </span>
-                </label>
+                </div>
+                <GlowToggle
+                  id="notificationConsent"
+                  label="Send me WhatsApp updates"
+                  checked={form.notificationConsent}
+                  onChange={(on) => {
+                    updateField("notificationConsent", on);
+                    updateField("whatsApp", on);
+                  }}
+                />
               </div>
 
-              {/* Submit */}
-              <button
-                type="submit"
-                disabled={submitting}
-                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-6 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(13,148,136,0.5)] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {submitting ? (
-                  <>
+              {/* Actions */}
+              <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-6 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(13,148,136,0.5)] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {submitting ? (
+                    <>
+                      <LoaderCircle className="h-4 w-4 animate-spin" />
+                      Issuing your ticket...
+                    </>
+                  ) : (
+                    <>
+                      Get my ticket
+                      <ArrowRight className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePreRegister}
+                  disabled={submitting}
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-5 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {submitting ? (
                     <LoaderCircle className="h-4 w-4 animate-spin" />
-                    Issuing your ticket...
-                  </>
-                ) : (
-                  <>
-                    Get my ticket
-                    <ArrowRight className="h-4 w-4" />
-                  </>
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={handlePreRegister}
-                disabled={submitting}
-                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-6 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {submitting ? (
-                  <LoaderCircle className="h-4 w-4 animate-spin" />
-                ) : (
-                  <>
-                    Pre-register for later
-                    <Clock3 className="h-4 w-4" />
-                  </>
-                )}
-              </button>
+                  ) : (
+                    <>
+                      Pre-register
+                      <Clock3 className="h-4 w-4" />
+                    </>
+                  )}
+                </button>
+              </div>
 
               <p className="text-center text-xs text-slate-500">
                 Pre-register online and confirm your arrival at the reception desk to enter the queue.

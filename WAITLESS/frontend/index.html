@@ -58,6 +58,15 @@
         50% { transform: scale(0.92); opacity: 0.7; }
       }
     </style>
+    <script>
+      // Preloader shows on the landing page only — hide instantly elsewhere
+      if (window.location.pathname !== "/") {
+        document.documentElement.classList.add("skip-preloader");
+      }
+    </script>
+    <style>
+      .skip-preloader #app-preloader { display: none !important; }
+    </style>
   </head>
   <body>
     <div id="root"></div>

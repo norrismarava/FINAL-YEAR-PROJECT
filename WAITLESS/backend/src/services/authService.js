@@ -10,6 +10,10 @@ import {
 } from "./passwordSecurity.js";
 import { HttpError } from "../utils/http.js";
 import * as fileStaff from "./fileStaffStore.js";
+import {
+  markAccessCodeUsed,
+  validateStaffAccessCode,
+} from "./staffAccessCodeService.js";
 
 const useFileStaff = env.databaseProvider === "file";
 const useDatabase = env.databaseProvider === "mysql";
@@ -258,6 +262,38 @@ export async function registerStaff({
   return {
     message: "Staff member registered successfully",
     user: publicStaffUser(newRows[0]),
+  };
+}
+
+export async function registerStaffWithAccessCode({
+  accessCode,
+  fullName,
+  username,
+  email,
+  phone,
+  employeeId,
+  password,
+}) {
+  const codeRecord = await validateStaffAccessCode(accessCode);
+
+  const result = await registerStaff({
+    fullName,
+    username,
+    email,
+    phone,
+    department: codeRecord.department,
+    role: codeRecord.role,
+    employeeId,
+    password,
+  });
+
+  await markAccessCodeUsed(codeRecord.id, result.user.id);
+
+  return {
+    message: "Staff account created successfully",
+    user: result.user,
+    assignedRole: codeRecord.role,
+    assignedDepartment: codeRecord.department,
   };
 }
 

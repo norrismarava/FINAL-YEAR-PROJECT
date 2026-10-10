@@ -8,18 +8,12 @@ import {
   ChevronDown,
   ClipboardList,
   Clock3,
-  Cross,
-  Facebook,
   FlaskConical,
   Globe,
   HeartPulse,
-  Instagram,
   LayoutDashboard,
-  Mail,
-  MapPin,
   MessageCircle,
   MonitorSmartphone,
-  Phone,
   Pill,
   ScanLine,
   Search,
@@ -31,7 +25,6 @@ import {
   Star,
   Stethoscope,
   Timer,
-  Twitter,
   Users,
   Wifi,
   Zap,
@@ -119,12 +112,21 @@ const REVEAL_CSS = `
     50%      { background-position: 100% 50%; }
   }
   @keyframes phone-showcase {
-    0%, 100% { transform: rotate(-3.5deg) translateY(0) scale(1); }
-    50%      { transform: rotate(3deg) translateY(-16px) scale(1.02); }
+    0%, 100% { transform: perspective(1100px) rotateY(-13deg) rotateX(2deg) translateY(0); }
+    50%      { transform: perspective(1100px) rotateY(13deg) rotateX(-2deg) translateY(-16px); }
   }
-  @keyframes caret-blink {
-    0%, 100% { opacity: 1; }
-    50%      { opacity: 0; }
+  @keyframes sheen-sweep {
+    0%, 55%  { background-position: 140% 0; }
+    80%      { background-position: -40% 0; }
+    100%     { background-position: -40% 0; }
+  }
+  @keyframes shadow-sway {
+    0%, 100% { transform: translateX(-50%) scaleX(1); opacity: 0.6; }
+    50%      { transform: translateX(-50%) scaleX(0.78); opacity: 0.35; }
+  }
+  @keyframes letter-wave {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-5px); }
   }
 `;
 
@@ -192,6 +194,30 @@ function AnimatedCounter({ target, suffix = "", duration = 2000 }) {
   return <span ref={ref}>{count.toLocaleString()}{suffix}</span>;
 }
 
+/* ─── Section eyebrow — spaced gradient text between tapering hairlines ─── */
+const EYEBROW_TONES = {
+  teal: { text: "from-teal-300 via-cyan-200 to-teal-300", line: "to-teal-300/60" },
+  cyan: { text: "from-cyan-200 via-teal-100 to-cyan-300", line: "to-cyan-300/60" },
+  red: { text: "from-red-300 via-amber-300 to-red-300", line: "to-red-300/60" },
+  blue: { text: "from-blue-300 via-cyan-200 to-blue-300", line: "to-blue-300/60" },
+};
+
+function SectionEyebrow({ children, tone = "teal", center = true }) {
+  const t = EYEBROW_TONES[tone];
+  return (
+    <div className={`flex items-center gap-3 ${center ? "justify-center" : ""}`}>
+      <span className={`h-px w-9 bg-gradient-to-r from-transparent ${t.line}`} />
+      <span
+        className={`bg-gradient-to-r ${t.text} bg-clip-text text-[11px] font-black uppercase tracking-[0.32em] text-transparent`}
+        style={{ fontFamily: "Manrope, system-ui, sans-serif" }}
+      >
+        {children}
+      </span>
+      <span className={`h-px w-9 bg-gradient-to-l from-transparent ${t.line}`} />
+    </div>
+  );
+}
+
 /* ─── Typewriter greeting ─── */
 function TypewriterGreeting({ text = "Welcome to WaitLess", speed = 85 }) {
   const [count, setCount] = useState(0);
@@ -211,15 +237,21 @@ function TypewriterGreeting({ text = "Welcome to WaitLess", speed = 85 }) {
 
   return (
     <span
-      className="bg-gradient-to-r from-teal-200 via-cyan-100 to-teal-300 bg-clip-text text-xl italic tracking-wide text-transparent drop-shadow-[0_0_18px_rgba(45,212,191,0.35)]"
+      className="text-xl italic tracking-wide drop-shadow-[0_0_18px_rgba(45,212,191,0.35)]"
       style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
     >
-      {text.slice(0, count)}
-      <span
-        aria-hidden="true"
-        className="ml-0.5 inline-block h-[1em] w-[2px] translate-y-[0.18em] rounded-sm bg-teal-300"
-        style={{ animation: "caret-blink 0.9s step-end infinite" }}
-      />
+      {text.split("").map((ch, i) => (
+        <span
+          key={i}
+          className="inline-block bg-gradient-to-br from-teal-300 via-cyan-200 to-teal-400 bg-clip-text text-transparent"
+          style={{
+            opacity: i < count ? 1 : 0,
+            animation: `letter-wave 1.9s ease-in-out ${i * 0.07}s infinite`,
+          }}
+        >
+          {ch === " " ? " " : ch}
+        </span>
+      ))}
     </span>
   );
 }
@@ -232,8 +264,8 @@ export default function Home() {
   const [splashFading, setSplashFading] = useState(false);
 
   useEffect(() => {
-    const t1 = setTimeout(() => setSplashFading(true), 2600);
-    const t2 = setTimeout(() => setSplash(false), 3400);
+    const t1 = setTimeout(() => setSplashFading(true), 4900);
+    const t2 = setTimeout(() => setSplash(false), 5700);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, []);
 
@@ -252,7 +284,6 @@ export default function Home() {
       <StatsSection />
       <TestimonialsSection />
       <CTASection />
-      <Footer />
     </div>
   );
 }
@@ -261,6 +292,18 @@ export default function Home() {
    SPLASH SCREEN
    ═══════════════════════════════════════════════ */
 function SplashScreen({ fading }) {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const start = Date.now();
+    const id = setInterval(() => {
+      setProgress(Math.min(100, ((Date.now() - start) / 4400) * 100));
+    }, 40);
+    return () => clearInterval(id);
+  }, []);
+
+  const pct = Math.round(progress);
+
   return (
     <div
       className={`fixed inset-0 z-[10000] flex flex-col items-center justify-center bg-[#020814] transition-all duration-700 ${
@@ -282,8 +325,17 @@ function SplashScreen({ fading }) {
           Hospital Queue OS
         </p>
       </div>
-      <div className="mt-8 h-0.5 w-32 overflow-hidden rounded-full bg-white/5">
-        <div className="h-full w-full animate-[shimmer_1.5s_ease-in-out_infinite] rounded-full bg-gradient-to-r from-transparent via-teal-400 to-transparent" style={{ backgroundSize: "200% 100%" }} />
+      <div className="mt-8 w-44">
+        <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.24em]">
+          <span className="text-white/35">Loading</span>
+          <span className="text-teal-300">{pct}%</span>
+        </div>
+        <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/5">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-teal-500 via-teal-400 to-cyan-400 transition-[width] duration-100 ease-linear"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
       </div>
     </div>
   );
@@ -550,9 +602,7 @@ function DepartmentsSection() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Reveal>
           <div className="mx-auto max-w-2xl text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-teal-400/15 bg-teal-400/[0.06] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-teal-300">
-              Our departments
-            </div>
+            <SectionEyebrow>Our departments</SectionEyebrow>
             <h2 className="mt-5 text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
               Every service point,{" "}
               <span className="bg-gradient-to-r from-teal-300 to-cyan-300 bg-clip-text text-transparent">one queue</span>
@@ -615,9 +665,7 @@ function PatientJourney() {
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Reveal>
           <div className="mx-auto max-w-2xl text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/15 bg-cyan-400/[0.06] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-cyan-200">
-              How it works
-            </div>
+            <SectionEyebrow tone="cyan">How it works</SectionEyebrow>
             <h2 className="mt-5 text-3xl font-extrabold tracking-tight text-white sm:text-4xl lg:text-5xl" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
               From check-in to pharmacy,{" "}
               <span className="bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent">one clear path</span>
@@ -679,9 +727,7 @@ function TriageSection() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Reveal>
           <div className="mx-auto max-w-2xl text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-red-400/15 bg-red-400/[0.06] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-red-300">
-              Triage protocol
-            </div>
+            <SectionEyebrow tone="red">Triage protocol</SectionEyebrow>
             <h2 className="mt-5 text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
               Every patient assessed.{" "}
               <span className="bg-gradient-to-r from-red-400 via-amber-400 to-emerald-400 bg-clip-text text-transparent">
@@ -755,9 +801,7 @@ function FeaturesSection() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Reveal>
           <div className="mx-auto max-w-2xl text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-teal-400/15 bg-teal-400/[0.06] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-teal-300">
-              Digital patient services
-            </div>
+            <SectionEyebrow>Digital patient services</SectionEyebrow>
             <h2 className="mt-5 text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
               Everything you need.{" "}
               <span className="bg-gradient-to-r from-teal-300 to-cyan-300 bg-clip-text text-transparent">Nothing you don't.</span>
@@ -805,12 +849,10 @@ function MobileAppSection() {
       <div className="absolute inset-0 opacity-[0.04] [background-image:radial-gradient(rgba(125,211,252,0.5)_1px,transparent_1px)] [background-size:40px_40px]" />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid gap-12 rounded-[2rem] border border-dashed border-teal-400/25 bg-white/[0.02] p-8 sm:p-10 lg:grid-cols-[1fr_1fr] lg:items-center">
+        <div className="grid gap-12 rounded-[2.2rem] border-2 border-transparent border-t-teal-400/60 border-b-cyan-400/60 bg-white/[0.02] p-8 sm:p-10 lg:grid-cols-[1fr_1fr] lg:items-center">
           <Reveal>
             <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/15 bg-blue-400/[0.06] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-blue-300">
-                <Smartphone className="h-3.5 w-3.5" /> Your pocket queue
-              </div>
+              <SectionEyebrow tone="blue" center={false}>Your pocket queue</SectionEyebrow>
               <h2 className="mt-5 text-3xl font-extrabold tracking-tight text-white sm:text-4xl" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
                 Your hospital visit,{" "}
                 <span className="bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">in your pocket</span>
@@ -843,13 +885,39 @@ function MobileAppSection() {
           <Reveal delay={200}>
             <div className="relative mx-auto max-w-[21rem]">
               <div className="absolute left-1/2 top-1/2 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full bg-teal-400/[0.1] blur-[80px]" />
-              <div className="absolute inset-x-10 bottom-0 h-8 rounded-[50%] bg-black/60 blur-xl" />
-              <img
-                src={phoneMockupImage}
-                alt="WaitLess mobile app showing live queue position, progress tracking, and WhatsApp notifications"
-                className="relative w-full h-auto drop-shadow-[0_35px_45px_rgba(2,8,20,0.55)]"
-                style={{ animation: "phone-showcase 7s ease-in-out infinite" }}
+              {/* hologram ring under the phone */}
+              <div className="absolute inset-x-4 bottom-2 h-24 rounded-[50%] border border-teal-400/[0.15]" />
+              {/* floor shadow — shrinks as the phone rises */}
+              <div
+                className="absolute inset-x-10 bottom-0 left-1/2 h-8 w-4/5 rounded-[50%] bg-black/60 blur-xl"
+                style={{ animation: "shadow-sway 7s ease-in-out infinite" }}
               />
+              {/* rotating phone + glass sheen */}
+              <div className="relative" style={{ animation: "phone-showcase 7s ease-in-out infinite" }}>
+                <img
+                  src={phoneMockupImage}
+                  alt="WaitLess mobile app showing live queue position, progress tracking, and WhatsApp notifications"
+                  className="relative w-full h-auto drop-shadow-[0_35px_45px_rgba(2,8,20,0.55)]"
+                />
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-0 mix-blend-screen"
+                  style={{
+                    WebkitMaskImage: `url(${phoneMockupImage})`,
+                    maskImage: `url(${phoneMockupImage})`,
+                    WebkitMaskSize: "contain",
+                    maskSize: "contain",
+                    WebkitMaskRepeat: "no-repeat",
+                    maskRepeat: "no-repeat",
+                    WebkitMaskPosition: "center",
+                    maskPosition: "center",
+                    background:
+                      "linear-gradient(115deg, transparent 38%, rgba(255,255,255,0.38) 50%, transparent 62%)",
+                    backgroundSize: "260% 100%",
+                    animation: "sheen-sweep 4.5s ease-in-out infinite",
+                  }}
+                />
+              </div>
             </div>
           </Reveal>
         </div>
@@ -931,9 +999,7 @@ function TestimonialsSection() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Reveal>
           <div className="mx-auto max-w-2xl text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-teal-400/15 bg-teal-400/[0.06] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-teal-300">
-              Testimonials
-            </div>
+            <SectionEyebrow>Testimonials</SectionEyebrow>
             <h2 className="mt-5 text-3xl font-extrabold tracking-tight text-white sm:text-4xl" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
               Trusted by patients{" "}
               <span className="bg-gradient-to-r from-teal-300 to-cyan-300 bg-clip-text text-transparent">and staff</span>
@@ -1007,9 +1073,7 @@ function CTASection() {
           <div className="overflow-hidden rounded-[2.5rem] border border-white/[0.08] bg-gradient-to-br from-teal-500/[0.08] via-transparent to-blue-500/[0.06] p-8 sm:p-12 shadow-[0_40px_100px_-30px_rgba(0,0,0,0.4)] backdrop-blur">
             <div className="flex flex-col gap-10">
               <div className="mx-auto max-w-2xl text-center">
-                <div className="inline-flex items-center gap-2 rounded-full border border-teal-400/15 bg-teal-400/[0.06] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-teal-300">
-                  Get started
-                </div>
+                <SectionEyebrow>Get started</SectionEyebrow>
                 <h2 className="mt-5 text-3xl font-extrabold tracking-tight text-white sm:text-4xl" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
                   A queue system patients and staff{" "}
                   <span className="bg-gradient-to-r from-teal-300 to-cyan-300 bg-clip-text text-transparent">can trust.</span>
@@ -1043,117 +1107,5 @@ function CTASection() {
         </Reveal>
       </div>
     </section>
-  );
-}
-
-/* ═══════════════════════════════════════════════
-   FOOTER
-   ═══════════════════════════════════════════════ */
-function Footer() {
-  const quickLinks = [
-    ["Share feedback", "/patient/feedback"],
-    ["Kiosk check-in", "/kiosk"],
-    ["Departments", "#departments"],
-  ];
-
-  const socials = [
-    { icon: Facebook, label: "Facebook", href: "https://facebook.com/WaitLessZW" },
-    { icon: Instagram, label: "Instagram", href: "https://instagram.com/waitless.zw" },
-    { icon: Twitter, label: "Twitter", href: "https://x.com/waitless_zw" },
-  ];
-
-  return (
-    <footer className="relative bg-[#020814] px-4 pb-8 pt-14 text-white sm:px-6 lg:px-8">
-      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-400/20 to-transparent" />
-
-      <div className="mx-auto flex max-w-7xl flex-col gap-7">
-        {/* Brand + links + socials */}
-        <div className="flex flex-wrap items-center justify-between gap-6">
-          <div className="flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 text-white shadow-[0_10px_28px_-10px_rgba(20,184,166,0.5)]">
-              <Cross className="h-4 w-4" />
-            </span>
-            <div className="text-left">
-              <div className="text-base font-bold" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
-                Wait<span className="text-teal-400">Less</span>
-              </div>
-              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/30">
-                Smarter Queues, Better Care
-              </div>
-            </div>
-            <p className="ml-6 hidden max-w-sm border-l border-white/[0.08] pl-6 text-sm leading-6 text-white/35 lg:block">
-              The digital patient front door for hospitals — check in, track,
-              and get notified from registration to pharmacy.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-7">
-            <nav className="flex flex-wrap items-center gap-x-6 gap-y-2">
-              {quickLinks.map(([label, to]) => (
-                <Link key={to} to={to} className="text-sm font-medium text-white/40 transition-colors hover:text-teal-300">
-                  {label}
-                </Link>
-              ))}
-            </nav>
-            <span className="hidden h-6 w-px bg-white/[0.08] sm:block" />
-            <div className="flex items-center gap-3">
-              {socials.map(({ icon: Icon, label, href }) => (
-                <a
-                  key={label}
-                  href={href}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={label}
-                  className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-white/50 transition-all hover:-translate-y-0.5 hover:border-teal-400/40 hover:bg-teal-400/10 hover:text-teal-300"
-                >
-                  <Icon className="h-4 w-4" />
-                </a>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* Contact */}
-        <div className="grid gap-4 border-t border-white/[0.06] pt-6 sm:grid-cols-3">
-          <div className="flex items-center gap-3">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-teal-300">
-              <Mail className="h-4 w-4" />
-            </span>
-            <span className="text-left">
-              <span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/30">Email</span>
-              <a href="mailto:support@waitless.co.zw" className="block text-sm font-medium text-white/55 transition-colors hover:text-teal-300">support@waitless.co.zw</a>
-              <a href="mailto:info@waitless.co.zw" className="block text-sm font-medium text-white/55 transition-colors hover:text-teal-300">info@waitless.co.zw</a>
-            </span>
-          </div>
-          <a href={`tel:${HOSPITAL.reception.replaceAll(" ", "")}`} className="flex items-center gap-3 transition-colors hover:text-teal-300">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-teal-300">
-              <Phone className="h-4 w-4" />
-            </span>
-            <span className="text-left">
-              <span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/30">Support line</span>
-              <span className="text-sm font-medium text-white/55">{HOSPITAL.reception} · Mon–Fri 8am–5pm CAT</span>
-            </span>
-          </a>
-          <a href={`tel:${HOSPITAL.emergency.replaceAll(" ", "")}`} className="flex items-center gap-3 transition-colors hover:text-teal-300">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-red-400/20 bg-red-400/[0.06] text-red-300">
-              <Siren className="h-4 w-4" />
-            </span>
-            <span className="text-left">
-              <span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/30">Emergency</span>
-              <span className="text-sm font-medium text-white/55">{HOSPITAL.emergency} · 24/7</span>
-            </span>
-          </a>
-        </div>
-
-        {/* Bottom */}
-        <div className="flex w-full flex-wrap items-center justify-between gap-4 border-t border-white/[0.06] pt-6 text-xs text-white/20">
-          <span>© {new Date().getFullYear()} WaitLess · Smarter Queues, Better Care</span>
-          <span className="inline-flex items-center gap-2">
-            <ShieldCheck className="h-3.5 w-3.5 text-teal-400/40" />
-            Queue boards show ticket codes only — never patient names.
-          </span>
-        </div>
-      </div>
-    </footer>
   );
 }

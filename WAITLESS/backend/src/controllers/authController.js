@@ -2,9 +2,14 @@ import {
   getSessionFromRequest,
   loginStaff,
   registerStaff,
+  registerStaffWithAccessCode,
   requestPasswordReset,
   resetPassword,
 } from "../services/authService.js";
+import {
+  createStaffAccessCode,
+  listStaffAccessCodes,
+} from "../services/staffAccessCodeService.js";
 import { HttpError } from "../utils/http.js";
 import { recordAuditEventSafely } from "../services/auditService.js";
 
@@ -110,6 +115,64 @@ export async function staffRegisterController({ body, staff }) {
     after: {
       role: result.user.role,
       department: result.user.department,
+    },
+  });
+
+  return {
+    status: 201,
+    body: result,
+  };
+}
+
+export async function staffAccessCodeCreateController({ body, staff }) {
+  const result = await createStaffAccessCode({
+    role: body?.role,
+    department: body?.department,
+    note: body?.note,
+    createdBy: staff?.id ?? null,
+  });
+
+  await recordAuditEventSafely({
+    actor: staff,
+    action: "staff.access_code.created",
+    entityType: "staff_access_code",
+    entityId: result.id,
+    entityLabel: `${result.role} · ${result.department}`,
+  });
+
+  return {
+    status: 201,
+    body: result,
+  };
+}
+
+export async function staffAccessCodeListController() {
+  return {
+    status: 200,
+    body: { codes: await listStaffAccessCodes() },
+  };
+}
+
+export async function staffSelfRegisterController({ body }) {
+  const result = await registerStaffWithAccessCode({
+    accessCode: body?.accessCode,
+    fullName: body?.fullName,
+    username: body?.username,
+    email: body?.email,
+    phone: body?.phone,
+    employeeId: body?.employeeId,
+    password: body?.password,
+  });
+
+  await recordAuditEventSafely({
+    actor: result.user,
+    action: "staff.self_registered",
+    entityType: "staff",
+    entityId: result.user.id,
+    entityLabel: result.user.username,
+    after: {
+      role: result.assignedRole,
+      department: result.assignedDepartment,
     },
   });
 

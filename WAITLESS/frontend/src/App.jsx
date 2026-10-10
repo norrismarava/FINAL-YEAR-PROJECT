@@ -29,6 +29,7 @@ const PatientPortalLayout = lazy(() => import("@/layouts/PatientPortalLayout"));
 const ResetPasswordPage = lazy(() => import("@/pages/reset-password"));
 const SettingsPage = lazy(() => import("@/pages/settings"));
 const StaffRegisterPage = lazy(() => import("@/pages/staff-register"));
+const StaffSignupPage = lazy(() => import("@/pages/staff-signup"));
 const TrackPage = lazy(() => import("@/pages/track"));
 const TriagePage = lazy(() => import("@/pages/triage"));
 const DepartmentBoardPage = lazy(() => import("@/pages/department-board"));
@@ -267,7 +268,7 @@ export default function App() {
           <Route path="forgot-password" element={<ForgotPasswordPage />} />
           <Route path="reset-password" element={<ResetPasswordPage />} />
           <Route path="staff-register" element={<Navigate to="/admin/staff" replace />} />
-          <Route path="staff-signup" element={<Navigate to="/admin/staff" replace />} />
+          <Route path="staff-signup" element={<StaffSignupPage />} />
         </Route>
 
         {/* Legacy redirects */}
@@ -280,7 +281,7 @@ export default function App() {
         <Route path="forgot-password" element={<Navigate to="/admin/forgot-password" replace />} />
         <Route path="reset-password" element={<Navigate to="/admin/reset-password" replace />} />
         <Route path="staff-register" element={<Navigate to="/admin/staff" replace />} />
-        <Route path="staff-signup" element={<Navigate to="/admin/staff" replace />} />
+        <Route path="staff-signup" element={<Navigate to="/admin/staff-signup" replace />} />
 
         <Route path="home" element={<Navigate to="/" replace />} />
         <Route path="*" element={<NotFoundPage />} />

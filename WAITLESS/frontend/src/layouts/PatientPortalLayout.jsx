@@ -7,8 +7,6 @@ import {
   Menu,
   X,
   AlertTriangle,
-  Sun,
-  Moon,
   Camera,
   CalendarDays,
   Globe,
@@ -20,6 +18,7 @@ import { useEffect, useRef, useState } from "react";
 import authBackground from "@/assets/BACKG.png";
 import waitlessLogoIcon from "@/assets/waitless-logo-icon.png";
 import { usePatientAuth } from "@/auth/PatientAuthProvider";
+import GlowToggle from "@/components/GlowToggle";
 import { useTranslation } from "@/i18n/useTranslation";
 import { LANGUAGES } from "@/i18n/I18nProvider";
 
@@ -68,12 +67,6 @@ export default function PatientPortalLayout() {
     const stored = window.localStorage.getItem("waitless_patient_avatar");
     if (stored) setAvatarUrl(stored);
   }, []);
-
-  function toggleTheme() {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    saveTheme(next);
-  }
 
   function handleAvatarChange(e) {
     const file = e.target.files?.[0];
@@ -266,17 +259,15 @@ export default function PatientPortalLayout() {
             </div>
 
             {/* Theme toggle */}
-            <button
-              onClick={toggleTheme}
-              title={isLight ? "Switch to dark mode" : "Switch to light mode"}
-              className={`grid h-9 w-9 place-items-center rounded-lg border transition-colors ${
-                isLight
-                  ? "border-slate-200 bg-slate-100 text-amber-500 hover:bg-slate-200"
-                  : "border-white/15 bg-white/[0.06] text-amber-300 hover:bg-white/[0.12]"
-              }`}
-            >
-              {isLight ? <Sun className="h-4.5 w-4.5" /> : <Moon className="h-4.5 w-4.5" />}
-            </button>
+            <GlowToggle
+              label={isLight ? "Switch to dark mode" : "Switch to light mode"}
+              checked={!isLight}
+              onChange={(on) => {
+                const next = on ? "dark" : "light";
+                setTheme(next);
+                saveTheme(next);
+              }}
+            />
 
             {/* Profile avatar */}
             <div className="relative group">

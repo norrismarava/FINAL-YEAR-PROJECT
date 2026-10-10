@@ -10,22 +10,15 @@ import {
   ChartNoAxesCombined,
   ChevronDown,
   Database,
-  Facebook,
   FileChartColumn,
   FlaskConical,
-  Globe,
   HeartPulse,
   House,
-  Instagram,
   LayoutDashboard,
-  Linkedin,
   LogOut,
-  Mail,
-  MapPin,
   Menu,
   PanelLeftClose,
   PanelLeftOpen,
-  Phone,
   Pill,
   Search,
   Send,
@@ -47,6 +40,8 @@ import ChatbotWidget from "@/components/ChatbotWidget";
 import OfflineIndicator from "@/components/OfflineIndicator";
 import { LoadingPanel } from "@/components/ui/system-loader";
 import { RouteLoadingBar } from "@/components/RouteLoadingBar";
+import SiteFooter from "@/components/SiteFooter";
+import QuickNavSearch from "@/components/QuickNavSearch";
 import { useQueueRealtime } from "@/sockets/QueueRealtimeProvider";
 import {
   AlertDialog,
@@ -404,7 +399,7 @@ function AppScaffold() {
               <Outlet />
             </div>
           </main>
-          <Footer />
+          <SiteFooter />
         </div>
       </div>
     );
@@ -461,7 +456,7 @@ function AppScaffold() {
             </div>
           )}
         </main>
-        {isStaffWorkspaceTheme || isHomeRoute ? null : <Footer />}
+        {isStaffWorkspaceTheme ? null : <SiteFooter />}
         <IdleLogoutManager />
         <ChatbotWidget />
         <OfflineIndicator />
@@ -613,7 +608,9 @@ function Header({ onOpenMobileNav }) {
               >
                 {isStaffWorkspaceTheme ? (
                   <WorkspaceSearch auth={auth} />
-                ) : null}
+                ) : (
+                  <QuickNavSearch />
+                )}
                 {isStaffWorkspaceTheme ? (
                   <Link
                     to="/admin/notifications"
@@ -1745,201 +1742,3 @@ function DashboardSidebarNavigation({ groups, collapsed = false, onNavigate }) {
   );
 }
 
-function Footer() {
-  const rolloutItems = [
-    {
-      icon: MapPin,
-      label: "Pilot hospital",
-      value: "Chinhoyi Provincial Hospital, Chinhoyi, Zimbabwe",
-    },
-    {
-      icon: Globe,
-      label: "Coverage goal",
-      value: "Designed for provincial, district and central hospitals nationwide",
-    },
-  ];
-
-  const supportItems = [
-    {
-      icon: Phone,
-      label: "National support desk",
-      value: "+263 78 700 1200",
-      href: "tel:+263787001200",
-    },
-    {
-      icon: Phone,
-      label: "Reception line",
-      value: "+263 67 212 2201",
-      href: "tel:+263672122201",
-    },
-    {
-      icon: Mail,
-      label: "Implementation email",
-      value: "support@waitless.co.zw",
-      href: "mailto:support@waitless.co.zw",
-    },
-  ];
-
-  const socialItems = [
-    {
-      icon: Facebook,
-      label: "Facebook",
-      value: "/WaitLessZW",
-      href: "https://facebook.com/WaitLessZW",
-    },
-    {
-      icon: Instagram,
-      label: "Instagram",
-      value: "@waitless.zw",
-      href: "https://instagram.com/waitless.zw",
-    },
-    {
-      icon: Linkedin,
-      label: "LinkedIn",
-      value: "WaitLess Zimbabwe",
-      href: "https://linkedin.com/company/waitless-zimbabwe",
-    },
-    {
-      icon: Youtube,
-      label: "YouTube",
-      value: "waitlessZW",
-      href: "https://youtube.com/@waitlesshospitalflow",
-    },
-  ];
-
-  return (
-    <footer className="relative overflow-hidden border-t border-slate-800/80 bg-[#071523] px-4 pb-8 pt-10 text-slate-200 sm:px-6 lg:px-8">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_18%_0%,rgba(20,184,166,0.18),transparent_28%),radial-gradient(circle_at_82%_0%,rgba(37,99,235,0.18),transparent_24%)]" />
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/50 to-transparent" />
-      <div className="pointer-events-none absolute inset-0 opacity-[0.08] [background-image:linear-gradient(rgba(148,163,184,0.32)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.24)_1px,transparent_1px)] [background-size:88px_88px]" />
-
-      <div className="relative mx-auto max-w-7xl">
-        <div className="px-1 py-2 sm:px-2">
-          <div className="grid gap-10 xl:grid-cols-[1.2fr_0.9fr_0.9fr_0.95fr]">
-            <div>
-              <WaitLessLogo
-                className="text-white"
-                subtitle="Smarter Queues, Better Care"
-                subtitleClassName="text-cyan-100/72"
-              />
-              <p className="mt-3 max-w-2xl text-sm leading-7 text-slate-300">
-                A triage-aware hospital queue system built for Chinhoyi Provincial Hospital and the
-                wider Zimbabwean public health network.
-              </p>
-              <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs font-semibold text-cyan-100/82">
-                {["Triage-aware routing", "WhatsApp alerts", "Offline-first LAN mode"].map(
-                  (item) => (
-                    <span key={item} className="inline-flex items-center gap-2">
-                      <span className="h-1.5 w-1.5 rounded-full bg-cyan-200/78" />
-                      {item}
-                    </span>
-                  ),
-                )}
-              </div>
-            </div>
-
-            <div>
-              <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-cyan-100/68">
-                Rollout base
-              </div>
-              <div className="mt-4 space-y-4">
-                {rolloutItems.map((item) => (
-                  <FooterMetaRow key={item.label} {...item} />
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-cyan-100/68">
-                Contacts
-              </div>
-              <div className="mt-4 space-y-4">
-                {supportItems.map((item) => (
-                  <FooterMetaRow key={item.label} {...item} />
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-cyan-100/68">
-                Follow WaitLess
-              </div>
-              <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
-                {socialItems.map((item) => (
-                  <FooterSocialLink key={item.label} {...item} />
-                ))}
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-8 grid gap-5 border-t border-white/10 pt-5 lg:grid-cols-[1fr_auto] lg:items-center">
-            <div className="space-y-2 text-sm">
-              <div className="font-medium text-slate-100">
-                Registration, tracking, queue boards, and staff command in one flow.
-              </div>
-              <div className="text-xs uppercase tracking-[0.28em] text-cyan-100/68">
-                Built with love for Zimbabwean hospitals
-              </div>
-            </div>
-            <div className="flex flex-col gap-2 text-xs text-slate-400 sm:items-end">
-              <div>WaitLess Hospital Queue OS</div>
-              <div className="uppercase tracking-[0.24em] text-slate-500">
-                Public health workflow platform
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
-function FooterMetaRow({ icon: Icon, label, value, href }) {
-  const content = (
-    <div className="flex items-start gap-3 py-1 transition-colors">
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/6 text-cyan-100/92">
-        <Icon className="h-4 w-4" />
-      </span>
-      <div className="min-w-0">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400/92">
-          {label}
-        </div>
-        <div className="mt-1 text-sm leading-6 text-slate-200">{value}</div>
-      </div>
-    </div>
-  );
-
-  if (!href) {
-    return content;
-  }
-
-  return (
-    <a
-      href={href}
-      className="block rounded-xl transition-colors hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-300/24"
-    >
-      {content}
-    </a>
-  );
-}
-
-function FooterSocialLink({ icon: Icon, label, value, href }) {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noreferrer"
-      className="group flex items-center gap-3 py-1 transition-colors hover:text-white focus:outline-none focus:ring-2 focus:ring-cyan-300/24"
-    >
-      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/6 text-cyan-100 transition-colors group-hover:bg-cyan-200/10">
-        <Icon className="h-4 w-4" />
-      </span>
-      <div className="min-w-0">
-        <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400/92">
-          {label}
-        </div>
-        <div className="mt-1 truncate text-sm text-slate-200">{value}</div>
-      </div>
-    </a>
-  );
-}
