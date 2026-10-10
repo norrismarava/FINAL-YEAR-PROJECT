@@ -22,6 +22,7 @@ import {
   LogOut,
   Mail,
   MapPin,
+  Menu,
   PanelLeftClose,
   PanelLeftOpen,
   Phone,
@@ -78,6 +79,7 @@ import {
 
 const navItems = [
   { to: "/", label: "Home", icon: House },
+  { to: "/self-register", label: "Check In", icon: ShieldPlus },
   { to: "/admin/register", label: "Register", roles: ["reception"], icon: ShieldPlus },
   { to: "/track", label: "Track Ticket", icon: Ticket },
   { to: "/admin/triage", label: "Triage", roles: ["triage"], icon: Stethoscope },
@@ -175,9 +177,26 @@ const STAFF_WORKSPACE_ITEMS = [
   { group: "Account", to: "/admin/profile", label: "My Profile", icon: UserRound },
 ];
 
-const AUTH_ROUTE_PREFIXES = ["/admin/login", "/admin/forgot-password", "/admin/reset-password"];
+const AUTH_ROUTE_PREFIXES = [
+  "/admin/login",
+  "/admin/forgot-password",
+  "/admin/reset-password",
+  "/patient/login",
+  "/patient/register",
+  "/patient/forgot-password",
+  "/patient/reset-password",
+];
 
 const STAFF_WORKSPACE_ROUTE_PREFIXES = ["/admin"];
+
+const PUBLIC_DARK_HEADER_ROUTES = new Set([
+  "/",
+  "/self-register",
+  "/kiosk",
+  "/track",
+  "/queue",
+  "/department-board",
+]);
 
 function isAuthPath(pathname) {
   return AUTH_ROUTE_PREFIXES.some((path) => pathname.startsWith(path));
@@ -193,6 +212,13 @@ function isPatientPortalPath(pathname) {
     pathname.startsWith("/patient/register") ||
     pathname.startsWith("/patient/login") ||
     pathname.startsWith("/patient/dashboard")
+  );
+}
+
+function isPatientShellPath(pathname) {
+  return (
+    (pathname === "/patient" || pathname.startsWith("/patient/")) &&
+    !isAuthPath(pathname)
   );
 }
 
@@ -313,8 +339,10 @@ function AppScaffold() {
   const auth = useAuth();
   const patientAuth = usePatientAuth();
   const location = useLocation();
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const isAuthRoute = isAuthPath(location.pathname);
   const isPatientPortalRoute = isPatientPortalPath(location.pathname);
+  const isPatientShellRoute = isPatientShellPath(location.pathname);
   const isWorkspaceRoute = isStaffWorkspacePath(location.pathname);
   const isDashboardRoute = location.pathname.startsWith("/admin/dashboard");
   const isStaffWorkspaceTheme = isWorkspaceRoute && auth.isAuthenticated;
@@ -348,6 +376,17 @@ function AppScaffold() {
 
   if (isWorkspaceRoute && auth.isReady && !auth.isAuthenticated) {
     return <Navigate to="/admin/login" replace />;
+  }
+
+  if (isPatientShellRoute) {
+    return (
+      <div className="relative min-h-screen bg-[#04141f]">
+        <RouteLoadingBar />
+        <div key={`${location.pathname}${location.search}`} className="page-route-shell">
+          <Outlet />
+        </div>
+      </div>
+    );
   }
 
   if (isPatientPortalRoute) {
@@ -396,7 +435,7 @@ function AppScaffold() {
       )}
 
       <div className="relative flex min-h-screen flex-col">
-        <Header />
+        <Header onOpenMobileNav={() => setIsMobileNavOpen(true)} />
         <main className="flex-1">
           {isWorkspaceRoute && !auth.isReady ? (
             <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -406,7 +445,12 @@ function AppScaffold() {
               />
             </section>
           ) : showStaffSidebar ? (
-            <StaffWorkspaceShell auth={auth} dark={isStaffWorkspaceTheme}>
+            <StaffWorkspaceShell
+              auth={auth}
+              dark={isStaffWorkspaceTheme}
+              mobileOpen={isMobileNavOpen}
+              onMobileOpenChange={setIsMobileNavOpen}
+            >
               <div key={`${location.pathname}${location.search}`} className="page-route-shell">
                 <Outlet />
               </div>
@@ -417,7 +461,7 @@ function AppScaffold() {
             </div>
           )}
         </main>
-        {isStaffWorkspaceTheme ? null : <Footer />}
+        {isStaffWorkspaceTheme || isHomeRoute ? null : <Footer />}
         <IdleLogoutManager />
         <ChatbotWidget />
         <OfflineIndicator />
@@ -426,19 +470,19 @@ function AppScaffold() {
   );
 }
 
-function Header() {
+function Header({ onOpenMobileNav }) {
   const auth = useAuth();
   const patientAuth = usePatientAuth();
   const location = useLocation();
-  const realtime = useQueueRealtime();
-  const isHomeRoute = location.pathname === "/";
+  const isPublicDarkRoute = PUBLIC_DARK_HEADER_ROUTES.has(location.pathname);
   const isAuthRoute = isAuthPath(location.pathname);
   const isWorkspaceRoute = isStaffWorkspacePath(location.pathname);
   const isStaffWorkspaceTheme = isWorkspaceRoute && auth.isAuthenticated;
-  const isDarkHeader = isAuthRoute || isStaffWorkspaceTheme;
+  const isDarkHeader = isAuthRoute || isStaffWorkspaceTheme || isPublicDarkRoute;
+  const isFullBleedHeader = isPublicDarkRoute || isAuthRoute || isStaffWorkspaceTheme;
   const isPatientPortalRoute = isPatientPortalPath(location.pathname);
   const isPublicGlassRoute =
-    (isHomeRoute || isPatientPortalRoute) && !isAuthRoute && !isStaffWorkspaceTheme;
+    isPatientPortalRoute && !isAuthRoute && !isStaffWorkspaceTheme && !isPublicDarkRoute;
   const canRegisterPatient = auth.hasRole(["reception", "receptionist"]);
   const displayName =
     auth.user?.workspaceProfile?.preferredName?.trim() || auth.user?.name || "Staff";
@@ -453,28 +497,19 @@ function Header() {
       : { to: "/patient/register", label: "Get started" };
   const visibleNavItems = navItems.filter((item) => !item.roles || auth.hasRole(item.roles));
 
-  const connectionMeta = {
-    connected: { label: "Live", className: "bg-emerald-500/12 text-emerald-300 border-emerald-500/30" },
-    connecting: { label: "Connecting", className: "bg-slate-500/12 text-slate-300 border-slate-500/30" },
-    reconnecting: { label: "Reconnecting", className: "bg-amber-500/12 text-amber-300 border-amber-500/30" },
-    polling: { label: "Polling", className: "bg-slate-500/12 text-slate-300 border-slate-500/30" },
-    closed: { label: "Offline", className: "bg-rose-500/12 text-rose-300 border-rose-500/30" },
-  };
-  const connStatus = connectionMeta[realtime.status] ?? connectionMeta.connecting;
-
   return (
     <header
-      className={`sticky top-0 z-40 px-4 pt-4 sm:px-6 lg:px-8 ${
-        isStaffWorkspaceTheme ? "dashboard-account-header" : ""
-      }`}
+      className={`sticky top-0 z-40 ${
+        isFullBleedHeader ? "" : "px-4 pt-4 sm:px-6 lg:px-8"
+      } ${isStaffWorkspaceTheme ? "dashboard-account-header" : ""}`}
     >
-      <div className={`mx-auto ${isStaffWorkspaceTheme ? "max-w-[118rem]" : "max-w-7xl"}`}>
+      <div className={`mx-auto ${isFullBleedHeader ? "max-w-none" : "max-w-7xl"}`}>
         <div
           className={
             isPublicGlassRoute
               ? "relative overflow-hidden rounded-2xl bg-white/72 px-5 py-3 shadow-[0_12px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl sm:px-7"
               : isDarkHeader
-                ? "relative overflow-hidden rounded-[1.85rem] border border-cyan-200/12 bg-[linear-gradient(135deg,rgba(2,12,24,0.96),rgba(5,24,44,0.94)_34%,rgba(8,40,68,0.9)_72%,rgba(12,66,94,0.84)_100%)] px-5 py-4 shadow-[0_26px_76px_rgba(2,6,23,0.42)] backdrop-blur-2xl sm:px-8"
+                ? `relative overflow-hidden ${isFullBleedHeader ? "border-x-0 border-t-0" : "rounded-[1.85rem] border"} border-cyan-200/12 bg-[linear-gradient(135deg,rgba(2,12,24,0.96),rgba(5,24,44,0.94)_34%,rgba(8,40,68,0.9)_72%,rgba(12,66,94,0.84)_100%)] px-5 py-4 shadow-[0_26px_76px_rgba(2,6,23,0.42)] backdrop-blur-2xl sm:px-8`
                 : "surface-panel px-4 py-3 sm:px-5"
           }
         >
@@ -495,16 +530,25 @@ function Header() {
           )}
 
           <div className="relative">
-            <div className="flex flex-wrap items-center justify-between gap-4 lg:grid lg:grid-cols-[auto_1fr_auto] lg:items-center lg:gap-6">
-              <Link to="/" aria-label="Go to WaitLess home">
+            <div className="flex flex-wrap items-center justify-between gap-4 lg:grid lg:grid-cols-[auto_auto_1fr] lg:items-center lg:gap-6">
+              <div className="flex items-center gap-3">
+                {isStaffWorkspaceTheme ? (
+                  <button
+                    type="button"
+                    onClick={onOpenMobileNav}
+                    aria-label="Open workspace navigation"
+                    className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-cyan-200/15 bg-white/6 text-slate-200 transition-colors hover:bg-white/10 hover:text-white xl:hidden"
+                  >
+                    <Menu className="h-5 w-5" />
+                  </button>
+                ) : null}
+                <Link to="/" aria-label="Go to WaitLess home">
                 <WaitLessLogo
                   className={isDarkHeader ? "origin-left scale-[0.9] text-white" : ""}
                   subtitle={
-                    isPublicGlassRoute
+                    isPublicGlassRoute || isDarkHeader
                       ? "Smarter Queues, Better Care"
-                      : isDarkHeader
-                        ? "Hospital Flow"
-                        : "Hospital Queue OS"
+                      : "Hospital Queue OS"
                   }
                   subtitleClassName={
                     isPublicGlassRoute
@@ -515,14 +559,7 @@ function Header() {
                   }
                 />
               </Link>
-
-              <span
-                className={`hidden items-center gap-1.5 rounded-full border px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-[0.18em] lg:flex ${connStatus.className}`}
-                aria-live="polite"
-              >
-                <span className={`h-1.5 w-1.5 rounded-full ${realtime.status === "connected" ? "bg-emerald-400 animate-pulse" : "bg-current"}`} />
-                {connStatus.label}
-              </span>
+              </div>
 
               {isStaffWorkspaceTheme ? (
                 <div className="hidden items-center gap-3 text-slate-100 lg:flex">
@@ -539,15 +576,7 @@ function Header() {
                   </div>
                 </div>
               ) : (
-                <div
-                  className={`hidden items-center gap-2 rounded-full p-1.5 lg:flex lg:justify-self-center ${
-                    isPublicGlassRoute
-                      ? "bg-white/50 shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_8px_20px_rgba(15,23,42,0.04)] backdrop-blur-md p-1"
-                      : isDarkHeader
-                        ? "border border-cyan-300/14 bg-[linear-gradient(135deg,rgba(4,18,34,0.78),rgba(8,29,52,0.82)_52%,rgba(10,40,66,0.72))] px-1 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_0_1px_rgba(34,211,238,0.04),0_18px_40px_-24px_rgba(37,99,235,0.5)] backdrop-blur-md"
-                        : "border border-border/70 bg-background/75"
-                  }`}
-                >
+                <div className="hidden items-center gap-1 lg:flex lg:justify-self-start">
                   {visibleNavItems.map((item) => (
                     <NavLink
                       key={item.to}
@@ -555,30 +584,36 @@ function Header() {
                       end={item.to === "/"}
                       className={({ isActive }) =>
                         isActive
-                          ? `inline-flex h-12 items-center rounded-full px-5 text-sm font-semibold shadow-[0_16px_30px_-20px_rgba(37,99,235,0.45)] ${
+                          ? `inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold ${
                               isPublicGlassRoute
-                                ? "bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] text-primary-foreground backdrop-blur shadow-[0_8px_20px_-10px_rgba(13,148,136,0.5)]"
+                                ? "bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] text-primary-foreground shadow-[0_8px_20px_-10px_rgba(13,148,136,0.5)]"
                                 : isDarkHeader
-                                  ? "h-10 gap-2 border border-cyan-200/18 bg-[linear-gradient(135deg,rgba(12,104,138,0.96),rgba(18,126,173,0.92)_48%,rgba(29,78,216,0.9))] px-4 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.12),0_12px_28px_-16px_rgba(34,211,238,0.42)] backdrop-blur"
+                                  ? "bg-cyan-300/12 text-cyan-50 shadow-[inset_0_0_0_1px_rgba(103,232,249,0.14)]"
                                   : "gradient-primary text-primary-foreground shadow-elegant"
                             }`
-                          : `inline-flex h-12 items-center rounded-full px-4 text-sm font-medium transition-all ${
+                          : `inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-medium transition-colors ${
                               isPublicGlassRoute
-                                ? "bg-transparent text-slate-700 hover:bg-white/50 hover:text-slate-950"
+                                ? "text-slate-700 hover:bg-white/50 hover:text-slate-950"
                                 : isDarkHeader
-                                  ? "h-10 gap-2 px-4 text-slate-100/82 hover:bg-cyan-300/8 hover:text-white"
+                                  ? "text-slate-300/90 hover:bg-cyan-300/8 hover:text-white"
                                   : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
                             }`
                       }
                     >
-                      {isDarkHeader && item.icon ? <item.icon className="h-4 w-4" /> : null}
                       {item.label}
                     </NavLink>
                   ))}
                 </div>
               )}
 
-              <div className="flex items-center gap-3 lg:justify-self-end">
+              <div
+                className={`flex items-center gap-3 ${
+                  isStaffWorkspaceTheme ? "lg:w-full" : "lg:justify-self-end"
+                }`}
+              >
+                {isStaffWorkspaceTheme ? (
+                  <WorkspaceSearch auth={auth} />
+                ) : null}
                 {isStaffWorkspaceTheme ? (
                   <Link
                     to="/admin/notifications"
@@ -606,20 +641,46 @@ function Header() {
                     Back to workspace
                   </Link>
                 ) : null}
+                {!isStaffWorkspaceTheme && !isAuthRoute && patientAuth.isPatientAuthenticated ? (
+                  <PatientAccountMenu
+                    patientAuth={patientAuth}
+                    isPublicGlassRoute={isPublicGlassRoute}
+                    isDark={isDarkHeader}
+                  />
+                ) : null}
                 {!isStaffWorkspaceTheme && !isAuthRoute && !patientAuth.isPatientAuthenticated ? (
-                  <Link
-                    to={headerPrimaryAction.to}
-                    className={`inline-flex h-11 items-center gap-2 rounded-xl px-5 text-sm font-semibold text-primary-foreground shadow-elegant transition-transform hover:-translate-y-0.5 ${
-                      isPublicGlassRoute
-                        ? "rounded-full bg-[linear-gradient(135deg,rgba(15,118,110,0.94),rgba(13,148,136,0.90))] shadow-[0_10px_28px_-12px_rgba(13,148,136,0.5)] backdrop-blur"
-                        : isDarkHeader
-                          ? "rounded-[1.05rem] bg-[linear-gradient(135deg,rgba(34,197,94,0.96),rgba(20,184,166,0.94))] px-6 shadow-[0_16px_34px_-18px_rgba(16,185,129,0.48)] backdrop-blur"
-                          : "gradient-primary"
-                    }`}
-                  >
-                    {headerPrimaryAction.label}
-                    <ArrowUpRight className="h-4 w-4" />
-                  </Link>
+                  auth.isAuthenticated ? (
+                    <Link
+                      to={headerPrimaryAction.to}
+                      className="inline-flex h-10 items-center gap-2 rounded-xl gradient-primary px-5 text-sm font-semibold text-primary-foreground shadow-elegant transition-transform hover:-translate-y-0.5"
+                    >
+                      {headerPrimaryAction.label}
+                      <ArrowUpRight className="h-4 w-4" />
+                    </Link>
+                  ) : (
+                    <>
+                      <Link
+                        to="/patient/login"
+                        className={`inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold transition-colors ${
+                          isDarkHeader
+                            ? "border border-cyan-300/35 bg-cyan-300/12 text-cyan-50 hover:bg-cyan-300/20 hover:text-white"
+                            : "border border-border/70 text-foreground hover:bg-muted"
+                        }`}
+                      >
+                        Sign in
+                      </Link>
+                      <Link
+                        to="/patient/register"
+                        className={`inline-flex h-10 items-center gap-2 rounded-full px-5 text-sm font-semibold transition-transform hover:-translate-y-0.5 ${
+                          isDarkHeader
+                            ? "bg-[linear-gradient(135deg,#34d399,#14b8a6)] text-[#052e22] shadow-[0_14px_32px_-14px_rgba(52,211,153,0.55)]"
+                            : "gradient-primary text-primary-foreground shadow-elegant"
+                        }`}
+                      >
+                        Get started
+                      </Link>
+                    </>
+                  )
                 ) : null}
               </div>
             </div>
@@ -694,7 +755,7 @@ function Header() {
   );
 }
 
-function PatientAccountMenu({ patientAuth, isPublicGlassRoute }) {
+function PatientAccountMenu({ patientAuth, isPublicGlassRoute, isDark = false }) {
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef(null);
   const navigate = useNavigate();
@@ -730,12 +791,20 @@ function PatientAccountMenu({ patientAuth, isPublicGlassRoute }) {
       <button
         onClick={() => setIsOpen((v) => !v)}
         className={`inline-flex h-11 items-center gap-2 rounded-full px-3 text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5 ${
-          isPublicGlassRoute
-            ? "border border-white/40 bg-white/30 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] backdrop-blur-md hover:bg-white/45"
-            : "border border-primary/20 bg-primary-soft/70 text-primary hover:border-primary/30 hover:bg-primary-soft"
+          isDark
+            ? "border border-cyan-200/15 bg-white/8 text-cyan-100 backdrop-blur hover:border-cyan-200/25 hover:bg-white/12 hover:text-white"
+            : isPublicGlassRoute
+              ? "border border-white/40 bg-white/30 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] backdrop-blur-md hover:bg-white/45"
+              : "border border-primary/20 bg-primary-soft/70 text-primary hover:border-primary/30 hover:bg-primary-soft"
         }`}
       >
-        <span className="grid h-7 w-7 place-items-center rounded-full bg-primary/15 text-[10px] font-bold text-primary">
+        <span
+          className={`grid h-7 w-7 place-items-center rounded-full text-[10px] font-bold ${
+            isDark
+              ? "bg-cyan-300/15 text-cyan-100"
+              : "bg-primary/15 text-primary"
+          }`}
+        >
           {initials}
         </span>
         <span className="hidden sm:inline">{patient?.fullName?.split(" ")[0] || "Patient"}</span>
@@ -743,46 +812,43 @@ function PatientAccountMenu({ patientAuth, isPublicGlassRoute }) {
       </button>
 
       {isOpen ? (
-        <div className="absolute right-0 top-full mt-2 w-56 overflow-hidden rounded-2xl border border-border bg-card shadow-[0_24px_60px_rgba(15,23,42,0.16)]">
-          <div className="border-b border-border px-4 py-3">
-            <div className="text-sm font-semibold text-foreground">{patient?.fullName}</div>
-            <div className="text-xs text-muted-foreground">{patient?.email}</div>
+        <div
+          className={`absolute right-0 top-full mt-2 w-56 overflow-hidden rounded-2xl border ${
+            isDark
+              ? "border-cyan-200/12 bg-[linear-gradient(180deg,rgba(8,22,38,0.98),rgba(5,17,30,0.98))] text-white shadow-[0_28px_80px_-28px_rgba(2,6,23,0.8)]"
+              : "border-border bg-card shadow-[0_24px_60px_rgba(15,23,42,0.16)]"
+          }`}
+        >
+          <div className={`border-b px-4 py-3 ${isDark ? "border-white/10" : "border-border"}`}>
+            <div className={`text-sm font-semibold ${isDark ? "text-white" : "text-foreground"}`}>{patient?.fullName}</div>
+            <div className={`text-xs ${isDark ? "text-slate-400" : "text-muted-foreground"}`}>{patient?.email}</div>
           </div>
           <div className="p-1.5">
-            <button
-              onClick={() => {
-                setIsOpen(false);
-                navigate("/patient/dashboard");
-              }}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-            >
-              <LayoutDashboard className="h-4 w-4 text-muted-foreground" />
-              My dashboard
-            </button>
-            <button
-              onClick={() => {
-                setIsOpen(false);
-                navigate("/self-register");
-              }}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-            >
-              <Ticket className="h-4 w-4 text-muted-foreground" />
-              Book a queue spot
-            </button>
-            <button
-              onClick={() => {
-                setIsOpen(false);
-                navigate("/track");
-              }}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-            >
-              <Search className="h-4 w-4 text-muted-foreground" />
-              Track a ticket
-            </button>
-            <div className="my-1.5 h-px bg-border" />
+            {[
+              ["/patient/dashboard", LayoutDashboard, "My dashboard"],
+              ["/self-register", Ticket, "Book a queue spot"],
+              ["/track", Search, "Track a ticket"],
+            ].map(([to, Icon, label]) => (
+              <button
+                key={to}
+                onClick={() => {
+                  setIsOpen(false);
+                  navigate(to);
+                }}
+                className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                  isDark ? "text-slate-100 hover:bg-white/8" : "text-foreground hover:bg-muted"
+                }`}
+              >
+                <Icon className={`h-4 w-4 ${isDark ? "text-cyan-100/70" : "text-muted-foreground"}`} />
+                {label}
+              </button>
+            ))}
+            <div className={`my-1.5 h-px ${isDark ? "bg-white/10" : "bg-border"}`} />
             <button
               onClick={handleLogout}
-              className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+              className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                isDark ? "text-red-300 hover:bg-red-400/10" : "text-red-600 hover:bg-red-50"
+              }`}
             >
               <LogOut className="h-4 w-4" />
               Sign out
@@ -910,21 +976,19 @@ function AccountMenu({ auth, displayName, isAuthRoute, isHomeRoute }) {
     };
   }, [isOpen]);
 
-  const triggerClassName =
-    isHomeRoute && !isAuthRoute
-      ? "bg-white/56 text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.42)] backdrop-blur hover:bg-white/72"
-      : isAuthRoute
-        ? "border border-white/10 bg-white/8 text-slate-100/88 hover:bg-white/12"
-        : "border border-border/70 bg-background/75 text-foreground hover:bg-muted";
-  const dropdownSurfaceClassName = isAuthRoute
+  const useDarkMenu = isAuthRoute || isHomeRoute;
+  const triggerClassName = useDarkMenu
+    ? "border border-white/10 bg-white/8 text-slate-100/88 hover:bg-white/12"
+    : "border border-border/70 bg-background/75 text-foreground hover:bg-muted";
+  const dropdownSurfaceClassName = useDarkMenu
     ? "border border-cyan-200/12 bg-[linear-gradient(180deg,rgba(8,22,38,0.98),rgba(5,17,30,0.98))] text-white shadow-[0_28px_80px_-28px_rgba(2,6,23,0.8),0_0_0_1px_rgba(34,211,238,0.04)]"
     : "border border-slate-200/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,250,252,0.98))] text-slate-900 shadow-[0_28px_80px_-28px_rgba(15,23,42,0.32)]";
-  const subtleTextClassName = isAuthRoute ? "text-cyan-100/62" : "text-slate-500";
-  const dividerClassName = isAuthRoute ? "border-white/10" : "border-slate-200/80";
-  const menuItemClassName = isAuthRoute
+  const subtleTextClassName = useDarkMenu ? "text-cyan-100/62" : "text-slate-500";
+  const dividerClassName = useDarkMenu ? "border-white/10" : "border-slate-200/80";
+  const menuItemClassName = useDarkMenu
     ? "text-slate-100 hover:bg-white/8"
     : "text-slate-700 hover:bg-slate-100/90";
-  const iconTintClassName = isAuthRoute ? "text-cyan-100/78" : "text-slate-500";
+  const iconTintClassName = useDarkMenu ? "text-cyan-100/78" : "text-slate-500";
 
   return (
     <div ref={menuRef} className="relative">
@@ -1081,13 +1145,13 @@ function StaffAccountMenu({ auth, displayName }) {
         onClick={() => setIsOpen((current) => !current)}
         aria-expanded={isOpen}
         aria-haspopup="menu"
-        className="inline-flex h-11 items-center gap-3 px-1 text-slate-100 transition-colors hover:text-white"
+        className="inline-flex h-11 items-center gap-3 rounded-full border border-cyan-200/15 bg-white/6 pl-1.5 pr-3 text-slate-100 backdrop-blur transition-all hover:border-cyan-200/28 hover:bg-white/10 hover:text-white"
       >
         <StaffAvatar
           user={auth.user}
           displayName={accountName}
-          className="h-9 w-9 rounded-full bg-lime-400 shadow-[0_10px_24px_-14px_rgba(163,230,53,0.72)]"
-          fallbackClassName="text-xs font-bold text-[#0b1a0c]"
+          className="h-8 w-8 rounded-full bg-lime-400 shadow-[0_10px_24px_-14px_rgba(163,230,53,0.72)]"
+          fallbackClassName="text-[11px] font-bold text-[#0b1a0c]"
         />
         <span className="hidden min-w-0 text-left sm:flex sm:flex-col sm:justify-center">
           <span className="truncate text-sm font-semibold leading-none text-white">
@@ -1150,10 +1214,19 @@ function StaffAccountMenu({ auth, displayName }) {
   );
 }
 
-function StaffWorkspaceShell({ auth, children, dark = false }) {
+const noop = () => {};
+
+function StaffWorkspaceShell({
+  auth,
+  children,
+  dark = false,
+  mobileOpen = false,
+  onMobileOpenChange = noop,
+}) {
   const location = useLocation();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
-  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const isMobileSidebarOpen = mobileOpen;
+  const setIsMobileSidebarOpen = onMobileOpenChange;
   const [isSignOutOpen, setIsSignOutOpen] = useState(false);
   const user = auth.user;
   const displayName = user?.workspaceProfile?.preferredName?.trim() || user?.name || "Staff";
@@ -1181,7 +1254,7 @@ function StaffWorkspaceShell({ auth, children, dark = false }) {
 
   useEffect(() => {
     setIsMobileSidebarOpen(false);
-  }, [location.hash, location.pathname]);
+  }, [location.hash, location.pathname, setIsMobileSidebarOpen]);
 
   useEffect(() => {
     if (!isMobileSidebarOpen) {
@@ -1203,7 +1276,7 @@ function StaffWorkspaceShell({ auth, children, dark = false }) {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleEscape);
     };
-  }, [isMobileSidebarOpen]);
+  }, [isMobileSidebarOpen, setIsMobileSidebarOpen]);
 
   useEffect(() => {
     if (!dark || !location.hash) {
@@ -1499,12 +1572,111 @@ function StaffWorkspaceShell({ auth, children, dark = false }) {
   );
 }
 
+function WorkspaceSearch({ auth }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const inputRef = useRef(null);
+  const [query, setQuery] = useState("");
+  const [isFocused, setIsFocused] = useState(false);
+  const searchableItems = STAFF_WORKSPACE_ITEMS.filter(
+    (item) => !item.roles || auth.hasRole(item.roles),
+  );
+  const results = query.trim()
+    ? searchableItems
+        .filter((item) =>
+          item.label.toLowerCase().includes(query.trim().toLowerCase()),
+        )
+        .slice(0, 6)
+    : [];
+
+  useEffect(() => {
+    function handleShortcut(event) {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        inputRef.current?.focus();
+      }
+    }
+    window.addEventListener("keydown", handleShortcut);
+    return () => window.removeEventListener("keydown", handleShortcut);
+  }, []);
+
+  useEffect(() => {
+    setQuery("");
+  }, [location.pathname]);
+
+  function openItem(item) {
+    setQuery("");
+    navigate(item.to);
+  }
+
+  return (
+    <div className="relative hidden w-full max-w-md lg:mx-auto lg:block">
+      <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-cyan-100/50" />
+      <input
+        ref={inputRef}
+        type="text"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        onFocus={() => setIsFocused(true)}
+        onBlur={() => window.setTimeout(() => setIsFocused(false), 150)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" && results[0]) {
+            openItem(results[0]);
+          }
+        }}
+        placeholder="Search modules…"
+        className="h-10 w-full rounded-full border border-cyan-200/15 bg-white/6 pl-10 pr-14 text-sm text-white outline-none transition-colors placeholder:text-slate-500 focus:border-cyan-200/35 focus:bg-white/8"
+      />
+      <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 rounded-md border border-white/15 bg-white/8 px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">
+        ⌘K
+      </span>
+      {isFocused && results.length > 0 ? (
+        <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-[90] overflow-hidden rounded-2xl border border-white/10 bg-[#08182b]/95 py-1.5 shadow-[0_24px_60px_rgba(2,6,23,0.6)] backdrop-blur-xl">
+          {results.map((item) => {
+            const ResultIcon = item.icon;
+            return (
+              <button
+                key={item.to}
+                type="button"
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  openItem(item);
+                }}
+                className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm font-medium text-slate-200 transition-colors hover:bg-white/8 hover:text-white"
+              >
+                <ResultIcon className="h-4 w-4 shrink-0 text-cyan-100/70" />
+                <span className="truncate">{item.label}</span>
+                <span className="ml-auto shrink-0 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  {item.group}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function DashboardSidebarNavigation({ groups, collapsed = false, onNavigate }) {
   const location = useLocation();
+  const [openGroups, setOpenGroups] = useState(() =>
+    groups.map((group) => group.label),
+  );
+
+  function toggleGroup(label) {
+    setOpenGroups((previous) =>
+      previous.includes(label)
+        ? previous.filter((entry) => entry !== label)
+        : [...previous, label],
+    );
+  }
 
   return (
     <nav className="staff-account-navigation flex-1 py-3" aria-label="Staff workspace modules">
-      {groups.map((group, groupIndex) => (
+      {groups.map((group, groupIndex) => {
+        const isOpen = collapsed || openGroups.includes(group.label);
+        return (
         <section
           key={group.label}
           className={`staff-account-nav-group ${groupIndex ? "mt-3 border-t border-border/60 pt-3" : ""}`}
@@ -1512,12 +1684,20 @@ function DashboardSidebarNavigation({ groups, collapsed = false, onNavigate }) {
           {collapsed ? (
             <div className="mx-auto mb-2 h-px w-7 bg-border/80" aria-hidden="true" />
           ) : (
-            <div className="px-3 text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+            <button
+              type="button"
+              onClick={() => toggleGroup(group.label)}
+              aria-expanded={isOpen}
+              className="flex w-full items-center justify-between px-3 text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground transition-colors hover:text-foreground"
+            >
               {group.label}
-            </div>
+              <ChevronDown
+                className={`h-3.5 w-3.5 transition-transform ${isOpen ? "" : "-rotate-90"}`}
+              />
+            </button>
           )}
 
-          <div className={`${collapsed ? "mt-1" : "mt-2"} space-y-1`}>
+          <div className={`${collapsed ? "mt-1" : "mt-2"} space-y-1 ${isOpen ? "" : "hidden"}`}>
             {group.items.map((item) => {
               const [itemPath, itemHashValue] = item.to.split("#");
               const itemHash = itemHashValue ? `#${itemHashValue}` : "";
@@ -1559,7 +1739,8 @@ function DashboardSidebarNavigation({ groups, collapsed = false, onNavigate }) {
             })}
           </div>
         </section>
-      ))}
+        );
+      })}
     </nav>
   );
 }

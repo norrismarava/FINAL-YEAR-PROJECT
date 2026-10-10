@@ -175,20 +175,20 @@ export default function SelfRegisterPage() {
         <div className="pointer-events-none absolute inset-0 -z-10 hidden opacity-[0.05] lg:block [background-image:linear-gradient(rgba(148,163,184,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.4)_1px,transparent_1px)] [background-size:82px_82px]" />
         <div className="absolute inset-0 -z-10 bg-[#04141f] lg:hidden" />
 
-        <div className="relative mx-auto flex w-full max-w-2xl flex-col pb-8">
+        <div className="relative mx-auto flex w-full max-w-[24rem] flex-col pb-8">
           {/* Logo header */}
-          <div className="mb-6 flex items-center justify-center gap-3">
-            <img src={waitlessLogoIcon} alt="WaitLess" className="h-11 w-11 rounded-lg object-contain" />
+          <div className="mb-4 flex items-center justify-center gap-3">
+            <img src={waitlessLogoIcon} alt="WaitLess" className="h-9 w-9 rounded-lg object-contain" />
             <div className="text-center">
               <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-teal-400">Self-service</div>
-              <div className="text-sm font-medium text-white/70">Smarter Queues, Better Care</div>
+              <div className="text-xs font-medium text-white/70">Smarter Queues, Better Care</div>
             </div>
           </div>
 
           <div className="self-reg-success-card relative overflow-hidden rounded-2xl bg-[#04141f]/60 shadow-[0_32px_80px_-28px_rgba(2,8,20,0.45)] backdrop-blur-2xl">
-            <div className="relative z-10 p-8 text-center sm:p-10">
-              <div className="self-reg-check-badge mx-auto grid h-20 w-20 place-items-center rounded-full bg-emerald-500/12 text-emerald-400">
-                <CheckCircle2 className="h-10 w-10" />
+            <div className="relative z-10 p-6 text-center sm:p-8">
+              <div className="self-reg-check-badge mx-auto grid h-16 w-16 place-items-center rounded-full bg-emerald-500/12 text-emerald-400">
+                <CheckCircle2 className="h-8 w-8" />
               </div>
 
               <div className="mt-6 text-[0.7rem] font-bold uppercase tracking-[0.24em] text-teal-300">
@@ -235,10 +235,10 @@ export default function SelfRegisterPage() {
                 </div>
               ) : null}
 
-              <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
                 <Link
                   to={`/track?ticket=${encodeURIComponent(success.ticket)}`}
-                  className="inline-flex h-12 items-center gap-2 rounded-xl bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-6 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(13,148,136,0.5)] transition-transform hover:-translate-y-0.5"
+                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-5 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(13,148,136,0.5)] transition-transform hover:-translate-y-0.5"
                 >
                   Track your ticket
                   <ArrowRight className="h-4 w-4" />
@@ -246,7 +246,7 @@ export default function SelfRegisterPage() {
                 <button
                   type="button"
                   onClick={handlePrintTicket}
-                  className="inline-flex h-12 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-5 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08]"
+                  className="inline-flex h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08]"
                 >
                   <Printer className="h-4 w-4" />
                   Print
@@ -254,7 +254,7 @@ export default function SelfRegisterPage() {
                 <button
                   type="button"
                   onClick={handleShareTicket}
-                  className="inline-flex h-12 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-5 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08]"
+                  className="inline-flex h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08]"
                 >
                   <Share2 className="h-4 w-4" />
                   Send to phone
@@ -266,7 +266,7 @@ export default function SelfRegisterPage() {
                     setHandoffState("");
                     setCopied(false);
                   }}
-                  className="inline-flex h-12 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-6 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08]"
+                  className="inline-flex h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-5 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08]"
                 >
                   Register another patient
                 </button>
@@ -301,39 +301,39 @@ export default function SelfRegisterPage() {
       <div className="pointer-events-none absolute inset-0 -z-10 hidden opacity-[0.05] lg:block [background-image:linear-gradient(rgba(148,163,184,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.4)_1px,transparent_1px)] [background-size:82px_82px]" />
       <div className="absolute inset-0 -z-10 bg-[#04141f] lg:hidden" />
 
-      <div className="relative mx-auto flex w-full max-w-2xl flex-col pb-8">
+      <div className="relative mx-auto flex w-full max-w-[24rem] flex-col pb-8">
         {/* Logo header */}
-        <div className="mb-6 flex items-center justify-center gap-3">
-          <img src={waitlessLogoIcon} alt="WaitLess" className="h-11 w-11 rounded-lg object-contain" />
+        <div className="mb-4 flex items-center justify-center gap-3">
+          <img src={waitlessLogoIcon} alt="WaitLess" className="h-9 w-9 rounded-lg object-contain" />
           <div className="text-center">
             <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-teal-400">Self-service</div>
-            <div className="text-sm font-medium text-white/70">Smarter Queues, Better Care</div>
+            <div className="text-xs font-medium text-white/70">Smarter Queues, Better Care</div>
           </div>
         </div>
 
         <div className="relative overflow-hidden rounded-2xl bg-[#04141f]/60 shadow-[0_32px_80px_-28px_rgba(2,8,20,0.45)] backdrop-blur-2xl">
           <div className="relative z-10">
             {/* Header */}
-            <div className="border-b border-white/10 bg-[linear-gradient(135deg,rgba(4,20,31,0.82)_0%,rgba(6,42,53,0.72)_48%,rgba(10,31,46,0.78)_100%)] px-6 py-7 sm:px-8">
+            <div className="border-b border-white/10 bg-[linear-gradient(135deg,rgba(4,20,31,0.82)_0%,rgba(6,42,53,0.72)_48%,rgba(10,31,46,0.78)_100%)] px-5 py-4 sm:px-6">
               <div className="flex items-center gap-3">
-                <span className="grid h-11 w-11 place-items-center rounded-xl bg-teal-500/12 text-teal-300">
-                  <ClipboardList className="h-5 w-5" />
+                <span className="grid h-9 w-9 place-items-center rounded-xl bg-teal-500/12 text-teal-300">
+                  <ClipboardList className="h-4 w-4" />
                 </span>
                 <div>
-                  <div className="text-[0.7rem] font-bold uppercase tracking-[0.24em] text-teal-300">Patient self-service</div>
-                  <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-white">
+                  <div className="text-[0.65rem] font-bold uppercase tracking-[0.22em] text-teal-300">Patient self-service</div>
+                  <h1 className="mt-0.5 font-display text-xl font-bold tracking-tight text-white">
                     Book your spot in the queue
                   </h1>
                 </div>
               </div>
-              <p className="mt-4 text-sm leading-6 text-slate-400">
+              <p className="mt-2.5 text-[13px] leading-5 text-slate-400">
                 Fill in your details to get a ticket number. You'll see your live
                 queue position and receive updates on your phone.
               </p>
             </div>
 
             {/* Form */}
-            <form className="space-y-5 px-6 py-7 sm:px-8" onSubmit={handleSubmit}>
+            <form className="space-y-4 px-5 py-4 sm:px-6" onSubmit={handleSubmit}>
               {error ? (
                 <div className="flex items-center gap-2.5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-300">
                   <AlertCircle className="h-4 w-4 shrink-0" />
@@ -353,7 +353,7 @@ export default function SelfRegisterPage() {
                     value={form.fullName}
                     onChange={(e) => updateField("fullName", e.target.value)}
                     placeholder="e.g. Tendai Mukamuri"
-                    className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
+                    className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
                     required
                   />
                 </div>
@@ -371,7 +371,7 @@ export default function SelfRegisterPage() {
                     value={form.phone}
                     onChange={(e) => updateField("phone", e.target.value)}
                     placeholder="e.g. 077 123 4567"
-                    className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
+                    className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
                     required
                   />
                 </div>
@@ -388,7 +388,7 @@ export default function SelfRegisterPage() {
                 <select
                   value={form.dept}
                   onChange={(e) => updateField("dept", e.target.value)}
-                  className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm text-white focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
+                  className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm text-white focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
                 >
                   {DEPARTMENTS.map((dept) => (
                     <option key={dept} value={dept} className="bg-[#04141f] text-white">
@@ -407,13 +407,13 @@ export default function SelfRegisterPage() {
                   value={form.chiefComplaint}
                   onChange={(e) => updateField("chiefComplaint", e.target.value)}
                   placeholder="Briefly describe your symptoms or reason for visiting"
-                  rows={3}
+                  rows={2}
                   className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
                 />
               </div>
 
               {/* Notification consent */}
-              <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3.5">
+              <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3">
                 <input
                   type="checkbox"
                   id="notificationConsent"
@@ -439,7 +439,7 @@ export default function SelfRegisterPage() {
               <button
                 type="submit"
                 disabled={submitting}
-                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-6 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(13,148,136,0.5)] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-6 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(13,148,136,0.5)] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting ? (
                   <>
@@ -458,7 +458,7 @@ export default function SelfRegisterPage() {
                 type="button"
                 onClick={handlePreRegister}
                 disabled={submitting}
-                className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-6 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-6 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {submitting ? (
                   <LoaderCircle className="h-4 w-4 animate-spin" />

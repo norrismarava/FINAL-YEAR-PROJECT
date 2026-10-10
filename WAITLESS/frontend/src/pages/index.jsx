@@ -5,45 +5,130 @@ import {
   ArrowRight,
   BellRing,
   CheckCircle2,
+  ChevronDown,
   ClipboardList,
+  Clock3,
   Cross,
+  Facebook,
   FlaskConical,
+  Globe,
   HeartPulse,
+  Instagram,
   LayoutDashboard,
+  Mail,
+  MapPin,
   MessageCircle,
   MonitorSmartphone,
+  Phone,
   Pill,
-  Radio,
+  ScanLine,
   Search,
+  Shield,
   ShieldAlert,
   ShieldCheck,
+  Siren,
+  Smartphone,
+  Star,
   Stethoscope,
   Timer,
+  Twitter,
   Users,
+  Wifi,
+  Zap,
 } from "lucide-react";
 
+import hospitalHeroImage from "@/assets/landing-hero-hospital.jpg";
+import phoneMockupImage from "@/assets/landing-phone-mockup-cut.png";
 import hospitalHeroBackground from "@/assets/bgfinal.png";
 import { useAuth } from "@/auth/AuthProvider";
 import { usePatientAuth } from "@/auth/PatientAuthProvider";
 import { resolveStaffLandingPath } from "@/services/staffProfilePrefs";
-import { PRIORITY_META } from "@/services/queueMeta";
+import { DEPARTMENTS, PRIORITY_META } from "@/services/queueMeta";
 
-const REVEAL_STYLES = `
+/* ─── Constants ─── */
+const HOSPITAL = {
+  name: "Chinhoyi Provincial Hospital",
+  tagline: "Public hospital, Chinhoyi, Zimbabwe",
+  reception: "+263 77 123 4567",
+  emergency: "+263 77 000 0000",
+};
+
+/* ─── Reveal-on-scroll ─── */
+const REVEAL_CSS = `
   @keyframes wl-reveal-up {
-    from { opacity: 0; transform: translateY(18px); }
-    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(28px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes wl-reveal-scale {
+    from { opacity: 0; transform: scale(0.92) translateY(16px); }
+    to   { opacity: 1; transform: scale(1)   translateY(0); }
   }
   .wl-reveal { opacity: 0; }
   .wl-reveal.is-revealed {
-    animation: wl-reveal-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: wl-reveal-up 0.75s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .wl-reveal-scale.is-revealed {
+    animation: wl-reveal-scale 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
   }
   @media (prefers-reduced-motion: reduce) {
-    .wl-reveal { opacity: 1; }
-    .wl-reveal.is-revealed { animation: none; }
+    .wl-reveal, .wl-reveal-scale { opacity: 1; }
+    .wl-reveal.is-revealed, .wl-reveal-scale.is-revealed { animation: none; }
+  }
+
+  @keyframes counter-pulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.08); }
+  }
+  @keyframes float-gentle {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    33%      { transform: translateY(-12px) rotate(1deg); }
+    66%      { transform: translateY(-6px) rotate(-0.5deg); }
+  }
+  @keyframes ticker-scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+  @keyframes glow-ring {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(20,184,166,0); }
+    50%      { box-shadow: 0 0 30px 8px rgba(20,184,166,0.15); }
+  }
+  @keyframes hero-text-rise {
+    from { opacity: 0; transform: translateY(40px); filter: blur(8px); }
+    to   { opacity: 1; transform: translateY(0);    filter: blur(0); }
+  }
+  @keyframes badge-bounce {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-4px); }
+  }
+  @keyframes shimmer {
+    0%   { background-position: -200% center; }
+    100% { background-position: 200% center; }
+  }
+  @keyframes ecg-sweep {
+    from { background-position-x: 0; }
+    to   { background-position-x: 900px; }
+  }
+  @keyframes orb-drift {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25%      { transform: translate(30px, -20px) scale(1.05); }
+    50%      { transform: translate(-10px, -30px) scale(0.97); }
+    75%      { transform: translate(20px, 10px) scale(1.03); }
+  }
+  @keyframes gradient-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50%      { background-position: 100% 50%; }
+  }
+  @keyframes phone-showcase {
+    0%, 100% { transform: rotate(-3.5deg) translateY(0) scale(1); }
+    50%      { transform: rotate(3deg) translateY(-16px) scale(1.02); }
+  }
+  @keyframes caret-blink {
+    0%, 100% { opacity: 1; }
+    50%      { opacity: 0; }
   }
 `;
 
-function Reveal({ children, delay = 0, className = "" }) {
+function Reveal({ children, delay = 0, className = "", scale = false }) {
   const ref = useRef(null);
   const [visible, setVisible] = useState(false);
 
@@ -53,17 +138,10 @@ function Reveal({ children, delay = 0, className = "" }) {
       setVisible(true);
       return undefined;
     }
-
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setVisible(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.12, rootMargin: "0px 0px -40px 0px" },
+      ([entry]) => { if (entry.isIntersecting) { setVisible(true); observer.disconnect(); } },
+      { threshold: 0.1, rootMargin: "0px 0px -30px 0px" },
     );
-
     observer.observe(node);
     return () => observer.disconnect();
   }, []);
@@ -71,7 +149,7 @@ function Reveal({ children, delay = 0, className = "" }) {
   return (
     <div
       ref={ref}
-      className={`wl-reveal ${visible ? "is-revealed" : ""} ${className}`}
+      className={`wl-reveal ${scale ? "wl-reveal-scale" : ""} ${visible ? "is-revealed" : ""} ${className}`}
       style={{ animationDelay: `${delay}ms` }}
     >
       {children}
@@ -79,669 +157,435 @@ function Reveal({ children, delay = 0, className = "" }) {
   );
 }
 
-export default function Home() {
+/* ─── Animated counter ─── */
+function AnimatedCounter({ target, suffix = "", duration = 2000 }) {
+  const [count, setCount] = useState(0);
+  const ref = useRef(null);
+  const started = useRef(false);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !started.current) {
+          started.current = true;
+          const numTarget = parseInt(target.toString().replace(/[^0-9]/g, ""), 10);
+          const startTime = performance.now();
+          const animate = (now) => {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 3);
+            setCount(Math.floor(eased * numTarget));
+            if (progress < 1) requestAnimationFrame(animate);
+          };
+          requestAnimationFrame(animate);
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.3 },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [target, duration]);
+
+  return <span ref={ref}>{count.toLocaleString()}{suffix}</span>;
+}
+
+/* ─── Typewriter greeting ─── */
+function TypewriterGreeting({ text = "Welcome to WaitLess", speed = 85 }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCount((current) => {
+        if (current >= text.length) {
+          clearInterval(timer);
+          return current;
+        }
+        return current + 1;
+      });
+    }, speed);
+    return () => clearInterval(timer);
+  }, [text, speed]);
+
   return (
-    <>
-      <style>{REVEAL_STYLES}</style>
-      <Hero />
-      <LandingLightCanvas>
-        <Stats />
-        <TriageStrip />
-        <Features />
-      </LandingLightCanvas>
-      <LightToDarkWaveDivider />
-      <Flow />
-      <CTA />
-    </>
+    <span
+      className="bg-gradient-to-r from-teal-200 via-cyan-100 to-teal-300 bg-clip-text text-xl italic tracking-wide text-transparent drop-shadow-[0_0_18px_rgba(45,212,191,0.35)]"
+      style={{ fontFamily: "Georgia, 'Times New Roman', serif" }}
+    >
+      {text.slice(0, count)}
+      <span
+        aria-hidden="true"
+        className="ml-0.5 inline-block h-[1em] w-[2px] translate-y-[0.18em] rounded-sm bg-teal-300"
+        style={{ animation: "caret-blink 0.9s step-end infinite" }}
+      />
+    </span>
   );
 }
 
-function LandingLightCanvas({ children }) {
+/* ═══════════════════════════════════════════════
+   ROOT COMPONENT
+   ═══════════════════════════════════════════════ */
+export default function Home() {
+  const [splash, setSplash] = useState(true);
+  const [splashFading, setSplashFading] = useState(false);
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setSplashFading(true), 2600);
+    const t2 = setTimeout(() => setSplash(false), 3400);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
+
   return (
-    <div className="relative isolate overflow-hidden">
-      <div className="absolute inset-0 -z-30 bg-[linear-gradient(180deg,rgba(255,255,255,0.82),rgba(248,250,252,0.94)_22%,rgba(240,253,250,0.94)_58%,rgba(239,246,255,0.98))]" />
-      <div className="absolute inset-0 -z-20 portal-surface-stripes opacity-80" />
-      <div className="absolute inset-x-[-14%] top-[-5.5rem] -z-20 h-44 rounded-[100%] bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.98),rgba(204,251,241,0.74)_36%,rgba(219,234,254,0.52)_62%,rgba(255,255,255,0)_78%)] blur-3xl" />
-      <div className="absolute inset-x-[-14%] bottom-[-6rem] -z-20 h-52 rounded-[100%] bg-[radial-gradient(ellipse_at_center,rgba(20,184,166,0.20),rgba(37,99,235,0.16)_44%,rgba(248,250,252,0)_76%)] blur-3xl" />
-      <div className="absolute left-[-8%] top-32 -z-20 h-80 w-80 rounded-full bg-primary/12 blur-3xl" />
-      <div className="absolute right-[-4%] top-44 -z-20 h-96 w-96 rounded-full bg-accent/12 blur-3xl" />
-      <div className="absolute left-[12%] top-12 -z-20 h-[36rem] w-40 bg-[linear-gradient(180deg,rgba(20,184,166,0.16),rgba(255,255,255,0.04)_38%,rgba(37,99,235,0.10)_82%,rgba(255,255,255,0))] blur-3xl" />
-      <div className="absolute right-[10%] top-20 -z-20 h-[42rem] w-48 bg-[linear-gradient(180deg,rgba(37,99,235,0.18),rgba(255,255,255,0.04)_34%,rgba(20,184,166,0.12)_80%,rgba(255,255,255,0))] blur-3xl" />
-      <div className="absolute left-[44%] top-[24%] -z-20 h-[24rem] w-36 bg-[linear-gradient(180deg,rgba(255,255,255,0.0),rgba(20,184,166,0.10)_20%,rgba(255,255,255,0.0)_52%,rgba(37,99,235,0.10)_76%,rgba(255,255,255,0.0))] blur-3xl" />
-      {children}
+    <div className="dark bg-[#020814] text-white" style={{ fontFamily: "Inter, Manrope, system-ui, sans-serif" }}>
+      <style>{REVEAL_CSS}</style>
+      {splash ? <SplashScreen fading={splashFading} /> : null}
+      <Hero />
+      <LiveTicker />
+      <TrustBanner />
+      <DepartmentsSection />
+      <PatientJourney />
+      <TriageSection />
+      <FeaturesSection />
+      <MobileAppSection />
+      <StatsSection />
+      <TestimonialsSection />
+      <CTASection />
+      <Footer />
     </div>
   );
 }
 
+/* ═══════════════════════════════════════════════
+   SPLASH SCREEN
+   ═══════════════════════════════════════════════ */
+function SplashScreen({ fading }) {
+  return (
+    <div
+      className={`fixed inset-0 z-[10000] flex flex-col items-center justify-center bg-[#020814] transition-all duration-700 ${
+        fading ? "pointer-events-none opacity-0 scale-105" : "opacity-100 scale-100"
+      }`}
+      aria-hidden="true"
+    >
+      <div className="relative h-24 w-24" style={{ animation: "glow-ring 2s ease-in-out infinite" }}>
+        <div className="absolute inset-0 rounded-full border-[2.5px] border-cyan-200/10 border-r-cyan-400 border-t-teal-400 animate-[spin_1.2s_linear_infinite]" />
+        <div className="absolute inset-0 grid place-items-center">
+          <img src="/waitless-logo-icon.png" alt="WaitLess" className="h-12 w-12 object-contain drop-shadow-[0_0_20px_rgba(20,184,166,0.5)]" />
+        </div>
+      </div>
+      <div className="mt-6 flex flex-col items-center gap-2">
+        <p className="text-lg font-bold tracking-wide text-white" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
+          Wait<span className="text-teal-400">Less</span>
+        </p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-100/60">
+          Hospital Queue OS
+        </p>
+      </div>
+      <div className="mt-8 h-0.5 w-32 overflow-hidden rounded-full bg-white/5">
+        <div className="h-full w-full animate-[shimmer_1.5s_ease-in-out_infinite] rounded-full bg-gradient-to-r from-transparent via-teal-400 to-transparent" style={{ backgroundSize: "200% 100%" }} />
+      </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   HERO SECTION
+   ═══════════════════════════════════════════════ */
 function Hero() {
   const auth = useAuth();
   const patientAuth = usePatientAuth();
   const isStaff = auth.isAuthenticated;
   const isPatient = patientAuth.isPatientAuthenticated;
   const canRegisterPatient = auth.hasRole(["reception", "receptionist"]);
-  const heroHighlights = [
-    {
-      icon: Users,
-      label: "Patients triaged today",
-      value: "247",
-    },
-    {
-      icon: Timer,
-      label: "Median live wait",
-      value: "23m",
-    },
-    {
-      icon: BellRing,
-      label: "Alerts delivered",
-      value: "1,184",
-    },
-  ];
-  const heroQueueSnapshot = [
-    { label: "Now serving", value: "R-104", detail: "Casualty Resus Room" },
-    { label: "Up next", value: "Y-118", detail: "Observation priority" },
-    { label: "Patient alert", value: "G-203", detail: "WhatsApp near-turn sent" },
-  ];
 
   return (
-    <section className="relative isolate min-h-[calc(100vh-5rem)] overflow-hidden">
-      <div
-        className="absolute inset-0 -z-20 bg-cover bg-center"
-        style={{ backgroundImage: `url(${hospitalHeroBackground})` }}
-      />
-      <div className="absolute inset-0 -z-20 portal-hero-texture opacity-80" />
-      <div className="absolute inset-0 -z-10 hero-dots-soft opacity-45" />
-      <div className="absolute inset-0 -z-10 bg-[linear-gradient(90deg,rgba(248,250,252,0.96),rgba(248,250,252,0.82)_42%,rgba(15,118,110,0.18)_72%,rgba(2,6,23,0.18))]" />
-      <div className="absolute inset-x-0 bottom-0 -z-10 h-40 bg-gradient-to-t from-background to-transparent" />
+    <section className="relative isolate overflow-hidden">
+      {/* Background layers */}
+      <div className="absolute inset-0 -z-30 bg-cover bg-center bg-no-repeat" style={{ backgroundImage: `url(${hospitalHeroBackground})` }} />
+      <div className="absolute inset-0 -z-20 bg-[linear-gradient(135deg,rgba(2,8,20,0.97)_0%,rgba(3,14,28,0.92)_30%,rgba(6,40,54,0.78)_60%,rgba(2,8,20,0.88)_100%)]" />
 
-      <div className="mx-auto grid min-h-[calc(100vh-5rem)] max-w-7xl items-center gap-10 px-4 py-12 sm:px-6 sm:py-14 lg:grid-cols-[0.9fr_0.72fr] lg:gap-12 lg:px-8">
-        <div className="max-w-3xl">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-white/62 px-3 py-1.5 text-xs font-semibold text-primary shadow-[0_14px_30px_-24px_rgba(15,118,110,0.26)] backdrop-blur">
-            <ShieldAlert className="h-3.5 w-3.5" />
-            Triage-aware hospital operations
+      {/* Animated orbs */}
+      <div className="absolute -z-10 left-[-6%] top-[15%] h-[28rem] w-[28rem] rounded-full bg-teal-500/[0.08] blur-[80px]" style={{ animation: "orb-drift 18s ease-in-out infinite" }} />
+      <div className="absolute -z-10 right-[-8%] top-[25%] h-[32rem] w-[32rem] rounded-full bg-blue-500/[0.06] blur-[100px]" style={{ animation: "orb-drift 22s ease-in-out infinite reverse" }} />
+      <div className="absolute -z-10 left-[40%] bottom-[-5%] h-[24rem] w-[24rem] rounded-full bg-cyan-400/[0.05] blur-[70px]" style={{ animation: "orb-drift 16s ease-in-out infinite 2s" }} />
+
+      {/* Grid overlay */}
+      <div className="absolute inset-0 -z-10 opacity-[0.03] [background-image:linear-gradient(rgba(255,255,255,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.5)_1px,transparent_1px)] [background-size:64px_64px]" />
+
+      {/* ECG line */}
+      <div className="absolute bottom-0 left-0 right-0 -z-10 h-11 opacity-20"
+        style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='900' height='44' viewBox='0 0 900 44' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 24H145L160 24L171 8L185 36L198 24H340L352 24L363 14L377 31L391 24H900' fill='none' stroke='%232dd4bf' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")`,
+          backgroundSize: "900px 44px",
+          backgroundRepeat: "repeat-x",
+          animation: "ecg-sweep 16s linear infinite",
+        }}
+      />
+
+      <div className="mx-auto grid min-h-[calc(100svh-5rem)] max-w-7xl items-center gap-10 px-4 pb-16 pt-10 sm:px-6 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:px-8 lg:pt-12">
+        {/* Left: Text content */}
+        <div className="max-w-2xl lg:max-w-none">
+          {/* Welcome greeting */}
+          <div
+            className="flex items-center gap-4"
+            style={{ animation: "hero-text-rise 0.9s cubic-bezier(0.16,1,0.3,1) 0.1s both" }}
+          >
+            <span className="h-px w-10 bg-gradient-to-r from-transparent via-teal-300/50 to-teal-300/70" />
+            <TypewriterGreeting />
+            <span className="h-px w-10 bg-gradient-to-l from-transparent via-teal-300/50 to-teal-300/70" />
           </div>
-          <h1 className="mt-5 text-balance font-display text-5xl font-bold leading-[1.02] tracking-tight text-foreground sm:text-6xl lg:text-7xl">
-            Your health journey,
+
+          {/* Headline */}
+          <h1
+            className="mt-4 max-w-xl text-balance text-4xl font-extrabold leading-[1.08] tracking-tight sm:mt-6 sm:text-5xl lg:text-6xl"
+            style={{ fontFamily: "Manrope, system-ui, sans-serif", animation: "hero-text-rise 0.9s cubic-bezier(0.16,1,0.3,1) 0.2s both" }}
+          >
+            Skip the queue.
             <br />
-            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              simplified.
+            <span className="bg-gradient-to-r from-teal-300 via-cyan-300 to-blue-400 bg-clip-text text-transparent" style={{ backgroundSize: "200% 100%", animation: "gradient-shift 6s ease-in-out infinite" }}>
+              Not the care.
             </span>
           </h1>
-          <p className="mt-5 max-w-2xl text-balance text-base leading-7 text-muted-foreground sm:text-lg">
-            Book your spot in the queue from your phone, track your position in
-            real time, and get WhatsApp updates — so you never lose your place.
+
+          {/* Subtitle */}
+          <p
+            className="mt-6 max-w-xl text-lg leading-8 text-slate-300/90"
+            style={{ animation: "hero-text-rise 0.9s cubic-bezier(0.16,1,0.3,1) 0.35s both" }}
+          >
+            Check in from your phone, track your queue position in real time,
+            and get <span className="font-semibold text-green-400">WhatsApp</span> alerts when it's your turn —
+            so you spend less time waiting and more time healing.
           </p>
-          <div className="mt-8 flex flex-wrap items-stretch gap-3">
+
+          {/* CTAs */}
+          <div
+            className="mt-9 flex flex-wrap items-stretch gap-3"
+            style={{ animation: "hero-text-rise 0.9s cubic-bezier(0.16,1,0.3,1) 0.5s both" }}
+          >
             {isStaff ? (
               <>
                 <Link
                   to={resolveStaffLandingPath(auth.user)}
-                  className="inline-flex min-h-12 items-center gap-2 rounded-xl gradient-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-elegant transition-transform hover:-translate-y-0.5"
+                  className="group inline-flex min-h-[3.25rem] items-center gap-2.5 rounded-2xl bg-gradient-to-r from-teal-600 to-cyan-600 px-7 py-3.5 text-sm font-bold text-white shadow-[0_12px_36px_-12px_rgba(20,184,166,0.5)] transition-all hover:-translate-y-1 hover:shadow-[0_18px_44px_-14px_rgba(20,184,166,0.6)]"
                 >
                   My workspace
-                  <LayoutDashboard className="h-4 w-4" />
+                  <LayoutDashboard className="h-4 w-4 transition-transform group-hover:rotate-6" />
                 </Link>
                 {canRegisterPatient ? (
-                  <Link
-                    to="/admin/register"
-                    className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-white/68 px-5 py-3 text-sm font-semibold text-foreground shadow-[0_16px_34px_-28px_rgba(15,23,42,0.20)] backdrop-blur transition-colors hover:bg-white/82"
-                  >
-                    New patient
-                    <ClipboardList className="h-4 w-4" />
+                  <Link to="/admin/register" className="inline-flex min-h-[3.25rem] items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-6 py-3.5 text-sm font-semibold text-white backdrop-blur transition-all hover:bg-white/[0.1]">
+                    New patient <ClipboardList className="h-4 w-4" />
                   </Link>
                 ) : null}
-                <Link
-                  to="/track"
-                  className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-primary-soft/72 px-5 py-3 text-sm font-semibold text-primary shadow-[0_14px_34px_-26px_rgba(15,118,110,0.24)] backdrop-blur transition-colors hover:bg-primary-soft/88"
-                >
-                  Track a ticket
-                  <Search className="h-4 w-4" />
-                </Link>
               </>
             ) : isPatient ? (
               <>
-                <Link
-                  to="/patient/dashboard"
-                  className="inline-flex min-h-12 items-center gap-2 rounded-xl gradient-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-elegant transition-transform hover:-translate-y-0.5"
-                >
-                  My dashboard
-                  <LayoutDashboard className="h-4 w-4" />
+                <Link to="/patient/dashboard" className="group inline-flex min-h-[3.25rem] items-center gap-2.5 rounded-2xl bg-gradient-to-r from-teal-600 to-cyan-600 px-7 py-3.5 text-sm font-bold text-white shadow-[0_12px_36px_-12px_rgba(20,184,166,0.5)] transition-all hover:-translate-y-1 hover:shadow-[0_18px_44px_-14px_rgba(20,184,166,0.6)]">
+                  My dashboard <LayoutDashboard className="h-4 w-4 transition-transform group-hover:rotate-6" />
                 </Link>
-                <Link
-                  to="/self-register"
-                  className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-white/68 px-5 py-3 text-sm font-semibold text-foreground shadow-[0_16px_34px_-28px_rgba(15,23,42,0.20)] backdrop-blur transition-colors hover:bg-white/82"
-                >
-                  Book a queue spot
-                  <ClipboardList className="h-4 w-4" />
-                </Link>
-                <Link
-                  to="/track"
-                  className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-primary-soft/72 px-5 py-3 text-sm font-semibold text-primary shadow-[0_14px_34px_-26px_rgba(15,118,110,0.24)] backdrop-blur transition-colors hover:bg-primary-soft/88"
-                >
-                  Track a ticket
-                  <Search className="h-4 w-4" />
+                <Link to="/self-register" className="inline-flex min-h-[3.25rem] items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-6 py-3.5 text-sm font-semibold text-white backdrop-blur transition-all hover:bg-white/[0.1]">
+                  Book queue spot <ClipboardList className="h-4 w-4" />
                 </Link>
               </>
             ) : (
               <>
                 <Link
-                  to="/patient/register"
-                  className="inline-flex min-h-12 items-center gap-2 rounded-xl gradient-primary px-5 py-3 text-sm font-semibold text-primary-foreground shadow-elegant transition-transform hover:-translate-y-0.5"
+                  to="/self-register"
+                  className="group inline-flex min-h-[3.25rem] items-center gap-2.5 rounded-2xl bg-gradient-to-r from-teal-600 to-cyan-600 px-7 py-3.5 text-sm font-bold text-white shadow-[0_12px_36px_-12px_rgba(20,184,166,0.5)] transition-all hover:-translate-y-1 hover:shadow-[0_18px_44px_-14px_rgba(20,184,166,0.6)]"
                 >
-                  Get started today
-                  <ArrowRight className="h-4 w-4" />
+                  Check in now — no account needed
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </Link>
-                <Link
-                  to="/track"
-                  className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-white/68 px-5 py-3 text-sm font-semibold text-foreground shadow-[0_16px_34px_-28px_rgba(15,23,42,0.20)] backdrop-blur transition-colors hover:bg-white/82"
-                >
-                  Track a ticket
-                  <Search className="h-4 w-4" />
-                </Link>
-                <Link
-                  to="/queue"
-                  className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-primary-soft/72 px-5 py-3 text-sm font-semibold text-primary shadow-[0_14px_34px_-26px_rgba(15,118,110,0.24)] backdrop-blur transition-colors hover:bg-primary-soft/88"
-                >
-                  View live queue board
+                <Link to="/queue" className="inline-flex min-h-[3.25rem] items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-6 py-3.5 text-sm font-semibold text-white backdrop-blur transition-all hover:bg-white/[0.1]">
                   <MonitorSmartphone className="h-4 w-4" />
+                  View live queue
                 </Link>
               </>
             )}
           </div>
 
-          {!isStaff && !isPatient ? (
-            <p className="mt-4 text-sm text-muted-foreground">
-              Already at the hospital?{" "}
-              <Link
-                to="/self-register"
-                className="font-semibold text-primary underline-offset-4 transition-colors hover:text-teal-700 hover:underline"
-              >
-                Check in instantly — no account needed
+          {/* Sub links */}
+          {!isStaff && !isPatient && (
+            <div className="mt-5 flex flex-wrap items-center gap-4 text-sm" style={{ animation: "hero-text-rise 0.9s cubic-bezier(0.16,1,0.3,1) 0.65s both" }}>
+              <Link to="/patient/register" className="text-teal-300 underline-offset-4 transition-colors hover:text-teal-200 hover:underline">
+                Create a free patient account →
               </Link>
-            </p>
-          ) : null}
-
-          <div className="mt-10 grid max-w-2xl gap-4 sm:grid-cols-3">
-            {heroHighlights.map((item) => (
-              <div
-                key={item.label}
-                className="rounded-2xl bg-white/64 px-4 py-4 shadow-[0_20px_40px_-30px_rgba(15,23,42,0.24)] backdrop-blur"
-              >
-                <span className="grid h-10 w-10 place-items-center rounded-xl bg-primary-soft text-primary">
-                  <item.icon className="h-4 w-4" />
-                </span>
-                <div className="mt-3 font-display text-3xl font-bold tracking-tight">
-                  {item.value}
-                </div>
-                <div className="mt-1 text-xs uppercase tracking-[0.18em] text-muted-foreground">
-                  {item.label}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="relative w-full max-w-lg justify-self-end lg:translate-y-4">
-          <div className="absolute -left-8 top-10 h-32 w-32 rounded-full bg-primary/14 blur-3xl" />
-          <div className="absolute -right-6 bottom-6 h-36 w-36 rounded-full bg-accent/16 blur-3xl" />
-          <div className="relative space-y-4">
-            <div className="rounded-[1.75rem] border border-white/45 bg-white/28 p-4 shadow-[0_26px_58px_-38px_rgba(15,23,42,0.26)] backdrop-blur-lg sm:p-5">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <div className="eyebrow">Operations pulse</div>
-                  <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-foreground">
-                    Live patient flow
-                  </h2>
-                </div>
-                <span className="inline-flex items-center gap-2 rounded-full bg-primary-soft/78 px-3 py-1.5 text-xs font-semibold text-primary shadow-[0_12px_24px_-22px_rgba(15,118,110,0.34)]">
-                  <BellRing className="h-3.5 w-3.5" />
-                  Live updates
-                </span>
-              </div>
+              <span className="text-white/20">|</span>
+              <Link to="/admin/login" className="text-white/50 underline-offset-4 transition-colors hover:text-white/70 hover:underline">
+                Staff login
+              </Link>
             </div>
+          )}
 
-            <div className="grid gap-3 sm:grid-cols-3">
-              {heroQueueSnapshot.map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-2xl border border-white/44 bg-white/68 px-4 py-4 shadow-[0_20px_38px_-30px_rgba(15,23,42,0.22)] backdrop-blur"
-                >
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-                    {item.label}
-                  </div>
-                  <div className="mt-1 font-display text-3xl font-bold tracking-tight">
+          {/* Mini stats row */}
+          <div className="mt-10 flex flex-wrap items-center gap-6" style={{ animation: "hero-text-rise 0.9s cubic-bezier(0.16,1,0.3,1) 0.8s both" }}>
+            {[
+              { value: "247", label: "Patients today" },
+              { value: "23m", label: "Median wait" },
+              { value: "99.8%", label: "Uptime" },
+            ].map((item) => (
+              <div key={item.label} className="flex items-center gap-3">
+                <div>
+                  <div className="text-xl font-bold tracking-tight text-white" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
                     {item.value}
                   </div>
-                  <div className="mt-1 text-xs text-muted-foreground">{item.detail}</div>
+                  <div className="text-[11px] font-medium text-white/40">{item.label}</div>
                 </div>
-              ))}
-            </div>
-
-            <div className="rounded-[1.6rem] border border-white/40 bg-[linear-gradient(135deg,rgba(15,118,110,0.42),rgba(37,99,235,0.38))] p-5 text-primary-foreground shadow-[0_24px_52px_-30px_rgba(37,99,235,0.22)] backdrop-blur-lg">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-primary-foreground/76">
-                    Queue routing
-                  </div>
-                  <div className="mt-2 font-display text-2xl font-bold tracking-tight">
-                    Built for public hospitals
-                  </div>
-                  <p className="mt-2 max-w-sm text-sm leading-6 text-primary-foreground/82">
-                    Registration, triage, tracking and queue boards stay connected
-                    in one visible patient journey.
-                  </p>
-                </div>
-                <span className="grid h-11 w-11 place-items-center rounded-2xl bg-white/14">
-                  <Activity className="h-5 w-5" />
-                </span>
               </div>
-
-              <div className="mt-4 flex flex-wrap gap-2">
-                {["OPD", "Casualty", "Pharmacy", "Radiology"].map((item) => (
-                  <span
-                    key={item}
-                    className="rounded-full border border-white/12 bg-white/10 px-3 py-1.5 text-xs font-semibold text-primary-foreground/88"
-                  >
-                    {item}
-                  </span>
-                ))}
-              </div>
-            </div>
+            ))}
           </div>
         </div>
+
+        {/* Right: Visual showcase */}
+        <div className="relative hidden lg:block" style={{ animation: "hero-text-rise 1s cubic-bezier(0.16,1,0.3,1) 0.4s both" }}>
+          <div className="relative">
+            <div className="absolute inset-x-8 -bottom-10 h-28 rounded-full bg-teal-500/[0.12] blur-3xl" />
+            <img
+              src={hospitalHeroImage}
+              alt="Hospital waiting area running the WaitLess digital queue system"
+              className="relative aspect-[16/10] w-full rounded-[2rem] object-cover saturate-[0.9] contrast-[1.05] brightness-[0.97]"
+              style={{
+                maskImage:
+                  "linear-gradient(to right, transparent, black 13%, black 87%, transparent), linear-gradient(to bottom, transparent, black 13%, black 87%, transparent)",
+                WebkitMaskImage:
+                  "linear-gradient(to right, transparent, black 13%, black 87%, transparent), linear-gradient(to bottom, transparent, black 13%, black 87%, transparent)",
+                maskComposite: "intersect",
+                WebkitMaskComposite: "source-in",
+              }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Scroll indicator */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 text-white/30">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.2em]">Scroll to explore</span>
+        <ChevronDown className="h-4 w-4 animate-bounce" />
       </div>
     </section>
   );
 }
 
-const MEDICAL_BACKDROP_ICONS = [
-  {
-    Icon: Cross,
-    className:
-      "left-8 top-10 text-primary/20 [animation:medical-float_18s_ease-in-out_infinite] motion-reduce:animate-none",
-    size: "h-12 w-12",
-  },
-  {
-    Icon: FlaskConical,
-    className:
-      "right-12 top-12 text-accent/18 [animation:medical-spin_22s_linear_infinite] motion-reduce:animate-none",
-    size: "h-10 w-10",
-  },
-  {
-    Icon: HeartPulse,
-    className:
-      "left-[46%] top-16 text-primary/16 [animation:medical-drift_24s_ease-in-out_infinite] motion-reduce:animate-none",
-    size: "h-11 w-11",
-  },
-  {
-    Icon: Pill,
-    className:
-      "left-[18%] bottom-10 text-accent/16 [animation:medical-float_20s_ease-in-out_infinite] motion-reduce:animate-none",
-    size: "h-10 w-10",
-  },
-  {
-    Icon: Stethoscope,
-    className:
-      "right-[18%] bottom-12 text-primary/16 [animation:medical-drift_28s_ease-in-out_infinite] motion-reduce:animate-none",
-    size: "h-11 w-11",
-  },
-  {
-    Icon: Cross,
-    className:
-      "left-[28%] top-[34%] text-accent/14 [animation:medical-spin_26s_linear_infinite] motion-reduce:animate-none",
-    size: "h-8 w-8",
-  },
-  {
-    Icon: FlaskConical,
-    className:
-      "left-[62%] top-[22%] text-primary/14 [animation:medical-drift_26s_ease-in-out_infinite] motion-reduce:animate-none",
-    size: "h-9 w-9",
-  },
-  {
-    Icon: HeartPulse,
-    className:
-      "right-[32%] top-[58%] text-accent/14 [animation:medical-float_21s_ease-in-out_infinite] motion-reduce:animate-none",
-    size: "h-10 w-10",
-  },
-  {
-    Icon: Pill,
-    className:
-      "left-[6%] bottom-[28%] text-primary/14 [animation:medical-drift_25s_ease-in-out_infinite] motion-reduce:animate-none",
-    size: "h-8 w-8",
-  },
-  {
-    Icon: Stethoscope,
-    className:
-      "right-[8%] bottom-[26%] text-accent/14 [animation:medical-spin_30s_linear_infinite] motion-reduce:animate-none",
-    size: "h-10 w-10",
-  },
-  {
-    Icon: Cross,
-    className:
-      "left-[72%] bottom-[12%] text-primary/18 [animation:medical-float_19s_ease-in-out_infinite] motion-reduce:animate-none",
-    size: "h-9 w-9",
-  },
-  {
-    Icon: HeartPulse,
-    className:
-      "left-[10%] top-[56%] text-accent/12 [animation:medical-drift_29s_ease-in-out_infinite] motion-reduce:animate-none",
-    size: "h-8 w-8",
-  },
-];
-
-const MEDICAL_BACKDROP_FEATURE_ICONS = [
-  {
-    Icon: Cross,
-    className:
-      "left-3 top-6 text-primary/24 [animation:medical-float_16s_ease-in-out_infinite] motion-reduce:animate-none",
-    size: "h-14 w-14",
-  },
-  {
-    Icon: HeartPulse,
-    className:
-      "left-8 top-[48%] text-accent/18 [animation:medical-drift_18s_ease-in-out_infinite] motion-reduce:animate-none",
-    size: "h-12 w-12",
-  },
-  {
-    Icon: Pill,
-    className:
-      "left-[4%] bottom-4 text-primary/20 [animation:medical-spin_24s_linear_infinite] motion-reduce:animate-none",
-    size: "h-12 w-12",
-  },
-  {
-    Icon: FlaskConical,
-    className:
-      "left-[38%] top-[58%] text-accent/20 [animation:medical-float_17s_ease-in-out_infinite] motion-reduce:animate-none",
-    size: "h-11 w-11",
-  },
-  {
-    Icon: Stethoscope,
-    className:
-      "left-[46%] top-[10%] text-primary/20 [animation:medical-drift_22s_ease-in-out_infinite] motion-reduce:animate-none",
-    size: "h-12 w-12",
-  },
-  {
-    Icon: Cross,
-    className:
-      "right-[14%] top-[18%] text-accent/20 [animation:medical-spin_20s_linear_infinite] motion-reduce:animate-none",
-    size: "h-12 w-12",
-  },
-  {
-    Icon: Pill,
-    className:
-      "right-[8%] bottom-[20%] text-accent/18 [animation:medical-float_19s_ease-in-out_infinite] motion-reduce:animate-none",
-    size: "h-12 w-12",
-  },
-  {
-    Icon: HeartPulse,
-    className:
-      "right-[28%] bottom-[10%] text-primary/18 [animation:medical-drift_23s_ease-in-out_infinite] motion-reduce:animate-none",
-    size: "h-11 w-11",
-  },
-];
-
-function MedicalBackdrop({ variant }) {
-  const backgroundClass =
-    {
-      stats:
-        "bg-[radial-gradient(circle_at_10%_20%,rgba(20,184,166,0.16),transparent_30%),radial-gradient(circle_at_88%_24%,rgba(37,99,235,0.14),transparent_28%),radial-gradient(circle_at_50%_85%,rgba(20,184,166,0.10),transparent_26%),linear-gradient(180deg,rgba(255,255,255,0.82),rgba(248,250,252,0.92))]",
-      triage:
-        "bg-[radial-gradient(circle_at_12%_24%,rgba(20,184,166,0.14),transparent_32%),radial-gradient(circle_at_82%_36%,rgba(37,99,235,0.16),transparent_30%),radial-gradient(circle_at_58%_78%,rgba(37,99,235,0.08),transparent_24%),linear-gradient(180deg,rgba(255,255,255,0.92),rgba(248,250,252,0.98))]",
-      features:
-        "bg-[radial-gradient(circle_at_14%_22%,rgba(20,184,166,0.24),transparent_34%),radial-gradient(circle_at_74%_22%,rgba(37,99,235,0.22),transparent_32%),radial-gradient(circle_at_24%_76%,rgba(20,184,166,0.12),transparent_24%),radial-gradient(circle_at_88%_78%,rgba(37,99,235,0.12),transparent_22%),linear-gradient(180deg,rgba(255,255,255,0.88),rgba(248,250,252,0.98))]",
-    }[variant] ?? "bg-transparent";
-  const gridClass =
-    variant === "features"
-      ? "absolute inset-0 opacity-95 [background-image:linear-gradient(rgba(148,163,184,0.11)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.10)_1px,transparent_1px)] [background-size:80px_80px]"
-      : "absolute inset-0 opacity-80 [background-image:linear-gradient(rgba(148,163,184,0.09)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.08)_1px,transparent_1px)] [background-size:88px_88px]";
-  const iconSet =
-    variant === "features"
-      ? [...MEDICAL_BACKDROP_ICONS, ...MEDICAL_BACKDROP_FEATURE_ICONS]
-      : MEDICAL_BACKDROP_ICONS;
+/* ═══════════════════════════════════════════════
+   LIVE TICKER
+   ═══════════════════════════════════════════════ */
+function LiveTicker() {
+  const items = [
+    ["bg-red-400", "R-104 routed to resuscitation"],
+    ["bg-amber-400", "Y-118 moved to observation"],
+    ["bg-emerald-400", "G-203 WhatsApp alert delivered"],
+    ["bg-blue-400", "Pharmacy window ready"],
+    ["bg-violet-400", "Lab transfer accepted"],
+    ["bg-teal-400", "New walk-in registered"],
+    ["bg-cyan-400", "Triage complete in 90 seconds"],
+    ["bg-sky-400", "Patient checked in via phone"],
+  ];
 
   return (
-    <>
-      <div className={`absolute inset-0 -z-20 ${backgroundClass}`} />
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className={gridClass} />
-        <div className="absolute left-[8%] top-[20%] h-40 w-40 rounded-full bg-primary/8 blur-3xl" />
-        <div className="absolute right-[10%] top-[26%] h-48 w-48 rounded-full bg-accent/8 blur-3xl" />
-        <div className="absolute left-[42%] bottom-[10%] h-36 w-36 rounded-full bg-primary/6 blur-3xl" />
-        {variant === "features" && (
-          <>
-            <div className="absolute left-[4%] top-[10%] h-56 w-56 rounded-full bg-primary/10 blur-3xl" />
-            <div className="absolute right-[6%] top-[42%] h-64 w-64 rounded-full bg-accent/10 blur-3xl" />
-            <div className="absolute left-[34%] bottom-[8%] h-44 w-44 rounded-full bg-primary/8 blur-3xl" />
-          </>
-        )}
-        {iconSet.map(({ Icon, className, size }, index) => (
-          <span key={`${variant}-${index}`} className={`absolute ${className}`}>
-            <Icon className={size} strokeWidth={2} />
-          </span>
-        ))}
+    <div className="relative overflow-hidden border-y border-white/[0.05] bg-white/[0.015]">
+      <div className="absolute inset-0 bg-gradient-to-r from-[#030d1a] via-transparent to-[#030d1a] z-10 pointer-events-none" />
+      <div className="py-3">
+        <div
+          className="flex w-max gap-10 whitespace-nowrap px-4"
+          style={{ animation: "ticker-scroll 40s linear infinite" }}
+        >
+          {[...items, ...items].map(([dot, label], i) => (
+            <span key={`${label}-${i}`} className="inline-flex items-center gap-2.5 text-sm text-white/50">
+              <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
+              {label}
+            </span>
+          ))}
+        </div>
       </div>
-    </>
+    </div>
   );
 }
 
-function Stats() {
-  const items = [
-    {
-      icon: Users,
-      label: "Patients triaged today",
-      value: "247",
-    },
-    {
-      icon: Timer,
-      label: "Median wait",
-      value: "23 min",
-    },
-    {
-      icon: BellRing,
-      label: "Notifications sent",
-      value: "1,184",
-    },
-    {
-      icon: ShieldAlert,
-      label: "Red priority routed",
-      value: "12",
-    },
-  ];
-  const tickerItems = [
-    "R-104 routed to resuscitation",
-    "Y-118 moved to observation",
-    "G-203 WhatsApp alert delivered",
-    "Lab transfer accepted",
-    "Pharmacy window ready",
-    "Missed patient marked for recall",
+/* ═══════════════════════════════════════════════
+   TRUST BANNER
+   ═══════════════════════════════════════════════ */
+function TrustBanner() {
+  const badges = [
+    { icon: ShieldCheck, label: "Privacy-first design" },
+    { icon: Wifi, label: "Works offline on LAN" },
+    { icon: Zap, label: "Under 5 sec registration" },
+    { icon: Globe, label: "WhatsApp integrated" },
+    { icon: Shield, label: "Ticket codes only, no names" },
   ];
 
   return (
-    <section className="relative overflow-hidden border-y border-border/60 bg-transparent">
-      <MedicalBackdrop variant="stats" />
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="grid gap-6 lg:grid-cols-[1fr_1.2fr] lg:items-center">
-          <div>
-            <div className="eyebrow">Live impact snapshot</div>
-            <h2 className="mt-2 font-display text-2xl font-bold tracking-tight">
-              Every queue decision becomes visible.
-            </h2>
-          </div>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {items.map((item, index) => (
-              <Reveal key={item.label} delay={index * 70}>
-                <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-background/80 px-4 py-3 transition hover:-translate-y-0.5 hover:shadow-[0_14px_30px_-18px_rgba(37,99,235,0.25)]">
-                  <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">
-                    <item.icon className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <div className="font-display text-xl font-bold leading-none">
-                      {item.value}
-                    </div>
-                    <div className="mt-1 text-xs text-muted-foreground">{item.label}</div>
-                  </div>
-                </div>
-              </Reveal>
-            ))}
-          </div>
+    <div className="relative border-b border-white/[0.05]">
+      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
+        <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
+          {badges.map(({ icon: Icon, label }) => (
+            <div key={label} className="flex items-center gap-2 text-white/35">
+              <Icon className="h-4 w-4 text-teal-400/50" />
+              <span className="text-xs font-medium">{label}</span>
+            </div>
+          ))}
         </div>
+      </div>
+    </div>
+  );
+}
 
-        <Reveal delay={120} className="mt-6 overflow-hidden rounded-2xl border border-primary/15 bg-[linear-gradient(135deg,rgba(204,251,241,0.58),rgba(255,255,255,0.56)_36%,rgba(219,234,254,0.52))] py-3 shadow-[0_18px_44px_-34px_rgba(37,99,235,0.26)] backdrop-blur">
-          <div className="flex w-max gap-3 whitespace-nowrap px-3 [animation:auth-ticker_34s_linear_infinite]">
-            {[...tickerItems, ...tickerItems].map((item, index) => (
-              <span
-                key={`${item}-${index}`}
-                className="inline-flex items-center gap-2 rounded-full bg-background/80 px-3 py-1.5 text-xs font-semibold text-primary shadow-card"
-              >
-                <Radio className="h-3.5 w-3.5" />
-                {item}
-              </span>
-            ))}
+/* ═══════════════════════════════════════════════
+   DEPARTMENTS
+   ═══════════════════════════════════════════════ */
+const DEPT_DETAILS = {
+  OPD: { icon: Stethoscope, body: "General outpatient consultations, follow-up clinics, and referrals.", color: "from-teal-500/20 to-teal-600/5" },
+  "Casualty / Triage": { icon: Siren, body: "24/7 emergency assessment with four-tier priority routing.", color: "from-red-500/20 to-red-600/5" },
+  Pharmacy: { icon: Pill, body: "Prescription dispensing with WhatsApp call-up alerts.", color: "from-blue-500/20 to-blue-600/5" },
+  Laboratory: { icon: FlaskConical, body: "Blood work and diagnostic testing, tracked live from order to result.", color: "from-purple-500/20 to-purple-600/5" },
+  Radiology: { icon: ScanLine, body: "Imaging orders linked to your visit, with live status updates.", color: "from-amber-500/20 to-amber-600/5" },
+  "OI Clinic": { icon: HeartPulse, body: "Opportunistic infection care with discreet follow-up queues.", color: "from-rose-500/20 to-rose-600/5" },
+};
+
+function DepartmentsSection() {
+  return (
+    <section id="departments" className="relative overflow-hidden py-8 sm:py-12">
+      {/* Background */}
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_20%_30%,rgba(20,184,166,0.06),transparent_40%),radial-gradient(circle_at_80%_70%,rgba(59,130,246,0.04),transparent_35%)]" />
+
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <Reveal>
+          <div className="mx-auto max-w-2xl text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-teal-400/15 bg-teal-400/[0.06] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-teal-300">
+              Our departments
+            </div>
+            <h2 className="mt-5 text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
+              Every service point,{" "}
+              <span className="bg-gradient-to-r from-teal-300 to-cyan-300 bg-clip-text text-transparent">one queue</span>
+            </h2>
+            <p className="mt-4 text-lg text-white/50">
+              {HOSPITAL.name} runs six service points on WaitLess.
+              Your ticket follows you — no re-joining, no lost place.
+            </p>
           </div>
         </Reveal>
-      </div>
-    </section>
-  );
-}
 
-function TriageStrip() {
-  const auth = useAuth();
-  const canOpenTriage = auth.hasRole(["triage", "clinician", "admin"]);
-
-  const priorityCardStyles = {
-    red: {
-      shell:
-        "border-priority-red/20 shadow-[0_24px_60px_-36px_rgba(220,38,38,0.30)] hover:shadow-[0_28px_70px_-38px_rgba(220,38,38,0.34)]",
-      header:
-        "bg-[linear-gradient(135deg,rgba(239,68,68,0.98),rgba(220,38,38,0.96))] text-white",
-      body:
-        "bg-[linear-gradient(180deg,rgba(255,255,255,0.60),rgba(255,255,255,0.46)_50%,rgba(254,226,226,0.50))]",
-      route: "bg-priority-red/10 text-priority-red",
-      icon: "text-white/78",
-    },
-    yellow: {
-      shell:
-        "border-priority-yellow/26 shadow-[0_24px_60px_-36px_rgba(245,158,11,0.28)] hover:shadow-[0_28px_70px_-38px_rgba(245,158,11,0.32)]",
-      header:
-        "bg-[linear-gradient(135deg,rgba(251,191,36,0.98),rgba(245,158,11,0.95))] text-slate-950",
-      body:
-        "bg-[linear-gradient(180deg,rgba(255,255,255,0.60),rgba(255,255,255,0.48)_52%,rgba(254,240,138,0.38))]",
-      route: "bg-priority-yellow/18 text-slate-900",
-      icon: "text-slate-900/65",
-    },
-    green: {
-      shell:
-        "border-priority-green/22 shadow-[0_24px_60px_-36px_rgba(22,163,74,0.28)] hover:shadow-[0_28px_70px_-38px_rgba(22,163,74,0.32)]",
-      header:
-        "bg-[linear-gradient(135deg,rgba(34,197,94,0.98),rgba(22,163,74,0.95))] text-white",
-      body:
-        "bg-[linear-gradient(180deg,rgba(255,255,255,0.60),rgba(255,255,255,0.48)_52%,rgba(220,252,231,0.42))]",
-      route: "bg-priority-green/12 text-priority-green",
-      icon: "text-white/78",
-    },
-    black: {
-      shell:
-        "border-slate-900/20 shadow-[0_24px_60px_-36px_rgba(15,23,42,0.34)] hover:shadow-[0_28px_70px_-38px_rgba(15,23,42,0.38)]",
-      header:
-        "bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(2,6,23,0.95))] text-white",
-      body:
-        "bg-[linear-gradient(180deg,rgba(255,255,255,0.60),rgba(255,255,255,0.48)_52%,rgba(226,232,240,0.42))]",
-      route: "bg-slate-900/8 text-slate-800",
-      icon: "text-white/74",
-    },
-  };
-
-  return (
-    <section className="relative overflow-hidden border-b border-border/50 bg-transparent">
-      <MedicalBackdrop variant="triage" />
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr] lg:items-end">
-          <div>
-            <div className="eyebrow">Clinical priority engine</div>
-            <h2 className="font-display text-3xl font-bold tracking-tight">
-              The four-tier triage, digitised
-            </h2>
-            <p className="mt-2 max-w-2xl text-muted-foreground">
-              Chinhoyi Provincial Hospital&apos;s colour-coded triage protocol, captured at
-              registration and used to route every patient.
-            </p>
-            <Link
-              to={canOpenTriage ? "/admin/triage" : "/track"}
-              className="mt-5 inline-flex items-center gap-2 rounded-xl gradient-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-elegant transition-transform hover:-translate-y-0.5"
-            >
-              {canOpenTriage ? "Open triage console" : "Track a ticket"}
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-          </div>
-
-          <div className="relative overflow-hidden rounded-[1.85rem] border border-white/45 bg-[linear-gradient(135deg,rgba(15,118,110,0.72),rgba(14,165,233,0.68)_58%,rgba(37,99,235,0.74))] p-5 text-primary-foreground shadow-[0_26px_80px_-34px_rgba(37,99,235,0.34)] backdrop-blur-xl">
-            <div className="pointer-events-none absolute inset-0 rounded-[inherit] bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.18),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(255,255,255,0.14),transparent_32%)]" />
-            <div className="pointer-events-none absolute inset-[1px] rounded-[calc(1.85rem-1px)] border border-white/10" />
-            <div className="relative flex items-center justify-between gap-4">
-              <div>
-                <div className="text-[11px] font-bold uppercase tracking-[0.24em] opacity-75">
-                  Smart routing preview
-                </div>
-                <div className="mt-2 font-display text-3xl font-bold">R-104</div>
-              </div>
-              <span className="rounded-full bg-white/15 px-3 py-1 text-xs font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
-                Next: resuscitation
-              </span>
-            </div>
-            <div className="relative mt-5 grid gap-3 sm:grid-cols-3">
-              {[
-                ["Vitals", "Critical"],
-                ["Wait", "0m"],
-                ["Alert", "Staff called"],
-              ].map(([label, value]) => (
-                <div
-                  key={label}
-                  className="rounded-2xl border border-white/18 bg-white/12 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-md"
-                >
-                  <div className="text-[10px] uppercase tracking-[0.2em] opacity-70">
-                    {label}
-                  </div>
-                  <div className="mt-1 font-display text-lg font-bold">{value}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {Object.keys(PRIORITY_META).map((priority, index) => {
-            const meta = PRIORITY_META[priority];
-            const styles = priorityCardStyles[priority];
-
+        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {DEPARTMENTS.map((dept, index) => {
+            const detail = DEPT_DETAILS[dept];
             return (
-              <Reveal key={priority} delay={index * 80}>
-              <div
-                className={`group overflow-hidden rounded-[1.6rem] border bg-white/18 backdrop-blur-xl transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1 ${styles.shell}`}
-              >
-                <div
-                  className={`relative flex items-center justify-between px-4 py-3 ${styles.header}`}
+              <Reveal key={dept} delay={(index % 3) * 100} scale className="h-full">
+                <Link
+                  to={`/department-board?dept=${encodeURIComponent(dept)}`}
+                  className={`group relative flex h-full flex-col overflow-hidden rounded-[1.8rem] border border-white/[0.06] bg-gradient-to-br ${detail.color} p-6 backdrop-blur transition-all duration-500 hover:-translate-y-1.5 hover:border-teal-400/20 hover:shadow-[0_30px_80px_-30px_rgba(20,184,166,0.2)]`}
                 >
-                  <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),transparent)]" />
-                  <span className="font-display text-sm font-bold uppercase tracking-wider">
-                    {meta.short}
-                  </span>
-                  <Stethoscope className={`h-4 w-4 ${styles.icon}`} />
-                </div>
-                <div className={`space-y-3 p-4 backdrop-blur-md ${styles.body}`}>
-                  <div className="font-display text-[1.05rem] font-bold text-foreground">
-                    {meta.label}
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="grid h-12 w-12 place-items-center rounded-2xl border border-white/8 bg-white/[0.04] text-teal-300 transition-all duration-300 group-hover:scale-110 group-hover:bg-teal-500/10 group-hover:text-teal-200">
+                      <detail.icon className="h-6 w-6" />
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-teal-400/60 opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0 translate-x-2">
+                      Live board <ArrowRight className="h-3.5 w-3.5" />
+                    </span>
                   </div>
-                  <p className="min-h-[4.5rem] text-sm leading-7 text-muted-foreground">
-                    {meta.description}
-                  </p>
-                  <div className="h-px bg-gradient-to-r from-border/60 via-white/70 to-transparent" />
-                  <div
-                    className={`inline-flex rounded-full px-3 py-1.5 text-xs font-semibold shadow-[inset_0_1px_0_rgba(255,255,255,0.28)] ${styles.route}`}
-                  >
-                    <span className="text-muted-foreground">Route to -&gt; </span>
-                    <span className="ml-1 font-semibold">{meta.destination}</span>
-                  </div>
-                </div>
-              </div>
+                  <h3 className="mt-5 text-xl font-bold text-white" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
+                    {dept}
+                  </h3>
+                  <p className="mt-2 text-sm leading-relaxed text-white/45">{detail.body}</p>
+                </Link>
               </Reveal>
             );
           })}
@@ -751,96 +595,139 @@ function TriageStrip() {
   );
 }
 
-function Features() {
-  const items = [
-    {
-      icon: ClipboardList,
-      title: "Patient Registration",
-      body: "Capture demographics in under a minute. Generates a ticket number and links a WhatsApp contact.",
-    },
-    {
-      icon: ShieldAlert,
-      title: "Triage-Aware Routing",
-      body: "Nurses assign Red / Yellow / Green / Black priorities. The queue re-sorts in real time.",
-    },
-    {
-      icon: MessageCircle,
-      title: "Zero-Cost WhatsApp",
-      body: "Uses Meta's service conversation window - patients are alerted before their turn, with no per-message fees.",
-    },
-    {
-      icon: MonitorSmartphone,
-      title: "Public Queue Board",
-      body: "Big-screen display for waiting areas, kept in sync over the hospital LAN.",
-    },
-    {
-      icon: Activity,
-      title: "Live Staff Dashboard",
-      body: "Track bottlenecks in OPD, Pharmacy, Lab, Radiology and OI Clinic from one view.",
-    },
-    {
-      icon: Timer,
-      title: "Offline-First",
-      body: "Runs on the hospital LAN. WhatsApp messages queue and send when the internet returns.",
-    },
-  ];
-  const reasons = [
-    "Patients can leave the crowded waiting area without losing their place.",
-    "Staff call tickets in triage order, not whoever is closest to the counter.",
-    "Managers see bottlenecks before the queue turns into a complaint.",
+/* ═══════════════════════════════════════════════
+   PATIENT JOURNEY
+   ═══════════════════════════════════════════════ */
+function PatientJourney() {
+  const steps = [
+    { num: "01", title: "Register", time: "5 min", body: "Walk in or self-register on your phone. Capture demographics and WhatsApp number.", icon: ClipboardList, color: "from-teal-500 to-teal-600" },
+    { num: "02", title: "Triage", time: "2 min", body: "Nurses assign Red/Yellow/Green/Black priority. The queue re-sorts in real time.", icon: ShieldAlert, color: "from-amber-500 to-orange-500" },
+    { num: "03", title: "Consultation", time: "10 min", body: "See your doctor. Orders for lab, pharmacy, or imaging generated instantly.", icon: Stethoscope, color: "from-blue-500 to-indigo-500" },
+    { num: "04", title: "Investigations", time: "20-30m", body: "Lab or Radiology, tracked live. Get WhatsApp updates on results.", icon: FlaskConical, color: "from-purple-500 to-violet-500" },
+    { num: "05", title: "Pharmacy", time: "10 min", body: "Prescription ready? You'll get a WhatsApp call-up when it's your window.", icon: Pill, color: "from-emerald-500 to-green-600" },
+    { num: "06", title: "Done", time: "—", body: "Rate your experience and head home. Visit history saved to your account.", icon: CheckCircle2, color: "from-cyan-500 to-teal-500" },
   ];
 
   return (
-    <section className="relative overflow-hidden bg-transparent">
-      <MedicalBackdrop variant="features" />
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="relative grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
-          <div className="sticky top-28">
-            <div className="eyebrow">Why hospitals choose it</div>
-            <h2 className="mt-2 font-display text-3xl font-bold tracking-tight">
-              Built for the realities of public health
-            </h2>
-            <p className="mt-3 max-w-xl text-muted-foreground">
-              Designed around the workflows observed at Chinhoyi Provincial Hospital -
-              and the constraints of every Zimbabwean facility.
-            </p>
+    <section id="journey" className="relative overflow-hidden py-8 sm:py-12">
+      <div className="absolute inset-0 opacity-[0.06] [background-image:linear-gradient(rgba(125,211,252,0.3)_1px,transparent_1px),linear-gradient(90deg,rgba(125,211,252,0.2)_1px,transparent_1px)] [background-size:72px_72px]" />
 
-            <div className="mt-6 space-y-3">
-              {reasons.map((reason, index) => (
-                <Reveal key={reason} delay={index * 90}>
-                <div
-                  className="flex gap-3 rounded-[1.7rem] border border-white/65 bg-[linear-gradient(135deg,rgba(255,255,255,0.64),rgba(255,255,255,0.50)_46%,rgba(219,234,254,0.32))] px-4 py-3 shadow-[0_22px_52px_-38px_rgba(37,99,235,0.24)] backdrop-blur-xl"
-                >
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-white/70 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.95),rgba(204,251,241,0.72)_42%,rgba(20,184,166,0.92))] text-white shadow-[0_10px_28px_-14px_rgba(20,184,166,0.7)]">
-                    <CheckCircle2 className="h-5 w-5" />
-                  </span>
-                  <p className="text-sm leading-6 text-muted-foreground">{reason}</p>
-                </div>
-                </Reveal>
-              ))}
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <Reveal>
+          <div className="mx-auto max-w-2xl text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/15 bg-cyan-400/[0.06] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-cyan-200">
+              How it works
             </div>
+            <h2 className="mt-5 text-3xl font-extrabold tracking-tight text-white sm:text-4xl lg:text-5xl" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
+              From check-in to pharmacy,{" "}
+              <span className="bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent">one clear path</span>
+            </h2>
+            <p className="mt-4 text-lg text-slate-300/70">
+              Every step is tracked live. Staff call patients in fair triage order
+              and you always know where you stand.
+            </p>
           </div>
+        </Reveal>
 
-          <div className="grid gap-5 md:grid-cols-2">
-            {items.map((feature, index) => (
-              <Reveal key={feature.title} delay={(index % 2) * 90}>
-              <div
-                className="group relative overflow-hidden rounded-[1.9rem] border border-white/70 bg-[linear-gradient(145deg,rgba(255,255,255,0.68),rgba(255,255,255,0.52)_48%,rgba(219,234,254,0.34)_100%)] p-6 shadow-[0_26px_62px_-36px_rgba(37,99,235,0.22)] backdrop-blur-xl transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1 hover:border-white/85 hover:shadow-[0_30px_70px_-34px_rgba(37,99,235,0.3)]"
-              >
-                <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.22),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(191,219,254,0.24),transparent_34%)] opacity-90" />
-                <div className="pointer-events-none absolute inset-[1px] rounded-[calc(1.9rem-1px)] border border-white/14" />
-                <span className="relative grid h-14 w-14 place-items-center rounded-2xl border border-white/75 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.98),rgba(204,251,241,0.76)_40%,rgba(20,184,166,0.16)_70%,rgba(255,255,255,0.08))] text-primary shadow-[0_14px_34px_-20px_rgba(20,184,166,0.62)] transition-all duration-300 group-hover:scale-[1.04] group-hover:shadow-[0_18px_40px_-18px_rgba(20,184,166,0.72)]">
-                  <feature.icon className="h-5 w-5" />
-                </span>
-                <h3 className="relative mt-4 font-display text-lg font-bold text-foreground">
-                  {feature.title}
+        <div className="relative mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+          {steps.map((step, index) => (
+            <Reveal key={step.num} delay={(index % 3) * 80} scale className="h-full">
+              <div className="group relative flex h-full flex-col overflow-hidden rounded-[1.8rem] border border-white/[0.06] bg-white/[0.03] p-6 transition-all duration-500 hover:-translate-y-1.5 hover:border-white/12 hover:bg-white/[0.05]">
+                <div className={`absolute -right-8 -top-8 h-24 w-24 rounded-full bg-gradient-to-br ${step.color} opacity-[0.08] blur-2xl transition-opacity duration-500 group-hover:opacity-[0.15]`} />
+                <div className="flex items-center justify-between">
+                  <span className={`grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br ${step.color} text-white shadow-lg`}>
+                    <step.icon className="h-5 w-5" />
+                  </span>
+                  <span className="text-3xl font-extrabold text-white/[0.06]" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
+                    {step.num}
+                  </span>
+                </div>
+                <h3 className="mt-5 text-lg font-bold text-white" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
+                  {step.title}
                 </h3>
-                <p className="relative mt-1.5 text-sm leading-7 text-muted-foreground">
-                  {feature.body}
-                </p>
+                <p className="mt-2 flex-1 text-sm leading-relaxed text-white/45">{step.body}</p>
+                <div className="mt-4 inline-flex w-fit items-center gap-2 rounded-full border border-white/8 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-cyan-200/70">
+                  <Clock3 className="h-3 w-3" /> {step.time}
+                </div>
               </div>
-              </Reveal>
-            ))}
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   TRIAGE SECTION
+   ═══════════════════════════════════════════════ */
+function TriageSection() {
+  const auth = useAuth();
+  const canTriage = auth.hasRole(["triage", "clinician", "admin"]);
+
+  const cards = [
+    { key: "red",    color: "bg-red-500",    border: "border-red-500/30",  glow: "shadow-[0_20px_50px_-20px_rgba(239,68,68,0.3)]",  textColor: "text-red-300" },
+    { key: "yellow", color: "bg-amber-400",  border: "border-amber-400/30", glow: "shadow-[0_20px_50px_-20px_rgba(251,191,36,0.3)]", textColor: "text-amber-300" },
+    { key: "green",  color: "bg-emerald-500", border: "border-emerald-500/30", glow: "shadow-[0_20px_50px_-20px_rgba(16,185,129,0.3)]", textColor: "text-emerald-300" },
+    { key: "black",  color: "bg-black",      border: "border-slate-500/30", glow: "shadow-[0_20px_50px_-20px_rgba(0,0,0,0.6)]",    textColor: "text-slate-300" },
+  ];
+
+  return (
+    <section className="relative overflow-hidden py-8 sm:py-12">
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_30%_20%,rgba(239,68,68,0.04),transparent_30%),radial-gradient(circle_at_70%_80%,rgba(16,185,129,0.04),transparent_30%)]" />
+
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <Reveal>
+          <div className="mx-auto max-w-2xl text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-red-400/15 bg-red-400/[0.06] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-red-300">
+              Triage protocol
+            </div>
+            <h2 className="mt-5 text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
+              Every patient assessed.{" "}
+              <span className="bg-gradient-to-r from-red-400 via-amber-400 to-emerald-400 bg-clip-text text-transparent">
+                The sickest seen first.
+              </span>
+            </h2>
+            <p className="mt-4 text-lg text-white/50">
+              A four-tier colour-coded triage protocol, captured at registration and
+              used to route every patient fairly through the system.
+            </p>
+          </div>
+        </Reveal>
+
+        <div className="mt-10">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {cards.map((card, i) => {
+              const meta = PRIORITY_META[card.key];
+              return (
+                <Reveal key={card.key} delay={i * 100} scale className="h-full">
+                  <div className={`group flex h-full flex-col overflow-hidden rounded-[1.6rem] border ${card.border} bg-white/[0.02] backdrop-blur transition-all duration-500 hover:-translate-y-1 ${card.glow}`}>
+                    <div className={`flex items-center justify-between px-5 py-3.5 ${card.color}`}>
+                      <span className="text-sm font-bold uppercase tracking-wider text-white">{meta.short}</span>
+                      <Stethoscope className="h-4 w-4 text-white/60" />
+                    </div>
+                    <div className="flex flex-1 flex-col gap-3 p-5">
+                      <div className="font-bold text-white">{meta.label}</div>
+                      <p className="flex-1 text-sm leading-relaxed text-white/40">{meta.description}</p>
+                      <div className="h-px bg-gradient-to-r from-white/10 via-white/20 to-transparent" />
+                      <div className={`inline-flex w-fit rounded-full border border-white/8 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold ${card.textColor}`}>
+                        <span className="text-white/40">Route → </span>
+                        <span className="ml-1">{meta.destination}</span>
+                      </div>
+                    </div>
+                  </div>
+                </Reveal>
+              );
+            })}
+          </div>
+          <div className="mt-10 flex justify-center">
+            <Link
+              to={canTriage ? "/admin/triage" : "/track"}
+              className="inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-6 py-3 text-sm font-bold text-white shadow-[0_12px_30px_-10px_rgba(20,184,166,0.4)] transition-all hover:-translate-y-0.5 hover:bg-teal-500"
+            >
+              {canTriage ? "Open triage console" : "Track a ticket"}
+              <ArrowRight className="h-4 w-4" />
+            </Link>
           </div>
         </div>
       </div>
@@ -848,152 +735,121 @@ function Features() {
   );
 }
 
-function Flow() {
-  const steps = [
-    {
-      t: "Register",
-      d: "5 min",
-      body: "Capture demographics and WhatsApp number.",
-    },
-    {
-      t: "Triage",
-      d: "2 min",
-      body: "Assign Red / Yellow / Green priority.",
-    },
-    {
-      t: "Nurse review",
-      d: "10 min",
-      body: "Vitals and pre-consultation history.",
-    },
-    {
-      t: "Doctor",
-      d: "10 min",
-      body: "Consultation and order generation.",
-    },
-    {
-      t: "Investigations",
-      d: "20-30m",
-      body: "Lab or Radiology, tracked live.",
-    },
-    {
-      t: "Pharmacy",
-      d: "10 min",
-      body: "Dispensing with WhatsApp call-up.",
-    },
+/* ═══════════════════════════════════════════════
+   FEATURES
+   ═══════════════════════════════════════════════ */
+function FeaturesSection() {
+  const features = [
+    { icon: ClipboardList, title: "Instant Registration", body: "Capture demographics in under a minute. Generates a ticket and links a WhatsApp contact automatically.", color: "from-teal-500 to-teal-600" },
+    { icon: ShieldAlert, title: "Triage-Aware Routing", body: "Nurses assign priorities. The queue re-sorts in real time so the sickest are always seen first.", color: "from-red-500 to-rose-500" },
+    { icon: MessageCircle, title: "Zero-Cost WhatsApp", body: "Uses Meta's service conversation window — patients are alerted before their turn with no per-message fees.", color: "from-green-500 to-emerald-500" },
+    { icon: MonitorSmartphone, title: "Public Queue Board", body: "Big-screen display for waiting areas, kept in sync over the hospital LAN. Shows ticket codes only.", color: "from-blue-500 to-indigo-500" },
+    { icon: Activity, title: "Real-Time Dashboard", body: "Track bottlenecks in OPD, Pharmacy, Lab, Radiology and OI Clinic from one powerful command view.", color: "from-purple-500 to-violet-500" },
+    { icon: Wifi, title: "Offline-First Architecture", body: "Runs on the hospital LAN. WhatsApp messages queue locally and send when internet connectivity returns.", color: "from-amber-500 to-orange-500" },
   ];
 
   return (
-    <section className="relative overflow-hidden bg-[#061b2f] px-4 pb-16 pt-8 text-white sm:px-6 sm:pt-10 lg:px-8">
-      <div className="absolute inset-0 opacity-[0.14] [background-image:linear-gradient(rgba(125,211,252,0.24)_1px,transparent_1px),linear-gradient(90deg,rgba(125,211,252,0.18)_1px,transparent_1px)] [background-size:76px_76px]" />
-      <div className="relative mx-auto max-w-7xl">
-        <div className="grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-start">
-          <div className="flex h-full flex-col">
-            <div className="text-[11px] font-bold uppercase tracking-[0.28em] text-cyan-100/70">
-              End-to-end movement
+    <section id="features" className="relative overflow-hidden py-8 sm:py-12">
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_15%_25%,rgba(20,184,166,0.06),transparent_35%),radial-gradient(circle_at_85%_75%,rgba(59,130,246,0.04),transparent_30%)]" />
+
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <Reveal>
+          <div className="mx-auto max-w-2xl text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-teal-400/15 bg-teal-400/[0.06] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-teal-300">
+              Digital patient services
             </div>
-            <h2 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-              The OPD patient journey, tracked from desk to discharge.
+            <h2 className="mt-5 text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
+              Everything you need.{" "}
+              <span className="bg-gradient-to-r from-teal-300 to-cyan-300 bg-clip-text text-transparent">Nothing you don't.</span>
             </h2>
-            <p className="mt-3 max-w-xl text-slate-200/78">
-              Every step, every wait, every bottleneck - visible in real time on the
-              staff dashboard before patients start asking what happened.
+            <p className="mt-4 text-lg text-white/50">
+              Designed around the workflows observed at Chinhoyi Provincial Hospital — and the constraints of every Zimbabwean facility.
             </p>
-
-            <ol className="mt-8 grid flex-1 gap-3">
-              {steps.map((step, index) => (
-                <li key={step.t}>
-                  <Reveal delay={index * 70}>
-                  <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 rounded-2xl border border-white/10 bg-white/8 px-5 py-4 transition-colors hover:border-cyan-200/20 hover:bg-white/10">
-                    <span className="grid h-8 w-8 shrink-0 place-items-center rounded-xl bg-cyan-200 text-sm font-bold text-slate-950">
-                      {index + 1}
-                    </span>
-                    <div className="min-w-0">
-                      <div className="font-display font-bold">{step.t}</div>
-                      <p className="mt-0.5 text-sm text-slate-300">{step.body}</p>
-                    </div>
-                    <span className="whitespace-nowrap rounded-full bg-cyan-200/10 px-2.5 py-1 text-xs font-semibold text-cyan-100">
-                      {step.d}
-                    </span>
-                  </div>
-                  </Reveal>
-                </li>
-              ))}
-            </ol>
           </div>
+        </Reveal>
 
-          <Reveal delay={140} className="relative flex flex-col overflow-hidden rounded-[2rem] border border-cyan-200/10 bg-[linear-gradient(180deg,rgba(26,48,70,0.94),rgba(19,39,59,0.98))] p-5 shadow-[0_30px_90px_rgba(0,0,0,0.42)] lg:mt-[12.5rem] lg:h-[calc(100%-12.5rem)]">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(96,165,250,0.16),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(20,184,166,0.12),transparent_24%)]" />
-            <div className="pointer-events-none absolute inset-0 opacity-[0.14] [background-image:linear-gradient(rgba(125,211,252,0.22)_1px,transparent_1px),linear-gradient(90deg,rgba(125,211,252,0.16)_1px,transparent_1px)] [background-size:72px_72px]" />
-            <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/70 to-transparent" />
-
-            <div className="relative flex flex-wrap items-center justify-between gap-3 border-b border-white/8 pb-4">
-              <div>
-                <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-cyan-100/70">
-                  Command cockpit
-                </div>
-                <div className="mt-1 font-display text-2xl font-bold">Live service flow</div>
+        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {features.map((feature, index) => (
+            <Reveal key={feature.title} delay={(index % 3) * 100} scale className="h-full">
+              <div className="group relative h-full overflow-hidden rounded-[1.8rem] border border-white/[0.06] bg-white/[0.02] p-7 transition-all duration-500 hover:-translate-y-1.5 hover:border-white/10 hover:bg-white/[0.04]">
+                <div className={`absolute -right-6 -top-6 h-20 w-20 rounded-full bg-gradient-to-br ${feature.color} opacity-[0.06] blur-xl transition-all duration-500 group-hover:opacity-[0.12] group-hover:h-28 group-hover:w-28`} />
+                <span className={`relative grid h-14 w-14 place-items-center rounded-2xl bg-gradient-to-br ${feature.color} text-white shadow-lg transition-transform duration-300 group-hover:scale-105`}>
+                  <feature.icon className="h-6 w-6" />
+                </span>
+                <h3 className="relative mt-5 text-lg font-bold text-white" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
+                  {feature.title}
+                </h3>
+                <p className="relative mt-2 text-sm leading-relaxed text-white/40">{feature.body}</p>
               </div>
-              <span className="inline-flex items-center gap-2 rounded-full border border-cyan-200/12 bg-cyan-200/10 px-3 py-1 text-xs font-semibold text-cyan-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                <span className="h-2 w-2 rounded-full bg-cyan-200" />
-                Synced now
-              </span>
-            </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
 
-            <div className="relative mt-5 grid gap-3 sm:grid-cols-3">
-              {[
-                ["Waiting", "38"],
-                ["In service", "14"],
-                ["Transferred", "9"],
-              ].map(([label, value]) => (
-                <div key={label} className="min-h-24 rounded-2xl border border-white/8 bg-[linear-gradient(180deg,rgba(13,27,42,0.46),rgba(17,33,50,0.66))] px-4 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-                  <div className="text-[10px] uppercase tracking-[0.2em] text-slate-300/92">{label}</div>
-                  <div className="mt-1 font-display text-3xl font-bold">{value}</div>
-                </div>
-              ))}
-            </div>
+/* ═══════════════════════════════════════════════
+   MOBILE APP SECTION
+   ═══════════════════════════════════════════════ */
+function MobileAppSection() {
+  const perks = [
+    { icon: Smartphone, title: "Check in from anywhere", body: "Get a ticket without visiting reception." },
+    { icon: BellRing, title: "WhatsApp notifications", body: "Know when it's your turn, in real time." },
+    { icon: Clock3, title: "Live wait times", body: "See exactly how long until you're called." },
+    { icon: Star, title: "Rate your visit", body: "Help the hospital improve its services." },
+  ];
 
-            <div className="relative mt-5 flex flex-1 flex-col justify-between gap-3">
-              {[
-                {
-                  ticket: "R-104",
-                  department: "Casualty",
-                  status: "Call now",
-                  to: "/queue",
-                  className: "bg-priority-red text-priority-red-foreground",
-                },
-                {
-                  ticket: "Y-118",
-                  department: "Observation",
-                  status: "In service",
-                  to: "/queue",
-                  className: "bg-priority-yellow text-priority-yellow-foreground",
-                },
-                {
-                  ticket: "G-203",
-                  department: "Pharmacy",
-                  status: "WhatsApp sent",
-                  to: "/queue",
-                  className: "bg-priority-green text-priority-green-foreground",
-                },
-              ].map(({ ticket, department, status, to, className }) => (
-                <Link
-                  key={ticket}
-                  to={to}
-                  className="group surface-hover-card-dark grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 rounded-2xl border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.05))] px-5 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] hover:border-cyan-200/18 hover:bg-[linear-gradient(180deg,rgba(20,184,166,0.12),rgba(37,99,235,0.10))]"
-                  aria-label={`Open live operations for ${ticket} in ${department}`}
-                >
-                  <span className={`grid h-10 w-16 place-items-center rounded-xl font-display text-xs font-bold ${className}`}>
-                    {ticket}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="font-semibold">{department}</div>
-                    <div className="text-xs text-slate-300">{status}</div>
+  return (
+    <section className="relative overflow-hidden py-8 sm:py-12">
+      <div className="absolute inset-0 opacity-[0.04] [background-image:radial-gradient(rgba(125,211,252,0.5)_1px,transparent_1px)] [background-size:40px_40px]" />
+
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid gap-12 rounded-[2rem] border border-dashed border-teal-400/25 bg-white/[0.02] p-8 sm:p-10 lg:grid-cols-[1fr_1fr] lg:items-center">
+          <Reveal>
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/15 bg-blue-400/[0.06] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-blue-300">
+                <Smartphone className="h-3.5 w-3.5" /> Your pocket queue
+              </div>
+              <h2 className="mt-5 text-3xl font-extrabold tracking-tight text-white sm:text-4xl" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
+                Your hospital visit,{" "}
+                <span className="bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">in your pocket</span>
+              </h2>
+              <p className="mt-4 text-white/50">
+                No app download required. Self-register on any browser, get your ticket, and track everything in real time.
+              </p>
+              <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                {perks.map((perk) => (
+                  <div key={perk.title} className="flex gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.03] p-4 transition-colors hover:border-white/10">
+                    <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-blue-500/10 text-blue-300">
+                      <perk.icon className="h-4 w-4" />
+                    </span>
+                    <div>
+                      <div className="text-sm font-bold text-white">{perk.title}</div>
+                      <div className="mt-0.5 text-xs text-white/40">{perk.body}</div>
+                    </div>
                   </div>
-                  <span className="grid h-9 w-9 place-items-center rounded-full bg-cyan-200/10 text-cyan-100 transition-all group-hover:bg-cyan-200/18 group-hover:translate-x-1">
-                    <ArrowRight className="h-4 w-4" />
-                  </span>
-                </Link>
-              ))}
+                ))}
+              </div>
+              <Link
+                to="/self-register"
+                className="mt-8 inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-blue-600 to-cyan-600 px-7 py-3.5 text-sm font-bold text-white shadow-[0_12px_36px_-12px_rgba(59,130,246,0.4)] transition-all hover:-translate-y-0.5"
+              >
+                Try self check-in <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </Reveal>
+
+          <Reveal delay={200}>
+            <div className="relative mx-auto max-w-[21rem]">
+              <div className="absolute left-1/2 top-1/2 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full bg-teal-400/[0.1] blur-[80px]" />
+              <div className="absolute inset-x-10 bottom-0 h-8 rounded-[50%] bg-black/60 blur-xl" />
+              <img
+                src={phoneMockupImage}
+                alt="WaitLess mobile app showing live queue position, progress tracking, and WhatsApp notifications"
+                className="relative w-full h-auto drop-shadow-[0_35px_45px_rgba(2,8,20,0.55)]"
+                style={{ animation: "phone-showcase 7s ease-in-out infinite" }}
+              />
             </div>
           </Reveal>
         </div>
@@ -1002,56 +858,123 @@ function Flow() {
   );
 }
 
-function LightToDarkWaveDivider() {
+/* ═══════════════════════════════════════════════
+   STATS
+   ═══════════════════════════════════════════════ */
+function StatsSection() {
+  const stats = [
+    { value: "12,480", suffix: "+", label: "Patients served", icon: Users },
+    { value: "23", suffix: " min", label: "Avg. wait time", icon: Timer },
+    { value: "45,600", suffix: "+", label: "WhatsApp alerts", icon: MessageCircle },
+    { value: "99.8", suffix: "%", label: "System uptime", icon: Activity },
+  ];
+
   return (
-    <div className="relative isolate h-28 overflow-hidden bg-transparent sm:h-32">
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(255,255,255,0)_0%,rgba(219,234,254,0.14)_30%,rgba(20,184,166,0.08)_58%,rgba(6,27,47,0.12)_100%)]" />
-      <div className="absolute inset-0 opacity-[0.07] [background-image:radial-gradient(rgba(148,163,184,0.68)_1px,transparent_1px)] [background-size:120px_120px]" />
-      <div className="absolute left-[12%] top-8 h-14 w-44 bg-[radial-gradient(ellipse_at_center,rgba(20,184,166,0.18),rgba(255,255,255,0)_74%)] blur-3xl" />
-      <div className="absolute right-[14%] top-10 h-16 w-52 bg-[radial-gradient(ellipse_at_center,rgba(37,99,235,0.18),rgba(255,255,255,0)_74%)] blur-3xl" />
+    <section className="relative overflow-hidden py-8 sm:py-12">
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_50%_50%,rgba(20,184,166,0.06),transparent_40%)]" />
 
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 1440 220"
-        preserveAspectRatio="none"
-        className="absolute inset-x-0 bottom-0 h-full w-full"
-      >
-        <defs>
-          <linearGradient id="waitless-wave-glow" x1="0%" x2="100%" y1="0%" y2="0%">
-            <stop offset="0%" stopColor="rgba(20,184,166,0.00)" />
-            <stop offset="18%" stopColor="rgba(20,184,166,0.24)" />
-            <stop offset="50%" stopColor="rgba(255,255,255,0.30)" />
-            <stop offset="78%" stopColor="rgba(37,99,235,0.20)" />
-            <stop offset="100%" stopColor="rgba(37,99,235,0.00)" />
-          </linearGradient>
-        </defs>
-        <path
-          d="M0 112C132 100 260 108 396 100C566 90 714 92 862 110C1010 128 1146 104 1274 112C1356 118 1412 122 1440 126V220H0Z"
-          fill="#061b2f"
-        />
-        <path
-          d="M0 112C132 100 260 108 396 100C566 90 714 92 862 110C1010 128 1146 104 1274 112C1356 118 1412 122 1440 126"
-          fill="none"
-          stroke="rgba(255,255,255,0.30)"
-          strokeWidth="3"
-          strokeLinecap="round"
-        />
-        <path
-          d="M0 118C152 108 294 114 432 106C582 98 726 100 864 116C996 132 1128 110 1268 116C1354 120 1412 124 1440 128"
-          fill="none"
-          stroke="url(#waitless-wave-glow)"
-          strokeWidth="10"
-          strokeLinecap="round"
-          opacity="0.7"
-        />
-      </svg>
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <Reveal>
+          <div className="mx-auto max-w-2xl text-center">
+            <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
+              The numbers speak for{" "}
+              <span className="bg-gradient-to-r from-teal-300 to-cyan-300 bg-clip-text text-transparent">themselves</span>
+            </h2>
+          </div>
+        </Reveal>
 
-      <div className="absolute inset-x-0 bottom-0 h-12 bg-[#061b2f]" />
-    </div>
+        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {stats.map((stat, i) => (
+            <Reveal key={stat.label} delay={i * 100} scale className="h-full">
+              <div className="group relative h-full overflow-hidden rounded-[1.8rem] border border-white/[0.06] bg-white/[0.02] p-7 text-center transition-all duration-500 hover:-translate-y-1.5 hover:border-teal-400/15 hover:shadow-[0_30px_80px_-30px_rgba(20,184,166,0.15)]">
+                <div className="absolute inset-0 bg-gradient-to-b from-teal-500/[0.03] to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+                <span className="relative mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-white/8 bg-teal-500/[0.08] text-teal-300">
+                  <stat.icon className="h-6 w-6" />
+                </span>
+                <div className="relative mt-5 text-4xl font-extrabold tracking-tight text-white" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
+                  <AnimatedCounter target={stat.value} suffix={stat.suffix} />
+                </div>
+                <div className="relative mt-2 text-sm font-medium text-white/40">{stat.label}</div>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
   );
 }
 
-function CTA() {
+/* ═══════════════════════════════════════════════
+   TESTIMONIALS
+   ═══════════════════════════════════════════════ */
+function TestimonialsSection() {
+  const testimonials = [
+    {
+      quote: "I used to spend the entire day at the hospital. Now I check in on my phone, go home, and come back when WhatsApp tells me it's my turn.",
+      name: "Tatenda M.",
+      role: "Patient, OPD",
+    },
+    {
+      quote: "We reduced our average patient wait time by 40% in the first month. The triage routing alone has saved lives in Casualty.",
+      name: "Sr. Moyo",
+      role: "Chief Nursing Officer",
+    },
+    {
+      quote: "The queue board shows ticket numbers only — never patient names. Families trust the system because their privacy is protected.",
+      name: "Dr. Chikwava",
+      role: "Medical Superintendent",
+    },
+  ];
+
+  return (
+    <section className="relative overflow-hidden py-8 sm:py-12">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <Reveal>
+          <div className="mx-auto max-w-2xl text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-teal-400/15 bg-teal-400/[0.06] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-teal-300">
+              Testimonials
+            </div>
+            <h2 className="mt-5 text-3xl font-extrabold tracking-tight text-white sm:text-4xl" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
+              Trusted by patients{" "}
+              <span className="bg-gradient-to-r from-teal-300 to-cyan-300 bg-clip-text text-transparent">and staff</span>
+            </h2>
+          </div>
+        </Reveal>
+
+        <div className="mt-10 grid gap-6 md:grid-cols-3">
+          {testimonials.map((t, i) => (
+            <Reveal key={t.name} delay={i * 120} scale className="h-full">
+              <div className="group relative flex h-full flex-col rounded-[1.8rem] border border-white/[0.06] bg-white/[0.03] p-7 transition-all duration-500 hover:-translate-y-1 hover:border-teal-400/15 hover:shadow-[0_30px_80px_-30px_rgba(20,184,166,0.12)]">
+                <div className="flex gap-1">
+                  {[...Array(5)].map((_, j) => (
+                    <Star key={j} className="h-4 w-4 fill-amber-400 text-amber-400" />
+                  ))}
+                </div>
+                <p className="mt-5 flex-1 text-sm leading-7 text-white/60 italic">
+                  "{t.quote}"
+                </p>
+                <div className="mt-6 flex items-center gap-3 border-t border-white/[0.06] pt-5">
+                  <div className="grid h-10 w-10 place-items-center rounded-full bg-gradient-to-br from-teal-500 to-cyan-600 text-sm font-bold text-white">
+                    {t.name.charAt(0)}
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-white">{t.name}</div>
+                    <div className="text-xs text-white/40">{t.role}</div>
+                  </div>
+                </div>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   CTA
+   ═══════════════════════════════════════════════ */
+function CTASection() {
   const auth = useAuth();
   const patientAuth = usePatientAuth();
   const isStaff = auth.isAuthenticated;
@@ -1066,62 +989,171 @@ function CTA() {
     : isPatient
       ? [
           ["My dashboard", "View your active tickets and visit history.", "/patient/dashboard", LayoutDashboard],
-          ["Book a queue spot", "Get a ticket instantly and track your position.", "/self-register", ClipboardList],
-          ["Track a ticket", "Enter your ticket code and see your live queue position.", "/track", Search],
+          ["Book a spot", "Get a ticket instantly and track your position.", "/self-register", ClipboardList],
+          ["Track ticket", "Enter your ticket code to see your live position.", "/track", Search],
         ]
       : [
-          ["Create your account", "Sign up to book queue spots, track tickets, and get WhatsApp updates — all from your phone.", "/patient/register", ClipboardList],
-          ["Track a ticket", "Enter your ticket code and see your live queue position.", "/track", Search],
-          ["Waiting area", "Show the live board without exposing patient names.", "/queue", MonitorSmartphone],
+          ["Create account", "Sign up for free — book queue spots, track tickets, and get WhatsApp updates.", "/patient/register", ClipboardList],
+          ["Track a ticket", "Enter your code and see your live queue position.", "/track", Search],
+          ["Queue board", "Show the live board in the waiting area.", "/queue", MonitorSmartphone],
         ];
 
   return (
-    <section className="relative overflow-hidden bg-[#081827] px-4 py-18 text-white sm:px-6 lg:px-8">
-      <div className="absolute inset-x-[-14%] top-[-4.5rem] h-40 rounded-[100%] bg-[radial-gradient(ellipse_at_center,rgba(20,184,166,0.22),rgba(37,99,235,0.18)_42%,rgba(8,24,39,0)_78%)] blur-3xl" />
-      <div className="absolute inset-0 opacity-[0.14] [background-image:linear-gradient(rgba(125,211,252,0.24)_1px,transparent_1px),linear-gradient(90deg,rgba(125,211,252,0.16)_1px,transparent_1px)] [background-size:84px_84px]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_20%,rgba(20,184,166,0.16),transparent_24%),radial-gradient(circle_at_84%_24%,rgba(37,99,235,0.16),transparent_22%),linear-gradient(180deg,rgba(8,24,39,0.94),rgba(7,21,35,1))]" />
-      <div className="absolute left-[8%] top-16 h-64 w-24 bg-[linear-gradient(180deg,rgba(20,184,166,0.18),rgba(255,255,255,0.0)_34%,rgba(37,99,235,0.16)_84%,rgba(255,255,255,0.0))] blur-3xl" />
-      <div className="absolute right-[10%] top-20 h-72 w-28 bg-[linear-gradient(180deg,rgba(37,99,235,0.18),rgba(255,255,255,0.0)_38%,rgba(20,184,166,0.14)_82%,rgba(255,255,255,0.0))] blur-3xl" />
+    <section className="relative overflow-hidden py-8 sm:py-12">
+      <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_30%_30%,rgba(20,184,166,0.08),transparent_35%),radial-gradient(circle_at_70%_70%,rgba(59,130,246,0.06),transparent_30%)]" />
 
-      <div className="relative mx-auto max-w-7xl">
-        <div className="rounded-[2rem] border border-cyan-200/10 bg-[linear-gradient(135deg,rgba(20,184,166,0.08),rgba(255,255,255,0.03)_34%,rgba(37,99,235,0.08))] px-5 py-8 shadow-[0_30px_90px_rgba(0,0,0,0.32)] backdrop-blur sm:px-8 lg:px-10">
-          <div className="grid gap-8 lg:grid-cols-[0.82fr_1.18fr] lg:items-start">
-            <div>
-              <div className="text-[11px] font-bold uppercase tracking-[0.28em] text-cyan-100/70">
-                Start where your hospital needs relief
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <Reveal>
+          <div className="overflow-hidden rounded-[2.5rem] border border-white/[0.08] bg-gradient-to-br from-teal-500/[0.08] via-transparent to-blue-500/[0.06] p-8 sm:p-12 shadow-[0_40px_100px_-30px_rgba(0,0,0,0.4)] backdrop-blur">
+            <div className="flex flex-col gap-10">
+              <div className="mx-auto max-w-2xl text-center">
+                <div className="inline-flex items-center gap-2 rounded-full border border-teal-400/15 bg-teal-400/[0.06] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.2em] text-teal-300">
+                  Get started
+                </div>
+                <h2 className="mt-5 text-3xl font-extrabold tracking-tight text-white sm:text-4xl" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
+                  A queue system patients and staff{" "}
+                  <span className="bg-gradient-to-r from-teal-300 to-cyan-300 bg-clip-text text-transparent">can trust.</span>
+                </h2>
+                <p className="mt-4 text-white/50">
+                  Self check-in, live boards, triage-aware routing and WhatsApp updates — on any device, in any hospital.
+                </p>
               </div>
-              <h2 className="mt-2 max-w-2xl font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">
-                Replace confusion with a queue patients can trust.
-              </h2>
-              <p className="mt-3 max-w-xl text-slate-300">
-                Launch one workflow at a time: registration first, triage next, then the
-                public board and staff command dashboard.
-              </p>
-            </div>
 
-            <div className="grid gap-4 md:grid-cols-3">
-              {ctaCards.map(([title, body, to, Icon], index) => (
-                <Reveal key={title} delay={index * 90}>
-                <Link
-                  to={to}
-                  className="group block h-full rounded-[1.6rem] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.04))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition-all hover:-translate-y-1 hover:border-cyan-200/20 hover:bg-[linear-gradient(180deg,rgba(20,184,166,0.16),rgba(37,99,235,0.10))]"
-                >
-                  <span className="grid h-11 w-11 place-items-center rounded-xl bg-cyan-200/16 text-cyan-100 transition-colors group-hover:bg-cyan-200/22">
-                    <Icon className="h-5 w-5" />
-                  </span>
-                  <h3 className="mt-4 font-display text-lg font-bold text-white">{title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-300">{body}</p>
-                  <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-cyan-100">
-                    Open workflow
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
-                  </span>
+              <div className="grid gap-5 md:grid-cols-3">
+                {ctaCards.map(([title, body, to, Icon], index) => (
+                  <Reveal key={title} delay={index * 100} scale className="h-full">
+                    <Link
+                      to={to}
+                      className="group flex h-full flex-col rounded-[1.6rem] border border-white/[0.08] bg-white/[0.03] p-6 transition-all duration-500 hover:-translate-y-1.5 hover:border-teal-400/20 hover:bg-white/[0.06]"
+                    >
+                      <span className="grid h-12 w-12 place-items-center rounded-xl bg-teal-500/10 text-teal-300 transition-transform duration-300 group-hover:scale-110">
+                        <Icon className="h-5 w-5" />
+                      </span>
+                      <h3 className="mt-4 text-lg font-bold text-white" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>{title}</h3>
+                      <p className="mt-2 flex-1 text-sm leading-relaxed text-white/40">{body}</p>
+                      <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-teal-300 transition-all group-hover:gap-3">
+                        {title} <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                      </span>
+                    </Link>
+                  </Reveal>
+                ))}
+              </div>
+            </div>
+          </div>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   FOOTER
+   ═══════════════════════════════════════════════ */
+function Footer() {
+  const quickLinks = [
+    ["Share feedback", "/patient/feedback"],
+    ["Kiosk check-in", "/kiosk"],
+    ["Departments", "#departments"],
+  ];
+
+  const socials = [
+    { icon: Facebook, label: "Facebook", href: "https://facebook.com/WaitLessZW" },
+    { icon: Instagram, label: "Instagram", href: "https://instagram.com/waitless.zw" },
+    { icon: Twitter, label: "Twitter", href: "https://x.com/waitless_zw" },
+  ];
+
+  return (
+    <footer className="relative bg-[#020814] px-4 pb-8 pt-14 text-white sm:px-6 lg:px-8">
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-teal-400/20 to-transparent" />
+
+      <div className="mx-auto flex max-w-7xl flex-col gap-7">
+        {/* Brand + links + socials */}
+        <div className="flex flex-wrap items-center justify-between gap-6">
+          <div className="flex items-center gap-3">
+            <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 text-white shadow-[0_10px_28px_-10px_rgba(20,184,166,0.5)]">
+              <Cross className="h-4 w-4" />
+            </span>
+            <div className="text-left">
+              <div className="text-base font-bold" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
+                Wait<span className="text-teal-400">Less</span>
+              </div>
+              <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/30">
+                Smarter Queues, Better Care
+              </div>
+            </div>
+            <p className="ml-6 hidden max-w-sm border-l border-white/[0.08] pl-6 text-sm leading-6 text-white/35 lg:block">
+              The digital patient front door for hospitals — check in, track,
+              and get notified from registration to pharmacy.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-7">
+            <nav className="flex flex-wrap items-center gap-x-6 gap-y-2">
+              {quickLinks.map(([label, to]) => (
+                <Link key={to} to={to} className="text-sm font-medium text-white/40 transition-colors hover:text-teal-300">
+                  {label}
                 </Link>
-                </Reveal>
+              ))}
+            </nav>
+            <span className="hidden h-6 w-px bg-white/[0.08] sm:block" />
+            <div className="flex items-center gap-3">
+              {socials.map(({ icon: Icon, label, href }) => (
+                <a
+                  key={label}
+                  href={href}
+                  target="_blank"
+                  rel="noreferrer"
+                  aria-label={label}
+                  className="grid h-10 w-10 place-items-center rounded-full border border-white/10 bg-white/[0.04] text-white/50 transition-all hover:-translate-y-0.5 hover:border-teal-400/40 hover:bg-teal-400/10 hover:text-teal-300"
+                >
+                  <Icon className="h-4 w-4" />
+                </a>
               ))}
             </div>
           </div>
         </div>
+
+        {/* Contact */}
+        <div className="grid gap-4 border-t border-white/[0.06] pt-6 sm:grid-cols-3">
+          <div className="flex items-center gap-3">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-teal-300">
+              <Mail className="h-4 w-4" />
+            </span>
+            <span className="text-left">
+              <span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/30">Email</span>
+              <a href="mailto:support@waitless.co.zw" className="block text-sm font-medium text-white/55 transition-colors hover:text-teal-300">support@waitless.co.zw</a>
+              <a href="mailto:info@waitless.co.zw" className="block text-sm font-medium text-white/55 transition-colors hover:text-teal-300">info@waitless.co.zw</a>
+            </span>
+          </div>
+          <a href={`tel:${HOSPITAL.reception.replaceAll(" ", "")}`} className="flex items-center gap-3 transition-colors hover:text-teal-300">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-white/10 bg-white/[0.04] text-teal-300">
+              <Phone className="h-4 w-4" />
+            </span>
+            <span className="text-left">
+              <span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/30">Support line</span>
+              <span className="text-sm font-medium text-white/55">{HOSPITAL.reception} · Mon–Fri 8am–5pm CAT</span>
+            </span>
+          </a>
+          <a href={`tel:${HOSPITAL.emergency.replaceAll(" ", "")}`} className="flex items-center gap-3 transition-colors hover:text-teal-300">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-red-400/20 bg-red-400/[0.06] text-red-300">
+              <Siren className="h-4 w-4" />
+            </span>
+            <span className="text-left">
+              <span className="block text-[10px] font-bold uppercase tracking-[0.18em] text-white/30">Emergency</span>
+              <span className="text-sm font-medium text-white/55">{HOSPITAL.emergency} · 24/7</span>
+            </span>
+          </a>
+        </div>
+
+        {/* Bottom */}
+        <div className="flex w-full flex-wrap items-center justify-between gap-4 border-t border-white/[0.06] pt-6 text-xs text-white/20">
+          <span>© {new Date().getFullYear()} WaitLess · Smarter Queues, Better Care</span>
+          <span className="inline-flex items-center gap-2">
+            <ShieldCheck className="h-3.5 w-3.5 text-teal-400/40" />
+            Queue boards show ticket codes only — never patient names.
+          </span>
+        </div>
       </div>
-    </section>
+    </footer>
   );
 }

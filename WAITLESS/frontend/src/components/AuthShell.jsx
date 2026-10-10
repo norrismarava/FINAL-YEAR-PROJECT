@@ -65,25 +65,25 @@ export function AuthShell({
           <AuthRibbonCirculation />
 
           <div
-            className={`relative z-10 grid min-h-[41rem] items-stretch gap-0 lg:min-h-[43rem] ${
+            className={`relative z-10 grid min-h-[35rem] items-stretch gap-0 lg:min-h-[36.5rem] ${
               wide ? "lg:grid-cols-[1.04fr_0.82fr]" : "lg:grid-cols-[1.08fr_0.76fr]"
             }`}
           >
-            <aside className="hidden lg:flex flex-col justify-between px-7 py-7 xl:px-8 xl:py-8">
+            <aside className="hidden lg:flex flex-col justify-between px-7 py-6 xl:px-8 xl:py-6">
               <div className="max-w-xl page-section-rise">
                 <div className="inline-flex items-center gap-2 rounded-full border border-cyan-200/18 bg-cyan-300/10 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.22em] text-cyan-100 backdrop-blur-xl">
                   <span className="h-2 w-2 rounded-full bg-emerald-300 shadow-[0_0_16px_rgba(110,231,183,0.85)]" />
                   Hospital operations platform
                 </div>
 
-                <h1 className="mt-6 max-w-[34rem] font-display text-[2.85rem] font-bold leading-[0.98] tracking-tight text-white xl:text-[3.35rem]">
+                <h1 className="mt-4 max-w-[34rem] font-display text-[2.35rem] font-bold leading-[0.98] tracking-tight text-white xl:text-[2.7rem]">
                   Smarter patient flow.
                   <span className="mt-2 block bg-[linear-gradient(135deg,#d5fbff_0%,#22e4cf_34%,#22d3ee_72%,#38bdf8_100%)] bg-clip-text text-transparent">
                     Better hospital care.
                   </span>
                 </h1>
 
-                <p className="mt-5 max-w-[29rem] text-[14px] leading-7 text-slate-200/82 xl:text-[15px]">
+                <p className="mt-4 max-w-[29rem] text-[13.5px] leading-6 text-slate-200/82 xl:text-[14px]">
                   Securely manage patient registration, triage, queues and clinical
                   operations from one connected hospital platform.
                 </p>
@@ -91,8 +91,8 @@ export function AuthShell({
 
               <AuthClinicalMotion wide={wide} />
 
-              <div className="mt-6 w-full self-start page-section-rise page-section-rise-delay-2">
-                <div className="grid w-full grid-cols-2 gap-3.5 xl:grid-cols-4 xl:gap-4">
+              <div className="mt-5 w-full self-start page-section-rise page-section-rise-delay-2">
+                <div className="grid w-full grid-cols-2 gap-3 xl:grid-cols-4 xl:gap-3.5">
                   {AUTH_FEATURE_ITEMS.map((item) => (
                     <AuthFeatureCard key={item.title} {...item} />
                   ))}
@@ -100,14 +100,14 @@ export function AuthShell({
               </div>
             </aside>
 
-            <div className="flex items-center justify-center px-4 py-5 sm:px-6 sm:py-6 lg:px-7 lg:py-7">
-              <div className={`mx-auto w-full ${wide ? "max-w-[29.5rem]" : "max-w-[24.5rem]"}`}>
+            <div className="flex items-center justify-center px-4 py-5 sm:px-6 sm:py-6 lg:px-6 lg:py-6">
+              <div className={`mx-auto w-full ${wide ? "max-w-[26rem]" : "max-w-[22rem]"}`}>
                 <div className="relative overflow-hidden rounded-[1.7rem] bg-[linear-gradient(180deg,rgba(3,16,30,0.22),rgba(2,12,24,0.3)_45%,rgba(2,10,20,0.38)_100%)] shadow-[0_24px_70px_rgba(0,0,0,0.32)] backdrop-blur-[30px] page-section-rise page-section-rise-delay-1">
                   <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(145deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02)_28%,rgba(8,145,178,0.08)_56%,rgba(2,12,24,0.04)_100%)]" />
                   <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_center,rgba(34,211,238,0.2),transparent_24%),radial-gradient(circle_at_bottom_center,rgba(59,130,246,0.14),transparent_36%)]" />
                   <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-cyan-100/36 to-transparent" />
 
-                  <div className="relative px-5 pb-6 pt-5 sm:px-6 sm:pb-7 sm:pt-6">
+                  <div className="relative px-5 pb-5 pt-4 sm:px-6 sm:pb-6 sm:pt-5">
                     <Link
                       to="/"
                       className="mx-auto flex max-w-[16rem] items-center justify-center gap-3.5"
@@ -116,32 +116,32 @@ export function AuthShell({
                       <span className="h-px flex-1 bg-gradient-to-r from-transparent to-cyan-100/30" />
                       <WaitLessLogo
                         className="items-center text-white"
-                        subtitle="Hospital Flow"
+                        subtitle="Smarter Queues, Better Care"
                         subtitleClassName="pl-0 text-[9px] tracking-[0.22em] text-cyan-100/68"
                       />
                       <span className="h-px flex-1 bg-gradient-to-l from-transparent to-cyan-100/30" />
                     </Link>
 
-                    <div className="mt-6 text-center">
+                    <div className="mt-4 text-center">
                       <div className="flex justify-center">
-                        <div className="inline-flex min-w-[10.25rem] items-center justify-center rounded-full border border-cyan-200/14 bg-[linear-gradient(180deg,rgba(34,211,238,0.18),rgba(8,145,178,0.09))] px-[1.125rem] py-2 text-center text-[10px] font-bold uppercase tracking-[0.24em] text-cyan-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_12px_30px_rgba(6,78,118,0.16)] backdrop-blur-xl">
+                        <div className="inline-flex min-w-[10.25rem] items-center justify-center rounded-full border border-cyan-200/14 bg-[linear-gradient(180deg,rgba(34,211,238,0.18),rgba(8,145,178,0.09))] px-[1.125rem] py-1.5 text-center text-[10px] font-bold uppercase tracking-[0.24em] text-cyan-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_12px_30px_rgba(6,78,118,0.16)] backdrop-blur-xl">
                           {eyebrow}
                         </div>
                       </div>
-                      <h2 className="mt-4 font-display text-[2rem] font-bold tracking-tight text-white sm:text-[2.15rem]">
+                      <h2 className="mt-3 font-display text-[1.65rem] font-bold tracking-tight text-white sm:text-[1.8rem]">
                         {title}
                       </h2>
-                      <p className="mx-auto mt-3 max-w-sm text-sm leading-[1.65rem] text-slate-200/76 sm:text-[14px]">
+                      <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-200/76">
                         {subtitle}
                       </p>
                     </div>
 
-                    <div className="mt-6 page-section-rise page-section-rise-delay-2">
+                    <div className="mt-5 page-section-rise page-section-rise-delay-2">
                       {children}
                     </div>
 
                     {footer ? (
-                      <div className="mt-6 page-section-rise page-section-rise-delay-3">
+                      <div className="mt-5 page-section-rise page-section-rise-delay-3">
                         <div className="flex items-center gap-4">
                           <span className="h-px flex-1 bg-gradient-to-r from-transparent to-cyan-100/24" />
                           <span className="grid h-8 w-8 place-items-center rounded-full bg-white/6 text-cyan-100/72 backdrop-blur">
@@ -179,7 +179,7 @@ function AuthClinicalMotion({ wide }) {
   return (
     <div
       className={`relative -ml-2 mt-6 hidden w-[calc(100%+3.5rem)] max-w-none overflow-hidden page-section-rise page-section-rise-delay-1 lg:block xl:-ml-3 xl:w-[calc(100%+5rem)] ${
-        wide ? "h-[15.5rem] xl:h-[16.25rem]" : "h-[14.75rem] xl:h-[15.5rem]"
+        wide ? "h-[11.5rem] xl:h-[12rem]" : "h-[10.75rem] xl:h-[11.5rem]"
       }`}
     >
       <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(90deg,rgba(2,12,24,0.28)_0%,rgba(2,12,24,0.14)_34%,rgba(2,12,24,0)_72%)]" />
@@ -320,11 +320,11 @@ function AuthClinicalMotion({ wide }) {
 
 function AuthFeatureCard({ icon: Icon, title, body }) {
   return (
-    <div className="group flex min-h-[7.35rem] flex-col items-center rounded-[1.3rem] border border-cyan-200/12 bg-[linear-gradient(180deg,rgba(7,24,40,0.48),rgba(3,14,27,0.44))] px-3.5 py-3.5 text-center shadow-[0_22px_46px_-34px_rgba(2,6,23,0.92),inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-xl transition-[transform,border-color,background,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1 hover:border-cyan-200/18 hover:bg-[linear-gradient(180deg,rgba(8,29,47,0.56),rgba(4,16,30,0.52))] hover:shadow-[0_26px_54px_-34px_rgba(2,6,23,0.98),0_0_0_1px_rgba(103,232,249,0.06)]">
+    <div className="group flex min-h-[6.25rem] flex-col items-center rounded-[1.2rem] border border-cyan-200/12 bg-[linear-gradient(180deg,rgba(7,24,40,0.48),rgba(3,14,27,0.44))] px-3 py-3 text-center shadow-[0_22px_46px_-34px_rgba(2,6,23,0.92),inset_0_1px_0_rgba(255,255,255,0.03)] backdrop-blur-xl transition-[transform,border-color,background,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] hover:-translate-y-1 hover:border-cyan-200/18 hover:bg-[linear-gradient(180deg,rgba(8,29,47,0.56),rgba(4,16,30,0.52))] hover:shadow-[0_26px_54px_-34px_rgba(2,6,23,0.98),0_0_0_1px_rgba(103,232,249,0.06)]">
       <span className="mx-auto grid h-10 w-10 shrink-0 place-items-center rounded-full border border-cyan-200/18 bg-[radial-gradient(circle_at_30%_30%,rgba(34,211,238,0.16),rgba(7,24,40,0.94))] text-cyan-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_0_24px_rgba(34,211,238,0.08)]">
         <Icon className="h-[1.125rem] w-[1.125rem]" />
       </span>
-      <div className="mt-3 font-display text-[0.92rem] font-bold leading-[1.24] text-white">
+      <div className="mt-2.5 font-display text-[0.88rem] font-bold leading-[1.24] text-white">
         {title}
       </div>
       <p className="mt-1.5 max-w-[10rem] text-[0.8rem] leading-5 text-slate-300/76">
@@ -353,13 +353,13 @@ export function AuthInput({ icon: Icon, label, className = "", ...props }) {
   return (
     <label className={`block ${className}`}>
       <span className="text-xs font-semibold text-slate-100/88">{label}</span>
-      <span className="relative mt-2 block">
+      <span className="relative mt-1.5 block">
         {Icon ? (
           <Icon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-cyan-100/60" />
         ) : null}
         <input
           {...props}
-          className={`auth-glass-input h-12 w-full rounded-[0.95rem] border border-cyan-200/12 bg-[linear-gradient(180deg,rgba(13,39,60,0.54),rgba(4,20,36,0.42))] px-4 text-sm font-medium text-slate-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_12px_34px_rgba(2,6,23,0.2)] outline-none backdrop-blur-2xl transition placeholder:text-slate-300/52 focus:border-cyan-200/28 focus:bg-[linear-gradient(180deg,rgba(14,44,68,0.64),rgba(5,24,43,0.5))] focus:ring-4 focus:ring-cyan-300/8 ${Icon ? "pl-11" : ""} ${props.className ?? ""}`}
+          className={`auth-glass-input h-11 w-full rounded-[0.95rem] border border-cyan-200/12 bg-[linear-gradient(180deg,rgba(13,39,60,0.54),rgba(4,20,36,0.42))] px-4 text-sm font-medium text-slate-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_12px_34px_rgba(2,6,23,0.2)] outline-none backdrop-blur-2xl transition placeholder:text-slate-300/52 focus:border-cyan-200/28 focus:bg-[linear-gradient(180deg,rgba(14,44,68,0.64),rgba(5,24,43,0.5))] focus:ring-4 focus:ring-cyan-300/8 ${Icon ? "pl-11" : ""} ${props.className ?? ""}`}
         />
       </span>
     </label>
@@ -370,14 +370,14 @@ export function AuthSelect({ icon: Icon, label, children, className = "", ...pro
   return (
     <label className={`block ${className}`}>
       <span className="text-xs font-semibold text-slate-100/88">{label}</span>
-      <span className="relative mt-2 block">
+      <span className="relative mt-1.5 block">
         {Icon ? (
           <Icon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-cyan-100/60" />
         ) : null}
         <ChevronDown className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2 text-cyan-100/72" />
         <select
           {...props}
-          className={`auth-glass-input auth-glass-select h-12 w-full appearance-none rounded-[0.95rem] border border-cyan-200/12 bg-[linear-gradient(180deg,rgba(13,39,60,0.54),rgba(4,20,36,0.42))] px-4 pr-11 text-sm font-medium text-slate-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_12px_34px_rgba(2,6,23,0.2)] outline-none backdrop-blur-2xl transition focus:border-cyan-200/28 focus:bg-[linear-gradient(180deg,rgba(14,44,68,0.64),rgba(5,24,43,0.5))] focus:ring-4 focus:ring-cyan-300/8 ${Icon ? "pl-11" : ""} ${props.className ?? ""}`}
+          className={`auth-glass-input auth-glass-select h-11 w-full appearance-none rounded-[0.95rem] border border-cyan-200/12 bg-[linear-gradient(180deg,rgba(13,39,60,0.54),rgba(4,20,36,0.42))] px-4 pr-11 text-sm font-medium text-slate-50 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_12px_34px_rgba(2,6,23,0.2)] outline-none backdrop-blur-2xl transition focus:border-cyan-200/28 focus:bg-[linear-gradient(180deg,rgba(14,44,68,0.64),rgba(5,24,43,0.5))] focus:ring-4 focus:ring-cyan-300/8 ${Icon ? "pl-11" : ""} ${props.className ?? ""}`}
         >
           {children}
         </select>
@@ -390,7 +390,7 @@ export function AuthButton({ children, loading, ...props }) {
   return (
     <button
       {...props}
-      className={`inline-flex h-12 w-full items-center justify-center rounded-[0.95rem] border border-cyan-200/12 bg-[linear-gradient(135deg,#11779f_0%,#1488ac_42%,#1a9c97_100%)] px-4 text-sm font-semibold text-white shadow-[0_18px_34px_rgba(2,6,23,0.34),inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:brightness-105 hover:saturate-110 focus:outline-none focus:ring-4 focus:ring-cyan-300/14 disabled:cursor-not-allowed disabled:opacity-60 ${props.className ?? ""}`}
+      className={`inline-flex h-11 w-full items-center justify-center rounded-[0.95rem] border border-cyan-200/12 bg-[linear-gradient(135deg,#11779f_0%,#1488ac_42%,#1a9c97_100%)] px-4 text-sm font-semibold text-white shadow-[0_18px_34px_rgba(2,6,23,0.34),inset_0_1px_0_rgba(255,255,255,0.12)] transition hover:brightness-105 hover:saturate-110 focus:outline-none focus:ring-4 focus:ring-cyan-300/14 disabled:cursor-not-allowed disabled:opacity-60 ${props.className ?? ""}`}
     >
       {loading ? "Please wait..." : children}
     </button>

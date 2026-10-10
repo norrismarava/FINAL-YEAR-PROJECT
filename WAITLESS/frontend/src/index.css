@@ -6,43 +6,52 @@
    ========================================================= */
 
 :root {
-  --waitless-bg: #f4f8fb;
-  --waitless-card: rgba(255, 255, 255, 0.92);
-  --waitless-card-soft: rgba(248, 250, 252, 0.88);
-  --waitless-border: rgba(15, 23, 42, 0.08);
+  /* ==== SAVANNA TEAL PALETTE ==== */
+  --wl-primary-900: #053B38;
+  --wl-primary-800: #0A5E56;
+  --wl-primary-700: #0D7A6F;      /* primary button */
+  --wl-primary-600: #10998B;
+  --wl-primary-500: #14B8A6;      /* accent */
+  --wl-primary-400: #3DD9C8;
+  --wl-primary-300: #73E8DB;
+  --wl-primary-200: #A7F3E9;
+  --wl-primary-100: #D5FAF4;
+  --wl-primary-50:  #EFFEFA;
 
-  --waitless-primary: #0f766e;
-  --waitless-primary-dark: #064e3b;
-  --waitless-primary-soft: rgba(20, 184, 166, 0.12);
-  --waitless-accent: #14b8a6;
-  --waitless-navy: #062b3a;
+  --wl-gold-700: #A16207;
+  --wl-gold-600: #CA8A04;
+  --wl-gold-500: #EAB308;         /* warm secondary accent */
+  --wl-gold-400: #FACC15;
+  --wl-gold-300: #FDE047;
+  --wl-gold-200: #FEF08A;
+  --wl-gold-100: #FEF9C3;
+  --wl-gold-50:  #FEFCE8;
 
-  --waitless-text: #0f172a;
-  --waitless-muted: #64748b;
+  --wl-navy-950: #020C1B;
+  --wl-navy-900: #0B1A2E;
+  --wl-navy-800: #122B47;
+  --wl-navy-700: #1A3D5C;
+  --wl-navy-600: #2A5578;
+  --wl-navy-500: #4A7296;
+  --wl-navy-400: #7A9BB5;
+  --wl-navy-300: #A8BFD0;
+  --wl-navy-200: #D1DEE8;
+  --wl-navy-100: #E8EFF5;
+  --wl-navy-50:  #F3F7FB;
 
-  --priority-red: #dc2626;
-  --priority-yellow: #f59e0b;
-  --priority-green: #16a34a;
-  --priority-black: #020617;
+  /* Surface / background tokens */
+  --wl-background: var(--wl-navy-50);
+  --wl-surface: rgba(255,255,255,0.88);      /* glass‑morphism card */
+  --wl-surface-soft: rgba(248,250,252,0.88);
+  --wl-border: rgba(13,122,111,0.08);
 
-  --destructive: #dc2626;
-  --background: #ffffff;
-  --foreground: #0f172a;
-  --muted: #f1f5f9;
-  --muted-foreground: #64748b;
-  --border: rgba(15, 23, 42, 0.1);
-  --card: #ffffff;
-  --primary: #0f766e;
-  --primary-foreground: #ffffff;
-  --accent: #14b8a6;
-
-  --font-sans: Inter, Manrope, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
+  /* Typography */
+  --font-sans: Inter, Manrope, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-display: Manrope, Inter, system-ui, sans-serif;
 
   font-family: var(--font-sans);
-  color: var(--waitless-text);
-  background: var(--waitless-bg);
+  color: var(--wl-navy-900);
+  background: var(--wl-background);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -65,10 +74,12 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background:
-    radial-gradient(circle at top left, rgba(20, 184, 166, 0.18), transparent 32rem),
-    radial-gradient(circle at top right, rgba(14, 165, 233, 0.14), transparent 34rem),
-    var(--waitless-bg);
-  color: var(--waitless-text);
+    radial-gradient(circle at top left, rgba(13,122,111,0.18), transparent 30rem),
+    radial-gradient(circle at top right, rgba(234,179,8,0.12), transparent 32rem),
+    radial-gradient(circle at bottom center, rgba(13,122,111,0.08), transparent 28rem),
+    var(--wl-background);
+  color: var(--wl-navy-900);
+}
 }
 
 #root {

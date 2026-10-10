@@ -1243,13 +1243,14 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 3px;
+  height: 4px;
   z-index: 9999;
   pointer-events: none;
-  background: transparent;
+  background: rgba(20, 184, 166, 0.08);
 }
 
 .route-loading-bar__fill {
+  position: relative;
   height: 100%;
   transition: width 280ms cubic-bezier(0.22, 1, 0.36, 1);
   background: linear-gradient(90deg, #0f766e, #14b8a6, #2dd4bf, #14b8a6, #0f766e);
@@ -1258,7 +1259,19 @@
   box-shadow:
     0 0 8px rgba(20, 184, 166, 0.6),
     0 0 20px rgba(20, 184, 166, 0.3);
-  border-radius: 0 2px 2px 0;
+  border-radius: 0 3px 3px 0;
+}
+
+.route-loading-bar__fill::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  top: -3px;
+  height: 10px;
+  width: 10px;
+  border-radius: 9999px;
+  background: #5eead4;
+  box-shadow: 0 0 12px rgba(94, 234, 212, 0.9), 0 0 24px rgba(45, 212, 191, 0.6);
 }
 
 @keyframes route-loading-shimmer {

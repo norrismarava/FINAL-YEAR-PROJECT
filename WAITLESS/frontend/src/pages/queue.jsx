@@ -772,6 +772,17 @@ function AudioCallPanel({ audio }) {
               ? "Spoken announcements will play when a ticket is called."
               : "Click \"Enable audio\" to hear spoken ticket calls in the waiting area."}
           </p>
+          <button
+            type="button"
+            onClick={() =>
+              audio.preview("Ticket Q-047, please proceed to OPD Room 2.")
+            }
+            disabled={audio.isSpeaking}
+            className="mt-3 inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/15 px-3.5 py-1.5 text-xs font-semibold text-teal-200 transition-colors hover:bg-teal-500/25 disabled:opacity-50"
+          >
+            <Volume2 className="h-3.5 w-3.5" />
+            {audio.isSpeaking ? "Playing…" : "Hear sample call"}
+          </button>
           {audio.enabled && (
             <div className="mt-3 space-y-2">
               <label className="flex items-center gap-2 text-xs text-slate-400">

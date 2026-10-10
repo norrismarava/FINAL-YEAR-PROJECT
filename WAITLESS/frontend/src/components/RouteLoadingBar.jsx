@@ -1,97 +1,59 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 
-/**
- * A top-of-viewport loading bar that activates on:
- * - Initial app mount (first load)
- * - Every route/path change
- *
- * The bar animates from 0 → ~80% quickly, then completes
- * and fades out once the new route has settled.
- */
 export function RouteLoadingBar() {
   const location = useLocation();
-  const [progress, setProgress] = useState(0);
   const [visible, setVisible] = useState(false);
-  const timerRef = useRef(null);
-  const completeRef = useRef(null);
-  const isFirstMount = useRef(true);
+  const [fading, setFading] = useState(false);
+  const timersRef = useRef([]);
 
   useEffect(() => {
-    // On first mount, show the bar immediately for the initial load
-    if (isFirstMount.current) {
-      isFirstMount.current = false;
-      startBar();
-      return;
-    }
+    // Clear previous timers and show spinner for this transition
+    timersRef.current.forEach((id) => clearTimeout(id));
+    timersRef.current = [];
+    setVisible(true);
+    setFading(false);
 
-    // On subsequent route changes, trigger the bar
-    startBar();
+    const settle = setTimeout(() => {
+      setFading(true);
+      const hide = setTimeout(() => {
+        setVisible(false);
+      }, 450);
+      timersRef.current.push(hide);
+    }, 1100);
+
+    timersRef.current.push(settle);
 
     return () => {
-      clearTimers();
+      timersRef.current.forEach((id) => clearTimeout(id));
+      timersRef.current = [];
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname, location.search]);
-
-  function clearTimers() {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-    if (completeRef.current) {
-      clearTimeout(completeRef.current);
-      completeRef.current = null;
-    }
-  }
-
-  function startBar() {
-    clearTimers();
-    setProgress(0);
-    setVisible(true);
-
-    // Quick jump to ~30%
-    setProgress(30);
-
-    // Incrementally advance to ~80%
-    let current = 30;
-    timerRef.current = setInterval(() => {
-      current += Math.random() * 12;
-      if (current >= 80) {
-        current = 80;
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
-      }
-      setProgress(current);
-    }, 180);
-
-    // Complete after a short delay — the route has rendered
-    completeRef.current = setTimeout(() => {
-      setProgress(100);
-      // Hide after the fill animation finishes
-      setTimeout(() => {
-        setVisible(false);
-      }, 350);
-    }, 500);
-  }
 
   if (!visible) return null;
 
   return (
     <div
-      className="route-loading-bar"
-      role="progressbar"
-      aria-valuenow={Math.round(progress)}
-      aria-valuemin={0}
-      aria-valuemax={100}
+      className={`fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-[#020814]/45 backdrop-blur-[2px] transition-opacity duration-300 ${
+        fading ? "pointer-events-none opacity-0" : "opacity-100 pointer-events-none"
+      }`}
+      aria-busy="true"
       aria-label="Loading page"
     >
-      <div
-        className="route-loading-bar__fill"
-        style={{ width: `${progress}%` }}
-      />
+      {/* Spinning ring with logo inside */}
+      <div className="relative h-20 w-20">
+        <div className="absolute inset-0 rounded-full border-[2.5px] border-cyan-200/15 border-r-cyan-400 border-t-teal-400 animate-[spin_1.5s_linear_infinite]" />
+        <div className="absolute inset-0 grid place-items-center">
+          <img
+            src="/waitless-logo-icon.png"
+            alt=""
+            className="h-10 w-10 object-contain"
+          />
+        </div>
+      </div>
+      <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-100">
+        Loading
+      </p>
     </div>
   );
 }

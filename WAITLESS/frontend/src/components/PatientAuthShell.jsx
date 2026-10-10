@@ -24,7 +24,7 @@ export function PatientAuthShell({ eyebrow, title, subtitle, children, footer, m
       <div className="absolute inset-0 -z-10 bg-[#04141f] lg:hidden" />
 
       {/* Form card — centered */}
-      <div className="relative z-10 flex min-h-[calc(100vh-6rem)] items-center justify-center py-6">
+      <div className="relative z-10 flex min-h-[calc(100vh-6rem)] items-center justify-center py-4">
         <div className={`relative w-full ${maxWidth} rounded-2xl panel-border-glow`}>
           <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#04141f]/60 shadow-[0_32px_80px_-28px_rgba(2,8,20,0.45)] backdrop-blur-2xl">
             {/* Circulating gradient ribbon */}
@@ -33,27 +33,27 @@ export function PatientAuthShell({ eyebrow, title, subtitle, children, footer, m
             {/* Content above ribbon */}
             <div className="relative z-10">
             {/* Header */}
-            <div className="border-b border-white/10 bg-[linear-gradient(135deg,rgba(4,20,31,0.82)_0%,rgba(6,42,53,0.72)_48%,rgba(10,31,46,0.78)_100%)] px-5 py-5 text-center sm:px-6">
+            <div className="border-b border-white/10 bg-[linear-gradient(135deg,rgba(4,20,31,0.82)_0%,rgba(6,42,53,0.72)_48%,rgba(10,31,46,0.78)_100%)] px-5 py-4 text-center sm:px-6">
               <img
                 src={waitlessLogoIcon}
                 alt="WaitLess"
-                className="mx-auto h-11 w-11 rounded-lg object-contain"
+                className="mx-auto h-9 w-9 rounded-lg object-contain"
               />
-              <div className="mt-2">
+              <div className="mt-1.5">
                 <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-teal-400">{eyebrow}</div>
                 <h1 className="mt-0.5 font-display text-xl font-bold tracking-tight text-white">
                   {title}
                 </h1>
               </div>
               {subtitle ? (
-                <p className="mt-3 text-[13px] leading-5 text-slate-400">
+                <p className="mt-2 text-[13px] leading-5 text-slate-400">
                   {subtitle}
                 </p>
               ) : null}
             </div>
 
             {/* Body */}
-            <div className="px-5 py-5 sm:px-6">
+            <div className="px-5 py-4 sm:px-6">
               {children}
 
               {footer ? (

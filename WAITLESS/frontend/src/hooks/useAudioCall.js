@@ -87,6 +87,23 @@ export function useAudioCall() {
     [supported, enabled, voices, selectedVoiceURI, rate, volume],
   );
 
+  const preview = useCallback(
+    (text) => {
+      if (!supported || !text) return;
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      const voice = voices.find((v) => v.voiceURI === selectedVoiceURI);
+      if (voice) utterance.voice = voice;
+      utterance.rate = rate;
+      utterance.volume = volume;
+      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onend = () => setIsSpeaking(false);
+      utterance.onerror = () => setIsSpeaking(false);
+      window.speechSynthesis.speak(utterance);
+    },
+    [supported, voices, selectedVoiceURI, rate, volume],
+  );
+
   const stop = useCallback(() => {
     if (!supported) return;
     window.speechSynthesis.cancel();
@@ -118,6 +135,7 @@ export function useAudioCall() {
     setVolume,
     isSpeaking,
     speak,
+    preview,
     stop,
     enableAudio,
     disableAudio,
