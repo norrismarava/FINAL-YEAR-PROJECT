@@ -187,7 +187,6 @@ export default function QueuePage() {
       </div>
 
       {/* Subtle grid pattern on desktop */}
-      <div className="pointer-events-none absolute inset-0 -z-10 hidden opacity-[0.05] lg:block [background-image:linear-gradient(rgba(148,163,184,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.4)_1px,transparent_1px)] [background-size:82px_82px]" />
 
       {/* Mobile solid background */}
       <div className="absolute inset-0 -z-10 bg-[#04141f] lg:hidden" />
@@ -209,7 +208,7 @@ export default function QueuePage() {
         {/* Dark glass card wrapper */}
         <div className="relative overflow-hidden rounded-2xl bg-[#04141f]/60 shadow-[0_32px_80px_-28px_rgba(2,8,20,0.45)] backdrop-blur-2xl">
           {/* Circulating gradient ribbon */}
-          <QueueRibbonCirculation />
+          
 
           {/* Content above ribbon */}
           <div className="relative z-10">
@@ -711,19 +710,6 @@ function QueueStat({ label, value, icon, liveDot, enterClass = "" }) {
       <div className="mt-1 font-display text-3xl font-bold tracking-tight text-white">
         {value}
       </div>
-    </div>
-  );
-}
-
-/* ================================================================
-   QUEUE RIBBON CIRCULATION — animated gradient strands
-   ================================================================ */
-function QueueRibbonCirculation() {
-  return (
-    <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-      <span className="patient-ribbon-strand patient-ribbon-strand--one" />
-      <span className="patient-ribbon-strand patient-ribbon-strand--two" />
-      <span className="patient-ribbon-strand patient-ribbon-strand--three" />
     </div>
   );
 }

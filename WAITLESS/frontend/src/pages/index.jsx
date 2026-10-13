@@ -363,7 +363,6 @@ function Hero() {
       <div className="absolute -z-10 left-[40%] bottom-[-5%] h-[24rem] w-[24rem] rounded-full bg-cyan-400/[0.05] blur-[70px]" style={{ animation: "orb-drift 16s ease-in-out infinite 2s" }} />
 
       {/* Grid overlay */}
-      <div className="absolute inset-0 -z-10 opacity-[0.03] [background-image:linear-gradient(rgba(255,255,255,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.5)_1px,transparent_1px)] [background-size:64px_64px]" />
 
       {/* ECG line */}
       <div className="absolute bottom-0 left-0 right-0 -z-10 h-11 opacity-20"
@@ -660,7 +659,6 @@ function PatientJourney() {
 
   return (
     <section id="journey" className="relative overflow-hidden py-8 sm:py-12">
-      <div className="absolute inset-0 opacity-[0.06] [background-image:linear-gradient(rgba(125,211,252,0.3)_1px,transparent_1px),linear-gradient(90deg,rgba(125,211,252,0.2)_1px,transparent_1px)] [background-size:72px_72px]" />
 
       <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Reveal>

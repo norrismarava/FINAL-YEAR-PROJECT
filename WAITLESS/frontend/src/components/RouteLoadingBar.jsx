@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation } from "react-router-dom";
 
+import { LogoLoader } from "@/components/LogoLoader";
+
 export function RouteLoadingBar() {
   const location = useLocation();
   const [visible, setVisible] = useState(false);
@@ -40,17 +42,8 @@ export function RouteLoadingBar() {
       aria-busy="true"
       aria-label="Loading page"
     >
-      {/* Spinning ring with logo inside */}
-      <div className="relative h-20 w-20">
-        <div className="absolute inset-0 rounded-full border-[2.5px] border-cyan-200/15 border-r-cyan-400 border-t-teal-400 animate-[spin_1.5s_linear_infinite]" />
-        <div className="absolute inset-0 grid place-items-center">
-          <img
-            src="/waitless-logo-icon.png"
-            alt=""
-            className="h-10 w-10 object-contain"
-          />
-        </div>
-      </div>
+      {/* WaitLess logo loader — rotating cross + fading checkmark */}
+      <LogoLoader size={84} decorative />
       <p className="mt-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-100">
         Loading
       </p>

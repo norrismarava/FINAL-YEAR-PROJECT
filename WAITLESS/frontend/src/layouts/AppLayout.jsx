@@ -39,6 +39,7 @@ import { PatientAuthProvider, usePatientAuth } from "@/auth/PatientAuthProvider"
 import ChatbotWidget from "@/components/ChatbotWidget";
 import OfflineIndicator from "@/components/OfflineIndicator";
 import { LoadingPanel } from "@/components/ui/system-loader";
+import { LogoLoader } from "@/components/LogoLoader";
 import { RouteLoadingBar } from "@/components/RouteLoadingBar";
 import SiteFooter from "@/components/SiteFooter";
 import QuickNavSearch from "@/components/QuickNavSearch";
@@ -348,19 +349,7 @@ function AppScaffold() {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#04141f]">
         <div className="flex flex-col items-center gap-5">
-          <img
-            src="/waitless-logo-icon.png"
-            alt="WaitLess"
-            className="h-16 w-16 rounded-xl object-contain"
-            style={{ animation: "preloader-pulse 1.8s ease-in-out infinite" }}
-          />
-          <div
-            className="h-9 w-9 rounded-full border-[3px] border-teal-400/15"
-            style={{
-              borderTopColor: "#2dd4bf",
-              animation: "preloader-spin 0.8s linear infinite",
-            }}
-          />
+          <LogoLoader size={88} decorative />
           <span className="text-[0.8rem] font-semibold uppercase tracking-[0.24em] text-white/40">
             Loading workspace
           </span>
@@ -539,7 +528,7 @@ function Header({ onOpenMobileNav }) {
                 ) : null}
                 <Link to="/" aria-label="Go to WaitLess home">
                 <WaitLessLogo
-                  className={isDarkHeader ? "origin-left scale-[0.9] text-white" : ""}
+                  className={isDarkHeader ? "origin-left text-white" : ""}
                   subtitle={
                     isPublicGlassRoute || isDarkHeader
                       ? "Smarter Queues, Better Care"
@@ -638,14 +627,14 @@ function Header({ onOpenMobileNav }) {
                     Back to workspace
                   </Link>
                 ) : null}
-                {!isStaffWorkspaceTheme && !isAuthRoute && patientAuth.isPatientAuthenticated ? (
+                {!isStaffWorkspaceTheme && patientAuth.isPatientAuthenticated ? (
                   <PatientAccountMenu
                     patientAuth={patientAuth}
                     isPublicGlassRoute={isPublicGlassRoute}
                     isDark={isDarkHeader}
                   />
                 ) : null}
-                {!isStaffWorkspaceTheme && !isAuthRoute && !patientAuth.isPatientAuthenticated ? (
+                {!isStaffWorkspaceTheme && !patientAuth.isPatientAuthenticated ? (
                   auth.isAuthenticated ? (
                     <Link
                       to={headerPrimaryAction.to}
@@ -656,16 +645,35 @@ function Header({ onOpenMobileNav }) {
                     </Link>
                   ) : (
                     <>
-                      <Link
+                      <NavLink
+                        to="/admin/login"
+                        className={({ isActive }) =>
+                          isActive
+                            ? isDarkHeader
+                              ? "inline-flex h-10 items-center gap-1.5 rounded-full border border-cyan-300/35 bg-cyan-300/12 px-3.5 text-sm font-semibold text-cyan-50"
+                              : "inline-flex h-10 items-center gap-1.5 rounded-full border border-primary/20 bg-primary-soft px-3.5 text-sm font-semibold text-primary"
+                            : isDarkHeader
+                              ? "inline-flex h-10 items-center gap-1.5 rounded-full px-3.5 text-sm font-medium text-slate-100/82 transition-colors hover:bg-cyan-300/8 hover:text-white"
+                              : "inline-flex h-10 items-center gap-1.5 rounded-full px-3.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
+                        }
+                      >
+                        <ShieldCheck className="h-3.5 w-3.5" />
+                        Staff sign in
+                      </NavLink>
+                      <NavLink
                         to="/patient/login"
-                        className={`inline-flex h-10 items-center gap-2 rounded-full px-4 text-sm font-semibold transition-colors ${
-                          isDarkHeader
-                            ? "border border-cyan-300/35 bg-cyan-300/12 text-cyan-50 hover:bg-cyan-300/20 hover:text-white"
-                            : "border border-border/70 text-foreground hover:bg-muted"
-                        }`}
+                        className={({ isActive }) =>
+                          isActive
+                            ? isDarkHeader
+                              ? "inline-flex h-10 items-center gap-1.5 rounded-full border border-cyan-300/35 bg-cyan-300/12 px-4 text-sm font-semibold text-cyan-50"
+                              : "inline-flex h-10 items-center gap-1.5 rounded-full border border-primary/20 bg-primary-soft px-4 text-sm font-semibold text-primary"
+                            : isDarkHeader
+                              ? "inline-flex h-10 items-center gap-1.5 rounded-full px-4 text-sm font-medium text-slate-100/82 transition-colors hover:bg-cyan-300/8 hover:text-white"
+                              : "inline-flex h-10 items-center gap-1.5 rounded-full px-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
+                        }
                       >
                         Sign in
-                      </Link>
+                      </NavLink>
                       <Link
                         to="/patient/register"
                         className={`inline-flex h-10 items-center gap-2 rounded-full px-5 text-sm font-semibold transition-transform hover:-translate-y-0.5 ${
@@ -701,7 +709,9 @@ function Header({ onOpenMobileNav }) {
                         end={item.to === "/"}
                         className={({ isActive }) =>
                           isActive
-                            ? "rounded-full border border-primary/20 bg-primary-soft px-3 py-1.5 text-sm font-semibold text-primary"
+                            ? isDarkHeader
+                              ? "rounded-full border border-cyan-300/35 bg-cyan-300/12 px-3 py-1.5 text-sm font-semibold text-cyan-50"
+                              : "rounded-full border border-primary/20 bg-primary-soft px-3 py-1.5 text-sm font-semibold text-primary"
                             : isDarkHeader
                               ? "rounded-full border border-cyan-200/10 bg-[rgba(4,18,34,0.42)] px-3 py-1.5 text-sm font-medium text-slate-100/82 transition-colors hover:border-cyan-200/16 hover:bg-cyan-300/8 hover:text-white"
                               : "rounded-full border border-transparent px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:border-border hover:bg-muted/70 hover:text-foreground"
@@ -733,7 +743,9 @@ function Header({ onOpenMobileNav }) {
                       end={item.to === "/"}
                       className={({ isActive }) =>
                         isActive
-                          ? "whitespace-nowrap rounded-full gradient-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-elegant"
+                          ? isDarkHeader
+                            ? "whitespace-nowrap rounded-full border border-cyan-300/35 bg-cyan-300/12 px-3 py-1.5 text-xs font-semibold text-cyan-50"
+                            : "whitespace-nowrap rounded-full border border-primary/20 bg-primary-soft px-3 py-1.5 text-xs font-semibold text-primary"
                           : isDarkHeader
                             ? "whitespace-nowrap rounded-full border border-cyan-200/12 bg-[rgba(4,18,34,0.42)] px-3 py-1.5 text-xs font-medium text-slate-100/82 shadow-[inset_0_1px_0_rgba(255,255,255,0.03)]"
                             : "whitespace-nowrap rounded-full border border-transparent bg-background/70 px-3 py-1.5 text-xs font-medium text-muted-foreground"

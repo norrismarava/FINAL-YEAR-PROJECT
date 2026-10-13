@@ -65,7 +65,7 @@ export default function LoginPage() {
       footer={
         <span>
           New staff member?{" "}
-          <Link to="/admin/staff-signup" className="font-semibold text-cyan-100 hover:text-white">
+          <Link to="/admin/staff-signup" className="font-semibold text-teal-100 hover:text-white">
             Register with your access code
           </Link>
         </span>
@@ -110,7 +110,7 @@ export default function LoginPage() {
                 onChange={handleChange}
                 className="peer sr-only"
               />
-              <span className="flex h-5 w-5 items-center justify-center rounded-md border border-cyan-200/18 bg-[rgba(2,12,22,0.42)] backdrop-blur-xl transition peer-checked:border-emerald-300 peer-checked:bg-emerald-400">
+              <span className="flex h-5 w-5 items-center justify-center rounded-md border border-teal-200/18 bg-[rgba(2,12,22,0.42)] backdrop-blur-xl transition peer-checked:border-emerald-300 peer-checked:bg-emerald-400">
                 <ShieldCheck className="h-3.5 w-3.5 scale-0 text-[#022c2d] transition peer-checked:scale-100" />
               </span>
             </span>
@@ -119,7 +119,7 @@ export default function LoginPage() {
 
           <Link
             to="/admin/forgot-password"
-            className="font-semibold text-cyan-100 transition hover:text-white"
+            className="font-semibold text-teal-100 transition hover:text-white"
           >
             Forgot password?
           </Link>
@@ -144,7 +144,7 @@ function PasswordInput({ onToggle, visible, ...props }) {
       <button
         type="button"
         onClick={onToggle}
-        className="absolute bottom-3 right-3 grid h-6 w-6 place-items-center rounded-md text-cyan-100/68 transition hover:bg-white/[0.08] hover:text-white"
+        className="absolute bottom-3 right-3 grid h-6 w-6 place-items-center rounded-md text-teal-100/68 transition hover:bg-white/[0.08] hover:text-white"
         aria-label={visible ? "Hide password" : "Show password"}
       >
         {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}

@@ -1,4 +1,4 @@
-const CACHE_NAME = "waitless-v2";
+const CACHE_NAME = "waitless-v3";
 const STATIC_ASSETS = ["/", "/index.html"];
 
 self.addEventListener("install", (event) => {
@@ -95,8 +95,8 @@ self.addEventListener("push", (event) => {
   const title = payload.title || "WaitLess Notification";
   const options = {
     body: payload.body || "",
-    icon: "/favicon.ico",
-    badge: "/favicon.ico",
+    icon: "/waitless-logo-icon.png",
+    badge: "/waitless-logo-icon.png",
     tag: payload.tag || "waitless-notification",
     data: payload.data || {},
     requireInteraction: payload.requireInteraction || false,

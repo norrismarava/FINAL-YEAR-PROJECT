@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { AlertCircle, ArrowRight, AtSign, Eye, EyeOff, Lock, Search, LoaderCircle } from "lucide-react";
+import { AlertCircle, ArrowRight, AtSign, Eye, EyeOff, Lock, Search, LoaderCircle, ShieldCheck } from "lucide-react";
 
 import { usePatientAuth } from "@/auth/PatientAuthProvider";
 import { PatientAuthShell } from "@/components/PatientAuthShell";
 import { useTranslation } from "@/i18n/useTranslation";
 import { LANGUAGES } from "@/i18n/I18nProvider";
-import waitlessLogoIcon from "@/assets/waitless-logo-icon.png";
+import { LogoLoader } from "@/components/LogoLoader";
 
 export default function PatientLoginPage() {
   const navigate = useNavigate();
@@ -67,6 +67,14 @@ export default function PatientLoginPage() {
           >
             <Search className="h-3 w-3" />
             {t("login.trackTicket")}
+          </Link>
+          <span className="text-white/20">|</span>
+          <Link
+            to="/admin/login"
+            className="inline-flex items-center gap-1 rounded-full border border-white/15 px-3 py-1 font-medium text-slate-300 transition-colors hover:border-teal-400/50 hover:text-teal-300"
+          >
+            <ShieldCheck className="h-3 w-3" />
+            Staff sign in
           </Link>
         </>
       }
@@ -160,8 +168,7 @@ export default function PatientLoginPage() {
 
       {loading && (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#04141f]/90 backdrop-blur-md">
-          <img src={waitlessLogoIcon} alt="WaitLess" className="h-16 w-16 rounded-xl object-contain" />
-          <div className="mt-6 h-10 w-10 animate-spin rounded-full border-[3px] border-teal-400/20 border-t-teal-400" />
+          <LogoLoader size={72} decorative />
           <div className="mt-4 text-sm font-semibold text-teal-300">{t("login.signingYouIn")}</div>
           <div className="mt-1 text-xs text-slate-400">{t("login.loadingDashboard")}</div>
         </div>

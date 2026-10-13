@@ -1,31 +1,14 @@
 import { cn } from "@/utils/cn";
-
-const BOXES = [0, 1, 2, 3];
-const SIZE_MAP = {
-  sm: "18px",
-  md: "26px",
-  lg: "32px",
-};
+import { LogoLoader } from "@/components/LogoLoader";
 
 function SystemLoader({ className, decorative = false, label = "Loading", size = "md" }) {
   return (
-    <div
-      aria-hidden={decorative ? "true" : undefined}
-      aria-label={decorative ? undefined : label}
-      className={cn("system-loader", className)}
-      role={decorative ? undefined : "status"}
-      style={{ "--loader-size": SIZE_MAP[size] ?? SIZE_MAP.md }}
-    >
-      {!decorative && <span className="sr-only">{label}</span>}
-      {BOXES.map((box) => (
-        <span key={box} className="system-loader__box">
-          <span className="system-loader__face" />
-          <span className="system-loader__face" />
-          <span className="system-loader__face" />
-          <span className="system-loader__face" />
-        </span>
-      ))}
-    </div>
+    <LogoLoader
+      size={size}
+      className={className}
+      decorative={decorative}
+      label={label}
+    />
   );
 }
 

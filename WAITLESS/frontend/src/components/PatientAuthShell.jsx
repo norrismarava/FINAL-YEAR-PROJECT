@@ -18,19 +18,14 @@ export function PatientAuthShell({ eyebrow, title, subtitle, children, footer, m
       </div>
 
       {/* Subtle grid pattern on desktop */}
-      <div className="pointer-events-none absolute inset-0 -z-10 hidden opacity-[0.05] lg:block [background-image:linear-gradient(rgba(148,163,184,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.4)_1px,transparent_1px)] [background-size:82px_82px]" />
 
       {/* Mobile solid background */}
       <div className="absolute inset-0 -z-10 bg-[#04141f] lg:hidden" />
 
       {/* Form card — centered */}
       <div className="relative z-10 flex min-h-[calc(100vh-6rem)] items-center justify-center py-4">
-        <div className={`relative w-full ${maxWidth} rounded-2xl panel-border-glow`}>
+        <div className={`relative w-full ${maxWidth} rounded-2xl`}>
           <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#04141f]/60 shadow-[0_32px_80px_-28px_rgba(2,8,20,0.45)] backdrop-blur-2xl">
-            {/* Circulating gradient ribbon */}
-            <PatientRibbonCirculation />
-
-            {/* Content above ribbon */}
             <div className="relative z-10">
             {/* Header */}
             <div className="border-b border-white/10 bg-[linear-gradient(135deg,rgba(4,20,31,0.82)_0%,rgba(6,42,53,0.72)_48%,rgba(10,31,46,0.78)_100%)] px-5 py-4 text-center sm:px-6">
@@ -73,15 +68,5 @@ export function PatientAuthShell({ eyebrow, title, subtitle, children, footer, m
         </div>
       </div>
     </section>
-  );
-}
-
-function PatientRibbonCirculation() {
-  return (
-    <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-      <span className="patient-ribbon-strand patient-ribbon-strand--one" />
-      <span className="patient-ribbon-strand patient-ribbon-strand--two" />
-      <span className="patient-ribbon-strand patient-ribbon-strand--three" />
-    </div>
   );
 }

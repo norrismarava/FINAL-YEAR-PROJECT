@@ -12,12 +12,15 @@ import {
   Globe,
   ChevronDown,
   MessageSquare,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import authBackground from "@/assets/BACKG.png";
 import waitlessLogoIcon from "@/assets/waitless-logo-icon.png";
 import { usePatientAuth } from "@/auth/PatientAuthProvider";
+import { LogoLoader } from "@/components/LogoLoader";
 import GlowToggle from "@/components/GlowToggle";
 import { useTranslation } from "@/i18n/useTranslation";
 import { LANGUAGES } from "@/i18n/I18nProvider";
@@ -57,6 +60,7 @@ export default function PatientPortalLayout() {
   const { t, lang, changeLang } = useTranslation();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [navCollapsed, setNavCollapsed] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
   const [theme, setTheme] = useState(loadTheme);
@@ -91,7 +95,7 @@ export default function PatientPortalLayout() {
         </div>
         <div className="absolute inset-0 -z-10 bg-[#04141f] lg:hidden" />
         <div className="flex min-h-[40vh] items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-[3px] border-teal-400/15 border-t-teal-400" />
+          <LogoLoader size={56} decorative />
         </div>
       </section>
     );
@@ -101,17 +105,10 @@ export default function PatientPortalLayout() {
     return <Navigate to="/patient/login" replace />;
   }
 
-  const sidebarBg = isLight
-    ? "bg-white/80 border-slate-200"
-    : "bg-[#04141f]/70 border-white/10";
   const sidebarText = isLight ? "text-slate-700" : "text-slate-300";
-  const sidebarActive = isLight
-    ? "bg-teal-500/10 text-teal-700"
-    : "bg-teal-500/15 text-teal-300";
   const sidebarHover = isLight
     ? "hover:bg-slate-100 hover:text-slate-900"
     : "hover:bg-white/[0.06] hover:text-white";
-  const logoText = isLight ? "text-slate-900" : "text-white/80";
   const logoAccent = isLight ? "text-teal-600" : "text-teal-400";
   const borderColor = isLight ? "border-slate-200" : "border-white/10";
   const mainBg = isLight ? "bg-[#f0f5f6]" : "";
@@ -153,55 +150,97 @@ export default function PatientPortalLayout() {
         </button>
       </div>
 
-      {/* Sidebar */}
+      {/* Sidebar — floating panel styled like the staff workspace */}
       <aside
-        className={`fixed left-0 top-0 z-20 flex h-full w-72 flex-col border-r ${sidebarBg} backdrop-blur-2xl transition-transform duration-300 lg:translate-x-0 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`fixed left-0 top-0 z-20 h-full w-72 p-4 pt-20 transition-[width,transform] duration-300 lg:translate-x-0 ${
+          navCollapsed ? "lg:w-24" : "lg:w-72"
+        } ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
       >
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-6 py-6">
-          <img src={waitlessLogoIcon} alt="WaitLess" className="h-11 w-11 rounded-lg object-contain" />
-          <div>
-            <div className={`text-[10px] font-bold uppercase tracking-[0.22em] ${logoAccent}`}>
-              Patient Portal
-            </div>
-            <div className={`text-sm font-medium ${logoText}`}>WaitLess</div>
+        <div
+          className={`flex max-h-full min-h-0 flex-col overflow-hidden rounded-[1.2rem] border p-3 ${
+            isLight
+              ? "border-slate-200 bg-white shadow-[0_26px_70px_-48px_rgba(15,23,42,0.35)]"
+              : "border-[#1b2a43] bg-[linear-gradient(180deg,#0b162a_0%,#081225_100%)] shadow-[0_26px_70px_-48px_rgba(0,0,0,0.92)]"
+          }`}
+        >
+          {/* Header — pinned, never scrolls */}
+          <div className={`flex shrink-0 items-center border-b ${borderColor} pb-3 ${navCollapsed ? "justify-center" : "justify-between px-2"}`}>
+            {navCollapsed ? null : (
+              <span className={`text-[11px] font-bold uppercase tracking-[0.22em] ${isLight ? "text-slate-800" : "text-foreground"}`}>
+                Navigation
+              </span>
+            )}
+            <button
+              type="button"
+              onClick={() => setNavCollapsed((v) => !v)}
+              aria-label={navCollapsed ? "Expand navigation" : "Collapse navigation"}
+              title={navCollapsed ? "Expand navigation" : "Collapse navigation"}
+              className={`grid shrink-0 place-items-center rounded-xl border transition-all ${
+                isLight
+                  ? "border-slate-200 bg-slate-100/80 text-slate-500 hover:border-teal-500/30 hover:text-slate-800"
+                  : "border-white/10 bg-white/[0.04] text-slate-400 hover:border-teal-400/30 hover:text-white"
+              } ${navCollapsed ? "h-9 w-9" : "h-10 w-10"}`}
+            >
+              {navCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+            </button>
           </div>
-        </div>
 
-        {/* Nav */}
-        <nav className="flex flex-1 flex-col gap-1 px-4">
-          {NAV_ITEMS.map((item) => {
-            const Icon = item.icon;
-            const active =
-              location.pathname === item.to ||
-              (item.to === "/patient/dashboard" && location.pathname === "/patient");
-            return (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                onClick={() => setSidebarOpen(false)}
-                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
-                  active ? sidebarActive : `${sidebarText} ${sidebarHover}`
-                }`}
-              >
-                <Icon className="h-5 w-5 shrink-0" />
-                {t(item.labelKey)}
-              </NavLink>
-            );
-          })}
-        </nav>
+          {/* Scrollable nav — the only region that scrolls */}
+          <nav className="patient-account-navigation min-h-0 flex-1 overflow-y-auto py-3" aria-label="Patient portal">
+            <div className="space-y-1">
+            {NAV_ITEMS.map((item) => {
+              const Icon = item.icon;
+              const active =
+                location.pathname === item.to ||
+                (item.to === "/patient/dashboard" && location.pathname === "/patient");
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  onClick={() => setSidebarOpen(false)}
+                  aria-current={active ? "page" : undefined}
+                  title={navCollapsed ? t(item.labelKey) : undefined}
+                  style={
+                    active && navCollapsed && !isLight
+                      ? { boxShadow: "inset 0 0 0 1px rgba(74,164,255,0.3)" }
+                      : undefined
+                  }
+                  className={`relative flex min-h-11 items-center rounded-xl py-2 text-sm transition-colors ${navCollapsed ? "justify-center px-2" : "gap-3 px-3"} ${
+                    active
+                      ? isLight
+                        ? "font-semibold text-teal-800 shadow-[inset_0_0_0_1px_rgba(13,148,136,0.25)] [background:linear-gradient(110deg,rgba(13,148,136,0.14),rgba(45,212,191,0.12))]"
+                        : "staff-account-nav-link staff-account-nav-link--active font-semibold"
+                      : isLight
+                        ? `font-medium ${sidebarText} ${sidebarHover}`
+                        : "staff-account-nav-link font-medium text-muted-foreground"
+                  }`}
+                >
+                  <span className={`staff-account-nav-icon grid h-8 w-8 shrink-0 place-items-center rounded-lg ${isLight ? "bg-slate-100" : "bg-[#0b1427]/70"}`}>
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  {navCollapsed ? null : <span className="truncate">{t(item.labelKey)}</span>}
+                </NavLink>
+              );
+            })}
+            </div>
+          </nav>
 
-        {/* Sign out */}
-        <div className={`border-t ${borderColor} px-4 py-4`}>
-          <button
-            onClick={() => setShowLogoutConfirm(true)}
-            className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors ${sidebarText} hover:bg-red-500/10 hover:text-red-300`}
-          >
-            <LogOut className="h-5 w-5 shrink-0" />
-            {t("nav.signout")}
-          </button>
+          {/* Sign out — pinned below the scrollable nav, always visible */}
+          <div className={`mt-auto shrink-0 border-t ${borderColor} px-1 pt-4`}>
+            <button
+              type="button"
+              onClick={() => setShowLogoutConfirm(true)}
+              title={navCollapsed ? t("nav.signout") : undefined}
+              className={`flex w-full items-center rounded-xl py-3 text-sm font-semibold transition-colors ${navCollapsed ? "justify-center px-2" : "gap-3 px-3"} ${
+                isLight
+                  ? "text-rose-600 hover:bg-rose-500/10"
+                  : "text-rose-400 hover:bg-rose-500/10"
+              }`}
+            >
+              <LogOut className="h-4 w-4 shrink-0" />
+              {navCollapsed ? null : <span>{t("nav.signout")}</span>}
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -213,11 +252,16 @@ export default function PatientPortalLayout() {
         />
       )}
 
-      {/* Main content */}
-      <main className="flex-1 overflow-y-auto lg:ml-72">
-        <div className="min-h-screen pt-16 lg:pt-0">
-          {/* Top bar */}
-          <div className={`sticky top-0 z-10 flex items-center justify-end gap-3 border-b ${borderColor} px-4 py-3 backdrop-blur-xl sm:px-6 ${isLight ? "bg-white/60" : "bg-[#04141f]/40"}`}>
+      {/* Fixed top header — spans full width, above the sidebar */}
+      <div className={`fixed inset-x-0 top-0 z-40 hidden items-center justify-between gap-3 border-b ${borderColor} px-4 py-3 backdrop-blur-xl sm:px-6 lg:flex ${isLight ? "bg-white/80" : "bg-[#04141f]/70"}`}>
+        <div className="flex items-center gap-3">
+          <img src={waitlessLogoIcon} alt="WaitLess" className="h-9 w-9 rounded-lg object-contain" />
+          <div>
+            <div className={`text-sm font-bold leading-tight ${isLight ? "text-slate-900" : "text-white"}`}>WaitLess</div>
+            <div className={`text-[10px] font-semibold uppercase leading-tight tracking-[0.22em] ${logoAccent}`}>Patient Portal</div>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
             {/* Language switcher */}
             <div className="relative">
               <button
@@ -302,7 +346,11 @@ export default function PatientPortalLayout() {
               />
             </div>
           </div>
+        </div>
 
+      {/* Main content */}
+      <main className={`flex-1 overflow-y-auto transition-[margin] duration-300 ${navCollapsed ? "lg:ml-24" : "lg:ml-72"}`}>
+        <div className="min-h-screen pt-16 lg:pt-20">
           <Outlet context={{ theme, isLight }} />
         </div>
       </main>

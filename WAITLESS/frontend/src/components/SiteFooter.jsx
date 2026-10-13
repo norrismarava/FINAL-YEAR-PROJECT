@@ -2,7 +2,6 @@ import { Link } from "react-router-dom";
 import {
   Building2,
   Clock3,
-  Cross,
   Facebook,
   FlaskConical,
   HeartPulse,
@@ -19,6 +18,8 @@ import {
   Twitter,
   UserRound,
 } from "lucide-react";
+
+import { WaitLessLogo } from "@/components/WaitLessLogo";
 
 const HOSPITAL = {
   name: "Chinhoyi Provincial Hospital",
@@ -63,19 +64,10 @@ export default function SiteFooter() {
 
           {/* Brand */}
           <div>
-            <div className="flex items-center gap-3">
-              <span className="grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 text-white shadow-[0_10px_28px_-10px_rgba(20,184,166,0.5)]">
-                <Cross className="h-4 w-4" />
-              </span>
-              <div>
-                <div className="text-base font-bold" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
-                  Wait<span className="text-teal-400">Less</span>
-                </div>
-                <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-white/30">
-                  Smarter Queues, Better Care
-                </div>
-              </div>
-            </div>
+            <WaitLessLogo
+              subtitle="Smarter Queues, Better Care"
+              subtitleClassName="text-white/40"
+            />
             <p className="mt-4 max-w-xs text-sm leading-6 text-white/40">
               The digital patient front door for hospitals — self check-in, live
               queue boards, and WhatsApp updates from registration to pharmacy.

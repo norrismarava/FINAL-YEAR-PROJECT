@@ -1,0 +1,597 @@
+--- TABLE 0 ---
+Team Member | Email Address
+Shadreck Mapuranga | mapurangashadreck03@gmail.com
+Norris Marava | norrismarava44@gmail.com
+Kelvin Ncube | kevincube19@gmail.com
+--- TABLE 1 ---
+Method | Purpose in the project | Main output
+Single-site case study | To understand patient movement, triage, departmental hand-offs, and infrastructure constraints at Chinhoyi Provincial Hospital | Context-specific problem definition and workflow requirements
+Design science research | To design and construct a useful software artefact in response to the observed problem | WaitLess web application, data model, queue logic, and notification workflow
+Software-system evaluation | To test functional correctness, usability characteristics, security controls, build quality, and deployment suitability | Test results, requirements traceability, limitations, and recommendations
+--- TABLE 2 ---
+Evidence source | Information extracted	Use in the project | Information extracted	Use in the project |  | 
+Direct observation | Direct observation | Patient movement, waiting points, staff hand-offs | Patient movement, waiting points, staff hand-offs | Problem definition and workflow modelling
+OPD and triage artefacts | OPD and triage artefacts | Stages, departments, priority categories, indicative times | Stages, departments, priority categories, indicative times | Requirements and routing rules
+OI service-flow information | OI service-flow information | ART, TB, viral-load, counselling, and screening streams | ART, TB, viral-load, counselling, and screening streams | Confidential routing and module scope
+Academic literature | Academic literature | Prior findings, research gap, evaluation approaches | Prior findings, research gap, evaluation approaches | Literature synthesis and methodological justification
+Source code and API output | Source code and API output | Implemented behaviour and constraints | Implemented behaviour and constraints | Verification and traceability
+Automated and manual tests | Automated and manual tests | Pass/fail evidence and observed defects | Pass/fail evidence and observed defects | Presentation of results
+--- TABLE 3 ---
+Objective | Evaluation question | Evidence used
+Analyse the existing workflow | Were the important actors, stages, priorities, and constraints represented? | Case-study notes, workflow artefacts, requirements catalogue, use cases
+Design and develop the system | Did the prototype implement the required patient-flow and staff-control behaviour? | Source-code inspection, API verification, automated tests, manual scenarios, build output
+Evaluate suitability | Was the prototype understandable, responsive, secure enough for demonstration, and realistic for constrained deployment? | Interface review, task scenarios, performance observations, security checklist, limitation analysis
+--- TABLE 4 ---
+Milestone | Deliverable | Completion criterion | Target period
+Problem analysis | Case-study notes and problem statement | Core workflow and constraints documented | March-April 2026
+Requirements | Prioritised functional and non-functional requirements | Requirements reviewed and mapped to actors | April-May 2026
+System design | Architecture, ERD, DFDs, use cases, sequences, and activity models | Major workflows represented consistently | May-June 2026
+Core implementation | Registration, triage, queues, dashboards, tracking | End-to-end patient flow demonstrable | June-July 2026
+Extended implementation | Notifications, reports, appointments, department modules | Priority features integrated with the queue core | July-August 2026
+Verification | Automated tests, manual scenarios, build and security review | Critical test paths pass and limitations are recorded | August 2026
+Documentation | Dissertation, diagrams, user guides, and deployment notes | Submission package generated and reviewed | August 2026
+Pilot preparation | UAT plan, deployment checklist, training material | Ready for authorised hospital pilot | Post- submission
+--- TABLE 5 ---
+ID | Requirement | Priority | Status
+1.1 | The system shall allow staff to electronically register patients with demographics, national ID, phone, address, category, next of kin, chief complaint, department, and notification consent. | High | Complete
+1.2 | The system shall support returning-patient search by name, phone, national ID, patient number, previous ticket, or scanned QR code, and reuse existing records without duplication. | High | Complete
+1.3 | The system shall generate a unique, immutable queue token (e.g., OPD-205, LAB-206) consistent across print, phone, WhatsApp, and display board. | High | Complete
+1.4 | The system shall generate a QR patient card for self-service identification and reception lookup. | Medium | Partial
+1.5 | The system shall classify patients by category: walk-in, referred, emergency, elderly, pregnant, child, disabled, and chronic-care. | Medium | Complete
+--- TABLE 6 ---
+ID | Requirement | Priority | Status
+2.1 | The system shall allow online pre-registration with arrival activation by reception staff. | Medium | Partial
+2.2 | The system shall provide a self-service kiosk for check-in by QR code scan or phone number lookup, collecting department and visit reason, and issuing a queue token. | High | Complete
+2.3 | The system shall provide a live patient queue-status tracking page showing token, department, position, patients ahead, ETA, progress, directions, and notification history. | High | Complete
+2.4 | The system shall provide a patient feedback form for satisfaction, cleanliness, communication, and wait- time feedback. | Low | Complete
+--- TABLE 7 ---
+ID | Requirement | Priority | Status
+3.1 | The system shall support digital triage assessment capturing chief complaint, symptoms, vitals (oxygen saturation, heart rate, blood pressure, temperature, respiratory rate), pain score, and severity. | High | Complete
+3.2 | The system shall classify patients into four priority levels: Red (Critical), Yellow (Serious), Green (Ambulant), and Black (Deceased). | High | Complete
+3.3 | The system shall automatically fast-track Red priority cases based on emergency vital thresholds and trigger escalation alerts. | High | Complete
+3.4 | The system shall generate reassessment alerts for Red and Yellow patients who have been waiting beyond defined thresholds. | High | Complete
+3.5 | The system shall allow authorised triage staff to manually override the priority assignment, recording the before/after priority and the staff actor. | High | Complete
+--- TABLE 8 ---
+ID | Requirement | Priority | Status
+4.1 | The system shall automatically assign patients to a department queue after registration or triage. | High | Partial
+4.2 | The system shall maintain department-specific queues for OPD, Casualty/Triage, Pharmacy, Laboratory, Radiology, and OI Clinic. | High | Complete
+4.3 | The system shall call the next patient by priority (Red > Yellow > Green > Black), then by arrival time, within a selected department. | High | Complete
+4.4 | The system shall mark a called patient as missed if they do not present for service. | High | Complete
+4.5 | The system shall support fair recall of missed patients with configurable reinsertion rules. | Medium | Partial
+4.6 | The system shall support queue transfer of a patient to another department with patient notification. | High | Complete
+4.7 | The system shall calculate dynamic estimated waiting time based on historical service time and queue position. | Medium | Partial
+4.8 | The system shall detect and display queue bottlenecks based on department load and thresholds. | Medium | Partial
+--- TABLE 9 ---
+ID | Requirement | Priority | Status
+5.1 | The system shall support automatic department routing based on chief complaint keyword matching. | Medium | Partial
+5.2 | The system shall support doctor-to-laboratory test order workflow with lifecycle states (ordered, sample- collected, in-progress, completed, result-ready). | Medium | Complete
+5.3 | The system shall support doctor-to-pharmacy prescription workflow with lifecycle states (prescribed, dispensing, ready, collected). | Medium | Complete
+5.4 | The system shall support OI Clinic service streams (ART, TB, viral load, counselling, screening). | Low | Complete
+--- TABLE 10 ---
+ID | Requirement | Priority | Status
+6.1 | The system shall provide a live queue dashboard with real-time metrics, queue tables, patient actions, alerts, and automatic refresh. | High | Complete
+6.2 | The system shall provide department-scoped dashboards that filter data by staff department assignment. | Medium | Complete
+6.3 | The system shall provide an administrator dashboard with staff management, audit trail, queue overview, reports, and settings. | High | Complete
+6.4 | The system shall display operational alerts including critical metrics, reassessment alerts, and notification failures. | Medium | Complete
+--- TABLE 11 ---
+ID | Requirement | Priority | Status
+7.1 | The system shall send WhatsApp notifications for registration, turn readiness, call, missed turn, and transfer events. | High | Partial
+7.2 | The system shall support web push notifications. | Low | Partial
+7.3 | The system shall provide automatic and manual notification retry with configurable retry delays and attempt limits. | High | Complete
+7.4 | The system shall maintain a notification delivery log with status, timestamps, provider message ID, and error details. | High | Complete
+7.5 | The system shall send a missed-turn notification when a called ticket is marked missed. | High | Complete
+--- TABLE 12 ---
+ID | Requirement | Priority | Status
+8.1 | The system shall provide a public waiting-area display board showing now-serving, waiting, and missed token numbers without patient names. | High | Complete
+8.2 | The system shall provide department-specific display boards accessible via URL with department query parameter. | Medium | Complete
+8.3 | The system shall support audio calling of token numbers. | Low | Complete
+--- TABLE 13 ---
+ID | Requirement | Priority | Status
+9.1 | The system shall generate a daily report by department, service, gender, age, and triage priority. | Medium | Complete
+9.2 | The system shall generate an average waiting time report by department with date filtering. | High | Complete
+9.3 | The system shall generate a department performance report with throughput, missed rate, and priority breakdown. | High | Complete
+9.4 | The system shall generate a no-show report with notification delivery correlation per missed ticket. | High | Complete
+9.5 | The system shall generate a triage report with triage rate, timing, outcomes, overrides, and trends. | High | Complete
+9.6 | The system shall support PDF, Excel, and CSV export of reports. | Low | Complete
+--- TABLE 14 ---
+ID | Requirement | Priority | Status
+10.1 | The system shall provide peak-hours analysis of patient arrivals and service patterns. | Low | Complete
+10.2 | The system shall provide queue-congestion prediction. | Low | Partial
+10.3 | The system shall provide resource-allocation suggestions based on current load. | Low | Partial
+--- TABLE 15 ---
+ID | Requirement | Priority | Status
+11.1 | The system shall enforce role-based access control with roles: admin, reception, triage, and clinician. | High | Complete
+11.2 | The system shall provide secure individual login with bcrypt password hashing and action attribution. | High | Complete
+11.3 | The system shall maintain an immutable, hash-chained audit trail of all operational actions. | High | Complete
+11.4 | The system shall implement automatic idle logout with inactivity timeout. | Medium | Complete
+--- TABLE 16 ---
+ID | Requirement | Priority | Status
+12.1 | The system shall display anonymous token numbers on public displays, never patient names. | High | Complete
+12.2 | The system shall capture and honour notification consent preferences. | High | Complete
+12.3 | The system shall provide confidential OI mode with masked routing and restricted data views. | Low | Partial
+--- TABLE 17 ---
+ID | Requirement | Priority | Status
+13.1 | The system shall support local-network hosting within a hospital LAN. | Medium | Partial
+13.2 | The system shall maintain core queue operation without internet connectivity. | Medium | Partial
+13.3 | The system shall queue notifications for delivery when internet connectivity returns. | Medium | Partial
+13.4 | The system shall provide local form auto-save with IndexedDB draft recovery. | Low | Complete
+--- TABLE 18 ---
+ID | Category | Requirement
+NFR-01 | Performance | The system shall load the public queue board within 3 seconds on a standard hospital LAN connection.
+NFR-02 | Performance | The system shall deliver real-time queue updates to connected clients within 2 seconds of a state change via Server-Sent Events.
+NFR-03 | Performance | The frontend production JavaScript output shall remain below 3 MB uncompressed and shall use lazy-loaded chunks for major routes.
+NFR-04 | Security | All passwords shall be hashed using bcrypt with a minimum cost factor of 12.
+NFR-05 | Security | Staff sessions shall expire after 8 hours of inactivity.
+NFR-06 | Security | The audit trail shall be tamper-evident using SHA-256 hash chaining.
+NFR-07 | Security | Public displays shall never expose patient names or personally identifiable information.
+NFR-08 | Usability | The system shall be usable on desktop, tablet, and mobile devices with responsive design.
+NFR-09 | Usability | The system shall use a consistent visual language with medical teal (#0F766E) as the primary brand colour.
+NFR-10 | Reliability | The system shall persist all queue state to the database, surviving server restarts without data loss.
+NFR-11 | Reliability | The system shall support dual-mode storage (MySQL or file-based JSON) for deployment flexibility.
+NFR-12 | Scalability | The system shall support concurrent connections from at least 50 staff and display board clients.
+NFR-13 | Maintainability | The system shall use a modular architecture with clear separation of concerns (controller, service, repository layers).
+NFR-14 | Maintainability | The system shall use a component-based frontend architecture with reusable UI components.
+NFR-15 | Compatibility | The system shall run on Node.js v18+ and modern browsers (Chrome, Firefox, Edge, Safari).
+--- TABLE 19 ---
+Role | Key Requirements
+Patient | Register online or at kiosk; receive a queue token; track queue status in real-time; receive WhatsApp notifications; view estimated wait time; leave and return without losing position.
+Reception Staff | Register new and returning patients; search patient records; scan QR codes; manage queue tokens; transfer patients between departments; view department-scoped queue.
+Triage Nurse | Conduct digital triage assessments; assign priority levels; override automatic classifications; view reassessment alerts; fast-track emergency cases.
+Clinician/Doctor | Call next patient by priority; mark patients as in-service or completed; prescribe medications; order laboratory tests; transfer patients; view department dashboard.
+Administrator | Manage staff accounts and roles; view system-wide audit trail; access all reports and analytics; configure system settings; manage departments.
+Hospital Manager | View department performance reports; monitor waiting times and no-show rates; review triage outcomes; assess notification delivery effectiveness.
+--- TABLE 20 ---
+Field | Description
+Use Case ID | UC-01
+Use Case Name | Register New Patient
+Actor(s) | Reception Staff
+Description | A reception staff member registers a new patient entering the hospital, capturing demographics, next of kin, chief complaint, and department selection. The system generates a unique queue token and prints a ticket.
+Preconditions | Staff member is authenticated with reception role. Department queue is operational.
+Postconditions | Patient is registered in the system. A queue ticket is created with a unique token. Patient appears in the department waiting queue.
+Main Flow | 1. Staff selects “Register Patient” from the dashboard. / 2. Staff enters patient demographics (name, national ID, DOB, gender, phone, address). / 3. Staff selects patient category (walk-in, referred, emergency, etc.). / 4. Staff enters next of kin details. / 5. Staff enters chief complaint. / 6. Staff selects destination department. / 7. Staff sets notification consent (WhatsApp opt-in). / 8. Staff submits the form. / 9. System validates inputs. / 10. System creates or links a patient profile. / 11. System generates a department-specific queue token (e.g., OPD-205). / 12. System creates a ticket with status “waiting” and priority “green”. / 13. System broadcasts a queue update event via SSE. / 14. System sends a registration WhatsApp notification if consented. / 15. System displays the ticket with QR code for printing.
+Alternate Flows | A1: Returning patient found. At step 10, if a matching patient profile is found by name, phone, or national ID, the system links to the existing profile instead of creating a new one. / A2: Validation error. At step 9, if required fields are missing or invalid, the system displays validation errors and the staff corrects the input.
+Exceptions | E1: Database unavailable. If the database is unreachable, the system falls back to file-based storage (if configured) or displays an error message.
+Business Rules | Queue tokens are immutable once generated. Token prefixes are department-specific (OPD, TRI, PHA, LAB, RAD, OIC). Sequence numbers are persistent and monotonic.
+Frequency | High — performed many times daily.
+--- TABLE 21 ---
+Field | Description
+Use Case ID | UC-02
+Use Case Name | Triage Assessment
+Actor(s) | Triage Nurse
+Description | A triage nurse conducts a structured assessment of a waiting patient, recording vitals, symptoms, pain score, and severity. The system auto-classifies priority based on emergency vital thresholds, with manual override capability.
+Preconditions | Patient exists in the queue with status “waiting”. Triage nurse is authenticated with triage role.
+Postconditions | Patient’s priority is updated. Triage assessment is recorded with assessor identity and timestamp. If Red priority, emergency fast-tracking is triggered. Queue order is updated.
+Main Flow | 1. Nurse selects a waiting patient from the triage queue. / 2. Nurse records chief complaint (if not already captured). / 3. Nurse records vitals: oxygen saturation, heart rate, blood pressure (systolic/diastolic), temperature, respiratory rate. / 4. Nurse records pain score (0–10). / 5. Nurse records symptoms and severity notes. / 6. System evaluates vitals against emergency thresholds. / 7. If any vital exceeds emergency thresholds, system auto-assigns Red priority. / 8. If no emergency thresholds are exceeded, nurse manually selects priority (Red/Yellow/Green/Black). / 9. System saves the triage assessment with assessor ID and timestamp. / 10. System updates the patient’s priority in the queue. / 11. If Red priority, system triggers emergency fast-tracking (moves patient to front of queue). / 12. System broadcasts a queue update event via SSE. / 13. System records an audit event with before/after priority.
+Alternate Flows | A1: Manual override. At step 8, the nurse may override an auto-Red classification if clinical judgement differs. The override is recorded with the original and new priority. / A2: Patient already triaged. If the patient has a prior triage assessment, the nurse can update it, and both the original and updated values are retained.
+Exceptions | E1: Patient not found. If the selected patient no longer exists in the queue, the system displays an error and returns to the triage list.
+Business Rules | Emergency vital thresholds: SpO2 < 90%, HR outside 40–130 bpm, systolic BP outside 80–180 mmHg, temperature >= 39.5°C, respiratory rate outside 8–30/min, pain score >= 9. Priority order: Red (0) > Yellow (1) > Green (2) > Black (3).
+Frequency | High — performed for every Casualty/Triage patient.
+--- TABLE 22 ---
+Field | Description
+Use Case ID | UC-03
+Use Case Name | Call Next Patient
+Actor(s) | Clinician
+Description | A clinician calls the next patient in their department queue. The system selects the highest-priority, longest-waiting patient and updates their status to “called”.
+Preconditions | Clinician is authenticated. At least one patient is waiting in the department queue.
+Postconditions | Selected patient’s status is “called”. Patient is removed from the waiting list. A call notification is sent if consented. Queue display boards update in real-time.
+Main Flow | 1. Clinician clicks “Call Next” on the dashboard. / 2. System retrieves all waiting tickets for the clinician’s department. / 3. System sorts by priority rank (Red first), then by registration time (earliest first). / 4. System selects the top ticket. / 5. System updates the ticket status to “called” and records the called_at timestamp. / 6. System broadcasts a “ticket.called” event via SSE. / 7. System sends a WhatsApp call notification if the patient consented. / 8. System dispatches turn- readiness notifications for remaining waiting patients. / 9. System displays the called patient’s details to the clinician.
+Alternate Flows | A1: No waiting patients. If no patients are waiting in the department, the system displays “No patients waiting” and no action is taken.
+Exceptions | E1: Concurrent call. If two clinicians call next simultaneously, the system processes requests sequentially; the second clinician receives the next available patient.
+Business Rules | Priority sorting: Red > Yellow > Green > Black. Within the same priority, earliest registration time is called first. Called patients have a configurable window before being marked missed.
+Frequency | High — performed continuously during clinic hours.
+--- TABLE 23 ---
+Field | Description
+Use Case ID | UC-04
+Use Case Name | Mark Missed Turn and Recall
+Actor(s) | Clinician
+Description | A clinician marks a called patient as missed when they do not present for service. The patient is moved to a recall lane. The clinician can later recall the patient, reinserting them into the queue.
+Preconditions | Patient has status “called”.
+Postconditions | Patient status is “missed”. Missed notification is sent. Patient appears in the recall lane. On recall, patient is reinserted into the waiting queue.
+Main Flow | 1. Clinician selects a called patient and clicks “Mark Missed”. / 2. System updates the ticket status to “missed” and records the missed_at timestamp. / 3. System broadcasts a “ticket.missed” event via SSE. / 4. System sends a missed-turn WhatsApp notification if consented. / 5. Patient appears in the missed/recall lane on the dashboard and display board. / 6. When the patient returns, clinician clicks “Recall”. / 7. System updates the ticket status to “waiting” and records the recalled_at timestamp. / 8. System increments the recall count. / 9. System reinserts the patient into the waiting queue. / 10. System broadcasts a “ticket.recalled” event via SSE.
+Alternate Flows | A1: Configurable reinsertion. The reinsertion position can be configured (e.g., after 3 patients) to balance fairness with flow.
+Business Rules | Recall count is tracked per ticket. Multiple recalls are allowed. The registration time may be reset on recall depending on configuration.
+Frequency | Medium — occurs when patients step away during their turn.
+--- TABLE 24 ---
+Field | Description
+Use Case ID | UC-05
+Use Case Name | Transfer Patient Between Departments
+Actor(s) | Clinician, Reception Staff
+Description | A staff member transfers a patient from one department queue to another, recording the previous department and notifying the patient.
+Preconditions | Patient exists in the queue with a non-completed status. Target department is valid.
+Postconditions | Patient’s department is updated. Previous department is recorded. Transfer notification is sent. Patient appears in the target department’s waiting queue.
+Main Flow | 1. Staff selects a patient and clicks “Transfer”. / 2. Staff selects the target department from the dropdown. / 3. System validates the target department exists. / 4. System records the previous department. / 5. System updates the ticket’s department and sets transferred_at timestamp. / 6. System broadcasts a “ticket.transferred” event via SSE. / 7. System sends a transfer WhatsApp notification with the new department and directions. / 8. System dispatches turn-readiness notifications for the updated queue.
+Alternate Flows | None.
+Exceptions | E1: Invalid department. If the target department is the same as the current department or does not exist, the system displays an error.
+Business Rules | Only non-completed tickets can be transferred. The previous department is retained for audit and tracking purposes.
+Frequency | Medium — occurs when patients need services in multiple departments.
+--- TABLE 25 ---
+Field | Description
+Use Case ID | UC-06
+Use Case Name | Track Queue Status
+Actor(s) | Patient
+Description | A patient enters their queue token on the public tracking page to view their current queue position, estimated wait time, patients ahead, and notification history.
+Preconditions | Patient has a valid queue token.
+Postconditions | Patient views their current queue status. No state changes occur.
+Main Flow | 1. Patient navigates to the tracking page (/track). / 2. Patient enters their queue token (e.g., OPD-205). / 3. System looks up the ticket by normalised token code. / 4. System retrieves the ticket’s current status, department, priority, and position. / 5. System calculates the estimated wait time based on historical service time and queue position. / 6. System retrieves the patient’s notification history. / 7. System displays: token, department, current status, position in queue, patients ahead, estimated wait time, progress indicator, and department directions. / 8. Page updates in real-time via SSE when queue state changes.
+Alternate Flows | A1: Token not found. If the token does not match any ticket, the system displays “Ticket not found” and prompts re- entry.
+Exceptions | None.
+Business Rules | Tracking is public and does not require authentication. Only the token code is needed. Patient name is not displayed on the tracking page for privacy.
+Frequency | High — patients check frequently during their wait.
+--- TABLE 26 ---
+Field | Description
+Use Case ID | UC-07
+Use Case Name | Kiosk Self-Check-in
+Actor(s) | Patient
+Description | A patient uses a self-service kiosk to check in by scanning a QR card or entering a phone number, selecting a department and visit reason, and receiving a queue token.
+Preconditions | Kiosk device is operational and connected to the network.
+Postconditions | Patient is checked in. A queue ticket is created. Patient receives a token and optional WhatsApp notifications.
+Main Flow | 1. Patient approaches the kiosk and taps “Check In”. / 2. Patient identifies themselves by scanning a QR card (camera- based) or entering a phone number. / 3. System searches for an existing patient profile by QR payload or phone. / 4. If found, system displays the patient’s name for confirmation. / 5. If not found, patient enters basic demographics. / 6. Patient selects the destination department. / 7. Patient enters a visit reason / chief complaint. / 8. Patient sets notification consent. / 9. System creates a queue ticket with the next sequence number. / 10. System displays the queue token and estimated wait time. / 11. System broadcasts a queue update event via SSE. / 12. System sends a registration notification if consented.
+Alternate Flows | A1: QR scan failure. If the camera cannot read the QR code, the patient can manually enter their phone number or patient number.
+Exceptions | E1: Network error. If the kiosk cannot reach the server, an error message is displayed and the patient is directed to reception.
+Business Rules | Kiosk check-in creates a “waiting” ticket with “green” priority by default. Triage assessment can upgrade the priority later.
+Frequency | Medium — used by walk-in patients at the hospital entrance.
+--- TABLE 27 ---
+Field | Description
+Use Case ID | UC-08
+Use Case Name | Send WhatsApp Notification
+Actor(s) | System (automated)
+Description | The system sends a WhatsApp message to a patient for registration, turn readiness, call, missed turn, or transfer events, with automatic retry on failure.
+Preconditions | Patient has notification consent enabled. Patient has a valid phone number. WhatsApp provider is configured (mock or Meta Cloud API).
+Postconditions | Notification record is created with delivery status. If successful, message is delivered. If failed, retry is scheduled.
+Main Flow | 1. A queue event triggers notification dispatch (registration, call, missed, transfer, turn readiness). / 2. System checks the patient’s notification consent. / 3. System creates a notification record with type, channel, recipient, and message content. / 4. System resolves the WhatsApp template for the notification type. / 5. System sends the message via the configured provider (mock or Meta Cloud API). / 6. If delivery succeeds, system records the provider message ID and sets status to “sent”/“delivered”. / 7. If delivery fails, system records the error code and message, and schedules a retry based on configured retry delays (15s, 60s, 300s). / 8. System creates a notification attempt record for each attempt. / 9. Retry continues until max attempts is reached or delivery succeeds.
+Alternate Flows | A1: Manual retry. Staff can manually retry a failed notification from the dashboard. / A2: Bulk retry. Staff can retry multiple failed notifications simultaneously.
+Exceptions | E1: Provider unavailable. If the WhatsApp API is unreachable, the notification is queued for retry. / E2: Invalid phone number. If the phone number is invalid, the notification is marked as failed with an error code.
+Business Rules | Retry delays: 15 seconds, 60 seconds, 300 seconds (configurable). Max attempts: configurable per notification. Mock provider simulates delivery with configurable delay and failure rate for development.
+Frequency | High — triggered by every queue event for consented patients.
+--- TABLE 28 ---
+Field | Description
+Use Case ID | UC-09
+Use Case Name | View Operational Reports
+Actor(s) | Administrator, Clinician
+Description | A staff member views operational reports including average waiting time, department performance, no-show analysis, triage outcomes, and WhatsApp status, with date range filtering.
+Preconditions | Staff member is authenticated.
+Postconditions | Report data is displayed. No state changes occur.
+Main Flow | 1. Staff navigates to the Reports page. / 2. Staff selects a report tab (Overview, Average Wait Time, Department Performance, No-Show, Triage, WhatsApp Status). / 3. Staff selects a date range (from/to). / 4. System fetches report data from the API with date filters. / 5. System displays the report with summary metrics, department breakdowns, and detailed tables.
+Alternate Flows | None.
+Exceptions | E1: No data. If no tickets exist in the selected date range, the system displays an empty state message.
+Business Rules | Reports are read-only. Date filtering applies to ticket registration date. Department scoping applies to non-admin staff.
+Frequency | Medium — used for daily/weekly operational review.
+--- TABLE 29 ---
+Field | Description
+Use Case ID | UC-10
+Use Case Name | View Audit Trail
+Actor(s) | Administrator
+Description | An administrator views the immutable audit trail of all system actions, including actor, timestamp, action type, entity, before/after state, and hash chain verification.
+Preconditions | Administrator is authenticated with admin role.
+Postconditions | Audit events are displayed. No state changes occur (audit trail is read-only).
+Main Flow | 1. Administrator navigates to the Audit Trail page. / 2. System retrieves audit events from the database, ordered by occurrence time (most recent first). / 3. System displays each event with: timestamp, actor name/role/department, action, entity type/ID, outcome, and before/after state. / 4. Administrator can filter by action type, actor, or date range. / 5. System displays the hash chain verification status.
+Alternate Flows | None.
+Exceptions | E1: Hash chain broken. If a tamper event is detected, the system flags the compromised event(s) in the audit display.
+Business Rules | Audit events are append-only and cannot be modified or deleted. Each event’s hash incorporates the previous event’s hash, creating a verifiable chain. Sensitive data (passwords, tokens) is redacted in audit records. Only administrators can view the audit trail.
+Frequency | Low — used for security review and compliance.
+--- TABLE 30 ---
+Layer | Responsibility | Key Files
+Presentation Layer | Renders UI, captures user input, displays real-time updates | frontend/src/pages/ , / frontend/src/components/
+API/Controller Layer | Receives HTTP requests, validates input, calls services, formats responses | backend/src/controllers/ , / backend/src/index.js
+Service/Business Logic Layer | Implements domain rules, queue algorithms, notification dispatch, authentication | backend/src/services/
+Repository/Data Access Layer | Abstracts data persistence, supports MySQL and file-based modes | backend/src/repositories/
+External Integration Layer | Communicates with WhatsApp Cloud API | backend/src/services/whatsAppProvider.js
+--- TABLE 31 ---
+Component | Technology | Version
+Frontend Framework | React | 19.2.0
+Build Tool | Vite | 7.3.1
+Routing | React Router DOM | 7.10.1
+Styling | Tailwind CSS | 4.2.1
+UI Components | Radix UI (shadcn/ui) | Various
+Charts | Recharts | 2.15.4
+HTTP Client | Axios | 1.7.9
+Form Validation | Zod + react-hook-form | 3.24.2 / 7.71.2
+Icons | Lucide React | 0.575.0
+Toast Notifications | Sonner | 2.0.7
+QR Code | qrcode | 1.5.4
+QR Scanning | html5-qrcode | 2.3.8
+Backend Runtime | Node.js | 18+ (ESM)
+Database Driver | mysql2 | 3.6.0
+Password Hashing | bcryptjs | 2.4.3
+Environment Config | dotenv | 16.3.1
+Real-time Protocol | Server-Sent Events (SSE) | Native
+Notification Provider | WhatsApp Cloud API (Meta Graph) | v23.0
+--- TABLE 32 ---
+Column | Type | Constraints | Description
+name | VARCHAR(80) | PRIMARY KEY | Department name (e.g., “OPD”, “Casualty / Triage”)
+created_at | TIMESTAMP(3) | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Record creation timestamp
+--- TABLE 33 ---
+Column | Type | Constraints | Description
+id | CHAR(36) | PRIMARY KEY | UUID identifier
+patient_number | VARCHAR(24) | NOT NULL, UNIQUE | Permanent patient number (e.g., “PT-0001”)
+full_name | VARCHAR(160) | NOT NULL | Patient’s full name
+national_id | VARCHAR(80) | NULL | National ID number
+dob | DATE | NULL | Date of birth
+gender | VARCHAR(40) | NOT NULL, DEFAULT ‘unknown’ | Gender (male/female/unknown)
+phone | VARCHAR(80) | NULL | Phone number for notifications
+address | VARCHAR(255) | NOT NULL, DEFAULT ‘’ | Residential address
+patient_category | VARCHAR(80) | NOT NULL, DEFAULT ‘walk-in’ | Category (walk-in, referred, emergency, etc.)
+next_of_kin_name | VARCHAR(160) | NOT NULL, DEFAULT ‘’ | Next of kin full name
+next_of_kin_phone | VARCHAR(80) | NOT NULL, DEFAULT ‘’ | Next of kin phone number
+created_at | DATETIME(3) | NOT NULL | Profile creation timestamp
+updated_at | DATETIME(3) | NOT NULL | Last update timestamp
+last_visit_at | DATETIME(3) | NULL | Last visit timestamp
+--- TABLE 34 ---
+Column | Type | Constraints | Description
+id | CHAR(36) | PRIMARY KEY | UUID identifier
+ticket_code | VARCHAR(20) | NOT NULL, UNIQUE | Queue token (e.g., “OPD-205”)
+sequence_number | INT | NOT NULL | Department-specific sequence
+patient_id | CHAR(36) | NULL, FK → patient_profiles(id) | Linked patient profile
+patient_name | VARCHAR(160) | NOT NULL | Patient name (denormalised)
+national_id | VARCHAR(80) | NOT NULL, DEFAULT ‘’ | National ID (denormalised)
+dob | DATE | NULL | Date of birth (denormalised)
+gender | VARCHAR(40) | NOT NULL, DEFAULT ‘unknown’ | Gender (denormalised)
+phone | VARCHAR(80) | NOT NULL, DEFAULT ‘’ | Phone (denormalised)
+address | VARCHAR(255) | NOT NULL, DEFAULT ‘’ | Address (denormalised)
+patient_category | VARCHAR(80) | NOT NULL, DEFAULT ‘walk-in’ | Category (denormalised)
+next_of_kin_name | VARCHAR(160) | NOT NULL, DEFAULT ‘’ | Next of kin name (denormalised)
+next_of_kin_phone | VARCHAR(80) | NOT NULL, DEFAULT ‘’ | Next of kin phone (denormalised)
+notification_consent | BOOLEAN | NOT NULL, DEFAULT FALSE | WhatsApp notification opt-in
+department | VARCHAR(80) | NOT NULL, FK → / departments(name) | Current department
+chief_complaint | TEXT | NULL | Patient’s chief complaint
+priority | VARCHAR(20) | NOT NULL | Priority level (red/yellow/green/black)
+status | VARCHAR(30) | NOT NULL | Ticket status (waiting/called/in- service/missed/completed)
+registered_at | DATETIME(3) | NOT NULL | Registration timestamp
+triaged_at | DATETIME(3) | NULL | Triage assessment timestamp
+called_at | DATETIME(3) | NULL | When patient was called
+service_started_at | DATETIME(3) | NULL | When service began
+missed_at | DATETIME(3) | NULL | When marked missed
+recalled_at | DATETIME(3) | NULL | When recalled
+transferred_at | DATETIME(3) | NULL | When transferred
+previous_department | VARCHAR(80) | NOT NULL, DEFAULT ‘’ | Previous department (for transfers)
+recall_count | INT | NOT NULL, DEFAULT 0 | Number of recalls
+completed_at | DATETIME(3) | NULL | Service completion timestamp
+whatsapp_enabled | BOOLEAN | NOT NULL, DEFAULT FALSE | WhatsApp enabled flag
+--- TABLE 35 ---
+Column | Type | Constraints | Description
+id | CHAR(36) | PRIMARY KEY | UUID identifier
+sequence_number | BIGINT | NOT NULL, UNIQUE | Monotonic sequence
+ticket_id | CHAR(36) | NOT NULL, FK → tickets(id) | Related ticket
+ticket_code | VARCHAR(20) | NOT NULL | Ticket code (denormalised)
+patient_name | VARCHAR(160) | NOT NULL | Patient name (denormalised)
+department | VARCHAR(80) | NOT NULL | Department (denormalised)
+priority | VARCHAR(20) | NOT NULL | Priority (denormalised)
+channel | VARCHAR(40) | NOT NULL | Notification channel (whatsapp, display-board)
+type | VARCHAR(80) | NOT NULL | Notification type (queue.registered, queue.called, etc.)
+status | VARCHAR(40) | NOT NULL | Delivery status (pending, sent, delivered, failed)
+title | VARCHAR(255) | NOT NULL | Notification title
+message | TEXT | NOT NULL | Message body
+recipient | VARCHAR(160) | NOT NULL | Recipient phone number
+destination | VARCHAR(160) | NULL | Destination department
+provider | VARCHAR(80) | NULL | Provider name (mock, meta-cloud)
+provider_message_id | VARCHAR(160) | NULL | Provider’s message ID
+created_at | DATETIME(3) | NOT NULL | Creation timestamp
+sent_at | DATETIME(3) | NULL | When sent to provider
+delivered_at | DATETIME(3) | NULL | When delivered
+last_attempt_at | DATETIME(3) | NULL | Last attempt timestamp
+next_retry_at | DATETIME(3) | NULL | Next scheduled retry
+error_code | VARCHAR(80) | NULL | Error code from provider
+error_message | TEXT | NULL | Error message from provider
+max_attempts | INT | NOT NULL, DEFAULT 1 | Maximum retry attempts
+--- TABLE 36 ---
+Column | Type | Constraints | Description
+notification_id | CHAR(36) | PK, FK → notifications(id) | Related notification
+sequence_number | INT | PK | Attempt sequence
+status | VARCHAR(40) | NOT NULL | Attempt status
+attempted_at | DATETIME(3) | NOT NULL | Attempt timestamp
+completed_at | DATETIME(3) | NULL | Completion timestamp
+provider_message_id | VARCHAR(160) | NULL | Provider message ID
+error_code | VARCHAR(80) | NULL | Error code
+error_message | TEXT | NULL | Error message
+--- TABLE 37 ---
+Column | Type | Constraints | Description
+id | CHAR(36) | PRIMARY KEY | UUID identifier
+username | VARCHAR(32) | NOT NULL, UNIQUE | Login username
+email | VARCHAR(120) | NOT NULL, UNIQUE | Email address
+password_hash | VARCHAR(255) | NOT NULL | bcrypt password hash
+full_name | VARCHAR(160) | NOT NULL | Staff member’s full name
+role | VARCHAR(40) | NOT NULL, DEFAULT ‘reception’ | Role (admin, reception, triage, clinician)
+department | VARCHAR(80) | NOT NULL, DEFAULT ‘’ | Assigned department
+phone | VARCHAR(80) | NULL | Phone number
+employee_id | VARCHAR(80) | NULL | Employee ID
+avatar_url | TEXT | NULL | Avatar image URL
+created_at | DATETIME(3) | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Creation timestamp
+last_login_at | DATETIME(3) | NULL | Last login timestamp
+--- TABLE 38 ---
+Column | Type | Constraints | Description
+id | CHAR(36) | PRIMARY KEY | UUID identifier
+username | VARCHAR(32) | NOT NULL, UNIQUE | Login username
+email | VARCHAR(120) | NOT NULL, UNIQUE | Email address
+password_hash | VARCHAR(255) | NOT NULL | bcrypt password hash
+full_name | VARCHAR(160) | NOT NULL | Patient’s full name
+phone | VARCHAR(80) | NOT NULL | Phone number
+national_id | VARCHAR(80) | NULL | National ID
+dob | DATE | NULL | Date of birth
+gender | VARCHAR(40) | NOT NULL, DEFAULT ‘unknown’ | Gender
+created_at | DATETIME(3) | NOT NULL, DEFAULT CURRENT_TIMESTAMP | Creation timestamp
+last_login_at | DATETIME(3) | NULL | Last login timestamp
+--- TABLE 39 ---
+Column | Type | Constraints | Description
+id | CHAR(36) | PRIMARY KEY | UUID identifier
+occurred_at | DATETIME(3) | NOT NULL | When the event occurred
+actor_id | CHAR(36) | NULL | Staff user ID who performed the action
+actor_name | VARCHAR(160) | NULL | Staff name (denormalised)
+actor_role | VARCHAR(40) | NULL | Staff role (denormalised)
+actor_department | VARCHAR(80) | NULL | Staff department (denormalised)
+action | VARCHAR(100) | NOT NULL | Action type (e.g., “ticket.create”, “auth.login”)
+entity_type | VARCHAR(80) | NOT NULL | Entity type (ticket, staff, notification)
+entity_id | VARCHAR(80) | NULL | Entity ID
+entity_label | VARCHAR(160) | NULL | Entity label (e.g., ticket code)
+outcome | VARCHAR(40) | NOT NULL, DEFAULT ‘success’ | Outcome (success, failure)
+before_state | JSON | NULL | State before the action
+after_state | JSON | NULL | State after the action
+metadata | JSON | NULL | Additional metadata
+previous_hash | CHAR(64) | NULL | Hash of the previous audit event
+event_hash | CHAR(64) | NOT NULL, UNIQUE | SHA-256 hash of this event
+--- TABLE 40 ---
+Column | Type | Constraints | Description
+name | VARCHAR(80) | PRIMARY KEY | Counter name (e.g., “OPD”, “TRI”, “PHA”)
+value | BIGINT | NOT NULL | Current counter value
+--- TABLE 41 ---
+Purpose | Colour | Hex
+Primary (Medical Teal) | Teal | #0F766E
+Secondary (Hospital Blue) | Blue | #2563EB
+Priority Red | Red | #DC2626
+Priority Yellow | Amber | #F59E0B
+Priority Green | Emerald | #10B981
+Priority Black | Dark Grey | #1F2937
+Background (Dark) | Navy/Black | #0A0F1A
+Surface (Glass) | Semi-transparent | rgba(255,255,255,0.05)
+Text Primary | White | #F8FAFC
+Text Muted | Slate | #94A3B8
+--- TABLE 42 ---
+Element | Font | Size | Weight
+Headings | System sans-serif | 1.5rem – 2.25rem | 700
+Body text | System sans-serif | 0.875rem – 1rem | 400
+Labels | System sans-serif | 0.75rem | 500
+Token numbers | Monospace | 2rem – 4rem | 700
+Captions | System sans-serif | 0.75rem | 400
+--- TABLE 43 ---
+Resource/Action | Admin | Reception | Triage | Clinician | Patient | Anonymous
+View public queue board | ✓ | ✓ | ✓ | ✓ | ✓ | ✓
+Track ticket | ✓ | ✓ | ✓ | ✓ | ✓ | ✓
+Self-register / kiosk | ✓ | ✓ | ✓ | ✓ | ✓ | ✓
+Register patient | ✓ | ✓ | ✗ | ✗ | ✗ | ✗
+Triage assessment | ✓ | ✗ | ✓ | ✗ | ✗ | ✗
+Call next patient | ✓ | ✗ | ✓ | ✓ | ✗ | ✗
+Mark missed/recall | ✓ | ✗ | ✓ | ✓ | ✗ | ✗
+Transfer patient | ✓ | ✓ | ✓ | ✓ | ✗ | ✗
+View dashboard | ✓ | ✗ | ✓ | ✓ | ✗ | ✗
+View reports | ✓ | ✓ | ✓ | ✓ | ✗ | ✗
+Manage staff | ✓ | ✗ | ✗ | ✗ | ✗ | ✗
+View audit trail | ✓ | ✗ | ✗ | ✗ | ✗ | ✗
+Configure settings | ✓ | ✓ | ✓ | ✓ | ✗ | ✗
+Prescribe medication | ✓ | ✗ | ✓ | ✓ | ✗ | ✗
+Order lab tests | ✓ | ✗ | ✓ | ✓ | ✗ | ✗
+View patient portal | ✗ | ✗ | ✗ | ✗ | ✓ | ✗
+--- TABLE 44 ---
+Measure | Implementation
+Anonymous public displays | Queue board and department board show only token numbers, never patient names
+Notification consent | Patients explicitly opt in to WhatsApp notifications during registration
+Patient tracking privacy | Tracking page requires only a token code; no authentication needed, but no personal data is displayed
+Audit redaction | Sensitive fields are redacted before storage in audit events
+Department scoping | Non-admin staff see only their department’s data in dashboards, tickets, and notifications
+--- TABLE 45 ---
+Technology | Version | Purpose
+React | 19.2.0 | UI framework with hooks, concurrent rendering
+Vite | 7.3.1 | Build tool and development server
+React Router DOM | 7.10.1 | Client-side routing with nested routes
+Tailwind CSS | 4.2.1 | Utility-first CSS framework
+Radix UI | Various | Accessible, unstyled headless UI primitives
+shadcn/ui | — | Component library built on Radix UI
+Recharts | 2.15.4 | Charts and data visualisation
+Axios | 1.7.9 | HTTP client with interceptors
+Zod | 3.24.2 | Schema validation
+react-hook-form | 7.71.2 | Performant form management
+Lucide React | 0.575.0 | Icon library
+Sonner | 2.0.7 | Toast notifications
+qrcode | 1.5.4 | QR code generation
+html5-qrcode | 2.3.8 | Camera-based QR code scanning
+Lottie React | 2.4.1 | Animations
+--- TABLE 46 ---
+Technology | Version | Purpose
+Node.js | 18+ (ESM) | JavaScript runtime
+Custom HTTP Router | — | Route matching, parameter extraction, request handling
+MySQL (mysql2) | 3.6.0 | Primary database driver
+File-based JSON | — | Fallback storage mode
+bcryptjs | 2.4.3 | Password hashing
+dotenv | 16.3.1 | Environment variable management
+Server-Sent Events | Native | Real-time queue updates
+--- TABLE 47 ---
+Tool | Purpose
+ESLint | Code linting and style enforcement
+Prettier | Code formatting
+Nodemon | Auto-restart backend during development
+Git | Version control
+Node.js native test runner | Backend unit testing
+--- TABLE 48 ---
+Endpoint | Method | Description
+/api/reports/average-wait | GET | Average wait and service time by department
+/api/reports/department-performance | GET | Throughput, missed rate, priority breakdown per department
+/api/reports/no-show | GET | No-show rate with per-ticket notification correlation
+/api/reports/triage | GET | Triage rate, timing, outcomes, overrides, emergency triggers
+/api/whatsapp/status | GET | WhatsApp configuration and credential status
+--- TABLE 49 ---
+Context | Purpose
+AuthContext | Staff authentication state (user, token, login, logout)
+PatientAuthProvider | Patient authentication state (user, token, login, logout)
+LiveRefreshContext | Global refresh trigger — increments a counter to signal data re-fetch
+QueueRealtimeProvider | SSE connection status and event handling
+--- TABLE 50 ---
+Component | File | Purpose
+Accordion | accordion.jsx | Collapsible content sections
+Alert Dialog | alert-dialog.jsx | Confirmation dialogs
+Avatar | avatar.jsx | User profile images
+Badge | badge.jsx | Status and priority indicators
+Button | button.jsx | Action buttons with variants
+Calendar | calendar.jsx | Date selection
+Card | card.jsx | Content containers
+Chart | chart.jsx | Recharts wrapper
+Command | command.jsx | Searchable command palette
+Dialog | dialog.jsx | Modal dialogs
+Dropdown Menu | dropdown-menu.jsx | Context menus
+Form | form.jsx | Form integration with react-hook-form
+Input | input.jsx | Text inputs
+Label | label.jsx | Form labels
+Popover | popover.jsx | Floating content
+Progress | progress.jsx | Progress bars
+Select | select.jsx | Dropdown selection
+Separator | separator.jsx | Visual dividers
+Sheet | sheet.jsx | Slide-out panels
+Skeleton | skeleton.jsx | Loading placeholders
+Sonner | sonner.jsx | Toast notifications
+Switch | switch.jsx | Toggle switches
+Table | table.jsx | Data tables
+Tabs | tabs.jsx | Tabbed navigation
+Textarea | textarea.jsx | Multi-line text input
+Tooltip | tooltip.jsx | Hover information
+--- TABLE 51 ---
+Index | Table | Columns | Purpose
+idx_tickets_department_status | tickets | department, status | Queue queries by department and status
+idx_tickets_priority_status | tickets | priority, status | Priority-based queue sorting
+idx_tickets_registered_at | tickets | registered_at | Date-range reports and sorting
+idx_tickets_patient_id | tickets | patient_id | Patient history lookup
+idx_notifications_ticket_id | notifications | ticket_id | Notification lookup by ticket
+idx_notifications_status | notifications | status | Pending/failed notification queries
+idx_notifications_created_at | notifications | created_at | Notification history by date
+idx_audit_events_occurred_at | audit_events | occurred_at | Chronological audit display
+idx_audit_events_actor_id | audit_events | actor_id | Audit filter by staff member
+idx_audit_events_action | audit_events | action | Audit filter by action type
+idx_patient_profiles_name | patient_profiles | full_name | Patient search by name
+idx_patient_profiles_phone | patient_profiles | phone | Patient search by phone
+idx_patient_profiles_national_id | patient_profiles | national_id | Patient search by national ID
+--- TABLE 52 ---
+Variable | Default | Description
+PORT | 4242 | Backend server port
+CORS_ORIGIN | * | Allowed CORS origins (restrict in production)
+PUBLIC_APP_URL | http://localhost:5173 | Frontend public URL
+DB_PROVIDER | mysql | Storage mode: “mysql” or “file”
+DB_HOST | 127.0.0.1 | MySQL host
+DB_PORT | 3306 | MySQL port
+DB_NAME | waitless | MySQL database name
+DB_USER | root | MySQL username
+DB_PASSWORD | — | MySQL password
+DB_CONNECTION_LIMIT | 10 | MySQL connection pool size
+DB_SEED_DEMO_DATA | true | Seed demo tickets on init
+AUTH_SESSION_TTL_MS | 28800000 | Session TTL (8 hours)
+INITIAL_ADMIN_USERNAME | admin | Initial admin username
+INITIAL_ADMIN_EMAIL | admin@waitless.local | Initial admin email
+INITIAL_ADMIN_PASSWORD | — | Initial admin password (required for first run)
+WHATSAPP_PROVIDER | mock | WhatsApp provider: “mock” or “meta-cloud”
+WHATSAPP_API_BASE_URL | https://graph.facebook.com | Meta API base URL
+WHATSAPP_API_VERSION | v23.0 | Meta API version
+WHATSAPP_PHONE_NUMBER_ID | — | Meta phone number ID
+WHATSAPP_ACCESS_TOKEN | — | Meta access token
+WHATSAPP_APP_SECRET | — | Meta app secret for webhook verification
+WHATSAPP_WEBHOOK_VERIFY_TOKEN | — | Webhook verification token
+WHATSAPP_REQUEST_TIMEOUT_MS | 10000 | API request timeout
+WHATSAPP_RETRY_DELAYS_MS | 15000,60000,300000 | Retry delay schedule
+WHATSAPP_MOCK_DELAY_MS | 250 | Mock provider delay
+WHATSAPP_MOCK_FAILURE_RATE | 0 | Mock provider failure rate (0–1)
+WHATSAPP_TEMPLATE_LANGUAGE | en_US | Template language code
+VITE_API_URL | http://localhost:4242 | Frontend API base URL

@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
+import { LogoLoader } from "@/components/LogoLoader";
 
 export function ProtectedRoute({ children, roles }) {
   const { isAuthenticated, isReady, hasRole } = useAuth();
@@ -21,7 +22,7 @@ export function ProtectedRoute({ children, roles }) {
   if (!isReady) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <LogoLoader size={56} decorative />
       </div>
     );
   }

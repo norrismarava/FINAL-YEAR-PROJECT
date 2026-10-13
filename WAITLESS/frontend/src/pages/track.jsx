@@ -178,9 +178,6 @@ export default function TrackPage() {
         <div className="absolute inset-0 bg-gradient-to-t from-[#04141f]/60 via-transparent to-[#04141f]/30" />
       </div>
 
-      {/* Subtle grid pattern on desktop */}
-      <div className="pointer-events-none absolute inset-0 -z-10 hidden opacity-[0.05] lg:block [background-image:linear-gradient(rgba(148,163,184,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.4)_1px,transparent_1px)] [background-size:82px_82px]" />
-
       {/* Mobile solid background */}
       <div className="absolute inset-0 -z-10 bg-[#04141f] lg:hidden" />
 
@@ -206,13 +203,12 @@ export default function TrackPage() {
 
         <div className="relative overflow-hidden rounded-2xl bg-[#04141f]/80 shadow-[0_32px_80px_-28px_rgba(2,8,20,0.50)] backdrop-blur-2xl">
           {/* Circulating gradient ribbon */}
-          <TrackRibbonCirculation />
+          
 
           {/* Content above ribbon */}
           <div className="relative z-10">
           <div className="track-portal-hero relative overflow-hidden bg-[linear-gradient(135deg,rgba(4,20,31,0.82)_0%,rgba(6,42,53,0.72)_48%,rgba(10,31,46,0.78)_100%)] text-white">
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(45,212,191,0.10),transparent_30%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.08),transparent_32%)]" />
-            <div className="pointer-events-none absolute inset-0 opacity-[0.07] [background-image:linear-gradient(rgba(148,163,184,0.8)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.8)_1px,transparent_1px)] [background-size:84px_84px]" />
             <div className="track-portal-wave pointer-events-none absolute inset-x-0 bottom-0 h-24 opacity-30" />
 
             <PortalLiveBar
@@ -271,16 +267,6 @@ export default function TrackPage() {
 
       <PortalHelpButton />
     </section>
-  );
-}
-
-function TrackRibbonCirculation() {
-  return (
-    <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden">
-      <span className="patient-ribbon-strand patient-ribbon-strand--one" />
-      <span className="patient-ribbon-strand patient-ribbon-strand--two" />
-      <span className="patient-ribbon-strand patient-ribbon-strand--three" />
-    </div>
   );
 }
 

@@ -178,7 +178,6 @@ export default function SelfRegisterPage() {
           <div className="absolute inset-0 bg-gradient-to-br from-[#04141f]/82 via-[#062a35]/72 to-[#0a1f2e]/78" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#04141f]/60 via-transparent to-[#04141f]/30" />
         </div>
-        <div className="pointer-events-none absolute inset-0 -z-10 hidden opacity-[0.05] lg:block [background-image:linear-gradient(rgba(148,163,184,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.4)_1px,transparent_1px)] [background-size:82px_82px]" />
         <div className="absolute inset-0 -z-10 bg-[#04141f] lg:hidden" />
 
         <div className="relative mx-auto flex w-full max-w-lg flex-col pb-8">
@@ -307,7 +306,6 @@ export default function SelfRegisterPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-[#04141f]/82 via-[#062a35]/72 to-[#0a1f2e]/78" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#04141f]/60 via-transparent to-[#04141f]/30" />
       </div>
-      <div className="pointer-events-none absolute inset-0 -z-10 hidden opacity-[0.05] lg:block [background-image:linear-gradient(rgba(148,163,184,0.5)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.4)_1px,transparent_1px)] [background-size:82px_82px]" />
       <div className="absolute inset-0 -z-10 bg-[#04141f] lg:hidden" />
 
       <div className="relative mx-auto flex w-full max-w-lg flex-col pb-8">
