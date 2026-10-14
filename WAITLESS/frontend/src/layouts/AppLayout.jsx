@@ -642,22 +642,7 @@ function Header({ onOpenMobileNav }) {
                   ) : (
                     <>
                       <NavLink
-                        to="/admin/login"
-                        className={({ isActive }) =>
-                          isActive
-                            ? isDarkHeader
-                              ? "inline-flex h-10 items-center gap-1.5 rounded-full border border-cyan-300/35 bg-cyan-300/12 px-3.5 text-sm font-semibold text-cyan-50"
-                              : "inline-flex h-10 items-center gap-1.5 rounded-full border border-primary/20 bg-primary-soft px-3.5 text-sm font-semibold text-primary"
-                            : isDarkHeader
-                              ? "inline-flex h-10 items-center gap-1.5 rounded-full px-3.5 text-sm font-medium text-slate-100/82 transition-colors hover:bg-cyan-300/8 hover:text-white"
-                              : "inline-flex h-10 items-center gap-1.5 rounded-full px-3.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
-                        }
-                      >
-                        <ShieldCheck className="h-3.5 w-3.5" />
-                        Staff sign in
-                      </NavLink>
-                      <NavLink
-                        to="/patient/login"
+                        to="/login"
                         className={({ isActive }) =>
                           isActive
                             ? isDarkHeader

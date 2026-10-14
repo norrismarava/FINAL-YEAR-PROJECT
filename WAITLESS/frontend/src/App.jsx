@@ -11,6 +11,7 @@ const DashboardPage = lazy(() => import("@/pages/dashboard"));
 const AuditTrailPage = lazy(() => import("@/pages/audit-trail"));
 const ForgotPasswordPage = lazy(() => import("@/pages/forgot-password"));
 const LoginPage = lazy(() => import("@/pages/login"));
+const LoginChooserPage = lazy(() => import("@/pages/login-chooser"));
 const ProfilePage = lazy(() => import("@/pages/profile"));
 const QueuePage = lazy(() => import("@/pages/queue"));
 const RegisterPage = lazy(() => import("@/pages/register"));
@@ -277,7 +278,7 @@ export default function App() {
         <Route path="triage" element={<Navigate to="/admin/triage" replace />} />
         <Route path="settings" element={<Navigate to="/admin/settings" replace />} />
         <Route path="profile" element={<Navigate to="/admin/profile" replace />} />
-        <Route path="login" element={<Navigate to="/admin/login" replace />} />
+        <Route path="login" element={<LoginChooserPage />} />
         <Route path="forgot-password" element={<Navigate to="/admin/forgot-password" replace />} />
         <Route path="reset-password" element={<Navigate to="/admin/reset-password" replace />} />
         <Route path="staff-register" element={<Navigate to="/admin/staff" replace />} />
