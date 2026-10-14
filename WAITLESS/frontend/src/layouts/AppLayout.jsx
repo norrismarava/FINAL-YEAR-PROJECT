@@ -40,7 +40,6 @@ import ChatbotWidget from "@/components/ChatbotWidget";
 import OfflineIndicator from "@/components/OfflineIndicator";
 import { LoadingPanel } from "@/components/ui/system-loader";
 import { LogoLoader } from "@/components/LogoLoader";
-import { RouteLoadingBar } from "@/components/RouteLoadingBar";
 import SiteFooter from "@/components/SiteFooter";
 import QuickNavSearch from "@/components/QuickNavSearch";
 import { useQueueRealtime } from "@/sockets/QueueRealtimeProvider";
@@ -365,7 +364,6 @@ function AppScaffold() {
   if (isPatientShellRoute) {
     return (
       <div className="relative min-h-screen bg-[#04141f]">
-        <RouteLoadingBar />
         <div key={`${location.pathname}${location.search}`} className="page-route-shell">
           <Outlet />
         </div>
@@ -376,7 +374,6 @@ function AppScaffold() {
   if (isPatientPortalRoute) {
     return (
       <div className="relative min-h-screen overflow-hidden bg-[#eef7f8] text-slate-900">
-        <RouteLoadingBar />
         <div className="pointer-events-none absolute inset-x-0 top-0 h-[30rem] bg-[linear-gradient(180deg,rgba(204,251,241,0.78),rgba(219,234,254,0.62)_45%,rgba(248,250,252,0))]" />
         <div className="pointer-events-none absolute -left-24 top-16 h-80 w-80 rounded-full bg-teal-300/18 blur-3xl" />
         <div className="pointer-events-none absolute right-0 top-12 h-96 w-96 rounded-full bg-blue-400/16 blur-3xl" />
@@ -404,7 +401,6 @@ function AppScaffold() {
             : ""
       }`}
     >
-      <RouteLoadingBar />
       {isAuthRoute ? (
         <>
           <div className="pointer-events-none absolute inset-x-0 top-0 h-80 bg-gradient-to-b from-[#081523] via-[#092138]/75 to-transparent" />
