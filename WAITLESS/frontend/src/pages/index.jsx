@@ -321,14 +321,19 @@ function SplashScreen({ fading }) {
         <p className="text-lg font-bold tracking-wide text-white" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
           Wait<span className="text-teal-400">Less</span>
         </p>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-100/60">
-          Hospital Queue OS
-        </p>
       </div>
       <div className="mt-8 w-44">
-        <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.24em]">
+        <div className="flex items-center justify-center text-[10px] font-bold uppercase tracking-[0.24em]">
           <span className="text-white/35">Loading</span>
-          <span className="text-teal-300">{pct}%</span>
+          <span className="ml-1 inline-flex gap-[3px]" aria-hidden="true">
+            {[0, 1, 2].map((i) => (
+              <span
+                key={i}
+                className="h-[3px] w-[3px] rounded-full bg-teal-300 animate-pulse"
+                style={{ animationDelay: `${i * 220}ms` }}
+              />
+            ))}
+          </span>
         </div>
         <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/5">
           <div
@@ -394,7 +399,10 @@ function Hero() {
           >
             Skip the queue.
             <br />
-            <span className="bg-gradient-to-r from-teal-300 via-cyan-300 to-blue-400 bg-clip-text text-transparent" style={{ backgroundSize: "200% 100%", animation: "gradient-shift 6s ease-in-out infinite" }}>
+            <span
+              className="bg-gradient-to-r from-teal-300 via-cyan-300 to-blue-400 bg-clip-text text-[1.12em] font-normal italic leading-[1.1] tracking-normal text-transparent"
+              style={{ fontFamily: "'Instrument Serif', Georgia, serif", backgroundSize: "200% 100%", animation: "gradient-shift 6s ease-in-out infinite" }}
+            >
               Not the care.
             </span>
           </h1>
