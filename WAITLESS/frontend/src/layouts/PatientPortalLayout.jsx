@@ -102,7 +102,7 @@ export default function PatientPortalLayout() {
   }
 
   if (!isPatientAuthenticated) {
-    return <Navigate to="/patient/login" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   const sidebarText = isLight ? "text-slate-700" : "text-slate-300";

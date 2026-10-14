@@ -11,7 +11,7 @@ export function ProtectedRoute({ children, roles }) {
 
   useEffect(() => {
     if (isReady && !isAuthenticated) {
-      navigate("/admin/login");
+      navigate("/login");
       return;
     }
     if (isReady && isAuthenticated && roles && !hasRole(roles)) {

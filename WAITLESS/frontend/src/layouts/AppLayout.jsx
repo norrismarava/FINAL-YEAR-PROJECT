@@ -108,7 +108,7 @@ const STAFF_WORKSPACE_ITEMS = [
     icon: ShieldPlus,
     roles: ["reception"],
   },
-  { group: "Main", to: "/admin/track", label: "Track Ticket", icon: Ticket },
+
   { group: "Main", to: "/admin/queue", label: "Queue Board", icon: Search },
   {
     group: "Clinical",
@@ -174,11 +174,9 @@ const STAFF_WORKSPACE_ITEMS = [
 
 const AUTH_ROUTE_PREFIXES = [
   "/login",
-  "/admin/login",
   "/admin/forgot-password",
   "/admin/reset-password",
   "/admin/staff-signup",
-  "/patient/login",
   "/patient/register",
   "/patient/forgot-password",
   "/patient/reset-password",
@@ -207,7 +205,6 @@ function isPatientPortalPath(pathname) {
     pathname.startsWith("/self-register") ||
     pathname.startsWith("/kiosk") ||
     pathname.startsWith("/patient/register") ||
-    pathname.startsWith("/patient/login") ||
     pathname.startsWith("/patient/dashboard")
   );
 }
@@ -360,7 +357,7 @@ function AppScaffold() {
   }
 
   if (isWorkspaceRoute && auth.isReady && !auth.isAuthenticated) {
-    return <Navigate to="/admin/login" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (isPatientShellRoute) {
@@ -875,7 +872,7 @@ function StaffSignOutDialog({ auth, open, onOpenChange }) {
   function handleSignOut() {
     auth.logout();
     onOpenChange(false);
-    navigate("/admin/login");
+    navigate("/login");
   }
 
   return (
@@ -1161,13 +1158,6 @@ function StaffAccountMenu({ auth, displayName }) {
       {isOpen ? (
         <div className="absolute right-0 top-[calc(100%+0.75rem)] z-50 w-[min(18rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-cyan-200/12 bg-[linear-gradient(180deg,rgba(8,22,38,0.98),rgba(5,17,30,0.98))] p-2 text-white shadow-[0_28px_80px_-28px_rgba(2,6,23,0.8),0_0_0_1px_rgba(34,211,238,0.04)] backdrop-blur-2xl">
           <div className="space-y-1 px-1 py-1">
-            <Link
-              to="/"
-              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-100 transition-colors hover:bg-white/8"
-            >
-              <House className="h-4 w-4 text-cyan-100/78" />
-              Main page
-            </Link>
             <Link
               to="/admin/profile"
               className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-100 transition-colors hover:bg-white/8"

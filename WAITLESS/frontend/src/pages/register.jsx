@@ -2,21 +2,18 @@ import { useCallback, useEffect, useId, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   CheckCircle2,
-  ClipboardPlus,
   Copy,
   History,
   LoaderCircle,
   MessageCircle,
-  MonitorSmartphone,
-  PhoneCall,
   Printer,
   QrCode,
   RefreshCw,
   ScanLine,
   Search,
   Share2,
-  ShieldCheck,
-  User,
+  UserRound,
+  UserPlus,
   X,
 } from "lucide-react";
 
@@ -151,6 +148,7 @@ export default function RegisterPage() {
     setAppliedPatientId(null);
     setLookupTerm("");
     setHandoffState("");
+    patientLookupMutation.reset();
   }
 
   function applyQrLookup(value) {
@@ -188,206 +186,118 @@ export default function RegisterPage() {
     }
   }
 
+  /* ────────────────────────── Success view ────────────────────────── */
+
   if (submitted) {
     const channels = submitted.handoff?.channels ?? {};
 
     return (
-      <section className="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="surface-panel p-8 sm:p-10">
+      <section className="staff-module-page mx-auto min-h-[calc(100vh-7rem)] w-full max-w-4xl px-1 py-6 sm:py-8">
+        <div className="surface-panel p-6 sm:p-8">
           <div className="text-center">
-            <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-priority-green text-priority-green-foreground shadow-elegant">
-              <CheckCircle2 className="h-8 w-8" />
+            <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-priority-green/15 text-priority-green">
+              <CheckCircle2 className="h-7 w-7" />
             </span>
-            <div className="eyebrow mt-6">Ticket issued</div>
-            <h1 className="mt-3 font-display text-3xl font-bold tracking-tight sm:text-4xl">
-              You are in the queue
+            <div className="eyebrow mt-4">Ticket issued</div>
+            <h1 className="mt-2 font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+              Patient is in the queue
             </h1>
-            <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base">
-              {submitted.patientName} has been registered successfully and routed into
-              the live hospital flow.
+            <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-muted-foreground">
+              {submitted.patientName} is registered and routed to {submitted.department}.
             </p>
           </div>
 
-          <div className="mt-8 grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
-            <div className="surface-panel-dark flex flex-col justify-between p-6 text-center">
-              <div>
-                <div className="text-[11px] font-bold uppercase tracking-[0.28em] text-primary-foreground/70">
-                  Digital ticket
-                </div>
-                <div className="mt-4 font-display text-6xl font-bold tracking-tight text-primary-foreground sm:text-7xl">
-                  {submitted.ticket}
-                </div>
-                <div className="mt-3 text-sm text-primary-foreground/80">
-                  Routed to {submitted.department}
-                </div>
-              </div>
-
-              <div className="mt-6 rounded-2xl border border-white/12 bg-white/10 px-4 py-4 text-left text-sm text-primary-foreground/80">
-                Use this code on the patient tracker to see live queue position,
-                department movement, and recorded notifications.
-              </div>
+          {/* Ticket card */}
+          <div className="mt-6 flex flex-col items-center rounded-2xl border border-primary/20 bg-primary-soft/50 px-6 py-6 text-center">
+            <div className="text-[10px] font-bold uppercase tracking-[0.28em] text-muted-foreground">
+              Ticket code
+            </div>
+            <div className="mt-2 font-display text-5xl font-bold tracking-tight text-foreground sm:text-6xl">
+              {submitted.ticket}
+            </div>
+            <div className="mt-2 text-sm text-muted-foreground">
+              {submitted.department}
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <InfoCard
-                icon={ClipboardPlus}
-                title="Queue placement"
-                body="The ticket is now visible on the live queue board and the staff dashboard."
-              />
-              <InfoCard
-                icon={ShieldCheck}
-                title="Department routing"
-                body={`The patient has been routed into ${submitted.department} and will follow triage-aware ordering from there.`}
-              />
-              <InfoCard
-                icon={MessageCircle}
-                title={submitted.whatsApp ? "WhatsApp active" : "Walk-in mode"}
-                body={
-                  submitted.whatsApp
-                    ? "Registration, near-turn, and call-up alerts can be delivered to the linked phone number."
-                    : "No WhatsApp alerts are active for this patient, so queue updates stay on the board and staff console."
+            <div className="mt-5 grid w-full max-w-md grid-cols-2 gap-2 sm:grid-cols-4">
+              <ChannelDeliveryStatus label="Print" status={channels.print?.status ?? "ready"} />
+              <ChannelDeliveryStatus label="Phone" status={channels.phone?.status ?? "ready"} />
+              <ChannelDeliveryStatus
+                label="WhatsApp"
+                status={
+                  channels.whatsapp?.status ??
+                  (submitted.whatsApp ? "queued" : "disabled")
                 }
               />
-              <InfoCard
-                icon={User}
-                title="Next step"
-                body="Keep the ticket code handy to track progress at any time from the patient view."
-              />
+              <ChannelDeliveryStatus label="Display" status={channels.displayBoard?.status ?? "synced"} />
             </div>
           </div>
 
-          <div className="surface-panel-muted mt-8 grid gap-5 px-5 py-5 sm:px-6 lg:grid-cols-[0.95fr_1.05fr]">
-            <div>
-              <div className="eyebrow">Module 02 handoff</div>
-              <h2 className="mt-2 font-display text-2xl font-bold tracking-tight">
-                Open patient self-service now
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                The patient can use the tracker immediately on a phone, reception
-                kiosk, or support desk to follow queue movement and review alerts.
-              </p>
-
-              <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                <HandoffMeta label="Ticket code" value={submitted.ticket} />
-                <HandoffMeta
-                  label="Tracking link"
-                  value={buildTrackingUrl(submitted)}
-                />
-              </div>
-
-              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                <ChannelDeliveryStatus
-                  label="Print"
-                  status={channels.print?.status ?? "ready"}
-                />
-                <ChannelDeliveryStatus
-                  label="Phone"
-                  status={channels.phone?.status ?? "ready"}
-                />
-                <ChannelDeliveryStatus
-                  label="WhatsApp"
-                  status={
-                    channels.whatsapp?.status ??
-                    (submitted.whatsApp ? "queued" : "disabled")
-                  }
-                />
-                <ChannelDeliveryStatus
-                  label="Display"
-                  status={channels.displayBoard?.status ?? "synced"}
-                />
-              </div>
-
-              <div className="mt-4 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() =>
-                    copyRegistrationValue(submitted.ticket, "Ticket code copied.")
-                  }
-                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-background/80 px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
-                >
-                  <Copy className="h-4 w-4 text-primary" />
-                  Copy ticket
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    copyRegistrationValue(
-                      buildTrackingUrl(submitted),
-                      "Tracking link copied.",
-                    )
-                  }
-                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-background/80 px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
-                >
-                  <Copy className="h-4 w-4 text-primary" />
-                  Copy tracking link
-                </button>
-                <button
-                  type="button"
-                  onClick={handlePrintTicket}
-                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-background/80 px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
-                >
-                  <Printer className="h-4 w-4 text-primary" />
-                  Print ticket
-                </button>
-                <button
-                  type="button"
-                  onClick={handleShareTicket}
-                  className="inline-flex items-center gap-2 rounded-xl border border-border bg-background/80 px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
-                >
-                  <Share2 className="h-4 w-4 text-primary" />
-                  Send to phone
-                </button>
-              </div>
-
-              <div className="mt-4 min-h-6 text-sm font-medium text-primary">
-                {handoffState || "Copy the ticket or the tracking link for the patient before they leave the desk."}
-              </div>
-            </div>
-
-            <div className="grid gap-3">
-              <HandoffSupportCard
-                icon={MonitorSmartphone}
-                title="Phone-ready tracking"
-                body="Patients can keep checking position, wait guidance, and notification history from the track page."
-              />
-              <HandoffSupportCard
-                icon={MessageCircle}
-                title="Alert continuity"
-                body={
-                  submitted.whatsApp
-                    ? "WhatsApp queue alerts are active, so the patient tracker and phone updates stay in sync."
-                    : "This patient is on board-only updates, so the tracker and queue board become the main patient-facing view."
-                }
-              />
-              <HandoffSupportCard
-                icon={PhoneCall}
-                title="Reception fallback"
-                body="If the patient misses a step, reception can reopen the tracker and guide them with the same ticket code."
-              />
-            </div>
-          </div>
-
-          <div className="mt-8 flex flex-wrap justify-center gap-3">
+          {/* Handoff actions */}
+          <div className="mt-5 flex flex-wrap justify-center gap-2.5">
             <button
+              type="button"
+              onClick={() => copyRegistrationValue(submitted.ticket, "Ticket code copied.")}
+              className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted"
+            >
+              <Copy className="h-3.5 w-3.5 text-primary" />
+              Copy ticket
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                copyRegistrationValue(buildTrackingUrl(submitted), "Tracking link copied.")
+              }
+              className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted"
+            >
+              <Copy className="h-3.5 w-3.5 text-primary" />
+              Copy tracking link
+            </button>
+            <button
+              type="button"
+              onClick={handlePrintTicket}
+              className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted"
+            >
+              <Printer className="h-3.5 w-3.5 text-primary" />
+              Print ticket
+            </button>
+            <button
+              type="button"
+              onClick={handleShareTicket}
+              className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted"
+            >
+              <Share2 className="h-3.5 w-3.5 text-primary" />
+              Send to phone
+            </button>
+          </div>
+
+          <p className="mt-4 min-h-5 text-center text-xs font-medium text-primary">
+            {handoffState || "Share the ticket code or tracking link with the patient."}
+          </p>
+
+          <div className="mt-6 flex flex-wrap justify-center gap-3 border-t border-border/60 pt-6">
+            <button
+              type="button"
               onClick={() => {
                 setSubmitted(null);
                 resetRegistrationForm();
               }}
-              className="rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+              className="inline-flex items-center gap-2 rounded-lg gradient-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-elegant"
             >
-              Register another
+              <UserPlus className="h-4 w-4" />
+              Register another patient
             </button>
             <Link
               to={`/track?ticket=${encodeURIComponent(submitted.ticket)}`}
-              className="rounded-xl gradient-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-elegant"
+              className="rounded-lg border border-border bg-card px-5 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
             >
-              Track my ticket
+              Track ticket
             </Link>
             <Link
               to="/queue"
-              className="rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
+              className="rounded-lg border border-border bg-card px-5 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
             >
-              View queue board
+              Queue board
             </Link>
           </div>
         </div>
@@ -395,156 +305,124 @@ export default function RegisterPage() {
     );
   }
 
+  /* ────────────────────────── Form view ────────────────────────── */
+
   return (
-    <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-      <PreRegisteredArrivals
-        show={showPreRegistered}
-        onToggle={() => {
-          setShowPreRegistered(!showPreRegistered);
-          if (!showPreRegistered) preRegisteredQuery.refetch();
-        }}
-        tickets={preRegisteredQuery.data ?? []}
-        loading={preRegisteredQuery.loading}
-        onConfirm={(id) => confirmArrivalMutation.mutate(id)}
-        confirmingId={confirmArrivalMutation.variables}
-        error={confirmArrivalMutation.error?.message}
-      />
-      <div className="grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
-        <aside className="surface-panel-dark p-6 sm:p-8">
-          <div className="text-[11px] font-bold uppercase tracking-[0.28em] text-primary-foreground/70">
-            Registration flow
+    <section className="staff-module-page mx-auto min-h-[calc(100vh-7rem)] w-full max-w-[96rem] px-1 py-6 sm:py-8">
+      {/* Page header */}
+      <header className="surface-panel flex flex-wrap items-start justify-between gap-4 p-6">
+        <div className="flex items-center gap-3">
+          <span className="grid h-11 w-11 place-items-center rounded-xl bg-primary/15 text-primary">
+            <UserPlus className="h-5 w-5" />
+          </span>
+          <div>
+            <div className="eyebrow">Front desk</div>
+            <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
+              Register a patient
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Capture the patient, issue a live queue ticket, and open their notification channel.
+            </p>
           </div>
-          <h1 className="mt-3 font-display text-3xl font-bold tracking-tight text-primary-foreground sm:text-4xl">
-            Patient onboarding desk
-          </h1>
-          <p className="mt-4 max-w-xl text-sm leading-7 text-primary-foreground/82 sm:text-base">
-            Capture the patient once, generate a live ticket instantly, and push them
-            into the triage-aware queue without handwritten registers or lost places.
-          </p>
+        </div>
+        <button
+          type="button"
+          onClick={resetRegistrationForm}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
+        >
+          <RefreshCw className="h-3.5 w-3.5" />
+          New blank form
+        </button>
+      </header>
 
-          <div className="mt-8 space-y-3">
-            <FlowStep
-              number="01"
-              title="Capture essentials"
-              body="Demographics, route, and visit reason are collected in one pass."
-            />
-            <FlowStep
-              number="02"
-              title="Issue queue ticket"
-              body="A digital ticket is generated immediately and synced to the live board."
-            />
-            <FlowStep
-              number="03"
-              title="Open notification channel"
-              body="WhatsApp-enabled patients can receive registration, near-turn, and call alerts."
-            />
-          </div>
+      {/* Pre-registered arrivals */}
+      <div className="mt-5">
+        <PreRegisteredArrivals
+          show={showPreRegistered}
+          onToggle={() => {
+            setShowPreRegistered(!showPreRegistered);
+            if (!showPreRegistered) preRegisteredQuery.refetch();
+          }}
+          tickets={preRegisteredQuery.data ?? []}
+          loading={preRegisteredQuery.loading}
+          onConfirm={(id) => confirmArrivalMutation.mutate(id)}
+          confirmingId={confirmArrivalMutation.variables}
+          error={confirmArrivalMutation.error?.message}
+        />
+      </div>
 
-          <div className="mt-8 rounded-2xl border border-white/12 bg-white/10 p-4">
-            <div className="flex items-start gap-3">
-              <MessageCircle className="mt-0.5 h-5 w-5 shrink-0 text-primary-foreground/80" />
-              <div>
-                <div className="font-semibold text-primary-foreground">
-                  Patient communication
+      <div className="mt-5 grid gap-5 xl:grid-cols-[1.55fr_1fr]">
+        {/* ── Registration form ── */}
+        <form onSubmit={submit} className="surface-panel">
+          {/* Returning patient lookup */}
+          <div className="border-b border-border/60 px-5 py-4 sm:px-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/15 text-primary">
+                  <History className="h-4 w-4" />
+                </span>
+                <div>
+                  <h2 className="font-display text-base font-bold">Returning patient?</h2>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Search by name, phone, ID, patient number, or scan their QR card.
+                  </p>
                 </div>
-                <p className="mt-1 text-sm leading-6 text-primary-foreground/80">
-                  Turn on WhatsApp when a reachable mobile number is available so the
-                  system can reduce crowding around the waiting area.
-                </p>
-              </div>
-            </div>
-          </div>
-        </aside>
-
-        <form onSubmit={submit} className="surface-panel p-6 sm:p-8">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <div className="eyebrow">Registration form</div>
-              <h2 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">
-                Register a new patient
-              </h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                This takes about a minute. The patient receives a queue ticket and is
-                visible to staff immediately after submission.
-              </p>
-            </div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary-soft/70 px-3 py-1.5 text-xs font-semibold text-primary">
-              <User className="h-3.5 w-3.5" />
-              Front desk ready
-            </span>
-          </div>
-
-          <div className="surface-panel-muted mt-6 px-4 py-4 sm:px-5">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div>
-                <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-                  Returning patient search
-                </div>
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">
-                  Search by patient name, phone number, national ID, patient number,
-                  previous ticket, or scan their WaitLess QR code.
-                </p>
               </div>
               {appliedPatientId ? (
-                <span className="inline-flex items-center gap-2 rounded-full border border-priority-green/20 bg-priority-green/10 px-3 py-1.5 text-xs font-semibold text-priority-green">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-priority-green/30 bg-priority-green/10 px-2.5 py-1 text-xs font-semibold text-priority-green">
                   <CheckCircle2 className="h-3.5 w-3.5" />
-                  Existing record applied
+                  Record applied
                 </span>
               ) : null}
             </div>
 
-            <div className="mt-4 flex flex-col gap-3 lg:flex-row">
+            <div className="mt-4 flex flex-col gap-2.5 sm:flex-row">
               <label className="relative flex-1">
                 <span className="sr-only">Search returning patients</span>
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <input
                   value={lookupTerm}
                   onChange={(event) => setLookupTerm(event.target.value)}
-                  className="input-base pl-10"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      lookupExistingPatients();
+                    }
+                  }}
+                  className="input-base h-10 pl-10 text-sm"
                   placeholder="Name, phone, national ID, patient number, or ticket"
                 />
               </label>
-              <button
-                type="button"
-                onClick={lookupExistingPatients}
-                disabled={patientLookupMutation.isPending || lookupTerm.trim().length < 2}
-                className="inline-flex items-center justify-center gap-2 rounded-xl gradient-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-elegant disabled:opacity-70"
-              >
-                {patientLookupMutation.isPending ? (
-                  <>
+              <div className="flex gap-2.5">
+                <button
+                  type="button"
+                  onClick={lookupExistingPatients}
+                  disabled={patientLookupMutation.isPending || lookupTerm.trim().length < 2}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg gradient-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-60"
+                >
+                  {patientLookupMutation.isPending ? (
                     <LoaderCircle className="h-4 w-4 animate-spin" />
-                    Searching...
-                  </>
-                ) : (
-                  <>
+                  ) : (
                     <Search className="h-4 w-4" />
-                    Search records
-                  </>
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={() => setScannerOpen(true)}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-primary/20 bg-primary-soft/70 px-4 py-3 text-sm font-semibold text-primary transition-colors hover:bg-primary-soft"
-              >
-                <ScanLine className="h-4 w-4" />
-                Scan QR
-              </button>
-              <button
-                type="button"
-                onClick={resetRegistrationForm}
-                className="inline-flex items-center justify-center gap-2 rounded-xl border border-border bg-background/80 px-4 py-3 text-sm font-semibold text-foreground transition-colors hover:bg-muted"
-              >
-                <RefreshCw className="h-4 w-4" />
-                New blank form
-              </button>
+                  )}
+                  Search
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setScannerOpen(true)}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-primary/25 bg-primary-soft/70 px-4 text-sm font-semibold text-primary transition-colors hover:bg-primary-soft"
+                >
+                  <ScanLine className="h-4 w-4" />
+                  Scan QR
+                </button>
+              </div>
             </div>
 
-            {patientLookupMutation.isError && (
-              <div className="mt-4 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+            {patientLookupMutation.isError ? (
+              <div className="mt-3 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
                 {patientLookupMutation.error.message}
               </div>
-            )}
+            ) : null}
 
             {patientLookupMutation.data ? (
               patientLookupMutation.data.length ? (
@@ -559,78 +437,55 @@ export default function RegisterPage() {
                   ))}
                 </div>
               ) : (
-                <div className="mt-4 rounded-2xl border border-dashed border-border bg-background/70 px-4 py-4 text-sm text-muted-foreground">
-                  No previous patient record matched that search yet.
+                <div className="mt-3 rounded-xl border border-dashed border-border bg-background/60 px-4 py-3 text-xs text-muted-foreground">
+                  No previous patient record matched that search.
                 </div>
               )
-            ) : (
-              <div className="mt-4 rounded-2xl border border-dashed border-border bg-background/70 px-4 py-4 text-sm text-muted-foreground">
-                Search the existing register before capturing a new patient to avoid
-                duplicate records and reuse known details.
-              </div>
-            )}
+            ) : null}
           </div>
 
-          {scannerOpen ? (
-            <QrPatientScanner
-              onClose={() => setScannerOpen(false)}
-              onScan={applyQrLookup}
-            />
-          ) : null}
-
-          <div className="mt-6 grid gap-5 sm:grid-cols-2">
+          {/* Patient details */}
+          <FormSection title="Patient details">
             <Field label="Full name" required>
               <input
                 required
                 value={form.fullName}
-                onChange={(event) =>
-                  setForm({ ...form, fullName: event.target.value })
-                }
-                className="input-base"
+                onChange={(event) => setForm({ ...form, fullName: event.target.value })}
+                className="input-base h-9 text-sm"
                 placeholder="e.g. Tariro Moyo"
               />
             </Field>
-
             <Field label="National ID">
               <input
                 value={form.nationalId}
-                onChange={(event) =>
-                  setForm({ ...form, nationalId: event.target.value })
-                }
-                className="input-base"
+                onChange={(event) => setForm({ ...form, nationalId: event.target.value })}
+                className="input-base h-9 text-sm"
                 placeholder="63-1234567-A-12"
               />
             </Field>
-
             <Field label="Date of birth">
               <input
                 type="date"
                 value={form.dob}
                 onChange={(event) => setForm({ ...form, dob: event.target.value })}
-                className="input-base"
+                className="input-base h-9 text-sm"
               />
             </Field>
-
             <Field label="Gender">
               <select
                 value={form.gender}
-                onChange={(event) =>
-                  setForm({ ...form, gender: event.target.value })
-                }
-                className="input-base"
+                onChange={(event) => setForm({ ...form, gender: event.target.value })}
+                className="input-base h-9 text-sm"
               >
                 <option value="female">Female</option>
                 <option value="male">Male</option>
               </select>
             </Field>
-
             <Field label="Patient category">
               <select
                 value={form.patientCategory}
-                onChange={(event) =>
-                  setForm({ ...form, patientCategory: event.target.value })
-                }
-                className="input-base"
+                onChange={(event) => setForm({ ...form, patientCategory: event.target.value })}
+                className="input-base h-9 text-sm"
               >
                 {patientCategories.map((category) => (
                   <option key={category.value} value={category.value}>
@@ -639,55 +494,54 @@ export default function RegisterPage() {
                 ))}
               </select>
             </Field>
+          </FormSection>
 
+          {/* Contact & next of kin */}
+          <FormSection title="Contact & next of kin">
             <Field label="Mobile / WhatsApp">
               <input
                 value={form.phone}
                 onChange={(event) => setForm({ ...form, phone: event.target.value })}
-                className="input-base"
+                className="input-base h-9 text-sm"
                 placeholder="+263 77 123 4567"
               />
             </Field>
-
             <Field label="Residential area">
               <input
                 value={form.address}
                 onChange={(event) => setForm({ ...form, address: event.target.value })}
-                className="input-base"
+                className="input-base h-9 text-sm"
                 placeholder="e.g. Chinhoyi, Cold Stream"
               />
             </Field>
-
             <Field label="Next of kin name">
               <input
                 value={form.nextOfKinName}
-                onChange={(event) =>
-                  setForm({ ...form, nextOfKinName: event.target.value })
-                }
-                className="input-base"
+                onChange={(event) => setForm({ ...form, nextOfKinName: event.target.value })}
+                className="input-base h-9 text-sm"
                 placeholder="Emergency contact full name"
               />
             </Field>
-
             <Field label="Next of kin phone">
               <input
                 value={form.nextOfKinPhone}
-                onChange={(event) =>
-                  setForm({ ...form, nextOfKinPhone: event.target.value })
-                }
-                className="input-base"
+                onChange={(event) => setForm({ ...form, nextOfKinPhone: event.target.value })}
+                className="input-base h-9 text-sm"
                 placeholder="+263 77 000 0000"
               />
             </Field>
+          </FormSection>
 
+          {/* Visit routing */}
+          <FormSection title="Visit routing">
             <Field label="Department" full>
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {departments.map((department) => (
                   <button
                     key={department}
                     type="button"
                     onClick={() => setForm({ ...form, dept: department })}
-                    className={`rounded-xl border px-4 py-3 text-sm font-semibold transition-all ${
+                    className={`rounded-lg border px-3 py-2.5 text-xs font-semibold transition-all ${
                       form.dept === department
                         ? "border-primary bg-primary-soft text-primary shadow-sm"
                         : "border-border bg-background text-foreground hover:border-primary/50 hover:bg-primary-soft/50"
@@ -698,125 +552,146 @@ export default function RegisterPage() {
                 ))}
               </div>
             </Field>
-
             <Field label="Chief complaint" full>
               <textarea
-                rows={4}
+                rows={3}
                 value={form.chiefComplaint}
-                onChange={(event) =>
-                  setForm({ ...form, chiefComplaint: event.target.value })
-                }
-                className="input-base resize-none"
+                onChange={(event) => setForm({ ...form, chiefComplaint: event.target.value })}
+                className="input-base resize-none text-sm"
                 placeholder="Briefly describe the reason for visit"
               />
             </Field>
+          </FormSection>
+
+          {/* Consent + submit */}
+          <div className="px-5 pb-5 sm:px-6 sm:pb-6">
+            <div className="space-y-2.5">
+              <ConsentToggle
+                checked={form.notificationConsent}
+                onChange={(checked) =>
+                  setForm({
+                    ...form,
+                    notificationConsent: checked,
+                    whatsApp: checked ? form.whatsApp : false,
+                  })
+                }
+                title="Patient consents to queue notifications"
+                description="Capture consent before sending WhatsApp or web queue updates."
+              />
+              <ConsentToggle
+                checked={form.whatsApp}
+                disabled={!form.notificationConsent}
+                onChange={(checked) => setForm({ ...form, whatsApp: checked })}
+                title="Use WhatsApp for queue alerts"
+                description="Registration, near-turn, missed-turn, and call-up alerts."
+              />
+            </div>
+
+            {registerMutation.isError ? (
+              <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                {registerMutation.error.message}
+              </div>
+            ) : null}
+
+            <button
+              type="submit"
+              disabled={registerMutation.isPending}
+              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl gradient-primary py-3 text-sm font-semibold text-primary-foreground shadow-elegant transition-transform hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-70"
+            >
+              {registerMutation.isPending ? (
+                <>
+                  <LoaderCircle className="h-4 w-4 animate-spin" />
+                  Issuing ticket…
+                </>
+              ) : (
+                <>
+                  <UserPlus className="h-4 w-4" />
+                  Issue digital ticket
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+
+        {/* ── Side panel: desk notes ── */}
+        <aside className="space-y-5 self-start">
+          <div className="surface-panel p-5">
+            <div className="flex items-center gap-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/15 text-primary">
+                <CheckCircle2 className="h-4 w-4" />
+              </span>
+              <h2 className="font-display text-base font-bold">How registration flows</h2>
+            </div>
+            <ol className="mt-4 space-y-3">
+              {[
+                "Search for a returning record first to avoid duplicates.",
+                "Capture demographics, route, and visit reason in one pass.",
+                "The ticket lands on the live board and staff dashboard instantly.",
+              ].map((step, i) => (
+                <li key={i} className="flex items-start gap-3">
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-primary/15 font-display text-[11px] font-bold text-primary">
+                    {i + 1}
+                  </span>
+                  <span className="text-sm leading-6 text-muted-foreground">{step}</span>
+                </li>
+              ))}
+            </ol>
           </div>
 
-          <label className="surface-panel-muted mt-6 flex items-start gap-3 px-4 py-4 text-sm">
-            <input
-              type="checkbox"
-              checked={form.notificationConsent}
-              onChange={(event) =>
-                setForm({
-                  ...form,
-                  notificationConsent: event.target.checked,
-                  whatsApp: event.target.checked ? form.whatsApp : false,
-                })
-              }
-              className="mt-0.5 h-4 w-4 accent-primary"
-            />
-            <span>
-              <span className="font-semibold">Patient consents to queue notifications</span>
-              <span className="mt-1 block text-muted-foreground">
-                Capture consent before sending WhatsApp or web queue updates to the
-                patient phone number.
+          <div className="surface-panel p-5">
+            <div className="flex items-center gap-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/15 text-primary">
+                <MessageCircle className="h-4 w-4" />
               </span>
-            </span>
-          </label>
-
-          <label
-            className={`surface-panel-muted mt-3 flex items-start gap-3 px-4 py-4 text-sm ${
-              form.notificationConsent ? "" : "opacity-60"
-            }`}
-          >
-            <input
-              type="checkbox"
-              checked={form.whatsApp}
-              disabled={!form.notificationConsent}
-              onChange={(event) =>
-                setForm({ ...form, whatsApp: event.target.checked })
-              }
-              className="mt-0.5 h-4 w-4 accent-primary"
-            />
-            <span>
-              <span className="font-semibold">Use WhatsApp for queue alerts</span>
-              <span className="mt-1 block text-muted-foreground">
-                Registration, near-turn, missed-turn, and call-up alerts help patients
-                wait more comfortably and reduce crowding around the service point.
-              </span>
-            </span>
-          </label>
-
-          {registerMutation.isError && (
-            <div className="mt-4 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-              {registerMutation.error.message}
+              <h2 className="font-display text-base font-bold">WhatsApp alerts</h2>
             </div>
-          )}
-
-          <button
-            type="submit"
-            disabled={registerMutation.isPending}
-            className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl gradient-primary py-3 text-sm font-semibold text-primary-foreground shadow-elegant transition-transform hover:-translate-y-0.5 disabled:translate-y-0 disabled:opacity-70"
-          >
-            {registerMutation.isPending ? (
-              <>
-                <LoaderCircle className="h-4 w-4 animate-spin" />
-                Issuing ticket...
-              </>
-            ) : (
-              "Issue digital ticket"
-            )}
-          </button>
-        </form>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              Enable WhatsApp when a reachable number is available — patients get registration,
+              near-turn, and call alerts, which reduces crowding around the waiting area.
+            </p>
+          </div>
+        </aside>
       </div>
+
+      {scannerOpen ? (
+        <QrPatientScanner onClose={() => setScannerOpen(false)} onScan={applyQrLookup} />
+      ) : null}
     </section>
   );
 }
 
-function FlowStep({ number, title, body }) {
+/* ---------- Building blocks ---------- */
+
+function FormSection({ title, children }) {
   return (
-    <div className="rounded-2xl border border-white/12 bg-white/10 px-4 py-4">
-      <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-primary-foreground/65">
-        Step {number}
-      </div>
-      <div className="mt-1 font-display text-lg font-bold text-primary-foreground">
+    <div className="border-b border-border/60 px-5 py-5 sm:px-6">
+      <div className="mb-4 text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
         {title}
       </div>
-      <p className="mt-1 text-sm leading-6 text-primary-foreground/80">{body}</p>
+      <div className="grid gap-4 sm:grid-cols-2">{children}</div>
     </div>
   );
 }
 
-function InfoCard({ icon: Icon, title, body }) {
+function ConsentToggle({ checked, onChange, disabled, title, description }) {
   return (
-    <div className="surface-panel-muted px-4 py-4">
-      <span className="grid h-10 w-10 place-items-center rounded-2xl bg-primary-soft text-primary">
-        <Icon className="h-4.5 w-4.5" />
+    <label
+      className={`flex items-start gap-3 rounded-xl border border-border/60 bg-background/50 px-4 py-3.5 text-sm ${
+        disabled ? "opacity-60" : ""
+      }`}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        disabled={disabled}
+        onChange={(e) => onChange(e.target.checked)}
+        className="mt-0.5 h-4 w-4 accent-primary"
+      />
+      <span>
+        <span className="font-semibold">{title}</span>
+        <span className="mt-0.5 block text-xs leading-5 text-muted-foreground">{description}</span>
       </span>
-      <div className="mt-4 font-display text-lg font-bold tracking-tight">{title}</div>
-      <p className="mt-1 text-sm leading-6 text-muted-foreground">{body}</p>
-    </div>
-  );
-}
-
-function HandoffMeta({ label, value }) {
-  return (
-    <div className="rounded-2xl border border-border/70 bg-background/80 px-4 py-3">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-        {label}
-      </div>
-      <div className="mt-1 break-all text-sm font-semibold text-foreground">{value}</div>
-    </div>
+    </label>
   );
 }
 
@@ -824,12 +699,12 @@ function ChannelDeliveryStatus({ label, status }) {
   const isDisabled = status === "disabled";
 
   return (
-    <div className="rounded-xl border border-border/70 bg-background/70 px-3 py-3">
+    <div className="rounded-lg border border-border/70 bg-background/70 px-3 py-2.5">
       <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
         {label}
       </div>
       <div
-        className={`mt-1 text-xs font-bold capitalize ${
+        className={`mt-0.5 text-xs font-bold capitalize ${
           isDisabled ? "text-muted-foreground" : "text-priority-green"
         }`}
       >
@@ -839,61 +714,43 @@ function ChannelDeliveryStatus({ label, status }) {
   );
 }
 
-function HandoffSupportCard({ icon: Icon, title, body }) {
-  return (
-    <div className="rounded-2xl border border-border/70 bg-background/80 px-4 py-4">
-      <div className="flex items-start gap-3">
-        <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary-soft text-primary">
-          <Icon className="h-4.5 w-4.5" />
-        </span>
-        <div>
-          <div className="font-semibold">{title}</div>
-          <p className="mt-1 text-sm leading-6 text-muted-foreground">{body}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function ReturningPatientCard({ profile, isApplied, onApply }) {
   return (
     <article
-      className={`rounded-[1.6rem] border px-4 py-4 transition-all ${
+      className={`rounded-xl border px-4 py-3.5 transition-all ${
         isApplied
-          ? "border-primary/20 bg-primary-soft/45 shadow-card"
-          : "border-border/70 bg-background/80"
+          ? "border-primary/30 bg-primary-soft/45 shadow-card"
+          : "border-border/60 bg-background/60"
       }`}
     >
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <div className="font-display text-lg font-bold tracking-tight">
+            <div className="font-display text-base font-bold tracking-tight">
               {profile.patientName}
             </div>
-            <span className="rounded-full bg-primary-soft px-2.5 py-1 text-[11px] font-semibold text-primary">
+            <span className="rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-semibold text-primary">
               {profile.totalVisits} visit{profile.totalVisits === 1 ? "" : "s"}
             </span>
           </div>
 
-          <div className="mt-2 flex flex-wrap gap-2 text-[11px] text-muted-foreground">
+          <div className="mt-1.5 flex flex-wrap gap-1.5 text-[11px] text-muted-foreground">
             {profile.patientNumber ? (
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2.5 py-1 font-semibold text-primary">
+              <span className="inline-flex items-center gap-1 rounded-full bg-primary-soft px-2 py-0.5 font-semibold text-primary">
                 <QrCode className="h-3 w-3" />
                 {profile.patientNumber}
               </span>
             ) : null}
             {profile.phone ? (
-              <span className="rounded-full bg-background/85 px-2.5 py-1 font-semibold">
-                {profile.phone}
-              </span>
+              <span className="rounded-full bg-muted px-2 py-0.5 font-semibold">{profile.phone}</span>
             ) : null}
             {profile.nationalId ? (
-              <span className="rounded-full bg-background/85 px-2.5 py-1 font-semibold">
+              <span className="rounded-full bg-muted px-2 py-0.5 font-semibold">
                 {profile.nationalId}
               </span>
             ) : null}
             {profile.patientCategory ? (
-              <span className="rounded-full bg-background/85 px-2.5 py-1 font-semibold capitalize">
+              <span className="rounded-full bg-muted px-2 py-0.5 font-semibold capitalize">
                 {profile.patientCategory.replaceAll("-", " ")}
               </span>
             ) : null}
@@ -903,40 +760,22 @@ function ReturningPatientCard({ profile, isApplied, onApply }) {
         <button
           type="button"
           onClick={onApply}
-          className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-colors ${
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
             isApplied
               ? "bg-primary text-primary-foreground"
               : "border border-border bg-card text-foreground hover:bg-muted"
           }`}
         >
-          <History className="h-4 w-4" />
+          <History className="h-3.5 w-3.5" />
           {isApplied ? "Applied" : "Use record"}
         </button>
       </div>
 
-      <div className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
+      <div className="mt-3 grid gap-2 text-sm sm:grid-cols-3">
         <LookupMeta label="Last visit" value={formatVisitDate(profile.lastVisitAt)} />
-        <LookupMeta label="Last department" value={profile.lastDepartment || "Unknown"} />
-        <LookupMeta label="Latest ticket" value={profile.lastTicket || "Not available"} />
+        <LookupMeta label="Last dept" value={profile.lastDepartment || "Unknown"} />
+        <LookupMeta label="Latest ticket" value={profile.lastTicket || "—"} />
       </div>
-
-      {profile.recentVisits?.length ? (
-        <div className="mt-4">
-          <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-            Recent visits
-          </div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {profile.recentVisits.map((visit) => (
-              <span
-                key={`${profile.id}-${visit.ticket}`}
-                className="rounded-full border border-border/70 bg-background/85 px-3 py-1.5 text-[11px] font-semibold text-muted-foreground"
-              >
-                {visit.ticket} · {visit.department} · {visit.status}
-              </span>
-            ))}
-          </div>
-        </div>
-      ) : null}
     </article>
   );
 }
@@ -1005,7 +844,7 @@ function QrPatientScanner({ onClose, onScan }) {
             type="button"
             onClick={onClose}
             aria-label="Close QR scanner"
-            className="grid h-10 w-10 place-items-center rounded-xl border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="grid h-9 w-9 place-items-center rounded-lg border border-border bg-background text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
           >
             <X className="h-4 w-4" />
           </button>
@@ -1032,11 +871,11 @@ function QrPatientScanner({ onClose, onScan }) {
 
 function LookupMeta({ label, value }) {
   return (
-    <div className="rounded-2xl border border-border/70 bg-background/70 px-3 py-3">
-      <div className="text-[10px] font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+    <div className="rounded-lg border border-border/60 bg-background/60 px-3 py-2">
+      <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
         {label}
       </div>
-      <div className="mt-1 font-medium text-foreground">{value}</div>
+      <div className="mt-0.5 text-xs font-semibold text-foreground">{value}</div>
     </div>
   );
 }
@@ -1057,8 +896,8 @@ function formatVisitDate(value) {
 
 function Field({ label, children, required, full }) {
   return (
-    <label className={`flex flex-col gap-2 ${full ? "sm:col-span-2" : ""}`}>
-      <span className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+    <label className={`flex flex-col gap-1.5 ${full ? "sm:col-span-2" : ""}`}>
+      <span className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
         {label}
         {required && <span className="ml-1 text-destructive">*</span>}
       </span>
@@ -1094,57 +933,58 @@ async function copyTextToClipboard(value) {
 
 function PreRegisteredArrivals({ show, onToggle, tickets, loading, onConfirm, confirmingId, error }) {
   return (
-    <div className="mb-6 surface-panel overflow-hidden">
+    <div className="surface-panel overflow-hidden">
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full items-center justify-between border-b border-border/70 px-5 py-4 text-left sm:px-6"
+        className="flex w-full items-center justify-between px-5 py-4 text-left"
       >
-        <div>
-          <div className="eyebrow">Online pre-registrations</div>
-          <h2 className="mt-1.5 font-display text-xl font-bold tracking-tight">Pre-registered arrivals</h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Verify patient identity and confirm arrival to activate their queue ticket.
-          </p>
+        <div className="flex items-center gap-3">
+          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-amber-500/15 text-amber-500">
+            <UserRound className="h-4 w-4" />
+          </span>
+          <div>
+            <h2 className="font-display text-base font-bold">Pre-registered arrivals</h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Online registrations waiting to be verified at the desk.
+            </p>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           {tickets.length > 0 ? (
-            <span className="rounded-full bg-amber-500/15 px-3 py-1 text-xs font-bold text-amber-600">
+            <span className="rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-bold text-amber-600 dark:text-amber-300">
               {tickets.length} pending
             </span>
           ) : null}
-          <span className="text-sm font-semibold text-muted-foreground">
+          <span className="text-xs font-semibold text-muted-foreground">
             {show ? "Hide" : "Show"}
           </span>
         </div>
       </button>
       {show ? (
-        <div className="px-5 py-4 sm:px-6">
+        <div className="border-t border-border/60 px-5 py-4">
           {loading ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <LoaderCircle className="h-4 w-4 animate-spin" />
-              Loading pre-registered patients...
+              Loading pre-registered patients…
             </div>
           ) : tickets.length === 0 ? (
             <p className="text-sm text-muted-foreground">No pre-registered patients awaiting arrival.</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2.5">
               {tickets.map((ticket) => (
                 <div
                   key={ticket.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-background/80 px-4 py-4"
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-background/60 px-4 py-3"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="grid h-10 w-16 place-items-center rounded-xl bg-amber-500/12 font-display text-sm font-bold text-amber-600">
+                    <span className="grid h-9 w-14 place-items-center rounded-lg bg-amber-500/12 font-display text-xs font-bold text-amber-600 dark:text-amber-300">
                       {ticket.ticket}
                     </span>
                     <div>
-                      <div className="font-semibold">{ticket.patientName}</div>
+                      <div className="text-sm font-semibold">{ticket.patientName}</div>
                       <div className="mt-0.5 text-xs text-muted-foreground">
                         {ticket.department} &middot; {ticket.chiefComplaint || "No complaint recorded"}
-                      </div>
-                      <div className="mt-0.5 text-xs text-muted-foreground">
-                        {ticket.phone} &middot; Pre-registered {new Date(ticket.registeredAt).toLocaleDateString()}
                       </div>
                     </div>
                   </div>
@@ -1152,12 +992,12 @@ function PreRegisteredArrivals({ show, onToggle, tickets, loading, onConfirm, co
                     type="button"
                     onClick={() => onConfirm(ticket.id)}
                     disabled={confirmingId === ticket.id}
-                    className="rounded-xl gradient-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-elegant disabled:opacity-60"
+                    className="rounded-lg gradient-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground shadow-elegant disabled:opacity-60"
                   >
                     {confirmingId === ticket.id ? (
-                      <span className="flex items-center gap-2">
-                        <LoaderCircle className="h-4 w-4 animate-spin" />
-                        Confirming...
+                      <span className="flex items-center gap-1.5">
+                        <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+                        Confirming…
                       </span>
                     ) : (
                       "Confirm arrival"

@@ -9,7 +9,6 @@ import {
   ClipboardList,
   Clock3,
   FlaskConical,
-  Globe,
   HeartPulse,
   LayoutDashboard,
   MessageCircle,
@@ -17,9 +16,7 @@ import {
   Pill,
   ScanLine,
   Search,
-  Shield,
   ShieldAlert,
-  ShieldCheck,
   Siren,
   Smartphone,
   Star,
@@ -27,7 +24,6 @@ import {
   Timer,
   Users,
   Wifi,
-  Zap,
 } from "lucide-react";
 
 import hospitalHeroImage from "@/assets/landing-hero-hospital.jpg";
@@ -265,7 +261,6 @@ export default function Home() {
       <style>{REVEAL_CSS}</style>
       <Hero />
       <LiveTicker />
-      <TrustBanner />
       <DepartmentsSection />
       <PatientJourney />
       <TriageSection />
@@ -391,19 +386,6 @@ function Hero() {
             )}
           </div>
 
-          {/* Sub links */}
-          {!isStaff && !isPatient && (
-            <div className="mt-5 flex flex-wrap items-center gap-4 text-sm" style={{ animation: "hero-text-rise 0.9s cubic-bezier(0.16,1,0.3,1) 0.65s both" }}>
-              <Link to="/patient/register" className="text-teal-300 underline-offset-4 transition-colors hover:text-teal-200 hover:underline">
-                Create a free patient account →
-              </Link>
-              <span className="text-white/20">|</span>
-              <Link to="/admin/login" className="text-white/50 underline-offset-4 transition-colors hover:text-white/70 hover:underline">
-                Staff login
-              </Link>
-            </div>
-          )}
-
           {/* Mini stats row */}
           <div className="mt-10 flex flex-wrap items-center gap-6" style={{ animation: "hero-text-rise 0.9s cubic-bezier(0.16,1,0.3,1) 0.8s both" }}>
             {[
@@ -481,34 +463,6 @@ function LiveTicker() {
               <span className={`h-1.5 w-1.5 rounded-full ${dot}`} />
               {label}
             </span>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════
-   TRUST BANNER
-   ═══════════════════════════════════════════════ */
-function TrustBanner() {
-  const badges = [
-    { icon: ShieldCheck, label: "Privacy-first design" },
-    { icon: Wifi, label: "Works offline on LAN" },
-    { icon: Zap, label: "Under 5 sec registration" },
-    { icon: Globe, label: "WhatsApp integrated" },
-    { icon: Shield, label: "Ticket codes only, no names" },
-  ];
-
-  return (
-    <div className="relative border-b border-white/[0.05]">
-      <div className="mx-auto max-w-7xl px-4 py-5 sm:px-6 lg:px-8">
-        <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3">
-          {badges.map(({ icon: Icon, label }) => (
-            <div key={label} className="flex items-center gap-2 text-white/35">
-              <Icon className="h-4 w-4 text-teal-400/50" />
-              <span className="text-xs font-medium">{label}</span>
-            </div>
           ))}
         </div>
       </div>

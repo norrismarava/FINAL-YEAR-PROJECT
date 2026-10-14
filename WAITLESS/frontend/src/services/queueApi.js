@@ -545,6 +545,18 @@ export async function updateAppointmentStatus(id, status, options = {}) {
   return response.appointment;
 }
 
+export async function updateAppointment(id, payload) {
+  const response = await apiRequest(`/api/appointments/${id}`, {
+    method: "PATCH",
+    body: payload,
+  });
+  return response.appointment;
+}
+
+export async function deleteAppointment(id) {
+  return apiRequest(`/api/appointments/${id}`, { method: "DELETE" });
+}
+
 export async function createFollowUpAppointment(payload) {
   const response = await apiRequest("/api/appointments/follow-up", {
     method: "POST",

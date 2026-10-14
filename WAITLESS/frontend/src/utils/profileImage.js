@@ -38,7 +38,7 @@ function canvasToJpeg(canvas) {
   });
 }
 
-export async function prepareProfileImage(file) {
+export function validateProfileImageFile(file) {
   if (!file?.type?.startsWith("image/")) {
     throw new Error("Choose a JPEG, PNG, or WebP image.");
   }
@@ -46,6 +46,10 @@ export async function prepareProfileImage(file) {
   if (file.size > MAX_SOURCE_BYTES) {
     throw new Error("Choose an image smaller than 8 MB.");
   }
+}
+
+export async function prepareProfileImage(file) {
+  validateProfileImageFile(file);
 
   const sourceUrl = URL.createObjectURL(file);
 

@@ -44,11 +44,6 @@ const LANDING_PAGE_META = {
     path: "/admin/queue",
     roles: ["admin", "triage", "clinician", "doctor", "nurse", "reception", "receptionist"],
   },
-  track: {
-    label: "Ticket tracker",
-    path: "/admin/track",
-    roles: ["admin", "triage", "clinician", "doctor", "nurse", "reception", "receptionist"],
-  },
 };
 
 function profileStorageKey(userId) {
@@ -126,7 +121,7 @@ export function getAvailableLandingPages(role) {
 
 export function resolveStaffLandingPath(user) {
   if (!user) {
-    return "/admin/login";
+    return "/login";
   }
 
   const preferredLandingPage = user.workspaceProfile?.preferredLandingPage;
