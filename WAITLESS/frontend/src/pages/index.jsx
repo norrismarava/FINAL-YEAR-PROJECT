@@ -260,19 +260,9 @@ function TypewriterGreeting({ text = "Welcome to WaitLess", speed = 85 }) {
    ROOT COMPONENT
    ═══════════════════════════════════════════════ */
 export default function Home() {
-  const [splash, setSplash] = useState(true);
-  const [splashFading, setSplashFading] = useState(false);
-
-  useEffect(() => {
-    const t1 = setTimeout(() => setSplashFading(true), 4900);
-    const t2 = setTimeout(() => setSplash(false), 5700);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, []);
-
   return (
     <div className="dark bg-[#020814] text-white" style={{ fontFamily: "Inter, Manrope, system-ui, sans-serif" }}>
       <style>{REVEAL_CSS}</style>
-      {splash ? <SplashScreen fading={splashFading} /> : null}
       <Hero />
       <LiveTicker />
       <TrustBanner />
@@ -284,59 +274,6 @@ export default function Home() {
       <StatsSection />
       <TestimonialsSection />
       <CTASection />
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════
-   SPLASH SCREEN
-   ═══════════════════════════════════════════════ */
-function SplashScreen({ fading }) {
-  const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    const start = Date.now();
-    const id = setInterval(() => {
-      setProgress(Math.min(100, ((Date.now() - start) / 4400) * 100));
-    }, 40);
-    return () => clearInterval(id);
-  }, []);
-
-  const pct = Math.round(progress);
-
-  return (
-    <div
-      className={`fixed inset-0 z-[10000] flex flex-col items-center justify-center bg-[#020814] transition-all duration-700 ${
-        fading ? "pointer-events-none opacity-0 scale-105" : "opacity-100 scale-100"
-      }`}
-      aria-hidden="true"
-    >
-      <div className="relative h-24 w-24" style={{ animation: "glow-ring 2s ease-in-out infinite" }}>
-        <div className="absolute inset-0 rounded-full border-[2.5px] border-cyan-200/10 border-r-cyan-400 border-t-teal-400 animate-[spin_1.2s_linear_infinite]" />
-        <div className="absolute inset-0 grid place-items-center">
-          <img src="/waitless-logo-icon.png" alt="WaitLess" className="h-12 w-12 object-contain drop-shadow-[0_0_20px_rgba(20,184,166,0.5)]" />
-        </div>
-      </div>
-      <div className="mt-6 flex flex-col items-center gap-2">
-        <p className="text-lg font-bold tracking-wide text-white" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
-          Wait<span className="text-teal-400">Less</span>
-        </p>
-        <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-cyan-100/60">
-          Hospital Queue OS
-        </p>
-      </div>
-      <div className="mt-8 w-44">
-        <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.24em]">
-          <span className="text-white/35">Loading</span>
-          <span className="text-teal-300">{pct}%</span>
-        </div>
-        <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/5">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-teal-500 via-teal-400 to-cyan-400 transition-[width] duration-100 ease-linear"
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-      </div>
     </div>
   );
 }

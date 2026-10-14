@@ -5,7 +5,6 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { AppLayout, NotFoundPage } from "@/layouts/AppLayout";
 import Home from "@/pages/index";
 import { I18nProvider } from "@/i18n/I18nProvider";
-import { LoadingPanel } from "@/components/ui/system-loader";
 
 const DashboardPage = lazy(() => import("@/pages/dashboard"));
 const AuditTrailPage = lazy(() => import("@/pages/audit-trail"));
@@ -56,7 +55,7 @@ const FollowUpsPage = () => <StaffModulesExtra.FollowUpsPage />;
 export default function App() {
   return (
     <I18nProvider>
-    <Suspense fallback={<LoadingPanel />}>
+    <Suspense fallback={null}>
     <Routes>
       <Route element={<AppLayout />}>
         {/* Public routes */}
