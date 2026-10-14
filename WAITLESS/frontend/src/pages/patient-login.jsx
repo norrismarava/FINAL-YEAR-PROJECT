@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { AlertCircle, ArrowRight, AtSign, Eye, EyeOff, Lock, Search, LoaderCircle, ShieldCheck } from "lucide-react";
+import { AlertCircle, ArrowRight, AtSign, Eye, EyeOff, Lock, LoaderCircle } from "lucide-react";
 
 import { usePatientAuth } from "@/auth/PatientAuthProvider";
 import { PatientAuthShell } from "@/components/PatientAuthShell";
@@ -59,22 +59,6 @@ export default function PatientLoginPage() {
         <>
           <Link to="/patient/register" className="font-semibold text-teal-300 hover:text-teal-200">
             {t("login.newUser")}
-          </Link>
-          <span className="text-white/20">|</span>
-          <Link
-            to="/track"
-            className="inline-flex items-center gap-1 rounded-full border border-white/15 px-3 py-1 font-medium text-slate-300 transition-colors hover:border-teal-400/50 hover:text-teal-300"
-          >
-            <Search className="h-3 w-3" />
-            {t("login.trackTicket")}
-          </Link>
-          <span className="text-white/20">|</span>
-          <Link
-            to="/admin/login"
-            className="inline-flex items-center gap-1 rounded-full border border-white/15 px-3 py-1 font-medium text-slate-300 transition-colors hover:border-teal-400/50 hover:text-teal-300"
-          >
-            <ShieldCheck className="h-3 w-3" />
-            Staff sign in
           </Link>
         </>
       }

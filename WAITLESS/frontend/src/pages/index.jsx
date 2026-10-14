@@ -390,7 +390,7 @@ function Hero() {
           {/* Headline */}
           <h1
             className="mt-4 max-w-xl text-balance text-4xl font-extrabold leading-[1.08] tracking-tight sm:mt-6 sm:text-5xl lg:text-6xl"
-            style={{ fontFamily: "Manrope, system-ui, sans-serif", animation: "hero-text-rise 0.9s cubic-bezier(0.16,1,0.3,1) 0.2s both" }}
+            style={{ fontFamily: "'Open Sans', system-ui, sans-serif", animation: "hero-text-rise 0.9s cubic-bezier(0.16,1,0.3,1) 0.2s both" }}
           >
             Skip the queue.
             <br />
