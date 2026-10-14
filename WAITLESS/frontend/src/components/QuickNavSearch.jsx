@@ -99,7 +99,8 @@ export default function QuickNavSearch() {
 
   return (
     <div ref={wrapRef} className="relative hidden w-44 md:block lg:w-56 xl:w-72">
-      <div className="flex items-center gap-1 rounded-full border border-white/15 bg-white/[0.07] p-1 pl-4 backdrop-blur transition-colors focus-within:border-teal-300/50 focus-within:bg-white/[0.1]">
+      <div className="group flex h-11 items-center gap-2 rounded-full border border-white/12 bg-[linear-gradient(180deg,rgba(255,255,255,0.09),rgba(255,255,255,0.045))] p-1 pl-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_14px_30px_-18px_rgba(2,8,20,0.85)] backdrop-blur-xl transition-all duration-300 focus-within:border-teal-300/45 focus-within:bg-white/[0.09] focus-within:shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_0_0_4px_rgba(45,212,191,0.14),0_18px_38px_-18px_rgba(13,148,136,0.55)]">
+        <Search className="h-4 w-4 shrink-0 text-teal-300/70 transition-colors duration-300 group-focus-within:text-teal-200" />
         <input
           ref={inputRef}
           type="text"
@@ -109,7 +110,7 @@ export default function QuickNavSearch() {
           onChange={(e) => { setQuery(e.target.value); setActive(0); openDropdown(); }}
           onFocus={openDropdown}
           onKeyDown={onKeyDown}
-          className="w-full bg-transparent px-2.5 py-1.5 text-center text-xs font-medium text-white placeholder:text-white/35 focus:outline-none"
+          className="w-full bg-transparent py-2 text-[13px] font-medium text-white placeholder:text-white/35 focus:outline-none"
         />
         <button
           type="button"
@@ -117,7 +118,7 @@ export default function QuickNavSearch() {
           onClick={() => (results.length ? go(results[Math.min(active, results.length - 1)].to) : openDropdown())}
           className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[linear-gradient(135deg,#0f766e,#14b8a6)] text-white shadow-[0_6px_16px_-6px_rgba(20,184,166,0.6),inset_0_1px_1px_rgba(255,255,255,0.2)] transition-transform hover:scale-105 active:scale-95"
         >
-          <Search className="h-4 w-4" />
+          <ArrowRight className="h-4 w-4" />
         </button>
       </div>
       {dropdown}
