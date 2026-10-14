@@ -173,9 +173,11 @@ const STAFF_WORKSPACE_ITEMS = [
 ];
 
 const AUTH_ROUTE_PREFIXES = [
+  "/login",
   "/admin/login",
   "/admin/forgot-password",
   "/admin/reset-password",
+  "/admin/staff-signup",
   "/patient/login",
   "/patient/register",
   "/patient/forgot-password",
