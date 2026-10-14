@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Navigation, Search } from "lucide-react";
+import { ArrowRight, Search } from "lucide-react";
 
 const DESTINATIONS = [
   { label: "Check in and get a queue ticket", to: "/self-register", keywords: "check in ticket queue register walk in book spot" },
@@ -100,7 +100,6 @@ export default function QuickNavSearch() {
   return (
     <div ref={wrapRef} className="relative hidden w-44 md:block lg:w-56 xl:w-72">
       <div className="flex items-center gap-1 rounded-full border border-white/15 bg-white/[0.07] p-1 pl-4 backdrop-blur transition-colors focus-within:border-teal-300/50 focus-within:bg-white/[0.1]">
-        <Navigation className="h-3.5 w-3.5 shrink-0 -rotate-45 text-teal-300/80" />
         <input
           ref={inputRef}
           type="text"

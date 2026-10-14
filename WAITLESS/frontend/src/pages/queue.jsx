@@ -12,7 +12,6 @@ import {
   Users,
   Volume2,
   VolumeX,
-  Wifi,
 } from "lucide-react";
 
 import { LoadingPanel } from "@/components/ui/system-loader";
@@ -63,35 +62,6 @@ const HEALTH_TIPS = [
     icon: "🏃",
   },
 ];
-
-/* ── Live-connection status badge config ────────────────────── */
-const LIVE_STATUS_META = {
-  connected: {
-    label: "Live sync",
-    className: "bg-priority-green/20 text-priority-green",
-    dot: true,
-  },
-  connecting: {
-    label: "Connecting",
-    className: "bg-primary-soft text-primary",
-    dot: false,
-  },
-  reconnecting: {
-    label: "Reconnecting",
-    className: "bg-muted text-muted-foreground",
-    dot: false,
-  },
-  polling: {
-    label: "Polling fallback",
-    className: "bg-muted text-muted-foreground",
-    dot: false,
-  },
-  closed: {
-    label: "Offline",
-    className: "bg-muted text-muted-foreground",
-    dot: false,
-  },
-};
 
 /* ── Priority → CSS pulse class mapping ─────────────────────── */
 const PRIORITY_GLOW_CLASS = {
@@ -170,8 +140,6 @@ export default function QueuePage() {
   const serving = queueQuery.data?.nowServing ?? [];
   const waiting = queueQuery.data?.waiting ?? [];
   const missed = queueQuery.data?.missed ?? [];
-  const liveMeta =
-    LIVE_STATUS_META[realtime.status] ?? LIVE_STATUS_META.connecting;
 
   return (
     <section className="relative isolate min-h-screen overflow-hidden px-4 py-6 text-white sm:px-6 lg:px-8">
@@ -192,19 +160,6 @@ export default function QueuePage() {
       <div className="absolute inset-0 -z-10 bg-[#04141f] lg:hidden" />
 
       <div className="relative mx-auto flex w-full max-w-7xl flex-col pb-8">
-        {/* Logo header */}
-        <div className="mb-6 flex items-center justify-center gap-3">
-          <img
-            src={waitlessLogoIcon}
-            alt="WaitLess"
-            className="h-11 w-11 rounded-lg object-contain"
-          />
-          <div className="text-center">
-            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-teal-400">Queue board</div>
-            <div className="text-sm font-medium text-white/70">Smarter Queues, Better Care</div>
-          </div>
-        </div>
-
         {/* Dark glass card wrapper */}
         <div className="relative overflow-hidden rounded-2xl bg-[#04141f]/60 shadow-[0_32px_80px_-28px_rgba(2,8,20,0.45)] backdrop-blur-2xl">
           {/* Circulating gradient ribbon */}
@@ -215,6 +170,14 @@ export default function QueuePage() {
         {/* ─── HERO HEADER ──────────────────────────────── */}
         <header className="track-portal-hero relative overflow-hidden bg-[linear-gradient(135deg,rgba(4,20,31,0.82)_0%,rgba(6,42,53,0.72)_48%,rgba(10,31,46,0.78)_100%)] p-6 text-white sm:p-8">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(45,212,191,0.10),transparent_30%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.08),transparent_32%)]" />
+          <div className="relative mb-6 text-center">
+            <img
+              src={waitlessLogoIcon}
+              alt="WaitLess"
+              className="mx-auto h-12 w-12 rounded-xl object-contain drop-shadow-[0_0_14px_rgba(45,212,191,0.4)]"
+            />
+            <div className="mt-2 text-[10px] font-bold uppercase tracking-[0.22em] text-teal-400">Queue board</div>
+          </div>
           <div className="relative grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
             {/* Left column — title & badges */}
             <div>
@@ -240,8 +203,8 @@ export default function QueuePage() {
               </div>
             </div>
 
-            {/* Right column — dark status panel */}
-            <div className="rounded-[1.25rem] border border-white/10 bg-[linear-gradient(135deg,rgba(4,20,31,0.88),rgba(6,42,53,0.78)_54%,rgba(10,31,46,0.84))] p-5 sm:p-6">
+            {/* Right column — queue status */}
+            <div className="relative">
               {/* ECG heartbeat decoration */}
               <div className="queue-ecg-line" />
 
@@ -269,17 +232,7 @@ export default function QueuePage() {
                   </div>
                 </div>
 
-                {/* Connection badge with live dot */}
-                <span
-                  className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${liveMeta.className}`}
-                >
-                  {liveMeta.dot ? (
-                    <span className="queue-live-dot" />
-                  ) : (
-                    <Wifi className="h-3.5 w-3.5" />
-                  )}
-                  {liveMeta.label}
-                </span>
+
               </div>
 
               {/* Animated stat cards */}
@@ -351,10 +304,6 @@ export default function QueuePage() {
               <h2 className="mt-2 font-display text-2xl font-bold tracking-tight text-white sm:text-3xl">
                 Current service windows
               </h2>
-            </div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-slate-300">
-              <Clock3 className="h-3.5 w-3.5" />
-              Live service feed
             </div>
           </div>
 
