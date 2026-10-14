@@ -5,7 +5,6 @@ import {
   ArrowRight,
   Check,
   CheckCircle2,
-  ClipboardList,
   Clock3,
   Copy,
   House,
@@ -184,18 +183,11 @@ export default function SelfRegisterPage() {
           {/* ambient glow behind the card */}
           <div className="pointer-events-none absolute -inset-x-10 top-24 -z-10 h-96 rounded-full bg-teal-400/[0.08] blur-[80px]" />
 
-          {/* Logo header */}
-          <div className="self-reg-enter mb-4 flex items-center justify-center gap-3">
-            <img src={waitlessLogoIcon} alt="WaitLess" className="h-9 w-9 rounded-lg object-contain drop-shadow-[0_0_14px_rgba(45,212,191,0.4)]" />
-            <div className="text-center">
-              <div className="bg-gradient-to-r from-teal-300 to-cyan-300 bg-clip-text text-[10px] font-black uppercase tracking-[0.26em] text-transparent">Self-service</div>
-              <div className="text-xs font-medium text-white/70">Smarter Queues, Better Care</div>
-            </div>
-          </div>
-
           <div className="self-reg-success-card relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#04141f]/60 shadow-[0_32px_80px_-28px_rgba(2,8,20,0.45)] ring-1 ring-inset ring-teal-400/[0.08] backdrop-blur-2xl">
             <div className="relative z-10 p-6 text-center sm:p-8">
-              <div className="self-reg-check-badge mx-auto grid h-16 w-16 place-items-center rounded-full bg-emerald-500/12 text-emerald-400">
+              <img src={waitlessLogoIcon} alt="WaitLess" className="mx-auto h-12 w-12 rounded-xl object-contain drop-shadow-[0_0_14px_rgba(45,212,191,0.4)]" />
+              <div className="mt-2 text-[0.65rem] font-bold uppercase tracking-[0.22em] text-teal-300">Patient self-service</div>
+              <div className="self-reg-check-badge mx-auto mt-4 grid h-16 w-16 place-items-center rounded-full bg-emerald-500/12 text-emerald-400">
                 <CheckCircle2 className="h-8 w-8" />
               </div>
 
@@ -312,30 +304,15 @@ export default function SelfRegisterPage() {
         {/* ambient glow behind the card */}
         <div className="pointer-events-none absolute -inset-x-10 top-24 -z-10 h-96 rounded-full bg-teal-400/[0.08] blur-[80px]" />
 
-        {/* Logo header */}
-        <div className="self-reg-enter mb-4 flex items-center justify-center gap-3">
-          <img src={waitlessLogoIcon} alt="WaitLess" className="h-9 w-9 rounded-lg object-contain drop-shadow-[0_0_14px_rgba(45,212,191,0.4)]" />
-          <div className="text-center">
-            <div className="bg-gradient-to-r from-teal-300 to-cyan-300 bg-clip-text text-[10px] font-black uppercase tracking-[0.26em] text-transparent">Self-service</div>
-            <div className="text-xs font-medium text-white/70">Smarter Queues, Better Care</div>
-          </div>
-        </div>
-
         <div className="self-reg-enter relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#04141f]/60 shadow-[0_32px_80px_-28px_rgba(2,8,20,0.45)] ring-1 ring-inset ring-teal-400/[0.08] backdrop-blur-2xl" style={{ animationDelay: "0.12s" }}>
           <div className="relative z-10">
             {/* Header */}
-            <div className="border-b border-white/10 bg-[linear-gradient(135deg,rgba(4,20,31,0.82)_0%,rgba(6,42,53,0.72)_48%,rgba(10,31,46,0.78)_100%)] px-5 py-4 sm:px-6">
-              <div className="flex items-center gap-3">
-                <span className="grid h-9 w-9 place-items-center rounded-xl bg-teal-500/12 text-teal-300">
-                  <ClipboardList className="h-4 w-4" />
-                </span>
-                <div>
-                  <div className="text-[0.65rem] font-bold uppercase tracking-[0.22em] text-teal-300">Patient self-service</div>
-                  <h1 className="mt-0.5 font-display text-xl font-bold tracking-tight text-white">
-                    Book your spot in the queue
-                  </h1>
-                </div>
-              </div>
+            <div className="border-b border-white/10 bg-[linear-gradient(135deg,rgba(4,20,31,0.82)_0%,rgba(6,42,53,0.72)_48%,rgba(10,31,46,0.78)_100%)] px-5 py-4 text-center sm:px-6">
+              <img src={waitlessLogoIcon} alt="WaitLess" className="mx-auto h-12 w-12 rounded-xl object-contain drop-shadow-[0_0_14px_rgba(45,212,191,0.4)]" />
+              <div className="mt-2 text-[0.65rem] font-bold uppercase tracking-[0.22em] text-teal-300">Patient self-service</div>
+              <h1 className="mt-1.5 font-display text-xl font-bold tracking-tight text-white">
+                Book your spot in the queue
+              </h1>
               <p className="mt-2.5 text-[13px] leading-5 text-slate-400">
                 Fill in your details to get a ticket number. You'll see your live
                 queue position and receive updates on your phone.

@@ -188,28 +188,21 @@ export default function TrackPage() {
       ) : null}
 
       <div className="relative mx-auto flex w-full max-w-7xl flex-col pb-8">
-        {/* Logo header */}
-        <div className="mb-6 flex items-center justify-center gap-3">
-          <img
-            src={waitlessLogoIcon}
-            alt="WaitLess"
-            className="h-11 w-11 rounded-lg object-contain"
-          />
-          <div className="text-center">
-            <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-teal-400">User portal</div>
-            <div className="text-sm font-medium text-white/70">Smarter Queues, Better Care</div>
-          </div>
-        </div>
-
-        <div className="relative overflow-hidden rounded-2xl bg-[#04141f]/80 shadow-[0_32px_80px_-28px_rgba(2,8,20,0.50)] backdrop-blur-2xl">
+        <div className="relative overflow-hidden rounded-2xl bg-[#04141f]/80 bg-[linear-gradient(135deg,rgba(4,20,31,0.82)_0%,rgba(6,42,53,0.72)_48%,rgba(10,31,46,0.78)_100%)] shadow-[0_32px_80px_-28px_rgba(2,8,20,0.50)] backdrop-blur-2xl">
           {/* Circulating gradient ribbon */}
           
 
           {/* Content above ribbon */}
           <div className="relative z-10">
-          <div className="track-portal-hero relative overflow-hidden bg-[linear-gradient(135deg,rgba(4,20,31,0.82)_0%,rgba(6,42,53,0.72)_48%,rgba(10,31,46,0.78)_100%)] text-white">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(45,212,191,0.10),transparent_30%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.08),transparent_32%)]" />
-            <div className="track-portal-wave pointer-events-none absolute inset-x-0 bottom-0 h-24 opacity-30" />
+          <div className="track-portal-hero relative overflow-hidden text-white">
+            <div className="pt-6 text-center">
+              <img
+                src={waitlessLogoIcon}
+                alt="WaitLess"
+                className="mx-auto h-12 w-12 rounded-xl object-contain drop-shadow-[0_0_14px_rgba(45,212,191,0.4)]"
+              />
+              <div className="mt-2 text-[10px] font-bold uppercase tracking-[0.22em] text-teal-400">User portal</div>
+            </div>
 
             <PortalLiveBar
               isRefreshing={isRefreshing}
@@ -233,7 +226,7 @@ export default function TrackPage() {
             </div>
           </div>
 
-          <div className="bg-[#04141f]/60 backdrop-blur-sm">
+          <div>
             {portalData ? (
               <JourneyProgressStrip ticket={portalData.ticket} queue={portalData.queue} />
             ) : ticketCode && trackingQuery.isLoading ? (
@@ -440,7 +433,7 @@ function PortalHero({
 
 function LookupCard({ ticketInput, setTicketInput, onSubmit, snapshot, selectedDepartment, setSelectedDepartment, departmentSummary }) {
   return (
-    <aside className="rounded-[1.5rem] border border-teal-200/14 bg-[linear-gradient(150deg,rgba(255,255,255,0.12),rgba(255,255,255,0.055))] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_24px_60px_-36px_rgba(2,6,23,0.8)] backdrop-blur-xl">
+    <div className="border-t border-white/10 pt-6 xl:border-0 xl:pt-0">
       <div className="text-[0.8rem] font-semibold uppercase tracking-[0.34em] text-slate-400">
         Ticket lookup
       </div>
@@ -538,7 +531,7 @@ function LookupCard({ ticketInput, setTicketInput, onSubmit, snapshot, selectedD
           ))}
         </div>
       </div>
-    </aside>
+    </div>
   );
 }
 
@@ -703,7 +696,7 @@ function ProgressStepIcon({ stepKey, state, index }) {
 
 function InlineHintStrip() {
   return (
-    <div className="mx-5 my-4 flex items-start gap-3 rounded-xl border border-teal-400/50 bg-[#04141f] px-4 py-4 text-sm font-medium text-teal-200 shadow-[0_8px_24px_-12px_rgba(13,148,136,0.5)] sm:mx-8 lg:mx-10">
+    <div className="flex items-start gap-3 px-5 py-6 text-sm font-medium text-teal-200 sm:px-8 lg:px-10">
       <Info className="mt-0.5 h-4 w-4 shrink-0 text-teal-400" />
       <span>
         Enter a ticket code above to open the user portal with live queue position,
