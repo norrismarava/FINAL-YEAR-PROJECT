@@ -97,8 +97,19 @@ export function useApiAction(action, { onSuccess } = {}) {
       });
   }, []);
 
+  const reset = useCallback(() => {
+    setState({
+      data: null,
+      error: null,
+      isError: false,
+      isPending: false,
+      variables: null,
+    });
+  }, []);
+
   return {
     ...state,
     mutate,
+    reset,
   };
 }

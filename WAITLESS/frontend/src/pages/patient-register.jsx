@@ -111,7 +111,7 @@ export default function PatientRegisterPage() {
       maxWidth="max-w-lg"
       footer={
         <>
-          <Link to="/patient/login" className="font-semibold text-teal-300 hover:text-teal-200">
+          <Link to="/login" className="font-semibold text-teal-300 hover:text-teal-200">
             {t("register.haveAccount")}
           </Link>
           <span className="text-white/20">|</span>

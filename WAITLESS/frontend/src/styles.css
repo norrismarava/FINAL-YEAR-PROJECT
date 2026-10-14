@@ -351,6 +351,32 @@
   }
 }
 
+@layer components {
+  .input-base {
+    width: 100%;
+    border: 1px solid var(--color-input);
+    background: color-mix(in oklab, white 72%, var(--color-background));
+    border-radius: calc(var(--radius) + 0.1rem);
+    padding: 0.8rem 0.95rem;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    outline: none;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease,
+      background-color 0.15s ease,
+      transform 0.15s ease;
+  }
+  .input-base:hover {
+    border-color: color-mix(in oklab, var(--primary) 18%, var(--color-input));
+  }
+  .input-base:focus {
+    border-color: var(--color-ring);
+    box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-ring) 16%, transparent);
+    background: var(--color-card);
+  }
+}
+
 @layer utilities {
   .gradient-hero {
     background:
@@ -432,29 +458,6 @@
     letter-spacing: 0.24em;
     text-transform: uppercase;
     color: var(--color-muted-foreground);
-  }
-  .input-base {
-    width: 100%;
-    border: 1px solid var(--color-input);
-    background: color-mix(in oklab, white 72%, var(--color-background));
-    border-radius: calc(var(--radius) + 0.1rem);
-    padding: 0.8rem 0.95rem;
-    font-size: 0.95rem;
-    line-height: 1.5;
-    outline: none;
-    transition:
-      border-color 0.15s ease,
-      box-shadow 0.15s ease,
-      background-color 0.15s ease,
-      transform 0.15s ease;
-  }
-  .input-base:hover {
-    border-color: color-mix(in oklab, var(--primary) 18%, var(--color-input));
-  }
-  .input-base:focus {
-    border-color: var(--color-ring);
-    box-shadow: 0 0 0 4px color-mix(in oklab, var(--color-ring) 16%, transparent);
-    background: var(--color-card);
   }
   .text-balance {
     text-wrap: balance;
@@ -1428,40 +1431,112 @@
   letter-spacing: 0.26em;
 }
 
+/* Consistent dark-shape inputs across the staff workspace.
+   Excludes checkbox/radio/range/file/hidden so they keep native affordances. */
 .staff-dashboard .input-base,
 .staff-dashboard select,
-.staff-dashboard input,
+.staff-dashboard textarea,
+.staff-dashboard input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]),
 .dashboard-workspace-shell .input-base,
 .dashboard-workspace-shell select,
-.dashboard-workspace-shell input {
-  border-color: #273650;
+.dashboard-workspace-shell textarea,
+.dashboard-workspace-shell input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]) {
+  border: 1px solid #273650;
+  border-radius: 0.65rem;
   background: #141e34;
   color: #f7f9ff;
+  caret-color: #7cc4ff;
+  padding-block: 0.45rem;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
 }
 
 .staff-dashboard input::placeholder,
-.dashboard-workspace-shell input::placeholder {
+.staff-dashboard textarea::placeholder,
+.dashboard-workspace-shell input::placeholder,
+.dashboard-workspace-shell textarea::placeholder {
   color: #6680a8;
 }
 
 .staff-dashboard .input-base:hover,
 .staff-dashboard select:hover,
-.staff-dashboard input:hover,
+.staff-dashboard textarea:hover,
+.staff-dashboard input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):hover,
 .dashboard-workspace-shell .input-base:hover,
 .dashboard-workspace-shell select:hover,
-.dashboard-workspace-shell input:hover {
-  border-color: #365178;
+.dashboard-workspace-shell textarea:hover,
+.dashboard-workspace-shell input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):hover {
+  border-color: #3a5680;
 }
 
 .staff-dashboard .input-base:focus,
 .staff-dashboard select:focus,
-.staff-dashboard input:focus,
+.staff-dashboard textarea:focus,
+.staff-dashboard input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):focus,
 .dashboard-workspace-shell .input-base:focus,
 .dashboard-workspace-shell select:focus,
-.dashboard-workspace-shell input:focus {
+.dashboard-workspace-shell textarea:focus,
+.dashboard-workspace-shell input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]):focus {
   border-color: #338cff;
   background: #172239;
-  box-shadow: 0 0 0 3px rgba(51, 140, 255, 0.13);
+  box-shadow: 0 0 0 3px rgba(51, 140, 255, 0.16);
+}
+
+/* Themed chevron for every native select in the workspace */
+.staff-dashboard select,
+.dashboard-workspace-shell select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.1rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%237a92c0' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.7rem center;
+}
+
+/* Calendar / clock picker glyphs read better slightly muted */
+.staff-dashboard input[type="date"]::-webkit-calendar-picker-indicator,
+.staff-dashboard input[type="time"]::-webkit-calendar-picker-indicator,
+.staff-dashboard input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+.dashboard-workspace-shell input[type="date"]::-webkit-calendar-picker-indicator,
+.dashboard-workspace-shell input[type="time"]::-webkit-calendar-picker-indicator,
+.dashboard-workspace-shell input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  opacity: 0.65;
+  cursor: pointer;
+}
+
+/* Checkbox / radio / range keep their native look, tinted to the theme */
+.staff-dashboard input[type="checkbox"],
+.staff-dashboard input[type="radio"],
+.staff-dashboard input[type="range"],
+.dashboard-workspace-shell input[type="checkbox"],
+.dashboard-workspace-shell input[type="radio"],
+.dashboard-workspace-shell input[type="range"] {
+  accent-color: #338cff;
+}
+
+/* Disabled and read-only states */
+.staff-dashboard .input-base:disabled,
+.staff-dashboard select:disabled,
+.staff-dashboard textarea:disabled,
+.staff-dashboard input:disabled,
+.dashboard-workspace-shell .input-base:disabled,
+.dashboard-workspace-shell select:disabled,
+.dashboard-workspace-shell textarea:disabled,
+.dashboard-workspace-shell input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.staff-dashboard .input-base[readonly],
+.staff-dashboard input[readonly],
+.staff-dashboard textarea[readonly],
+.dashboard-workspace-shell .input-base[readonly],
+.dashboard-workspace-shell input[readonly],
+.dashboard-workspace-shell textarea[readonly] {
+  background: #0f1830;
+  cursor: default;
 }
 
 .staff-dashboard .gradient-primary,
@@ -2125,4 +2200,16 @@
   .wl-loader__check {
     animation: none;
   }
+}
+
+/* Manual reduced-motion preference (Settings → Device preferences).
+   Toggled in real time by QueueRealtimeProvider on <html class="reduced-motion">. */
+.reduced-motion,
+.reduced-motion *,
+.reduced-motion *::before,
+.reduced-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  scroll-behavior: auto !important;
+  transition-duration: 0.01ms !important;
 }

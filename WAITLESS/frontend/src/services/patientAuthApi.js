@@ -41,6 +41,13 @@ export async function fetchPatientProfileCard() {
   return apiRequest("/api/patient/profile-card");
 }
 
+export async function uploadPatientAvatar(avatarBase64) {
+  return apiRequest("/api/patient/profile/avatar", {
+    method: "POST",
+    body: { avatarBase64 },
+  });
+}
+
 export async function updatePatientProfile(payload) {
   return apiRequest("/api/patient/profile", {
     method: "PATCH",

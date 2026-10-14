@@ -112,6 +112,7 @@ export async function updatePatientUserRecord(id, patch) {
   if (typeof patch.nationalId === "string") users[idx].national_id = patch.nationalId.trim() || null;
   if (typeof patch.dob === "string") users[idx].dob = patch.dob || null;
   if (typeof patch.gender === "string") users[idx].gender = patch.gender;
+  if (typeof patch.avatarUrl === "string") users[idx].avatar_url = patch.avatarUrl;
 
   savePatients(users);
   return users[idx];

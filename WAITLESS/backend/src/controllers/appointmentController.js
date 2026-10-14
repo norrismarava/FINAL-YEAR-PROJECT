@@ -3,7 +3,9 @@ import {
   createFollowUpAppointment,
   getAppointments,
   getAppointmentById,
+  updateAppointment,
   updateAppointmentStatus,
+  deleteAppointment,
   getAppointmentSummary,
   getServiceCategories,
   getTimeSlots,
@@ -150,4 +152,20 @@ export async function patientAppointmentCancelController({ params, patientUser }
     return { status: 400, body: { message: result.error } };
   }
   return { status: 200, body: { appointment: result.appointment } };
+}
+
+export async function appointmentUpdateController({ params, body, staff }) {
+  const result = await updateAppointment(params.id, body, staff);
+  if (!result.ok) {
+    return { status: 400, body: { message: result.error } };
+  }
+  return { status: 200, body: { appointment: result.appointment } };
+}
+
+export async function appointmentDeleteController({ params }) {
+  const result = await deleteAppointment(params.id);
+  if (!result.ok) {
+    return { status: 404, body: { message: result.error } };
+  }
+  return { status: 200, body: { ok: true, appointment: result.appointment } };
 }

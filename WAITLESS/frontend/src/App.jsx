@@ -9,7 +9,6 @@ import { I18nProvider } from "@/i18n/I18nProvider";
 const DashboardPage = lazy(() => import("@/pages/dashboard"));
 const AuditTrailPage = lazy(() => import("@/pages/audit-trail"));
 const ForgotPasswordPage = lazy(() => import("@/pages/forgot-password"));
-const LoginPage = lazy(() => import("@/pages/login"));
 const LoginChooserPage = lazy(() => import("@/pages/login-chooser"));
 const ProfilePage = lazy(() => import("@/pages/profile"));
 const QueuePage = lazy(() => import("@/pages/queue"));
@@ -17,7 +16,6 @@ const RegisterPage = lazy(() => import("@/pages/register"));
 const SelfRegisterPage = lazy(() => import("@/pages/self-register"));
 const KioskPage = lazy(() => import("@/pages/kiosk"));
 const PatientRegisterPage = lazy(() => import("@/pages/patient-register"));
-const PatientLoginPage = lazy(() => import("@/pages/patient-login"));
 const PatientForgotPasswordPage = lazy(() => import("@/pages/patient-forgot-password"));
 const PatientResetPasswordPage = lazy(() => import("@/pages/patient-reset-password"));
 const PatientDashboardPage = lazy(() => import("@/pages/patient-dashboard"));
@@ -34,23 +32,28 @@ const TrackPage = lazy(() => import("@/pages/track"));
 const TriagePage = lazy(() => import("@/pages/triage"));
 const DepartmentBoardPage = lazy(() => import("@/pages/department-board"));
 
-const StaffModules = lazy(() => import("@/pages/staff-modules"));
-const StaffModulesExtra = lazy(() => import("@/pages/staff-modules-extra"));
-const AdminDashboardPage = () => <StaffModules.AdminDashboardPage />;
-const AppointmentsPage = () => <StaffModules.AppointmentsPage />;
-const DepartmentsPage = () => <StaffModules.DepartmentsPage />;
-const LabPage = () => <StaffModules.LabPage />;
-const NotificationsPage = () => <StaffModules.NotificationsPage />;
-const OIClinicPage = () => <StaffModules.OIClinicPage />;
-const PharmacyPage = () => <StaffModules.PharmacyPage />;
-const QueueAnalyticsPage = () => <StaffModules.QueueAnalyticsPage />;
-const ReportsPage = () => <StaffModules.ReportsPage />;
-const StaffQueueBoardPage = () => <StaffModules.StaffQueueBoardPage />;
-const HospitalsPage = () => <StaffModulesExtra.HospitalsPage />;
-const AIInsightsPage = () => <StaffModulesExtra.AIInsightsPage />;
-const SyncPage = () => <StaffModulesExtra.SyncPage />;
-const AppointmentRemindersPage = () => <StaffModulesExtra.AppointmentRemindersPage />;
-const FollowUpsPage = () => <StaffModulesExtra.FollowUpsPage />;
+const AppointmentsPage = lazy(() => import("@/pages/appointments"));
+
+const lazyNamed = (loader, exportName) =>
+  lazy(() => loader().then((module) => ({ default: module[exportName] })));
+const staffModule = (exportName) => lazyNamed(() => import("@/pages/staff-modules"), exportName);
+const staffModuleExtra = (exportName) =>
+  lazyNamed(() => import("@/pages/staff-modules-extra"), exportName);
+
+const AdminDashboardPage = staffModule("AdminDashboardPage");
+const DepartmentsPage = staffModule("DepartmentsPage");
+const LabPage = staffModule("LabPage");
+const NotificationsPage = staffModule("NotificationsPage");
+const OIClinicPage = staffModule("OIClinicPage");
+const PharmacyPage = staffModule("PharmacyPage");
+const QueueAnalyticsPage = staffModule("QueueAnalyticsPage");
+const ReportsPage = staffModule("ReportsPage");
+const StaffQueueBoardPage = staffModule("StaffQueueBoardPage");
+const HospitalsPage = staffModuleExtra("HospitalsPage");
+const AIInsightsPage = staffModuleExtra("AIInsightsPage");
+const SyncPage = staffModuleExtra("SyncPage");
+const AppointmentRemindersPage = staffModuleExtra("AppointmentRemindersPage");
+const FollowUpsPage = staffModuleExtra("FollowUpsPage");
 
 export default function App() {
   return (
@@ -66,7 +69,7 @@ export default function App() {
         <Route path="self-register" element={<SelfRegisterPage />} />
         <Route path="kiosk" element={<KioskPage />} />
         <Route path="patient/register" element={<PatientRegisterPage />} />
-        <Route path="patient/login" element={<PatientLoginPage />} />
+        <Route path="patient/login" element={<Navigate to="/login" replace />} />
         <Route path="patient/forgot-password" element={<PatientForgotPasswordPage />} />
         <Route path="patient/reset-password" element={<PatientResetPasswordPage />} />
         <Route path="patient" element={<PatientPortalLayout />}>
@@ -104,14 +107,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="track"
-            element={
-              <ProtectedRoute>
-                <TrackPage />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="track" element={<Navigate to="/admin/queue" replace />} />
           <Route
             path="queue"
             element={
@@ -264,7 +260,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="login" element={<LoginPage />} />
+          <Route path="login" element={<Navigate to="/login" replace />} />
           <Route path="forgot-password" element={<ForgotPasswordPage />} />
           <Route path="reset-password" element={<ResetPasswordPage />} />
           <Route path="staff-register" element={<Navigate to="/admin/staff" replace />} />

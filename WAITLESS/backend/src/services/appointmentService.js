@@ -336,3 +336,96 @@ export async function markReminderSent(appointmentId) {
   await saveAppointments(appointments);
   return true;
 }
+
+export async function updateAppointment(id, data, staff) {
+  const appointments = await loadAppointments();
+  const appointment = appointments.find((a) => a.id === id);
+  if (!appointment) {
+    return { ok: false, error: "Appointment not found" };
+  }
+  if (appointment.status === "cancelled") {
+    return { ok: false, error: "Cannot edit a cancelled appointment" };
+  }
+  if (appointment.status === "completed") {
+    return { ok: false, error: "Cannot edit a completed appointment" };
+  }
+
+  if (data?.patientName !== undefined) {
+    if (!data.patientName.trim()) {
+      return { ok: false, error: "Patient name is required" };
+    }
+    appointment.patientName = data.patientName.trim();
+  }
+  if (data?.patientContact !== undefined) {
+    appointment.patientContact = data.patientContact.trim();
+  }
+  if (data?.patientAge !== undefined) {
+    appointment.patientAge = data.patientAge ?? null;
+  }
+  if (data?.patientGender !== undefined) {
+    appointment.patientGender = data.patientGender;
+  }
+  if (data?.notes !== undefined) {
+    appointment.notes = data.notes.trim();
+  }
+
+  let serviceChanged = false;
+  if (data?.serviceCategory !== undefined && data.serviceCategory !== appointment.serviceCategory) {
+    const service = SERVICE_CATEGORIES.find((s) => s.id === data.serviceCategory);
+    if (!service) {
+      return { ok: false, error: "Invalid service category" };
+    }
+    appointment.serviceCategory = service.id;
+    appointment.serviceLabel = service.label;
+    appointment.department = service.department;
+    appointment.durationMin = service.defaultDurationMin;
+    serviceChanged = true;
+  }
+
+  if (data?.date !== undefined && data.date !== appointment.date) {
+    if (!validateDate(data.date)) {
+      return { ok: false, error: "Valid appointment date is required" };
+    }
+    appointment.date = data.date;
+  }
+
+  if (data?.timeSlot !== undefined && data.timeSlot !== appointment.timeSlot) {
+    if (!validateTimeSlot(data.timeSlot)) {
+      return { ok: false, error: "Valid time slot is required" };
+    }
+    appointment.timeSlot = data.timeSlot;
+  }
+
+  // Check for slot conflicts if date, time, or service changed
+  if (serviceChanged || data?.date !== undefined || data?.timeSlot !== undefined) {
+    const conflict = appointments.find(
+      (a) =>
+        a.id !== id &&
+        a.date === appointment.date &&
+        a.timeSlot === appointment.timeSlot &&
+        a.serviceCategory === appointment.serviceCategory &&
+        a.status !== "cancelled" &&
+        a.status !== "completed",
+    );
+    if (conflict) {
+      return { ok: false, error: "That slot is already booked for this service" };
+    }
+  }
+
+  appointment.updatedAt = new Date().toISOString();
+  appointment.updatedBy = staff ? { id: staff.id, name: staff.name } : null;
+
+  await saveAppointments(appointments);
+  return { ok: true, appointment };
+}
+
+export async function deleteAppointment(id) {
+  const appointments = await loadAppointments();
+  const index = appointments.findIndex((a) => a.id === id);
+  if (index === -1) {
+    return { ok: false, error: "Appointment not found" };
+  }
+  const removed = appointments.splice(index, 1)[0];
+  await saveAppointments(appointments);
+  return { ok: true, appointment: removed };
+}

@@ -109,7 +109,7 @@ export default function SiteFooter() {
                 [Search, "Track your ticket", "/track"],
                 [MonitorSmartphone, "Live queue board", "/queue"],
                 [Clock3, "Kiosk check-in", "/kiosk"],
-                [HeartPulse, "Patient sign in", "/patient/login"],
+                [HeartPulse, "Sign in", "/login"],
                 [ShieldCheck, "Create an account", "/patient/register"],
                 [Pill, "Share feedback", "/patient/feedback"],
               ].map(([Icon, label, to]) => (
@@ -217,7 +217,7 @@ export default function SiteFooter() {
             <ShieldCheck className="h-3.5 w-3.5 text-teal-400/40" />
             Queue boards show ticket codes only — never patient names.
           </span>
-          <Link to="/admin/login" className="text-white/25 transition-colors hover:text-teal-300">
+          <Link to="/login" className="text-white/25 transition-colors hover:text-teal-300">
             Staff access →
           </Link>
         </div>

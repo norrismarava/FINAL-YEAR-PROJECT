@@ -19,6 +19,7 @@ import {
   patientProfileCardController,
   patientRegisterController,
   patientTicketsController,
+  patientAvatarController,
   patientUpdateProfileController,
   patientChangePasswordController,
   patientForgotPasswordController,
@@ -130,6 +131,8 @@ import {
   appointmentListController,
   appointmentCreateController,
   appointmentDetailController,
+  appointmentUpdateController,
+  appointmentDeleteController,
   appointmentUpdateStatusController,
   appointmentSummaryController,
   appointmentMetaController,
@@ -243,6 +246,11 @@ router.register(
   patientUpdateProfileController,
 );
 router.register(
+  "POST",
+  "/api/patient/profile/avatar",
+  patientAvatarController,
+);
+router.register(
   "PATCH",
   "/api/patient/password",
   patientChangePasswordController,
@@ -333,6 +341,8 @@ router.register("GET", "/api/appointments/available-slots", withStaffAuth(["rece
 router.register("GET", "/api/appointments/reminders", withStaffAuth(["reception", "triage", "clinician", "admin"], appointmentRemindersController));
 router.register("POST", "/api/appointments/follow-up", withStaffAuth(["clinician", "triage", "admin"], followUpCreateController));
 router.register("GET", "/api/appointments/:id", withStaffAuth(["reception", "triage", "clinician", "admin"], appointmentDetailController));
+router.register("PATCH", "/api/appointments/:id", withStaffAuth(["reception", "triage", "clinician", "admin"], appointmentUpdateController));
+router.register("DELETE", "/api/appointments/:id", withStaffAuth(["reception", "triage", "clinician", "admin"], appointmentDeleteController));
 router.register("PATCH", "/api/appointments/:id/status", withStaffAuth(["reception", "triage", "clinician", "admin"], appointmentUpdateStatusController));
 router.register("PATCH", "/api/appointments/:id/reminder-sent", withStaffAuth(["reception", "triage", "clinician", "admin"], markReminderSentController));
 router.register("GET", "/api/tickets/:ticketId/follow-ups", withStaffAuth(["reception", "triage", "clinician", "admin"], followUpsForTicketController));

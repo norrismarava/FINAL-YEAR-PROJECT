@@ -143,6 +143,7 @@ CREATE TABLE IF NOT EXISTS patient_users (
   national_id VARCHAR(80) NULL,
   dob DATE NULL,
   gender VARCHAR(40) NOT NULL DEFAULT 'unknown',
+  avatar_url TEXT NULL,
   created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
   last_login_at DATETIME(3) NULL,
   INDEX idx_patient_users_username (username),

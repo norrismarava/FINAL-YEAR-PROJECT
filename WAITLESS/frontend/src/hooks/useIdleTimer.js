@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { useIdleSettings } from "@/hooks/useSystemSettings";
+
 const IDLE_EVENTS = [
   "mousedown",
   "mousemove",
@@ -11,30 +13,9 @@ const IDLE_EVENTS = [
 
 const DEFAULT_IDLE_MS = 15 * 60 * 1000; // 15 minutes
 const DEFAULT_WARNING_MS = 60 * 1000; // 60 second warning before logout
-const STORAGE_KEY = "waitless_idle_settings_v1";
-
-function loadSettings() {
-  if (typeof window === "undefined") return {};
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return {};
-    return JSON.parse(raw);
-  } catch {
-    return {};
-  }
-}
-
-function saveSettings(settings) {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-  } catch {
-    // ignore
-  }
-}
 
 export function useIdleTimer({ enabled = true } = {}) {
-  const settings = loadSettings();
+  const [settings, updateSettings] = useIdleSettings();
   const idleTimeoutMs = settings.idleTimeoutMs ?? DEFAULT_IDLE_MS;
   const warningMs = settings.warningMs ?? DEFAULT_WARNING_MS;
 
@@ -88,10 +69,9 @@ export function useIdleTimer({ enabled = true } = {}) {
   }, [resetActivity]);
 
   const setIdleTimeout = useCallback((ms) => {
-    const next = { ...loadSettings(), idleTimeoutMs: ms };
-    saveSettings(next);
+    updateSettings((current) => ({ ...current, idleTimeoutMs: ms }));
     resetActivity();
-  }, [resetActivity]);
+  }, [resetActivity, updateSettings]);
 
   useEffect(() => {
     if (!enabled) {

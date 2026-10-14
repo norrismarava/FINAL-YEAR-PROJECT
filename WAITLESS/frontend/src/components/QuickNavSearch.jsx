@@ -10,10 +10,10 @@ const DESTINATIONS = [
   { label: "Department display board", to: "/department-board", keywords: "department board screen display" },
   { label: "Kiosk check in screen", to: "/kiosk", keywords: "kiosk reception desk check in machine" },
   { label: "Create a patient account", to: "/patient/register", keywords: "patient account register sign up create" },
-  { label: "Patient sign in", to: "/patient/login", keywords: "patient login sign in" },
+  { label: "Sign in", to: "/login", keywords: "patient login sign in" },
   { label: "Patient dashboard", to: "/patient/dashboard", keywords: "dashboard appointments profile my account" },
   { label: "Share feedback", to: "/patient/feedback", keywords: "feedback review rate complaint comment" },
-  { label: "Staff sign in", to: "/admin/login", keywords: "staff admin login work nurse doctor" },
+  { label: "Staff sign in", to: "/login", keywords: "staff admin login work nurse doctor" },
 ];
 
 export default function QuickNavSearch() {
