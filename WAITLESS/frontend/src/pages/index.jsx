@@ -381,8 +381,7 @@ function Hero() {
                   to="/self-register"
                   className="group inline-flex min-h-[3.25rem] items-center gap-2.5 rounded-2xl bg-gradient-to-r from-teal-600 to-cyan-600 px-7 py-3.5 text-sm font-bold text-white shadow-[0_12px_36px_-12px_rgba(20,184,166,0.5)] transition-all hover:-translate-y-1 hover:shadow-[0_18px_44px_-14px_rgba(20,184,166,0.6)]"
                 >
-                  Check in now — no account needed
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  Check in now, no account needed.
                 </Link>
                 <Link to="/queue" className="inline-flex min-h-[3.25rem] items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-6 py-3.5 text-sm font-semibold text-white backdrop-blur transition-all hover:bg-white/[0.1]">
                   <MonitorSmartphone className="h-4 w-4" />
