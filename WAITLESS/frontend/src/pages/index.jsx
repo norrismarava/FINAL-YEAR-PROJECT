@@ -260,19 +260,9 @@ function TypewriterGreeting({ text = "Welcome to WaitLess", speed = 85 }) {
    ROOT COMPONENT
    ═══════════════════════════════════════════════ */
 export default function Home() {
-  const [splash, setSplash] = useState(true);
-  const [splashFading, setSplashFading] = useState(false);
-
-  useEffect(() => {
-    const t1 = setTimeout(() => setSplashFading(true), 4900);
-    const t2 = setTimeout(() => setSplash(false), 5700);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, []);
-
   return (
     <div className="dark bg-[#020814] text-white" style={{ fontFamily: "Inter, Manrope, system-ui, sans-serif" }}>
       <style>{REVEAL_CSS}</style>
-      {splash ? <SplashScreen fading={splashFading} /> : null}
       <Hero />
       <LiveTicker />
       <TrustBanner />
@@ -284,64 +274,6 @@ export default function Home() {
       <StatsSection />
       <TestimonialsSection />
       <CTASection />
-    </div>
-  );
-}
-
-/* ═══════════════════════════════════════════════
-   SPLASH SCREEN
-   ═══════════════════════════════════════════════ */
-function SplashScreen({ fading }) {
-  const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    const start = Date.now();
-    const id = setInterval(() => {
-      setProgress(Math.min(100, ((Date.now() - start) / 4400) * 100));
-    }, 40);
-    return () => clearInterval(id);
-  }, []);
-
-  const pct = Math.round(progress);
-
-  return (
-    <div
-      className={`fixed inset-0 z-[10000] flex flex-col items-center justify-center bg-[#020814] transition-all duration-700 ${
-        fading ? "pointer-events-none opacity-0 scale-105" : "opacity-100 scale-100"
-      }`}
-      aria-hidden="true"
-    >
-      <div className="relative h-24 w-24" style={{ animation: "glow-ring 2s ease-in-out infinite" }}>
-        <div className="absolute inset-0 rounded-full border-[2.5px] border-cyan-200/10 border-r-cyan-400 border-t-teal-400 animate-[spin_1.2s_linear_infinite]" />
-        <div className="absolute inset-0 grid place-items-center">
-          <img src="/waitless-logo-icon.png" alt="WaitLess" className="h-12 w-12 object-contain drop-shadow-[0_0_20px_rgba(20,184,166,0.5)]" />
-        </div>
-      </div>
-      <div className="mt-6 flex flex-col items-center gap-2">
-        <p className="text-lg font-bold tracking-wide text-white" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
-          Wait<span className="text-teal-400">Less</span>
-        </p>
-      </div>
-      <div className="mt-8 w-44">
-        <div className="flex items-center justify-center text-[10px] font-bold uppercase tracking-[0.24em]">
-          <span className="text-white/35">Loading</span>
-          <span className="ml-1 inline-flex gap-[3px]" aria-hidden="true">
-            {[0, 1, 2].map((i) => (
-              <span
-                key={i}
-                className="h-[3px] w-[3px] rounded-full bg-teal-300 animate-pulse"
-                style={{ animationDelay: `${i * 220}ms` }}
-              />
-            ))}
-          </span>
-        </div>
-        <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/5">
-          <div
-            className="h-full rounded-full bg-gradient-to-r from-teal-500 via-teal-400 to-cyan-400 transition-[width] duration-100 ease-linear"
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-      </div>
     </div>
   );
 }
@@ -399,10 +331,7 @@ function Hero() {
           >
             Skip the queue.
             <br />
-            <span
-              className="bg-gradient-to-r from-teal-300 via-cyan-300 to-blue-400 bg-clip-text text-[1.12em] font-normal italic leading-[1.1] tracking-normal text-transparent"
-              style={{ fontFamily: "'Instrument Serif', Georgia, serif", backgroundSize: "200% 100%", animation: "gradient-shift 6s ease-in-out infinite" }}
-            >
+            <span className="bg-gradient-to-r from-teal-300 via-cyan-300 to-blue-400 bg-clip-text text-transparent" style={{ backgroundSize: "200% 100%", animation: "gradient-shift 6s ease-in-out infinite" }}>
               Not the care.
             </span>
           </h1>
@@ -452,8 +381,7 @@ function Hero() {
                   to="/self-register"
                   className="group inline-flex min-h-[3.25rem] items-center gap-2.5 rounded-2xl bg-gradient-to-r from-teal-600 to-cyan-600 px-7 py-3.5 text-sm font-bold text-white shadow-[0_12px_36px_-12px_rgba(20,184,166,0.5)] transition-all hover:-translate-y-1 hover:shadow-[0_18px_44px_-14px_rgba(20,184,166,0.6)]"
                 >
-                  Check in now — no account needed
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  Check in now, no account needed.
                 </Link>
                 <Link to="/queue" className="inline-flex min-h-[3.25rem] items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-6 py-3.5 text-sm font-semibold text-white backdrop-blur transition-all hover:bg-white/[0.1]">
                   <MonitorSmartphone className="h-4 w-4" />
