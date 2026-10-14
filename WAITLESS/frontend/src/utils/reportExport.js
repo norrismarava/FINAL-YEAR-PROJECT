@@ -135,7 +135,7 @@ export function exportPDF(title, sections) {
     <div class="meta">Chinhoyi Provincial Hospital · Generated ${formatDate()}</div>
   </div>
   ${sectionHTML}
-  <div class="footer">WaitLess Digital Queue System — Confidential operational report</div>
+  <div class="footer">WaitLess Digital Queue System, Confidential operational report</div>
   <div class="no-print" style="margin-top:24px;text-align:center;">
     <button onclick="window.print()" style="padding:8px 24px;background:#14b8a6;color:white;border:none;border-radius:6px;font-size:14px;cursor:pointer;">Print / Save as PDF</button>
   </div>

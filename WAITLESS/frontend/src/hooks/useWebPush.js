@@ -46,8 +46,8 @@ async function subscribe(reg, vapidPublicKey) {
  * Hook for managing web push notifications.
  *
  * @param {object} opts
- * @param {string} [opts.vapidPublicKey] — VAPID public key for push subscription
- * @param {function} [opts.onSubscription] — called when a subscription is created/updated
+ * @param {string} [opts.vapidPublicKey], VAPID public key for push subscription
+ * @param {function} [opts.onSubscription], called when a subscription is created/updated
  * @returns {{
  *   supported: boolean,
  *   permission: NotificationPermission,
@@ -111,7 +111,7 @@ export function useWebPush({ vapidPublicKey = "", onSubscription } = {}) {
           body: JSON.stringify({ subscription: sub, payload }),
         });
       } catch {
-        // Push send endpoint may not exist in dev — silently ignore
+        // Push send endpoint may not exist in dev, silently ignore
       }
     },
     [registration],

@@ -119,7 +119,7 @@ function EmptyMessage({ children }) {
 }
 
 /* =========================================================
-   MODULE 20.1 — Hospitals management (multi-hospital)
+   MODULE 20.1, Hospitals management (multi-hospital)
    ========================================================= */
 
 export function HospitalsPage() {
@@ -344,7 +344,7 @@ function HospitalRow({ hospital, onEdit }) {
 }
 
 /* =========================================================
-   MODULE 21 — AI Insights (wait prediction + bottlenecks)
+   MODULE 21, AI Insights (wait prediction + bottlenecks)
    ========================================================= */
 
 export function AIInsightsPage() {
@@ -560,7 +560,7 @@ function BottleneckCard({ bottleneck }) {
 }
 
 /* =========================================================
-   MODULE 13.3 / 20.4 — Sync & Backup
+   MODULE 13.3 / 20.4, Sync & Backup
    ========================================================= */
 
 export function SyncPage() {
@@ -618,7 +618,7 @@ export function SyncPage() {
       toast.success("Data imported successfully");
       refreshLiveData();
     } catch (err) {
-      toast.error(err.message ?? "Import failed — check the file format");
+      toast.error(err.message ?? "Import failed, check the file format");
     } finally {
       setBusy(false);
       event.target.value = "";
@@ -650,7 +650,7 @@ export function SyncPage() {
                 <span className="text-sm font-semibold text-foreground">
                   {status?.serverTime
                     ? new Date(status.serverTime).toLocaleTimeString()
-                    : "—"}
+                    : "N/A"}
                 </span>
               </div>
               {status?.lastSyncSummary && (
@@ -727,7 +727,7 @@ export function SyncPage() {
 }
 
 /* =========================================================
-   MODULE 14.3 — Appointment Reminders
+   MODULE 14.3, Appointment Reminders
    ========================================================= */
 
 export function AppointmentRemindersPage() {
@@ -892,7 +892,7 @@ function ReminderRow({ reminder, onMarkSent, updating }) {
 }
 
 /* =========================================================
-   MODULE 14.2 — Follow-up Appointments
+   MODULE 14.2, Follow-up Appointments
    ========================================================= */
 
 export function FollowUpsPage() {

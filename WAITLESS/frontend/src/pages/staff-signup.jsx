@@ -257,7 +257,7 @@ export default function StaffSignupPage() {
         <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-xs leading-relaxed text-slate-300">
           <p className="font-semibold text-cyan-100/80">
             <ShieldCheck className="mr-1 inline h-3.5 w-3.5" />
-            Your role and department are locked to the access code — you cannot change them here.
+            Your role and department are locked to the access code, you cannot change them here.
           </p>
         </div>
 

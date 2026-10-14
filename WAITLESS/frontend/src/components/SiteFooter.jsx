@@ -29,7 +29,7 @@ const HOSPITAL = {
 };
 
 const DEPT_LINKS = [
-  { label: "OPD — Outpatients", dept: "OPD" },
+  { label: "OPD, Outpatients", dept: "OPD" },
   { label: "Casualty / Triage", dept: "Casualty / Triage" },
   { label: "Pharmacy", dept: "Pharmacy" },
   { label: "Laboratory", dept: "Laboratory" },
@@ -69,7 +69,7 @@ export default function SiteFooter() {
               subtitleClassName="text-white/40"
             />
             <p className="mt-4 max-w-xs text-sm leading-6 text-white/40">
-              The digital patient front door for hospitals — self check-in, live
+              The digital patient front door for hospitals, self check-in, live
               queue boards, and WhatsApp updates from registration to pharmacy.
             </p>
             <div className="mt-5 flex items-center gap-2.5">
@@ -184,7 +184,7 @@ export default function SiteFooter() {
                   <Siren className="h-3.5 w-3.5" />
                 </span>
                 <span>
-                  <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-white/30">Emergency — 24/7</span>
+                  <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-white/30">Emergency, 24/7</span>
                   <a href={`tel:${HOSPITAL.emergency.replaceAll(" ", "")}`} className="block text-white/55 transition-colors hover:text-red-300">
                     {HOSPITAL.emergency}
                   </a>
@@ -215,7 +215,7 @@ export default function SiteFooter() {
           <span>© {new Date().getFullYear()} WaitLess · Built for {HOSPITAL.name}</span>
           <span className="inline-flex items-center gap-2">
             <ShieldCheck className="h-3.5 w-3.5 text-teal-400/40" />
-            Queue boards show ticket codes only — never patient names.
+            Queue boards show ticket codes only, never patient names.
           </span>
           <Link to="/login" className="text-white/25 transition-colors hover:text-teal-300">
             Staff access →

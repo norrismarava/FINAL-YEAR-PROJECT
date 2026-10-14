@@ -26,9 +26,26 @@ import {
   Wifi,
 } from "lucide-react";
 
-import hospitalHeroImage from "@/assets/landing-hero-hospital.jpg";
-import phoneMockupImage from "@/assets/landing-phone-mockup-cut.png";
+import hospitalHeroImage from "@/assets/cover/Heroes' Essentials_ A Minimal Tribute.jpeg";
 import hospitalHeroBackground from "@/assets/bgfinal.png";
+import deptOpdImage from "@/assets/Every service point, one queue/TRY OPD.jpeg";
+import deptTriageImage from "@/assets/Every service point, one queue/TRIAGE.jpg";
+import deptPharmacyImage from "@/assets/Every service point, one queue/PHAMARCY.jpeg";
+import deptLabImage from "@/assets/Every service point, one queue/LABORATORY.jpeg";
+import deptRadiologyImage from "@/assets/Every service point, one queue/RADIOLOGY.jpg";
+import deptOiImage from "@/assets/Every service point, one queue/OI CLINIC.jpg";
+import deptPharmacyPhoto from "@/assets/Every service point, one queue/PHAMARCY.jpeg";
+import stepTriageImage from "@/assets/OTHER/Triage Tape Kit Crime Scene.jpeg";
+import stepConsultImage from "@/assets/OTHER/consultation.jpeg";
+import stepLabImage from "@/assets/OTHER/RESEARCH.jpeg";
+import stepDoneImage from "@/assets/OTHER/DONE34.jpeg";
+import statPatientsImage from "@/assets/OTHER2/patients-served.jpeg";
+import statWaitImage from "@/assets/OTHER2/wait-time.jpeg";
+import statWhatsappImage from "@/assets/OTHER2/whatsapp-alerts.jpeg";
+import statUptimeImage from "@/assets/OTHER2/clock4.jpeg";
+import ctaAccountImage from "@/assets/OTHER 3/craete accont.jpeg";
+import ctaTrackImage from "@/assets/OTHER 3/QUESTION.jpeg";
+import ctaQueueImage from "@/assets/OTHER 3/WAIT4.jpeg";
 import { useAuth } from "@/auth/AuthProvider";
 import { usePatientAuth } from "@/auth/PatientAuthProvider";
 import { resolveStaffLandingPath } from "@/services/staffProfilePrefs";
@@ -124,6 +141,13 @@ const REVEAL_CSS = `
     0%, 100% { transform: translateY(0); }
     50%      { transform: translateY(-5px); }
   }
+  @keyframes ecg-trace {
+    to { stroke-dashoffset: -76; }
+  }
+  @keyframes dot-wave {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.35; }
+    30%           { transform: translateY(-7px); opacity: 1; }
+  }
 `;
 
 function Reveal({ children, delay = 0, className = "", scale = false }) {
@@ -190,7 +214,7 @@ function AnimatedCounter({ target, suffix = "", duration = 2000 }) {
   return <span ref={ref}>{count.toLocaleString()}{suffix}</span>;
 }
 
-/* ─── Section eyebrow — spaced gradient text between tapering hairlines ─── */
+/* ─── Section eyebrow, spaced gradient text between tapering hairlines ─── */
 const EYEBROW_TONES = {
   teal: { text: "from-teal-300 via-cyan-200 to-teal-300", line: "to-teal-300/60" },
   cyan: { text: "from-cyan-200 via-teal-100 to-cyan-300", line: "to-cyan-300/60" },
@@ -256,9 +280,19 @@ function TypewriterGreeting({ text = "Welcome to WaitLess", speed = 85 }) {
    ROOT COMPONENT
    ═══════════════════════════════════════════════ */
 export default function Home() {
+  const [splash, setSplash] = useState(true);
+  const [splashFading, setSplashFading] = useState(false);
+
+  useEffect(() => {
+    const t1 = setTimeout(() => setSplashFading(true), 2400);
+    const t2 = setTimeout(() => setSplash(false), 3200);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, []);
+
   return (
     <div className="dark bg-[#020814] text-white" style={{ fontFamily: "Inter, Manrope, system-ui, sans-serif" }}>
       <style>{REVEAL_CSS}</style>
+      {splash ? <SplashScreen fading={splashFading} /> : null}
       <Hero />
       <LiveTicker />
       <DepartmentsSection />
@@ -269,6 +303,45 @@ export default function Home() {
       <StatsSection />
       <TestimonialsSection />
       <CTASection />
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   SPLASH SCREEN
+   ═══════════════════════════════════════════════ */
+function SplashScreen({ fading }) {
+
+  return (
+    <div
+      className={`fixed inset-0 z-[10000] flex flex-col items-center justify-center bg-[#020814] transition-all duration-700 ${
+        fading ? "pointer-events-none opacity-0 scale-105" : "opacity-100 scale-100"
+      }`}
+      aria-hidden="true"
+    >
+      <div className="relative h-16 w-16" style={{ animation: "glow-ring 2s ease-in-out infinite" }}>
+        <div className="absolute inset-0 rounded-full border-2 border-cyan-200/10 border-r-cyan-400 border-t-teal-400 animate-[spin_1.2s_linear_infinite]" />
+        <div className="absolute inset-0 grid place-items-center">
+          <img src="/waitless-logo-circle.png" alt="WaitLess" className="h-9 w-9 rounded-full object-cover drop-shadow-[0_0_16px_rgba(20,184,166,0.5)]" />
+        </div>
+      </div>
+      <div className="mt-4 flex flex-col items-center gap-2">
+        <p className="text-base font-bold tracking-wide text-white" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
+          Wait<span className="text-teal-400">Less</span>
+        </p>
+      </div>
+      <div className="mt-6 flex flex-col items-center">
+        <div className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/35">Loading</div>
+        <div className="mt-4 flex items-end gap-2" aria-hidden="true">
+          {[0, 1, 2, 3, 4].map((i) => (
+            <span
+              key={i}
+              className={`h-2 w-2 rounded-full ${i % 2 ? "bg-cyan-400" : "bg-teal-400"}`}
+              style={{ animation: `dot-wave 1.2s ease-in-out ${i * 120}ms infinite` }}
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
@@ -337,7 +410,7 @@ function Hero() {
             style={{ animation: "hero-text-rise 0.9s cubic-bezier(0.16,1,0.3,1) 0.35s both" }}
           >
             Check in from your phone, track your queue position in real time,
-            and get <span className="font-semibold text-green-400">WhatsApp</span> alerts when it's your turn —
+            and get <span className="font-semibold text-green-400">WhatsApp</span> alerts when it's your turn,
             so you spend less time waiting and more time healing.
           </p>
 
@@ -409,19 +482,25 @@ function Hero() {
         <div className="relative hidden lg:block" style={{ animation: "hero-text-rise 1s cubic-bezier(0.16,1,0.3,1) 0.4s both" }}>
           <div className="relative">
             <div className="absolute inset-x-8 -bottom-10 h-28 rounded-full bg-teal-500/[0.12] blur-3xl" />
-            <img
-              src={hospitalHeroImage}
-              alt="Hospital waiting area running the WaitLess digital queue system"
-              className="relative aspect-[16/10] w-full rounded-[2rem] object-cover saturate-[0.9] contrast-[1.05] brightness-[0.97]"
+            <div
+              className="relative aspect-[16/10] w-full"
               style={{
                 maskImage:
-                  "linear-gradient(to right, transparent, black 13%, black 87%, transparent), linear-gradient(to bottom, transparent, black 13%, black 87%, transparent)",
+                  "linear-gradient(to right, transparent, black 22%, black 78%, transparent), linear-gradient(to bottom, transparent, black 20%, black 80%, transparent)",
                 WebkitMaskImage:
-                  "linear-gradient(to right, transparent, black 13%, black 87%, transparent), linear-gradient(to bottom, transparent, black 13%, black 87%, transparent)",
+                  "linear-gradient(to right, transparent, black 22%, black 78%, transparent), linear-gradient(to bottom, transparent, black 20%, black 80%, transparent)",
                 maskComposite: "intersect",
                 WebkitMaskComposite: "source-in",
               }}
-            />
+            >
+              <img
+                src={hospitalHeroImage}
+                alt="Hospital reception"
+                className="h-full w-full scale-[1.1] object-cover saturate-[0.8] contrast-[1.05] brightness-[0.9]"
+              />
+              <div className="absolute inset-0 bg-[#0b2545]/40 mix-blend-multiply" />
+              <div className="absolute inset-0 bg-gradient-to-tr from-teal-500/15 via-transparent to-blue-600/20" />
+            </div>
           </div>
         </div>
       </div>
@@ -474,12 +553,12 @@ function LiveTicker() {
    DEPARTMENTS
    ═══════════════════════════════════════════════ */
 const DEPT_DETAILS = {
-  OPD: { icon: Stethoscope, body: "General outpatient consultations, follow-up clinics, and referrals.", color: "from-teal-500/20 to-teal-600/5" },
-  "Casualty / Triage": { icon: Siren, body: "24/7 emergency assessment with four-tier priority routing.", color: "from-red-500/20 to-red-600/5" },
-  Pharmacy: { icon: Pill, body: "Prescription dispensing with WhatsApp call-up alerts.", color: "from-blue-500/20 to-blue-600/5" },
-  Laboratory: { icon: FlaskConical, body: "Blood work and diagnostic testing, tracked live from order to result.", color: "from-purple-500/20 to-purple-600/5" },
-  Radiology: { icon: ScanLine, body: "Imaging orders linked to your visit, with live status updates.", color: "from-amber-500/20 to-amber-600/5" },
-  "OI Clinic": { icon: HeartPulse, body: "Opportunistic infection care with discreet follow-up queues.", color: "from-rose-500/20 to-rose-600/5" },
+  OPD: { icon: Stethoscope, image: deptOpdImage, body: "General outpatient consultations, follow-up clinics, and referrals.", color: "from-teal-500/20 to-teal-600/5" },
+  "Casualty / Triage": { icon: Siren, image: deptTriageImage, body: "24/7 emergency assessment with four-tier priority routing.", color: "from-red-500/20 to-red-600/5" },
+  Pharmacy: { icon: Pill, image: deptPharmacyImage, body: "Prescription dispensing with WhatsApp call-up alerts.", color: "from-blue-500/20 to-blue-600/5" },
+  Laboratory: { icon: FlaskConical, image: deptLabImage, body: "Blood work and diagnostic testing, tracked live from order to result.", color: "from-purple-500/20 to-purple-600/5" },
+  Radiology: { icon: ScanLine, image: deptRadiologyImage, body: "Imaging orders linked to your visit, with live status updates.", color: "from-amber-500/20 to-amber-600/5" },
+  "OI Clinic": { icon: HeartPulse, image: deptOiImage, body: "Opportunistic infection care with discreet follow-up queues.", color: "from-rose-500/20 to-rose-600/5" },
 };
 
 function DepartmentsSection() {
@@ -498,7 +577,7 @@ function DepartmentsSection() {
             </h2>
             <p className="mt-4 text-lg text-white/50">
               {HOSPITAL.name} runs six service points on WaitLess.
-              Your ticket follows you — no re-joining, no lost place.
+              Your ticket follows you, no re-joining, no lost place.
             </p>
           </div>
         </Reveal>
@@ -513,8 +592,8 @@ function DepartmentsSection() {
                   className={`group relative flex h-full flex-col overflow-hidden rounded-[1.8rem] border border-white/[0.06] bg-gradient-to-br ${detail.color} p-6 backdrop-blur transition-all duration-500 hover:-translate-y-1.5 hover:border-teal-400/20 hover:shadow-[0_30px_80px_-30px_rgba(20,184,166,0.2)]`}
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <span className="grid h-12 w-12 place-items-center rounded-2xl border border-white/8 bg-white/[0.04] text-teal-300 transition-all duration-300 group-hover:scale-110 group-hover:bg-teal-500/10 group-hover:text-teal-200">
-                      <detail.icon className="h-6 w-6" />
+                    <span className="relative grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-full border border-white/10 bg-white/[0.04] ring-2 ring-teal-400/25 transition-all duration-300 group-hover:scale-110 group-hover:ring-teal-300/50">
+                      <img src={detail.image} alt={dept} className="h-full w-full object-cover" loading="lazy" />
                     </span>
                     <span className="inline-flex items-center gap-1 text-xs font-semibold text-teal-400/60 opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:translate-x-0 translate-x-2">
                       Live board <ArrowRight className="h-3.5 w-3.5" />
@@ -539,12 +618,12 @@ function DepartmentsSection() {
    ═══════════════════════════════════════════════ */
 function PatientJourney() {
   const steps = [
-    { num: "01", title: "Register", time: "5 min", body: "Walk in or self-register on your phone. Capture demographics and WhatsApp number.", icon: ClipboardList, color: "from-teal-500 to-teal-600" },
-    { num: "02", title: "Triage", time: "2 min", body: "Nurses assign Red/Yellow/Green/Black priority. The queue re-sorts in real time.", icon: ShieldAlert, color: "from-amber-500 to-orange-500" },
-    { num: "03", title: "Consultation", time: "10 min", body: "See your doctor. Orders for lab, pharmacy, or imaging generated instantly.", icon: Stethoscope, color: "from-blue-500 to-indigo-500" },
-    { num: "04", title: "Investigations", time: "20-30m", body: "Lab or Radiology, tracked live. Get WhatsApp updates on results.", icon: FlaskConical, color: "from-purple-500 to-violet-500" },
-    { num: "05", title: "Pharmacy", time: "10 min", body: "Prescription ready? You'll get a WhatsApp call-up when it's your window.", icon: Pill, color: "from-emerald-500 to-green-600" },
-    { num: "06", title: "Done", time: "—", body: "Rate your experience and head home. Visit history saved to your account.", icon: CheckCircle2, color: "from-cyan-500 to-teal-500" },
+    { num: "01", title: "Register", time: "5 min", body: "Walk in or self-register on your phone. Capture demographics and WhatsApp number.", icon: ClipboardList, color: "from-teal-500 to-teal-600", image: ctaAccountImage },
+    { num: "02", title: "Triage", time: "2 min", body: "Nurses assign Red/Yellow/Green/Black priority. The queue re-sorts in real time.", icon: ShieldAlert, color: "from-amber-500 to-orange-500", image: stepTriageImage },
+    { num: "03", title: "Consultation", time: "10 min", body: "See your doctor. Orders for lab, pharmacy, or imaging generated instantly.", icon: Stethoscope, color: "from-blue-500 to-indigo-500", image: stepConsultImage },
+    { num: "04", title: "Investigations", time: "20-30m", body: "Lab or Radiology, tracked live. Get WhatsApp updates on results.", icon: FlaskConical, color: "from-purple-500 to-violet-500", image: stepLabImage },
+    { num: "05", title: "Pharmacy", time: "10 min", body: "Prescription ready? You'll get a WhatsApp call-up when it's your window.", icon: Pill, color: "from-emerald-500 to-green-600", image: deptPharmacyPhoto },
+    { num: "06", title: "Done", time: "Instant", body: "Rate your experience and head home. Visit history saved to your account.", icon: CheckCircle2, color: "from-cyan-500 to-teal-500", image: stepDoneImage },
   ];
 
   return (
@@ -571,8 +650,8 @@ function PatientJourney() {
               <div className="group relative flex h-full flex-col overflow-hidden rounded-[1.8rem] border border-white/[0.06] bg-white/[0.03] p-6 transition-all duration-500 hover:-translate-y-1.5 hover:border-white/12 hover:bg-white/[0.05]">
                 <div className={`absolute -right-8 -top-8 h-24 w-24 rounded-full bg-gradient-to-br ${step.color} opacity-[0.08] blur-2xl transition-opacity duration-500 group-hover:opacity-[0.15]`} />
                 <div className="flex items-center justify-between">
-                  <span className={`grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br ${step.color} text-white shadow-lg`}>
-                    <step.icon className="h-5 w-5" />
+                  <span className="grid h-16 w-16 shrink-0 place-items-center overflow-hidden rounded-full border border-white/10 ring-2 ring-white/15 transition-transform duration-300 group-hover:scale-110">
+                    <img src={step.image} alt={step.title} className="h-full w-full object-cover" loading="lazy" />
                   </span>
                   <span className="text-3xl font-extrabold text-white/[0.06]" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
                     {step.num}
@@ -676,7 +755,7 @@ function FeaturesSection() {
   const features = [
     { icon: ClipboardList, title: "Instant Registration", body: "Capture demographics in under a minute. Generates a ticket and links a WhatsApp contact automatically.", color: "from-teal-500 to-teal-600" },
     { icon: ShieldAlert, title: "Triage-Aware Routing", body: "Nurses assign priorities. The queue re-sorts in real time so the sickest are always seen first.", color: "from-red-500 to-rose-500" },
-    { icon: MessageCircle, title: "Zero-Cost WhatsApp", body: "Uses Meta's service conversation window — patients are alerted before their turn with no per-message fees.", color: "from-green-500 to-emerald-500" },
+    { icon: MessageCircle, title: "Zero-Cost WhatsApp", body: "Uses Meta's service conversation window, patients are alerted before their turn with no per-message fees.", color: "from-green-500 to-emerald-500" },
     { icon: MonitorSmartphone, title: "Public Queue Board", body: "Big-screen display for waiting areas, kept in sync over the hospital LAN. Shows ticket codes only.", color: "from-blue-500 to-indigo-500" },
     { icon: Activity, title: "Real-Time Dashboard", body: "Track bottlenecks in OPD, Pharmacy, Lab, Radiology and OI Clinic from one powerful command view.", color: "from-purple-500 to-violet-500" },
     { icon: Wifi, title: "Offline-First Architecture", body: "Runs on the hospital LAN. WhatsApp messages queue locally and send when internet connectivity returns.", color: "from-amber-500 to-orange-500" },
@@ -695,7 +774,7 @@ function FeaturesSection() {
               <span className="bg-gradient-to-r from-teal-300 to-cyan-300 bg-clip-text text-transparent">Nothing you don't.</span>
             </h2>
             <p className="mt-4 text-lg text-white/50">
-              Designed around the workflows observed at Chinhoyi Provincial Hospital — and the constraints of every Zimbabwean facility.
+              Designed around the workflows observed at Chinhoyi Provincial Hospital, and the constraints of every Zimbabwean facility.
             </p>
           </div>
         </Reveal>
@@ -775,36 +854,14 @@ function MobileAppSection() {
               <div className="absolute left-1/2 top-1/2 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full bg-teal-400/[0.1] blur-[80px]" />
               {/* hologram ring under the phone */}
               <div className="absolute inset-x-4 bottom-2 h-24 rounded-[50%] border border-teal-400/[0.15]" />
-              {/* floor shadow — shrinks as the phone rises */}
+              {/* floor shadow, shrinks as the phone rises */}
               <div
                 className="absolute inset-x-10 bottom-0 left-1/2 h-8 w-4/5 rounded-[50%] bg-black/60 blur-xl"
                 style={{ animation: "shadow-sway 7s ease-in-out infinite" }}
               />
-              {/* rotating phone + glass sheen */}
+              {/* rotating phone mockup (pure CSS, clean minimal style) */}
               <div className="relative" style={{ animation: "phone-showcase 7s ease-in-out infinite" }}>
-                <img
-                  src={phoneMockupImage}
-                  alt="WaitLess mobile app showing live queue position, progress tracking, and WhatsApp notifications"
-                  className="relative w-full h-auto drop-shadow-[0_35px_45px_rgba(2,8,20,0.55)]"
-                />
-                <div
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-0 mix-blend-screen"
-                  style={{
-                    WebkitMaskImage: `url(${phoneMockupImage})`,
-                    maskImage: `url(${phoneMockupImage})`,
-                    WebkitMaskSize: "contain",
-                    maskSize: "contain",
-                    WebkitMaskRepeat: "no-repeat",
-                    maskRepeat: "no-repeat",
-                    WebkitMaskPosition: "center",
-                    maskPosition: "center",
-                    background:
-                      "linear-gradient(115deg, transparent 38%, rgba(255,255,255,0.38) 50%, transparent 62%)",
-                    backgroundSize: "260% 100%",
-                    animation: "sheen-sweep 4.5s ease-in-out infinite",
-                  }}
-                />
+                <PhoneMockup />
               </div>
             </div>
           </Reveal>
@@ -814,15 +871,124 @@ function MobileAppSection() {
   );
 }
 
+/* Pure-CSS phone mockup, clean minimal style, WaitLess content */
+const PHONE_STEPS = [
+  { name: "Registration", status: "Done", done: true },
+  { name: "Triage", status: "Active", active: true },
+  { name: "Doctor", status: "Next" },
+  { name: "Pharmacy", status: "" },
+];
+
+function PhoneMockup() {
+  return (
+    <div className="relative mx-auto aspect-[9/16] w-full max-w-[19rem] rounded-[2.9rem] bg-[#0b0c0e] p-[9px] shadow-[0_35px_45px_rgba(2,8,20,0.55)] ring-1 ring-white/10">
+      {/* side buttons */}
+      <div className="absolute -right-[2px] top-28 h-16 w-[3px] rounded-full bg-[#232527]" />
+      <div className="absolute -left-[2px] top-24 h-10 w-[3px] rounded-full bg-[#232527]" />
+      {/* screen */}
+      <div className="relative flex h-full w-full flex-col overflow-hidden rounded-[2.35rem] bg-gradient-to-b from-[#0d2040] to-[#071224] px-4 pb-4 pt-11">
+        {/* dynamic island */}
+        <div className="absolute left-1/2 top-3 h-5 w-24 -translate-x-1/2 rounded-full bg-[#0b0c0e]" />
+        {/* header, text only, no logo */}
+        <div className="flex items-center justify-between">
+          <span className="text-[15px] font-extrabold tracking-tight text-white">WaitLess</span>
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-teal-400/10 px-2.5 py-1 text-[10px] font-bold text-teal-300">
+              <span className="h-1.5 w-1.5 rounded-full bg-teal-400" />
+              Live
+            </span>
+            <span className="relative grid h-7 w-7 place-items-center rounded-full border border-white/10 bg-white/[0.07]">
+              <BellRing className="h-3.5 w-3.5 text-slate-300" />
+              <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-rose-500" />
+            </span>
+          </div>
+        </div>
+        {/* queue status card, teal gradient ticket */}
+        <div className="relative mt-4 overflow-hidden rounded-2xl bg-gradient-to-br from-teal-500 via-cyan-500 to-blue-600 p-4 text-white shadow-[0_10px_24px_rgba(37,99,235,0.35)]">
+          <div className="pointer-events-none absolute -right-6 -top-8 h-24 w-24 rounded-full bg-white/10" />
+          <div className="text-[9px] font-bold uppercase tracking-[0.18em] text-white/70">Your queue status</div>
+          <div className="mt-2 flex items-end justify-between">
+            <div>
+              <div className="text-[30px] font-extrabold leading-none">#12</div>
+              <div className="mt-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-white/75">In queue</div>
+            </div>
+            <div className="text-right">
+              <div className="text-[30px] font-extrabold leading-none">23</div>
+              <div className="mt-1 text-[9px] font-semibold uppercase tracking-[0.14em] text-white/75">Min wait</div>
+            </div>
+          </div>
+          <div className="mt-3 h-1.5 w-full rounded-full bg-white/25">
+            <div className="h-full w-2/5 rounded-full bg-white" />
+          </div>
+          <div className="mt-2 text-[9px] font-semibold text-white/80">Now serving #11, you're up next</div>
+        </div>
+        {/* journey steps */}
+        <div className="mt-3 rounded-2xl border border-white/10 bg-white/[0.05] p-3.5">
+          <div className="text-[9px] font-bold uppercase tracking-[0.16em] text-slate-400">Your visit</div>
+          <div className="mt-2.5 space-y-2.5">
+            {PHONE_STEPS.map((step, i) => (
+              <div key={step.name} className="relative flex items-center gap-2.5">
+                {i < PHONE_STEPS.length - 1 && (
+                  <span className={`absolute left-[7px] top-4 h-3.5 w-px ${step.done ? "bg-teal-400/70" : "bg-slate-700"}`} />
+                )}
+                <span
+                  className={`grid h-4 w-4 shrink-0 place-items-center rounded-full ${
+                    step.done
+                      ? "bg-teal-400 text-slate-900"
+                      : step.active
+                        ? "bg-cyan-400 text-slate-900 ring-4 ring-cyan-400/20"
+                        : "border-2 border-slate-600 bg-transparent"
+                  }`}
+                >
+                  {step.done && <CheckCircle2 className="h-3 w-3" />}
+                  {step.active && <span className="h-1 w-1 rounded-full bg-slate-900" />}
+                </span>
+                <span className={`text-[11px] font-semibold ${step.done || step.active ? "text-slate-100" : "text-slate-500"}`}>
+                  {step.name}
+                </span>
+                {step.status && (
+                  <span
+                    className={`ml-auto rounded-full px-2 py-0.5 text-[8px] font-bold uppercase tracking-wider ${
+                      step.done
+                        ? "bg-teal-400/10 text-teal-300"
+                        : step.active
+                          ? "bg-cyan-400/10 text-cyan-300"
+                          : "bg-white/5 text-slate-400"
+                    }`}
+                  >
+                    {step.status}
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+        {/* bottom nav */}
+        <div className="mt-auto flex items-center justify-around rounded-2xl border border-white/10 bg-white/[0.05] px-2 py-2.5">
+          <Activity className="h-4 w-4 text-teal-300" />
+          <ClipboardList className="h-4 w-4 text-blue-300/70" />
+          <span className="relative">
+            <BellRing className="h-4 w-4 text-blue-300/70" />
+            <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-rose-500" />
+          </span>
+          <Stethoscope className="h-4 w-4 text-blue-300/70" />
+        </div>
+      </div>
+      {/* soft gloss on the glass */}
+      <div className="pointer-events-none absolute inset-0 rounded-[2.9rem] bg-gradient-to-br from-white/[0.12] via-transparent to-transparent" />
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════════
    STATS
    ═══════════════════════════════════════════════ */
 function StatsSection() {
   const stats = [
-    { value: "12,480", suffix: "+", label: "Patients served", icon: Users },
-    { value: "23", suffix: " min", label: "Avg. wait time", icon: Timer },
-    { value: "45,600", suffix: "+", label: "WhatsApp alerts", icon: MessageCircle },
-    { value: "99.8", suffix: "%", label: "System uptime", icon: Activity },
+    { value: "12,480", suffix: "+", label: "Patients served", image: statPatientsImage },
+    { value: "23", suffix: " min", label: "Avg. wait time", image: statWaitImage },
+    { value: "45,600", suffix: "+", label: "WhatsApp alerts", image: statWhatsappImage },
+    { value: "99.8", suffix: "%", label: "System uptime", image: statUptimeImage },
   ];
 
   return (
@@ -844,8 +1010,8 @@ function StatsSection() {
             <Reveal key={stat.label} delay={i * 100} scale className="h-full">
               <div className="group relative h-full overflow-hidden rounded-[1.8rem] border border-white/[0.06] bg-white/[0.02] p-7 text-center transition-all duration-500 hover:-translate-y-1.5 hover:border-teal-400/15 hover:shadow-[0_30px_80px_-30px_rgba(20,184,166,0.15)]">
                 <div className="absolute inset-0 bg-gradient-to-b from-teal-500/[0.03] to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
-                <span className="relative mx-auto grid h-14 w-14 place-items-center rounded-2xl border border-white/8 bg-teal-500/[0.08] text-teal-300">
-                  <stat.icon className="h-6 w-6" />
+                <span className="relative mx-auto block h-16 w-16 overflow-hidden rounded-full ring-2 ring-teal-400/25 transition-transform duration-500 group-hover:scale-110 group-hover:ring-teal-400/50">
+                  <img src={stat.image} alt={stat.label} className="h-full w-full object-cover" loading="lazy" />
                 </span>
                 <div className="relative mt-5 text-4xl font-extrabold tracking-tight text-white" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
                   <AnimatedCounter target={stat.value} suffix={stat.suffix} />
@@ -866,18 +1032,18 @@ function StatsSection() {
 function TestimonialsSection() {
   const testimonials = [
     {
-      quote: "I used to spend the entire day at the hospital. Now I check in on my phone, go home, and come back when WhatsApp tells me it's my turn.",
-      name: "Tatenda M.",
-      role: "Patient, OPD",
+      quote: "Patients used to spend the entire day at our front desk. Now they check in on their phones and come back when WhatsApp tells them it's their turn.",
+      name: "Norris Marava",
+      role: "Reception Desk Lead",
     },
     {
       quote: "We reduced our average patient wait time by 40% in the first month. The triage routing alone has saved lives in Casualty.",
-      name: "Sr. Moyo",
+      name: "Kelvin Ncube",
       role: "Chief Nursing Officer",
     },
     {
-      quote: "The queue board shows ticket numbers only — never patient names. Families trust the system because their privacy is protected.",
-      name: "Dr. Chikwava",
+      quote: "The queue board shows ticket numbers only, never patient names. Families trust the system because their privacy is protected.",
+      name: "Shadreck Mapuranga",
       role: "Medical Superintendent",
     },
   ];
@@ -947,10 +1113,12 @@ function CTASection() {
           ["Track ticket", "Enter your ticket code to see your live position.", "/track", Search],
         ]
       : [
-          ["Create account", "Sign up for free — book queue spots, track tickets, and get WhatsApp updates.", "/patient/register", ClipboardList],
+          ["Create account", "Sign up for free, book queue spots, track tickets, and get WhatsApp updates.", "/patient/register", ClipboardList],
           ["Track a ticket", "Enter your code and see your live queue position.", "/track", Search],
           ["Queue board", "Show the live board in the waiting area.", "/queue", MonitorSmartphone],
         ];
+
+  const ctaImages = [ctaAccountImage, ctaTrackImage, ctaQueueImage];
 
   return (
     <section className="relative overflow-hidden py-8 sm:py-12">
@@ -967,19 +1135,19 @@ function CTASection() {
                   <span className="bg-gradient-to-r from-teal-300 to-cyan-300 bg-clip-text text-transparent">can trust.</span>
                 </h2>
                 <p className="mt-4 text-white/50">
-                  Self check-in, live boards, triage-aware routing and WhatsApp updates — on any device, in any hospital.
+                  Self check-in, live boards, triage-aware routing and WhatsApp updates, on any device, in any hospital.
                 </p>
               </div>
 
               <div className="grid gap-5 md:grid-cols-3">
-                {ctaCards.map(([title, body, to, Icon], index) => (
+                {ctaCards.map(([title, body, to], index) => (
                   <Reveal key={title} delay={index * 100} scale className="h-full">
                     <Link
                       to={to}
                       className="group flex h-full flex-col rounded-[1.6rem] border border-white/[0.08] bg-white/[0.03] p-6 transition-all duration-500 hover:-translate-y-1.5 hover:border-teal-400/20 hover:bg-white/[0.06]"
                     >
-                      <span className="grid h-12 w-12 place-items-center rounded-xl bg-teal-500/10 text-teal-300 transition-transform duration-300 group-hover:scale-110">
-                        <Icon className="h-5 w-5" />
+                      <span className="block h-14 w-14 overflow-hidden rounded-full ring-2 ring-teal-400/25 transition-transform duration-500 group-hover:scale-110 group-hover:ring-teal-400/50">
+                        <img src={ctaImages[index]} alt={title} className="h-full w-full object-cover" loading="lazy" />
                       </span>
                       <h3 className="mt-4 text-lg font-bold text-white" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>{title}</h3>
                       <p className="mt-2 flex-1 text-sm leading-relaxed text-white/40">{body}</p>

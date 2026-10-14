@@ -844,7 +844,7 @@ function PrescriptionPanel({ ticketId }) {
                 {rx.items?.map((item) => (
                   <li key={item.id} className="text-xs">
                     <span className="font-medium">{item.drugName}</span>
-                    {" — "}{item.dosage}
+                    {", "}{item.dosage}
                     {item.quantity && ` (${item.quantity})`}
                   </li>
                 ))}

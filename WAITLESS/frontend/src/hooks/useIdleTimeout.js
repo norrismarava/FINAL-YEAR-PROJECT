@@ -8,10 +8,10 @@ const ACTIVITY_EVENTS = ["mousedown", "keydown", "touchstart", "scroll", "mousem
  * Tracks user activity and triggers a warning before automatic logout.
  *
  * @param {object} opts
- * @param {function} opts.onTimeout        — called when the idle timeout fires
- * @param {number}   [opts.timeoutMs]      — total inactivity duration before logout
- * @param {number}   [opts.warningMs]      — how long before timeout to show the warning
- * @param {boolean}  [opts.enabled]        — whether the hook is active
+ * @param {function} opts.onTimeout       , called when the idle timeout fires
+ * @param {number}   [opts.timeoutMs]     , total inactivity duration before logout
+ * @param {number}   [opts.warningMs]     , how long before timeout to show the warning
+ * @param {boolean}  [opts.enabled]       , whether the hook is active
  * @returns {{ warning: boolean, secondsLeft: number, dismiss: () => void }}
  */
 export function useIdleTimeout({

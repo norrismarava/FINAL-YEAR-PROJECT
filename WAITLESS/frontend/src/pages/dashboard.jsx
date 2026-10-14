@@ -425,7 +425,7 @@ export default function DashboardPage() {
         severity: alert.priority === "red" ? "critical" : "warning",
         message: `${alert.ticket}${
           alert.patientName ? ` (${alert.patientName})` : ""
-        } has waited ${alert.waitMinutes}m — reassessment needed`,
+        } has waited ${alert.waitMinutes}m, reassessment needed`,
         detail: `${alert.department} safety threshold: ${alert.thresholdMinutes}m`,
         time: formatRelativeTime(alert.createdAt),
       });

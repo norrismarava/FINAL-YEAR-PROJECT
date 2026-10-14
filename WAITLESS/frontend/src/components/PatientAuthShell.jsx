@@ -6,7 +6,7 @@ import waitlessLogoIcon from "@/assets/waitless-logo-icon.png";
 export function PatientAuthShell({ eyebrow, title, subtitle, children, footer, maxWidth = "max-w-[24rem]" }) {
   return (
     <section className="relative isolate min-h-screen overflow-hidden px-4 py-6 sm:px-6 lg:px-8">
-      {/* Background image — hidden on mobile for a clean look */}
+      {/* Background image, hidden on mobile for a clean look */}
       <div className="pointer-events-none absolute inset-0 -z-20 hidden lg:block">
         <img
           src={authBackground}
@@ -22,7 +22,7 @@ export function PatientAuthShell({ eyebrow, title, subtitle, children, footer, m
       {/* Mobile solid background */}
       <div className="absolute inset-0 -z-10 bg-[#04141f] lg:hidden" />
 
-      {/* Form card — centered */}
+      {/* Form card, centered */}
       <div className="relative z-10 flex min-h-[calc(100vh-6rem)] items-center justify-center py-4">
         <div className={`relative w-full ${maxWidth} rounded-2xl`}>
           <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#04141f]/60 shadow-[0_32px_80px_-28px_rgba(2,8,20,0.45)] backdrop-blur-2xl">

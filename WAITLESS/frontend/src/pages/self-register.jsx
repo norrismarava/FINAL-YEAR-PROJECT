@@ -135,7 +135,7 @@ export default function SelfRegisterPage() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      setHandoffState("Could not copy — write the code down.");
+      setHandoffState("Could not copy, write the code down.");
     }
   }
 

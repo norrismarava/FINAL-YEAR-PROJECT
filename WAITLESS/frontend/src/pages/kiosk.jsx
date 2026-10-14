@@ -214,7 +214,7 @@ export default function KioskPage() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      setHandoffState("Could not copy — write the code down.");
+      setHandoffState("Could not copy, write the code down.");
     }
   }
 
@@ -316,7 +316,7 @@ export default function KioskPage() {
                 Welcome back
               </h1>
               <p className="mt-4 max-w-md mx-auto text-sm leading-6 text-slate-400">
-                Already registered with us? Check in faster — scan your QR code
+                Already registered with us? Check in faster, scan your QR code
                 or enter your phone number to get your queue ticket instantly.
               </p>
 
@@ -712,7 +712,7 @@ export default function KioskPage() {
                   className="mx-auto mt-5 flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.03] px-4 py-1.5 text-[0.65rem] font-bold uppercase tracking-[0.18em] text-slate-500 transition-colors hover:border-teal-300/30 hover:text-teal-300"
                 >
                   <TimerReset className="h-3.5 w-3.5" />
-                  New patient in {resetCountdown}s — tap to stay
+                  New patient in {resetCountdown}s, tap to stay
                 </button>
               )}
             </div>
@@ -732,7 +732,7 @@ export default function KioskPage() {
               </h1>
               <p className="mt-4 max-w-md mx-auto text-sm leading-6 text-slate-400">
                 We couldn't find a patient record with those details.
-                You'll need to register first — it only takes a moment.
+                You'll need to register first, it only takes a moment.
               </p>
 
               <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">

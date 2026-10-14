@@ -99,7 +99,7 @@ export default function QuickNavSearch() {
 
   return (
     <div ref={wrapRef} className="relative hidden w-44 md:block lg:w-56 xl:w-72">
-      <div className="flex items-center gap-1 rounded-full border border-white/15 bg-white/[0.07] p-1 pl-4 backdrop-blur transition-colors focus-within:border-teal-300/50 focus-within:bg-white/[0.1]">
+      <div className="flex items-center rounded-full border border-white/60 bg-white/85 py-1.5 pl-5 pr-2 shadow-[0_10px_30px_-10px_rgba(2,8,20,0.5),inset_0_1px_1px_rgba(255,255,255,0.9),inset_0_-1px_2px_rgba(148,163,184,0.25)] backdrop-blur-xl transition-all duration-300 focus-within:border-teal-300/80 focus-within:bg-white/95 focus-within:shadow-[0_10px_30px_-10px_rgba(20,184,166,0.35),inset_0_1px_1px_rgba(255,255,255,0.9)]">
         <input
           ref={inputRef}
           type="text"
@@ -109,13 +109,14 @@ export default function QuickNavSearch() {
           onChange={(e) => { setQuery(e.target.value); setActive(0); openDropdown(); }}
           onFocus={openDropdown}
           onKeyDown={onKeyDown}
-          className="w-full bg-transparent px-2.5 py-1.5 text-center text-xs font-medium text-white placeholder:text-white/35 focus:outline-none"
+          className="w-full bg-transparent py-1 text-left text-xs font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none"
         />
+        <span className="mx-2 h-5 w-px shrink-0 bg-slate-300/80" />
         <button
           type="button"
           aria-label="Search"
           onClick={() => (results.length ? go(results[Math.min(active, results.length - 1)].to) : openDropdown())}
-          className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[linear-gradient(135deg,#0f766e,#14b8a6)] text-white shadow-[0_6px_16px_-6px_rgba(20,184,166,0.6),inset_0_1px_1px_rgba(255,255,255,0.2)] transition-transform hover:scale-105 active:scale-95"
+          className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-slate-600 transition-all duration-300 hover:bg-slate-100 hover:text-teal-600 active:scale-95"
         >
           <Search className="h-4 w-4" />
         </button>

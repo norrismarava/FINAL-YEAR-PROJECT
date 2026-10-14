@@ -756,7 +756,7 @@ export default function PatientDashboardPage() {
                         key={idx}
                         className={itemPillClass}
                       >
-                        {item.drugName} — {item.dosage}
+                        {item.drugName}, {item.dosage}
                       </span>
                     ))}
                   </div>
@@ -801,7 +801,7 @@ export default function PatientDashboardPage() {
                     </span>
                     <div>
                       <div className={`font-semibold ${headingText}`}>{o.testType}</div>
-                      <div className={`text-xs ${subtext}`}>{o.ticketCode} — {o.department}</div>
+                      <div className={`text-xs ${subtext}`}>{o.ticketCode}, {o.department}</div>
                     </div>
                   </div>
                   <span

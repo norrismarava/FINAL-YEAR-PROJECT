@@ -1296,7 +1296,7 @@ export function ReportsPage() {
                 const maxReg = Math.max(1, ...(peakHoursQuery.data?.hourly ?? []).map((x) => x.registrations));
                 const heightPct = Math.max(2, Math.round((h.registrations / maxReg) * 100));
                 return (
-                  <div key={h.hour} className="flex flex-1 flex-col items-center justify-end" title={`${h.hour}:00 — ${h.registrations} registrations`}>
+                  <div key={h.hour} className="flex flex-1 flex-col items-center justify-end" title={`${h.hour}:00, ${h.registrations} registrations`}>
                     <div className="w-full rounded-t bg-primary/70" style={{ height: `${heightPct}%` }} />
                     <span className="mt-1 text-[9px] text-muted-foreground">{h.hour}</span>
                   </div>
@@ -1347,7 +1347,7 @@ export function ReportsPage() {
                   <span key={d.department} className={`rounded-full px-3 py-1 text-xs font-bold ${
                     d.congestionLevel === "critical" ? "bg-destructive/20 text-destructive" : "bg-amber-500/15 text-amber-600 dark:text-amber-300"
                   }`}>
-                    {d.department} — {d.congestionLevel} ({d.utilization}%)
+                    {d.department}, {d.congestionLevel} ({d.utilization}%)
                   </span>
                 ))}
               </div>
@@ -1497,15 +1497,15 @@ export function ReportsPage() {
             <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-xl border border-border/70 bg-background/70 p-4">
                 <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Provider</div>
-                <div className="mt-2 font-display text-xl font-bold">{whatsAppQuery.data?.provider ?? "—"}</div>
+                <div className="mt-2 font-display text-xl font-bold">{whatsAppQuery.data?.provider ?? "N/A"}</div>
               </div>
               <div className="rounded-xl border border-border/70 bg-background/70 p-4">
                 <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">API Version</div>
-                <div className="mt-2 font-display text-xl font-bold">{whatsAppQuery.data?.apiVersion ?? "—"}</div>
+                <div className="mt-2 font-display text-xl font-bold">{whatsAppQuery.data?.apiVersion ?? "N/A"}</div>
               </div>
               <div className="rounded-xl border border-border/70 bg-background/70 p-4">
                 <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Language</div>
-                <div className="mt-2 font-display text-xl font-bold">{whatsAppQuery.data?.language ?? "—"}</div>
+                <div className="mt-2 font-display text-xl font-bold">{whatsAppQuery.data?.language ?? "N/A"}</div>
               </div>
               <div className="rounded-xl border border-border/70 bg-background/70 p-4">
                 <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Configured</div>
@@ -2110,7 +2110,7 @@ function PrescriptionCard({ prescription, canAdvance, onAdvance, advancing, onSt
                 <span className={`font-medium ${item.inStock === false ? "text-destructive" : ""}`}>
                   {item.drugName}
                 </span>
-                {" — "}
+                {", "}
                 <span className="text-muted-foreground">{item.dosage}</span>
                 {item.quantity && (
                   <span className="text-muted-foreground"> ({item.quantity})</span>
