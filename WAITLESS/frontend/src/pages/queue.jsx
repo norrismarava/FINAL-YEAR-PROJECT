@@ -181,7 +181,11 @@ export default function QueuePage() {
           <div className="relative grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
             {/* Left column — title & badges */}
             <div>
-              <div className="text-[0.7rem] font-bold uppercase tracking-[0.24em] text-teal-300">Public display</div>
+              <div className="inline-flex items-center gap-3 text-[0.7rem] font-bold uppercase tracking-[0.24em] text-teal-300">
+                <span className="h-px w-8 bg-gradient-to-r from-transparent to-teal-300/60" />
+                Public display
+                <span className="h-px w-8 bg-gradient-to-l from-transparent to-teal-300/60" />
+              </div>
               <h1 className="mt-3 font-display text-4xl font-bold tracking-tight text-white sm:text-5xl">
                 Live queue board
               </h1>
@@ -210,8 +214,10 @@ export default function QueuePage() {
 
               <div className="relative flex items-center justify-between gap-3">
                 <div>
-                  <div className="text-[11px] font-bold uppercase tracking-[0.28em] text-teal-300/80">
+                  <div className="inline-flex items-center gap-3 text-[11px] font-bold uppercase tracking-[0.28em] text-teal-300/90">
+                    <span className="h-px w-8 bg-gradient-to-r from-transparent to-teal-300/60" />
                     Queue status
+                    <span className="h-px w-8 bg-gradient-to-l from-transparent to-teal-300/60" />
                   </div>
                   <div className="mt-3 font-display text-4xl font-bold tracking-tight text-white sm:text-5xl">
                     {now.toLocaleTimeString([], {

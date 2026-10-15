@@ -140,6 +140,17 @@ export async function registerPatientAccount({
     throw new HttpError(400, "A patient account with this email already exists.");
   }
 
+  const trimmedNationalId = nationalId?.trim();
+  if (trimmedNationalId) {
+    const [nationalIdRows] = await pool.execute(
+      "SELECT id FROM patient_users WHERE national_id = ? LIMIT 1",
+      [trimmedNationalId],
+    );
+    if (nationalIdRows.length) {
+      throw new HttpError(400, "A patient account with this ID number already exists.");
+    }
+  }
+
   const passwordHash = await bcrypt.hash(password, 10);
   const id = crypto.randomUUID();
 

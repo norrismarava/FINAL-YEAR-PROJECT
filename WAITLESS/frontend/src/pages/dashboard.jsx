@@ -8,11 +8,11 @@ import {
   Clock3,
   FileText,
   Hash,
+  LayoutGrid,
   LoaderCircle,
   MessageCircle,
   RefreshCw,
   Shield,
-  Sparkles,
   Timer,
   Users,
   XCircle,
@@ -548,7 +548,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <section className="min-h-screen bg-[#0a0f1c] px-4 py-5 text-slate-200 sm:px-5 lg:px-6">
+    <section className="min-h-screen bg-[#0a0f1c] px-4 pb-5 pt-4 text-slate-200 sm:px-5 lg:px-6">
       <style>{`
         @keyframes waitlessPulse {
           0%, 100% { opacity: 1; transform: scale(1); }
@@ -586,6 +586,7 @@ export default function DashboardPage() {
       <div className="mx-auto max-w-[1500px]">
         <HeroGreeting
           staffName={staffName}
+          role={auth.user?.role}
           departmentCount={departmentSummaries.filter(
             (department) => department.total > 0,
           ).length}
@@ -637,7 +638,7 @@ export default function DashboardPage() {
           total={metrics.total}
         />
 
-        <div className="waitless-fade-up mt-5 grid items-start gap-5 xl:grid-cols-3">
+        <div className="waitless-fade-up mt-5 grid gap-5 xl:grid-cols-3">
           <div className="xl:col-span-2">
             <QueueOverview tickets={queueRows} />
           </div>
@@ -657,13 +658,13 @@ export default function DashboardPage() {
           />
         </div>
 
-        <div className="waitless-fade-up mt-5 grid items-start gap-5 xl:grid-cols-2">
+        <div className="waitless-fade-up mt-5 grid gap-5 xl:grid-cols-2">
           <QueueTrend data={chartData} />
 
           <DepartmentLoad departments={departmentSummaries} />
         </div>
 
-        <div className="waitless-fade-up mt-5 grid items-start gap-5 xl:grid-cols-2">
+        <div className="waitless-fade-up mt-5 grid gap-5 xl:grid-cols-2">
           <RecentActivity
             activity={recentActivity}
             onRefresh={refreshLiveData}
@@ -709,12 +710,16 @@ export default function DashboardPage() {
 
 function HeroGreeting({
   staffName,
+  role,
   departmentCount,
   queuePressure,
   clearanceRate,
   realtimeStatus,
 }) {
   const greeting = getGreeting();
+  const roleLabel = (role ?? "staff")
+    .replace(/[-_]/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 
   return (
     <header className="relative overflow-hidden rounded-3xl bg-[linear-gradient(135deg,#0f766e_0%,#0e7490_47%,#1e3a5f_100%)] shadow-[0_20px_60px_-15px_rgba(15,118,110,0.5)]">
@@ -733,45 +738,52 @@ function HeroGreeting({
       <div className="absolute -bottom-32 -left-20 h-72 w-72 rounded-full bg-teal-400/10 blur-3xl" />
 
       <div className="relative flex flex-col gap-6 px-6 py-7 sm:px-8 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 backdrop-blur">
-              <Sparkles className="h-3 w-3 text-teal-100" />
-              <span className="text-[11px] font-semibold uppercase tracking-[0.28em] text-teal-50/90">
-                Hospital operations
+        <div className="flex items-center gap-5">
+          <span className="grid h-16 w-16 shrink-0 place-items-center rounded-2xl border border-white/15 bg-white/10 backdrop-blur">
+            <LayoutGrid className="h-7 w-7 text-teal-100" />
+          </span>
+
+          <div>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-sm font-medium text-teal-50/85">
+                {greeting},
               </span>
-            </span>
-            <span
-              className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] ${
-                realtimeStatus === "connected"
-                  ? "bg-teal-400/20 text-teal-200"
-                  : "bg-amber-400/20 text-amber-200"
-              }`}
-            >
+              <span className="rounded-md bg-teal-300/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.14em] text-teal-100">
+                {roleLabel}
+              </span>
               <span
-                className={`h-1.5 w-1.5 rounded-full ${
+                className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[9px] font-semibold uppercase tracking-[0.14em] ${
                   realtimeStatus === "connected"
-                    ? "bg-teal-300"
-                    : "bg-amber-300"
+                    ? "bg-teal-400/20 text-teal-200"
+                    : "bg-amber-400/20 text-amber-200"
                 }`}
-              />
-              {realtimeStatus === "connected" ? "Live" : "Syncing"}
-            </span>
+              >
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${
+                    realtimeStatus === "connected"
+                      ? "bg-teal-300"
+                      : "bg-amber-300"
+                  }`}
+                />
+                {realtimeStatus === "connected" ? "Live" : "Syncing"}
+              </span>
+            </div>
+
+            <h1 className="mt-1 text-2xl font-bold tracking-tight text-white sm:text-3xl">
+              Hi {staffName}!
+            </h1>
+
+            <p className="mt-1.5 text-sm text-teal-50/80">
+              {new Date().toLocaleDateString([], {
+                weekday: "long",
+                month: "long",
+                day: "numeric",
+                year: "numeric",
+              })}{" "}
+              · Live queue across {departmentCount} department
+              {departmentCount === 1 ? "" : "s"}
+            </p>
           </div>
-
-          <h1 className="mt-3 text-2xl font-bold tracking-tight text-white sm:text-3xl">
-            {greeting}, {staffName}
-          </h1>
-
-          <p className="mt-2 text-sm text-teal-50/80">
-            Live queue across {departmentCount} department
-            {departmentCount === 1 ? "" : "s"} ·{" "}
-            {new Date().toLocaleDateString([], {
-              weekday: "long",
-              month: "long",
-              day: "numeric",
-            })}
-          </p>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
@@ -920,7 +932,7 @@ function KpiCard({
 
 function QueueOverview({ tickets }) {
   return (
-    <article className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#111827] shadow-[0_12px_40px_rgba(0,0,0,0.18)]">
+    <article className="h-full overflow-hidden rounded-2xl border border-white/[0.08] bg-[#111827] shadow-[0_12px_40px_rgba(0,0,0,0.18)]">
       <PanelHeader
         eyebrow="Live data"
         title="Queue Overview"

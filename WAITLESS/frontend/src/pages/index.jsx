@@ -216,10 +216,10 @@ function AnimatedCounter({ target, suffix = "", duration = 2000 }) {
 
 /* ─── Section eyebrow, spaced gradient text between tapering hairlines ─── */
 const EYEBROW_TONES = {
-  teal: { text: "from-teal-300 via-cyan-200 to-teal-300", line: "to-teal-300/60" },
-  cyan: { text: "from-cyan-200 via-teal-100 to-cyan-300", line: "to-cyan-300/60" },
-  red: { text: "from-red-300 via-amber-300 to-red-300", line: "to-red-300/60" },
-  blue: { text: "from-blue-300 via-cyan-200 to-blue-300", line: "to-blue-300/60" },
+  teal: { text: "from-teal-300 to-teal-300", line: "to-teal-300/60" },
+  cyan: { text: "from-cyan-300 to-cyan-300", line: "to-cyan-300/60" },
+  red: { text: "from-red-300 to-red-300", line: "to-red-300/60" },
+  blue: { text: "from-blue-300 to-blue-300", line: "to-blue-300/60" },
 };
 
 function SectionEyebrow({ children, tone = "teal", center = true }) {
@@ -397,10 +397,20 @@ function Hero() {
             className="mt-4 max-w-xl text-balance text-4xl font-extrabold leading-[1.08] tracking-tight sm:mt-6 sm:text-5xl lg:text-6xl"
             style={{ fontFamily: "'Open Sans', system-ui, sans-serif", animation: "hero-text-rise 0.9s cubic-bezier(0.16,1,0.3,1) 0.2s both" }}
           >
-            Skip the queue.
+            <span className="text-white">Skip the </span>
+            <span
+              className="text-transparent"
+              style={{ WebkitTextStroke: "2px rgba(103,232,249,0.85)" }}
+            >
+              queue.
+            </span>
             <br />
-            <span className="bg-gradient-to-r from-teal-300 via-cyan-300 to-blue-400 bg-clip-text text-transparent" style={{ backgroundSize: "200% 100%", animation: "gradient-shift 6s ease-in-out infinite" }}>
-              Not the care.
+            <span className="text-white">Not the </span>
+            <span
+              className="bg-gradient-to-r from-teal-300 via-cyan-300 to-blue-400 bg-clip-text italic text-transparent"
+              style={{ fontFamily: "Georgia, 'Times New Roman', serif", backgroundSize: "200% 100%", animation: "gradient-shift 6s ease-in-out infinite" }}
+            >
+              care.
             </span>
           </h1>
 
