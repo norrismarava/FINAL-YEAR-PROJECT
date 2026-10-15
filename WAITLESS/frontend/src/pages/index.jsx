@@ -26,7 +26,7 @@ import {
   Wifi,
 } from "lucide-react";
 
-import hospitalHeroImage from "@/assets/cover/Heroes' Essentials_ A Minimal Tribute.jpeg";
+import hospitalHeroImage from "@/assets/cover/Heroes' Essentials_ A Minimal Tribute.jpg";
 import hospitalHeroBackground from "@/assets/bgfinal.png";
 import deptOpdImage from "@/assets/Every service point, one queue/TRY OPD.jpeg";
 import deptTriageImage from "@/assets/Every service point, one queue/TRIAGE.jpg";
