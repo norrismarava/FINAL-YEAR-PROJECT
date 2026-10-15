@@ -125,7 +125,7 @@ export default function StaffSignupPage() {
           <button
             type="button"
             onClick={() => navigate("/login")}
-            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,#0d9488,#14b8a6_50%,#0f766e)] px-4 text-sm font-bold uppercase tracking-[0.08em] text-white shadow-[0_24px_48px_-28px_rgba(13,148,136,0.74)] transition hover:-translate-y-0.5 hover:brightness-110"
+            className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[linear-gradient(135deg,#0d9488,#14b8a6_55%,#22d3ee)] px-4 text-sm font-semibold text-white shadow-[0_14px_30px_-10px_rgba(20,184,166,0.55),inset_0_1px_0_rgba(255,255,255,0.3)] transition hover:-translate-y-0.5 hover:brightness-110"
           >
             Sign in now
             <ArrowRight className="h-4 w-4" />
@@ -149,7 +149,7 @@ export default function StaffSignupPage() {
         </span>
       }
     >
-      <form className="space-y-5" onSubmit={handleSubmit}>
+      <form className="space-y-3.5" onSubmit={handleSubmit}>
         <AuthError icon={AlertCircle} message={error} />
 
         <AuthInput
@@ -164,7 +164,7 @@ export default function StaffSignupPage() {
           onChange={handleChange}
         />
 
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           <AuthInput
             icon={User}
             label="Full name"
@@ -254,7 +254,7 @@ export default function StaffSignupPage() {
           />
         </div>
 
-        <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-xs leading-relaxed text-slate-300">
+        <div className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[11px] leading-relaxed text-slate-300">
           <p className="font-semibold text-cyan-100/80">
             <ShieldCheck className="mr-1 inline h-3.5 w-3.5" />
             Your role and department are locked to the access code, you cannot change them here.

@@ -173,9 +173,9 @@ export default function SelfRegisterPage() {
         <style>{SUCCESS_STYLES}</style>
         {/* Background image */}
         <div className="pointer-events-none absolute inset-0 -z-20 hidden lg:block">
-          <img src={authBackground} alt="" className="h-full w-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-br from-[#04141f]/82 via-[#062a35]/72 to-[#0a1f2e]/78" />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#04141f]/60 via-transparent to-[#04141f]/30" />
+          <img src={authBackground} alt="" className="h-full w-full scale-[1.04] object-cover blur-[2px]" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#04141f]/88 via-[#062a35]/80 to-[#0a1f2e]/84" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#04141f]/70 via-transparent to-[#04141f]/35" />
         </div>
         <div className="absolute inset-0 -z-10 bg-[#04141f] lg:hidden" />
 

@@ -17,7 +17,6 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
-  PanelLeftClose,
   PanelLeftOpen,
   Pill,
   Search,
@@ -42,6 +41,7 @@ import { LoadingPanel } from "@/components/ui/system-loader";
 import { LogoLoader } from "@/components/LogoLoader";
 import SiteFooter from "@/components/SiteFooter";
 import QuickNavSearch from "@/components/QuickNavSearch";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { useQueueRealtime } from "@/sockets/QueueRealtimeProvider";
 import {
   AlertDialog,
@@ -176,12 +176,14 @@ const STAFF_WORKSPACE_ITEMS = [
 
 const AUTH_ROUTE_PREFIXES = [
   "/login",
+  "/admin/login",
   "/admin/forgot-password",
   "/admin/reset-password",
   "/admin/staff-signup",
   "/patient/register",
   "/patient/forgot-password",
   "/patient/reset-password",
+  "/self-register",
 ];
 
 const STAFF_WORKSPACE_ROUTE_PREFIXES = ["/admin"];
@@ -200,6 +202,7 @@ function isAuthPath(pathname) {
 }
 
 function isPatientPortalPath(pathname) {
+  if (isAuthPath(pathname)) return false;
   return (
     pathname.startsWith("/track") ||
     pathname.startsWith("/queue") ||
@@ -359,7 +362,7 @@ function AppScaffold() {
   }
 
   if (isWorkspaceRoute && auth.isReady && !auth.isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/admin/login" replace />;
   }
 
   if (isPatientShellRoute) {
@@ -416,7 +419,9 @@ function AppScaffold() {
       )}
 
       <div className="relative flex min-h-screen flex-col">
-        <Header onOpenMobileNav={() => setIsMobileNavOpen(true)} />
+        {isAuthRoute ? null : (
+          <Header onOpenMobileNav={() => setIsMobileNavOpen(true)} />
+        )}
         <main className="flex-1">
           {isWorkspaceRoute && !auth.isReady ? (
             <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
@@ -442,7 +447,7 @@ function AppScaffold() {
             </div>
           )}
         </main>
-        {isStaffWorkspaceTheme ? null : <SiteFooter />}
+        {isStaffWorkspaceTheme || isAuthRoute ? null : <SiteFooter />}
         <IdleLogoutManager />
         <ChatbotWidget />
         <OfflineIndicator />
@@ -490,7 +495,11 @@ function Header({ onOpenMobileNav }) {
             isPublicGlassRoute
               ? "relative overflow-hidden rounded-2xl bg-white/72 px-5 py-3 shadow-[0_12px_40px_-12px_rgba(15,23,42,0.12)] backdrop-blur-2xl sm:px-7"
               : isDarkHeader
-                ? `relative overflow-hidden ${isFullBleedHeader ? "border-x-0 border-t-0" : "rounded-[1.85rem] border"} border-cyan-200/12 bg-[linear-gradient(135deg,rgba(2,12,24,0.96),rgba(5,24,44,0.94)_34%,rgba(8,40,68,0.9)_72%,rgba(12,66,94,0.84)_100%)] px-5 py-4 shadow-[0_26px_76px_rgba(2,6,23,0.42)] backdrop-blur-2xl sm:px-8`
+                ? `relative overflow-hidden ${isFullBleedHeader ? "border-x-0 border-t-0" : "rounded-[1.85rem] border"} ${
+                    isStaffWorkspaceTheme
+                      ? "border-transparent bg-[linear-gradient(135deg,rgba(10,15,28,0.97),rgba(6,20,31,0.96)_45%,rgba(8,40,68,0.88)_100%)] px-5 py-3 shadow-[0_12px_36px_rgba(2,6,23,0.35)] backdrop-blur-2xl sm:px-8"
+                      : "border-cyan-200/12 bg-[linear-gradient(135deg,rgba(2,12,24,0.96),rgba(5,24,44,0.94)_34%,rgba(8,40,68,0.9)_72%,rgba(12,66,94,0.84)_100%)] px-5 py-4 shadow-[0_26px_76px_rgba(2,6,23,0.42)] backdrop-blur-2xl sm:px-8"
+                  }`
                 : "surface-panel px-4 py-3 sm:px-5"
           }
         >
@@ -597,6 +606,7 @@ function Header({ onOpenMobileNav }) {
                 ) : (
                   <QuickNavSearch />
                 )}
+                {isStaffWorkspaceTheme ? <ThemeToggle variant="ghost" /> : null}
                 {isStaffWorkspaceTheme ? <NotificationsBell /> : null}
                 {isStaffWorkspaceTheme ? (
                   <StaffAccountMenu auth={auth} displayName={displayName} />
@@ -1127,31 +1137,41 @@ function StaffAccountMenu({ auth, displayName }) {
         onClick={() => setIsOpen((current) => !current)}
         aria-expanded={isOpen}
         aria-haspopup="menu"
-        className="relative inline-flex h-11 items-center gap-3 overflow-hidden rounded-full border border-blue-300/40 bg-[linear-gradient(180deg,#5b8def_0%,#2f63ea_48%,#1d4ed8_100%)] pl-1.5 pr-3 text-white shadow-[0_14px_30px_-12px_rgba(37,99,235,0.65),inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-2px_6px_rgba(15,40,120,0.55)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_36px_-12px_rgba(37,99,235,0.75),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-2px_6px_rgba(15,40,120,0.55)]"
+        className="inline-flex h-11 items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.05] py-1.5 pl-1.5 pr-3 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-xl transition-all hover:border-teal-300/30 hover:bg-white/[0.08] hover:shadow-[0_0_0_3px_rgba(45,212,191,0.08)]"
       >
-        <span className="pointer-events-none absolute inset-x-2 top-0 h-[55%] rounded-b-[2rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.35),rgba(255,255,255,0))]" />
         <StaffAvatar
           user={auth.user}
           displayName={accountName}
-          className="relative h-8 w-8 rounded-full bg-white/20 ring-2 ring-white/50"
+          className="h-8 w-8 rounded-full bg-[linear-gradient(135deg,rgba(13,148,136,0.55),rgba(34,211,238,0.35))]"
           fallbackClassName="text-[11px] font-bold text-white"
         />
-        <span className="relative hidden min-w-0 text-left sm:flex sm:flex-col sm:justify-center">
+        <span className="hidden min-w-0 text-left sm:flex sm:flex-col sm:justify-center">
           <span className="truncate text-sm font-semibold leading-none text-white">
             {accountName}
           </span>
-          <span className="mt-1 truncate text-xs leading-none text-blue-100/80">
+          <span className="mt-1 truncate text-[11px] leading-none text-teal-200/70">
             {accountContext}
           </span>
         </span>
         <ChevronDown
-          className={`relative h-4 w-4 shrink-0 text-blue-100/80 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
 
       {isOpen ? (
-        <div className="absolute right-0 top-[calc(100%+0.75rem)] z-50 w-[min(18rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-cyan-200/12 bg-[linear-gradient(180deg,rgba(8,22,38,0.98),rgba(5,17,30,0.98))] p-2 text-white shadow-[0_28px_80px_-28px_rgba(2,6,23,0.8),0_0_0_1px_rgba(34,211,238,0.04)] backdrop-blur-2xl">
-          <div className="space-y-1 px-1 py-1">
+        <div className="absolute right-0 top-[calc(100%+0.75rem)] z-50 w-[min(15rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-cyan-200/12 bg-[linear-gradient(180deg,rgba(8,22,38,0.98),rgba(5,17,30,0.98))] text-white shadow-[0_28px_80px_-28px_rgba(2,6,23,0.8),0_0_0_1px_rgba(34,211,238,0.04)] backdrop-blur-2xl">
+          {/* Account header */}
+          <div className="border-b border-white/10 px-4 pb-3.5 pt-4">
+            <div className="text-sm font-bold text-white">{displayName}</div>
+            <div className="mt-0.5 truncate text-xs text-slate-400">
+              {auth.user?.email ?? ""}
+            </div>
+            <span className="mt-2.5 inline-flex items-center rounded-full bg-teal-400/12 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-teal-300 ring-1 ring-inset ring-teal-400/25">
+              {roleLabel}
+            </span>
+          </div>
+
+          <div className="space-y-1 p-2">
             <Link
               to="/admin/profile"
               className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-100 transition-colors hover:bg-white/8"
@@ -1170,7 +1190,7 @@ function StaffAccountMenu({ auth, displayName }) {
 
           <div className="my-1.5 border-t border-white/10" />
 
-          <div className="px-1 py-1">
+          <div className="px-2 pb-2">
             <button
               type="button"
               onClick={() => {
@@ -1429,7 +1449,7 @@ function StaffWorkspaceShell({
                   {isSidebarCollapsed ? (
                     <PanelLeftOpen className="h-4 w-4" />
                   ) : (
-                    <PanelLeftClose className="h-4 w-4" />
+                    <X className="h-4 w-4" />
                   )}
                 </button>
               </div>

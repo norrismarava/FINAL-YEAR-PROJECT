@@ -12,6 +12,7 @@ import {
   FileChartColumn,
   FileText,
   FlaskConical,
+  HeartPulse,
   LoaderCircle,
   MapPin,
   MessageCircle,
@@ -19,8 +20,10 @@ import {
   Plus,
   RefreshCw,
   Search,
+  ScanLine,
   Send,
   ShieldCheck,
+  Siren,
   Sparkles,
   Stethoscope,
   Timer,
@@ -83,6 +86,12 @@ import {
 } from "@/services/queueApi";
 import { useQueueRealtime } from "@/sockets/QueueRealtimeProvider";
 import { exportCSV, exportPDF, exportXLSX } from "@/utils/reportExport";
+import deptOpdImage from "@/assets/Every service point, one queue/TRY OPD.jpeg";
+import deptTriageImage from "@/assets/Every service point, one queue/TRIAGE.jpg";
+import deptPharmacyImage from "@/assets/Every service point, one queue/PHAMARCY.jpeg";
+import deptLabImage from "@/assets/Every service point, one queue/LABORATORY.jpeg";
+import deptRadiologyImage from "@/assets/Every service point, one queue/RADIOLOGY.jpg";
+import deptOiImage from "@/assets/Every service point, one queue/OI CLINIC.jpg";
 
 const isBrowser = typeof window !== "undefined";
 const EMPTY_LIST = [];
@@ -98,9 +107,15 @@ function ModulePage({ eyebrow, title, description, icon: Icon, children }) {
     <section className="staff-module-page mx-auto min-h-[calc(100vh-7rem)] w-full max-w-[96rem] px-1 py-6 sm:py-8">
       <header className="surface-panel flex flex-wrap items-start justify-between gap-5 p-6 sm:p-8">
         <div className="max-w-3xl">
-          <div className="eyebrow">{eyebrow}</div>
-          <h1 className="mt-3 font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          <div className="flex items-center gap-3">
+            <span className="bg-gradient-to-r from-teal-300 to-teal-300 bg-clip-text text-[11px] font-black uppercase tracking-[0.32em] text-transparent">
+              {eyebrow}
+            </span>
+            <span className="h-px w-9 bg-gradient-to-l from-transparent to-teal-300/60" />
+          </div>
+          <h1 className="mt-3 inline-flex items-center gap-4 font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             {title}
+            <span className="mt-1 h-px w-10 bg-gradient-to-l from-transparent to-teal-300/50" />
           </h1>
           <p className="mt-3 text-sm leading-6 text-muted-foreground sm:text-base">{description}</p>
         </div>
@@ -129,23 +144,27 @@ function QueryBoundary({ query, title, children }) {
   return children;
 }
 
-function MetricTile({ label, value, detail, icon: Icon, accent = "text-primary bg-primary/15" }) {
+function MetricTile({ label, value, detail, icon: Icon, accent = "text-teal-300 bg-teal-400/15", tint = "#14b8a6" }) {
   return (
-    <div className="surface-panel p-5">
+    <div className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#111827] p-5 shadow-[0_12px_40px_rgba(0,0,0,0.18)] transition-all duration-300 hover:-translate-y-1 hover:border-white/[0.16]">
+      <span
+        className="absolute inset-x-0 top-0 h-0.5"
+        style={{ background: `linear-gradient(90deg, ${tint}00, ${tint}, ${tint}00)` }}
+      />
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+          <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/40">
             {label}
           </div>
-          <div className="mt-3 font-display text-4xl font-bold tracking-tight text-foreground">
+          <div className="mt-3 font-display text-4xl font-bold tracking-tight text-white">
             {value}
           </div>
           {detail ? (
-            <p className="mt-1.5 text-xs leading-5 text-muted-foreground">{detail}</p>
+            <p className="mt-1.5 text-xs leading-5 text-white/40">{detail}</p>
           ) : null}
         </div>
         {Icon ? (
-          <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${accent}`}>
+          <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/10 ${accent}`}>
             <Icon className="h-5 w-5" />
           </span>
         ) : null}
@@ -486,6 +505,69 @@ function MissedRecallRow({ ticket }) {
 }
 
 
+const DEPT_CARD_META = {
+  OPD: {
+    icon: Stethoscope,
+    image: deptOpdImage,
+    body: "General outpatient consultations, follow-up clinics, and referrals.",
+    tint: "#14b8a6",
+    text: "text-teal-300",
+    chip: "bg-teal-400/15 text-teal-200 ring-teal-300/25",
+    stat: "border-teal-300/15 bg-teal-400/[0.06]",
+    overlay: "from-teal-500/50",
+  },
+  "Casualty / Triage": {
+    icon: Siren,
+    image: deptTriageImage,
+    body: "24/7 emergency assessment with four-tier priority routing.",
+    tint: "#f43f5e",
+    text: "text-rose-300",
+    chip: "bg-rose-400/15 text-rose-200 ring-rose-300/25",
+    stat: "border-rose-300/15 bg-rose-400/[0.06]",
+    overlay: "from-rose-500/50",
+  },
+  Pharmacy: {
+    icon: Pill,
+    image: deptPharmacyImage,
+    body: "Prescription dispensing with WhatsApp call-up alerts.",
+    tint: "#38bdf8",
+    text: "text-sky-300",
+    chip: "bg-sky-400/15 text-sky-200 ring-sky-300/25",
+    stat: "border-sky-300/15 bg-sky-400/[0.06]",
+    overlay: "from-sky-500/50",
+  },
+  Laboratory: {
+    icon: FlaskConical,
+    image: deptLabImage,
+    body: "Blood work and diagnostic testing, tracked from order to result.",
+    tint: "#a78bfa",
+    text: "text-violet-300",
+    chip: "bg-violet-400/15 text-violet-200 ring-violet-300/25",
+    stat: "border-violet-300/15 bg-violet-400/[0.06]",
+    overlay: "from-violet-500/50",
+  },
+  Radiology: {
+    icon: ScanLine,
+    image: deptRadiologyImage,
+    body: "Imaging orders linked to each visit, with live status updates.",
+    tint: "#fbbf24",
+    text: "text-amber-300",
+    chip: "bg-amber-400/15 text-amber-200 ring-amber-300/25",
+    stat: "border-amber-300/15 bg-amber-400/[0.06]",
+    overlay: "from-amber-500/50",
+  },
+  "OI Clinic": {
+    icon: HeartPulse,
+    image: deptOiImage,
+    body: "Opportunistic infection care with discreet follow-up queues.",
+    tint: "#fb7185",
+    text: "text-pink-300",
+    chip: "bg-pink-400/15 text-pink-200 ring-pink-300/25",
+    stat: "border-pink-300/15 bg-pink-400/[0.06]",
+    overlay: "from-pink-500/50",
+  },
+};
+
 export function DepartmentsPage() {
   const query = useDashboardSummary();
   const tickets = query.data?.tickets ?? EMPTY_LIST;
@@ -500,29 +582,85 @@ export function DepartmentsPage() {
       <QueryBoundary query={query} title="Loading departments">
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {DEPARTMENTS.map((department) => {
+            const meta = DEPT_CARD_META[department];
+            const Icon = meta?.icon ?? Building2;
             const scoped = tickets.filter((ticket) => ticket.department === department);
             const waiting = scoped.filter((ticket) => ticket.status === "waiting").length;
             const active = scoped.filter((ticket) =>
               ["called", "in-service"].includes(ticket.status),
             ).length;
+            const closed = scoped.filter((ticket) => ticket.status === "completed").length;
+            const pressure = scoped.length
+              ? Math.round((waiting / scoped.length) * 100)
+              : 0;
+
             return (
-              <article key={department} className="surface-panel p-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h2 className="font-display text-xl font-bold text-foreground">{department}</h2>
-                    <p className="mt-1 text-xs text-muted-foreground">Live department workload</p>
-                  </div>
-                  <span className="font-display text-3xl font-bold text-primary">
-                    {scoped.length}
+              <article
+                key={department}
+                className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-[#111827] shadow-[0_12px_40px_rgba(0,0,0,0.18)] transition-all duration-300 hover:-translate-y-1 hover:border-white/[0.16]"
+              >
+                {/* Department image banner */}
+                <div className="relative h-28 overflow-hidden">
+                  {meta?.image ? (
+                    <img
+                      src={meta.image}
+                      alt={department}
+                      className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                  ) : null}
+                  <div className={`absolute inset-0 bg-gradient-to-b ${meta?.overlay ?? "from-teal-500/50"} via-[#111827]/40 to-[#111827]`} />
+                  <span className={`absolute left-4 top-4 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ring-1 ring-inset backdrop-blur ${meta?.chip ?? "bg-teal-400/15 text-teal-200 ring-teal-300/25"}`}>
+                    {waiting} waiting
+                  </span>
+                  <span className="absolute right-4 top-4 inline-flex items-center gap-1.5 rounded-full bg-black/35 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-white/85 ring-1 ring-inset ring-white/15 backdrop-blur">
+                    {scoped.length} today
                   </span>
                 </div>
-                <div className="mt-5 grid grid-cols-3 gap-2">
-                  <DepartmentStat label="Waiting" value={waiting} />
-                  <DepartmentStat label="Active" value={active} />
-                  <DepartmentStat
-                    label="Closed"
-                    value={scoped.filter((ticket) => ticket.status === "completed").length}
-                  />
+
+                {/* Icon tile overlapping the banner */}
+                <div className="relative -mt-8 px-5">
+                  <span
+                    className="grid h-14 w-14 place-items-center rounded-2xl border border-white/10 shadow-[0_12px_30px_-10px_rgba(0,0,0,0.7)]"
+                    style={{
+                      background: `linear-gradient(135deg, ${meta?.tint ?? "#14b8a6"}33, ${meta?.tint ?? "#14b8a6"}14)`,
+                    }}
+                  >
+                    <Icon className={`h-6 w-6 ${meta?.text ?? "text-teal-300"}`} />
+                  </span>
+                </div>
+
+                <div className="flex flex-1 flex-col px-5 pb-5 pt-3">
+                  <h2 className="font-display text-xl font-bold text-white">
+                    {department}
+                  </h2>
+                  <p className="mt-1 text-xs leading-5 text-white/45">
+                    {meta?.body ?? "Live department workload"}
+                  </p>
+
+                  {/* Pressure bar */}
+                  <div className="mt-4">
+                    <div className="flex items-center justify-between text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">
+                      <span>Queue pressure</span>
+                      <span className={meta?.text ?? "text-teal-300"}>{pressure}%</span>
+                    </div>
+                    <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+                      <div
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{
+                          width: `${pressure}%`,
+                          background: `linear-gradient(90deg, ${meta?.tint ?? "#14b8a6"}99, ${meta?.tint ?? "#14b8a6"})`,
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="mt-4 grid grid-cols-3 gap-2">
+                    <DepartmentStat label="Waiting" value={waiting} className={meta?.stat} />
+                    <DepartmentStat label="Active" value={active} className={meta?.stat} />
+                    <DepartmentStat label="Closed" value={closed} className={meta?.stat} />
+                  </div>
                 </div>
               </article>
             );
@@ -533,11 +671,11 @@ export function DepartmentsPage() {
   );
 }
 
-function DepartmentStat({ label, value }) {
+function DepartmentStat({ label, value, className }) {
   return (
-    <div className="rounded-lg border border-border/70 bg-background/70 p-3">
-      <div className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
-      <div className="mt-2 font-display text-2xl font-bold">{value}</div>
+    <div className={`rounded-xl border p-3 ${className ?? "border-white/[0.08] bg-white/[0.03]"}`}>
+      <div className="text-[9px] uppercase tracking-[0.18em] text-white/40">{label}</div>
+      <div className="mt-1.5 font-display text-2xl font-bold text-white">{value}</div>
     </div>
   );
 }
@@ -1892,10 +2030,10 @@ function EmptyMessage({ children }) {
 }
 
 const PRESCRIPTION_COLUMNS = [
-  { state: "prescribed", label: "Prescribed", badge: "bg-blue-500/15 text-blue-700 dark:text-blue-300", accent: "text-blue-500 bg-blue-500/15" },
-  { state: "dispensing", label: "Dispensing", badge: "bg-amber-500/15 text-amber-700 dark:text-amber-300", accent: "text-amber-500 bg-amber-500/15" },
-  { state: "ready", label: "Ready for Collection", badge: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300", accent: "text-emerald-500 bg-emerald-500/15" },
-  { state: "collected", label: "Collected", badge: "bg-zinc-500/15 text-zinc-600 dark:text-zinc-400", accent: "text-zinc-500 bg-zinc-500/15" },
+  { state: "prescribed", label: "Prescribed", badge: "bg-sky-400/15 text-sky-300 ring-sky-300/25", accent: "text-sky-300 bg-sky-400/15", tint: "#38bdf8" },
+  { state: "dispensing", label: "Dispensing", badge: "bg-amber-400/15 text-amber-300 ring-amber-300/25", accent: "text-amber-300 bg-amber-400/15", tint: "#fbbf24" },
+  { state: "ready", label: "Ready for Collection", badge: "bg-emerald-400/15 text-emerald-300 ring-emerald-300/25", accent: "text-emerald-300 bg-emerald-400/15", tint: "#34d399" },
+  { state: "collected", label: "Collected", badge: "bg-zinc-400/15 text-zinc-300 ring-zinc-300/25", accent: "text-zinc-300 bg-zinc-400/15", tint: "#a1a1aa" },
 ];
 
 const NEXT_STATE_MAP = {
@@ -2019,6 +2157,7 @@ export function PharmacyPage() {
                 value={summary?.byState?.[col.state] ?? byState[col.state]?.length ?? 0}
                 icon={Pill}
                 accent={col.accent}
+                tint={col.tint}
               />
             ))}
           </div>
@@ -2045,20 +2184,27 @@ export function PharmacyPage() {
           {/* Kanban columns */}
           <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             {PRESCRIPTION_COLUMNS.map((col) => (
-              <div key={col.state} className="surface-panel p-3">
-                <div className="flex items-center justify-between border-b border-border/60 px-2 pb-3">
+              <div
+                key={col.state}
+                className="relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-[#111827] p-3 shadow-[0_12px_40px_rgba(0,0,0,0.18)]"
+              >
+                <span
+                  className="absolute inset-x-0 top-0 h-0.5"
+                  style={{ background: `linear-gradient(90deg, ${col.tint}00, ${col.tint}, ${col.tint}00)` }}
+                />
+                <div className="flex items-center justify-between px-2 pb-3 pt-1">
                   <span
-                    className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${col.badge}`}
+                    className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ring-1 ring-inset ${col.badge}`}
                   >
                     {col.label}
                   </span>
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-bold tabular-nums">
+                  <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-xs font-bold tabular-nums text-white/70 ring-1 ring-inset ring-white/10">
                     {byState[col.state]?.length ?? 0}
                   </span>
                 </div>
-                <div className="mt-3 space-y-2">
+                <div className="mt-1 space-y-2">
                   {byState[col.state]?.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-xs text-muted-foreground">
+                    <div className="rounded-xl border border-dashed border-white/10 px-3 py-6 text-center text-xs text-white/30">
                       No prescriptions
                     </div>
                   ) : (
@@ -2071,6 +2217,7 @@ export function PharmacyPage() {
                         advancing={advancing === rx.id}
                         onStockFlag={handleStockFlag}
                         flagging={flagging}
+                        tint={col.tint}
                       />
                     ))
                   )}
@@ -2084,39 +2231,43 @@ export function PharmacyPage() {
   );
 }
 
-function PrescriptionCard({ prescription, canAdvance, onAdvance, advancing, onStockFlag, flagging }) {
+function PrescriptionCard({ prescription, canAdvance, onAdvance, advancing, onStockFlag, flagging, tint = "#38bdf8" }) {
   const hasOutOfStock = prescription.hasOutOfStockItems || (prescription.items ?? []).some((i) => i.inStock === false);
   return (
-    <div className={`rounded-lg border bg-card p-3 shadow-sm ${hasOutOfStock ? "border-destructive/40" : "border-border"}`}>
+    <div className={`relative overflow-hidden rounded-xl border bg-white/[0.03] p-3 pl-4 transition-colors hover:bg-white/[0.05] ${hasOutOfStock ? "border-destructive/40" : "border-white/[0.08]"}`}>
+      <span
+        className="absolute inset-y-0 left-0 w-0.5"
+        style={{ background: `linear-gradient(180deg, ${hasOutOfStock ? "#f43f5e" : tint}, ${hasOutOfStock ? "#f43f5e" : tint}33)` }}
+      />
       <div className="flex items-center justify-between">
-        <span className="font-mono text-sm font-bold">{prescription.ticketCode}</span>
+        <span className="font-mono text-sm font-bold text-white">{prescription.ticketCode}</span>
         <div className="flex items-center gap-1.5">
           {hasOutOfStock && (
-            <span className="rounded-full bg-destructive/15 px-2 py-0.5 text-[10px] font-bold text-destructive">
+            <span className="rounded-full bg-rose-500/15 px-2 py-0.5 text-[10px] font-bold text-rose-300 ring-1 ring-inset ring-rose-400/25">
               STOCK ISSUE
             </span>
           )}
-          <Pill className="h-4 w-4 text-muted-foreground" />
+          <Pill className="h-4 w-4 text-white/40" />
         </div>
       </div>
-      <p className="mt-1 text-sm font-medium">{prescription.patientName}</p>
-      <p className="text-xs text-muted-foreground">{prescription.department}</p>
+      <p className="mt-1 text-sm font-medium text-white/85">{prescription.patientName}</p>
+      <p className="text-xs text-sky-300/90">{prescription.department}</p>
 
       {prescription.items?.length > 0 && (
         <ul className="mt-2 space-y-1.5">
           {prescription.items.map((item) => (
             <li key={item.id} className="flex items-center justify-between text-xs">
               <div className="min-w-0">
-                <span className={`font-medium ${item.inStock === false ? "text-destructive" : ""}`}>
+                <span className={`font-medium ${item.inStock === false ? "text-rose-300" : "text-white/80"}`}>
                   {item.drugName}
                 </span>
                 {", "}
-                <span className="text-muted-foreground">{item.dosage}</span>
+                <span className="text-white/45">{item.dosage}</span>
                 {item.quantity && (
-                  <span className="text-muted-foreground"> ({item.quantity})</span>
+                  <span className="text-white/45"> ({item.quantity})</span>
                 )}
                 {item.stockNotes && (
-                  <span className="block text-[10px] italic text-destructive">{item.stockNotes}</span>
+                  <span className="block text-[10px] italic text-rose-300">{item.stockNotes}</span>
                 )}
               </div>
               {onStockFlag && (
@@ -2145,13 +2296,13 @@ function PrescriptionCard({ prescription, canAdvance, onAdvance, advancing, onSt
       )}
 
       {prescription.notes && (
-        <p className="mt-2 text-xs italic text-muted-foreground">
+        <p className="mt-2 text-xs italic text-white/40">
           "{prescription.notes}"
         </p>
       )}
 
       {prescription.prescribedBy && (
-        <p className="mt-2 text-[10px] text-muted-foreground">
+        <p className="mt-2 text-[10px] text-white/35">
           Prescribed by {prescription.prescribedBy.name}
         </p>
       )}
@@ -2160,7 +2311,7 @@ function PrescriptionCard({ prescription, canAdvance, onAdvance, advancing, onSt
         <button
           onClick={onAdvance}
           disabled={advancing}
-          className="mt-2 inline-flex h-7 w-full items-center justify-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          className="mt-2 inline-flex h-7 w-full items-center justify-center gap-1.5 rounded-md bg-[linear-gradient(135deg,#0f766e,#14b8a6)] px-3 text-xs font-medium text-white shadow-[0_6px_16px_-6px_rgba(20,184,166,0.5)] transition-transform hover:-translate-y-px disabled:opacity-50"
         >
           {advancing ? (
             <LoaderCircle className="h-3 w-3 animate-spin" />
@@ -2177,11 +2328,11 @@ function PrescriptionCard({ prescription, canAdvance, onAdvance, advancing, onSt
 }
 
 const TEST_ORDER_COLUMNS = [
-  { state: "ordered", label: "Ordered", badge: "bg-blue-500/15 text-blue-700 dark:text-blue-300", accent: "text-blue-500 bg-blue-500/15" },
-  { state: "sample-collected", label: "Sample Collected", badge: "bg-cyan-500/15 text-cyan-700 dark:text-cyan-300", accent: "text-cyan-500 bg-cyan-500/15" },
-  { state: "in-progress", label: "In Progress", badge: "bg-amber-500/15 text-amber-700 dark:text-amber-300", accent: "text-amber-500 bg-amber-500/15" },
-  { state: "completed", label: "Completed", badge: "bg-violet-500/15 text-violet-700 dark:text-violet-300", accent: "text-violet-500 bg-violet-500/15" },
-  { state: "result-ready", label: "Result Ready", badge: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300", accent: "text-emerald-500 bg-emerald-500/15" },
+  { state: "ordered", label: "Ordered", badge: "bg-sky-400/15 text-sky-300 ring-sky-300/25", accent: "text-sky-300 bg-sky-400/15", tint: "#38bdf8" },
+  { state: "sample-collected", label: "Sample Collected", badge: "bg-cyan-400/15 text-cyan-300 ring-cyan-300/25", accent: "text-cyan-300 bg-cyan-400/15", tint: "#22d3ee" },
+  { state: "in-progress", label: "In Progress", badge: "bg-amber-400/15 text-amber-300 ring-amber-300/25", accent: "text-amber-300 bg-amber-400/15", tint: "#fbbf24" },
+  { state: "completed", label: "Completed", badge: "bg-violet-400/15 text-violet-300 ring-violet-300/25", accent: "text-violet-300 bg-violet-400/15", tint: "#a78bfa" },
+  { state: "result-ready", label: "Result Ready", badge: "bg-emerald-400/15 text-emerald-300 ring-emerald-300/25", accent: "text-emerald-300 bg-emerald-400/15", tint: "#34d399" },
 ];
 
 const TEST_NEXT_STATE = {
@@ -2300,6 +2451,7 @@ export function LabPage() {
                 value={summary?.byState?.[col.state] ?? byState[col.state]?.length ?? 0}
                 icon={FlaskConical}
                 accent={col.accent}
+                tint={col.tint}
               />
             ))}
           </div>
@@ -2322,20 +2474,27 @@ export function LabPage() {
           {/* Kanban columns */}
           <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
             {TEST_ORDER_COLUMNS.map((col) => (
-              <div key={col.state} className="surface-panel p-3">
-                <div className="flex items-center justify-between border-b border-border/60 px-2 pb-3">
+              <div
+                key={col.state}
+                className="relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-[#111827] p-3 shadow-[0_12px_40px_rgba(0,0,0,0.18)]"
+              >
+                <span
+                  className="absolute inset-x-0 top-0 h-0.5"
+                  style={{ background: `linear-gradient(90deg, ${col.tint}00, ${col.tint}, ${col.tint}00)` }}
+                />
+                <div className="flex items-center justify-between px-2 pb-3 pt-1">
                   <span
-                    className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${col.badge}`}
+                    className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ring-1 ring-inset ${col.badge}`}
                   >
                     {col.label}
                   </span>
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-bold tabular-nums">
+                  <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-xs font-bold tabular-nums text-white/70 ring-1 ring-inset ring-white/10">
                     {byState[col.state]?.length ?? 0}
                   </span>
                 </div>
-                <div className="mt-3 space-y-2">
+                <div className="mt-1 space-y-2">
                   {byState[col.state]?.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-xs text-muted-foreground">
+                    <div className="rounded-xl border border-dashed border-white/10 px-3 py-6 text-center text-xs text-white/30">
                       No orders
                     </div>
                   ) : (
@@ -2346,6 +2505,7 @@ export function LabPage() {
                         canAdvance={!!TEST_NEXT_STATE[order.state]}
                         onAdvance={() => handleAdvance(order)}
                         advancing={advancing === order.id}
+                        tint={col.tint}
                       />
                     ))
                   )}
@@ -2359,38 +2519,42 @@ export function LabPage() {
   );
 }
 
-function TestOrderCard({ order, canAdvance, onAdvance, advancing }) {
+function TestOrderCard({ order, canAdvance, onAdvance, advancing, tint = "#a78bfa" }) {
   const isResultReady = order.state === "result-ready";
   return (
-    <div className={`rounded-lg border bg-card p-3 shadow-sm ${isResultReady ? "border-emerald-500/40 ring-1 ring-emerald-500/20" : "border-border"}`}>
+    <div className={`relative overflow-hidden rounded-xl border bg-white/[0.03] p-3 pl-4 transition-colors hover:bg-white/[0.05] ${isResultReady ? "border-emerald-400/40" : "border-white/[0.08]"}`}>
+      <span
+        className="absolute inset-y-0 left-0 w-0.5"
+        style={{ background: `linear-gradient(180deg, ${isResultReady ? "#34d399" : tint}, ${isResultReady ? "#34d399" : tint}33)` }}
+      />
       <div className="flex items-center justify-between">
-        <span className="font-mono text-sm font-bold">{order.ticketCode}</span>
-        <FlaskConical className={`h-4 w-4 ${isResultReady ? "text-emerald-500" : "text-muted-foreground"}`} />
+        <span className="font-mono text-sm font-bold text-white">{order.ticketCode}</span>
+        <FlaskConical className={`h-4 w-4 ${isResultReady ? "text-emerald-300" : "text-white/40"}`} />
       </div>
-      <p className="mt-1 text-sm font-medium">{order.patientName}</p>
-      <p className="text-xs font-medium text-primary">
+      <p className="mt-1 text-sm font-medium text-white/85">{order.patientName}</p>
+      <p className="text-xs font-medium text-violet-300/90">
         {TEST_TYPE_LABELS[order.testType] ?? order.testType}
       </p>
       {order.priority && order.priority !== "routine" && (
-        <span className="mt-1 inline-block rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-700 dark:text-amber-300">
+        <span className="mt-1 inline-block rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-300 ring-1 ring-inset ring-amber-300/25">
           {order.priority}
         </span>
       )}
       {order.notes && (
-        <p className="mt-1 text-xs italic text-muted-foreground">"{order.notes}"</p>
+        <p className="mt-1 text-xs italic text-white/40">"{order.notes}"</p>
       )}
       {order.orderedBy && (
-        <p className="mt-2 text-[10px] text-muted-foreground">
+        <p className="mt-2 text-[10px] text-white/35">
           Ordered by {order.orderedBy.name}
         </p>
       )}
       {isResultReady && (
-        <div className="mt-2 rounded-md bg-emerald-500/10 px-2.5 py-2 text-xs">
-          <div className="flex items-center gap-1.5 font-semibold text-emerald-700 dark:text-emerald-300">
+        <div className="mt-2 rounded-md bg-emerald-400/10 px-2.5 py-2 text-xs ring-1 ring-inset ring-emerald-400/20">
+          <div className="flex items-center gap-1.5 font-semibold text-emerald-300">
             <CheckCircle2 className="h-3 w-3" />
             Results ready
           </div>
-          <p className="mt-0.5 text-muted-foreground">
+          <p className="mt-0.5 text-white/45">
             Patient notified. Return to {order.orderingDepartment ?? "OPD"} for clinician review.
           </p>
         </div>
@@ -2399,7 +2563,7 @@ function TestOrderCard({ order, canAdvance, onAdvance, advancing }) {
         <button
           onClick={onAdvance}
           disabled={advancing}
-          className="mt-2 inline-flex h-7 w-full items-center justify-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          className="mt-2 inline-flex h-7 w-full items-center justify-center gap-1.5 rounded-md bg-[linear-gradient(135deg,#0f766e,#14b8a6)] px-3 text-xs font-medium text-white shadow-[0_6px_16px_-6px_rgba(20,184,166,0.5)] transition-transform hover:-translate-y-px disabled:opacity-50"
         >
           {advancing ? (
             <LoaderCircle className="h-3 w-3 animate-spin" />
@@ -2433,6 +2597,21 @@ const OI_NEXT_STATE = {
   waiting: "in-session",
   "in-session": "completed",
 };
+
+const OI_STATE_META = {
+  waiting: { tint: "#38bdf8", badge: "bg-sky-400/15 text-sky-300 ring-sky-300/25" },
+  "in-session": { tint: "#fbbf24", badge: "bg-amber-400/15 text-amber-300 ring-amber-300/25" },
+  completed: { tint: "#34d399", badge: "bg-emerald-400/15 text-emerald-300 ring-emerald-300/25" },
+  referred: { tint: "#a78bfa", badge: "bg-violet-400/15 text-violet-300 ring-violet-300/25" },
+};
+
+const OI_STREAM_ACCENTS = [
+  { tint: "#fb7185", text: "text-pink-300" },
+  { tint: "#5eead4", text: "text-teal-300" },
+  { tint: "#a78bfa", text: "text-violet-300" },
+  { tint: "#fbbf24", text: "text-amber-300" },
+  { tint: "#38bdf8", text: "text-sky-300" },
+];
 
 export function OIClinicPage() {
   const { refreshToken } = useLiveRefresh();
@@ -2656,54 +2835,93 @@ export function OIClinicPage() {
         <>
           {/* Per-stream summary */}
           <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {streams.map((stream) => (
-              <AdminMetricTile
-                key={stream.id}
-                label={stream.label}
-                value={summary?.byStream?.[stream.id]?.total ?? 0}
-                detail={`${summary?.byStream?.[stream.id]?.waiting ?? 0} waiting`}
-                icon={Activity}
-                accent="text-primary bg-primary/15"
-              />
-            ))}
+            {streams.map((stream, index) => {
+              const accent = OI_STREAM_ACCENTS[index % OI_STREAM_ACCENTS.length];
+              return (
+                <div
+                  key={stream.id}
+                  className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#111827] p-5 shadow-[0_12px_40px_rgba(0,0,0,0.18)] transition-all duration-300 hover:-translate-y-1 hover:border-white/[0.16]"
+                >
+                  <span
+                    className="absolute inset-x-0 top-0 h-0.5"
+                    style={{ background: `linear-gradient(90deg, ${accent.tint}00, ${accent.tint}, ${accent.tint}00)` }}
+                  />
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/40">
+                        {stream.label}
+                      </div>
+                      <div className="mt-3 font-display text-4xl font-bold tracking-tight text-white">
+                        {summary?.byStream?.[stream.id]?.total ?? 0}
+                      </div>
+                      <p className="mt-1.5 text-xs leading-5 text-white/40">
+                        <span className={accent.text}>
+                          {summary?.byStream?.[stream.id]?.waiting ?? 0}
+                        </span>{" "}
+                        waiting
+                      </p>
+                    </div>
+                    <span
+                      className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-white/10"
+                      style={{
+                        background: `linear-gradient(135deg, ${accent.tint}33, ${accent.tint}14)`,
+                      }}
+                    >
+                      <Activity className={`h-5 w-5 ${accent.text}`} />
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {/* Kanban columns */}
           <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {Object.entries(byState).map(([state, stateVisits]) => (
-              <div key={state} className="surface-panel p-3">
-                <div className="flex items-center justify-between border-b border-border/60 px-2 pb-3">
+            {Object.entries(byState).map(([state, stateVisits]) => {
+              const stateMeta = OI_STATE_META[state] ?? OI_STATE_META.waiting;
+              return (
+                <div
+                  key={state}
+                  className="relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-[#111827] p-3 shadow-[0_12px_40px_rgba(0,0,0,0.18)]"
+                >
                   <span
-                    className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${OI_STREAM_BADGE[state] ?? ""}`}
-                  >
-                    {state.replace(/-/g, " ")}
-                  </span>
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-bold tabular-nums">
-                    {stateVisits.length}
-                  </span>
+                    className="absolute inset-x-0 top-0 h-0.5"
+                    style={{ background: `linear-gradient(90deg, ${stateMeta.tint}00, ${stateMeta.tint}, ${stateMeta.tint}00)` }}
+                  />
+                  <div className="flex items-center justify-between px-2 pb-3 pt-1">
+                    <span
+                      className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ring-1 ring-inset ${stateMeta.badge}`}
+                    >
+                      {state.replace(/-/g, " ")}
+                    </span>
+                    <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-xs font-bold tabular-nums text-white/70 ring-1 ring-inset ring-white/10">
+                      {stateVisits.length}
+                    </span>
+                  </div>
+                  <div className="mt-1 space-y-2">
+                    {stateVisits.length === 0 ? (
+                      <div className="rounded-xl border border-dashed border-white/10 px-3 py-6 text-center text-xs text-white/30">
+                        No visits
+                      </div>
+                    ) : (
+                      stateVisits.map((visit) => (
+                        <OIClinicVisitCard
+                          key={visit.id}
+                          visit={visit}
+                          streamLabel={streams.find((s) => s.id === visit.streamId)?.label ?? visit.streamLabel}
+                          canAdvance={!!OI_NEXT_STATE[visit.state]}
+                          canRefer={visit.state === "waiting" || visit.state === "in-session"}
+                          onAdvance={() => handleAdvance(visit)}
+                          onRefer={() => handleRefer(visit)}
+                          advancing={advancing === visit.id}
+                          tint={stateMeta.tint}
+                        />
+                      ))
+                    )}
+                  </div>
                 </div>
-                <div className="mt-3 space-y-2">
-                  {stateVisits.length === 0 ? (
-                    <div className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-xs text-muted-foreground">
-                      No visits
-                    </div>
-                  ) : (
-                    stateVisits.map((visit) => (
-                      <OIClinicVisitCard
-                        key={visit.id}
-                        visit={visit}
-                        streamLabel={streams.find((s) => s.id === visit.streamId)?.label ?? visit.streamLabel}
-                        canAdvance={!!OI_NEXT_STATE[visit.state]}
-                        canRefer={visit.state === "waiting" || visit.state === "in-session"}
-                        onAdvance={() => handleAdvance(visit)}
-                        onRefer={() => handleRefer(visit)}
-                        advancing={advancing === visit.id}
-                      />
-                    ))
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </>
       )}
@@ -2711,24 +2929,28 @@ export function OIClinicPage() {
   );
 }
 
-function OIClinicVisitCard({ visit, streamLabel, canAdvance, canRefer, onAdvance, onRefer, advancing }) {
+function OIClinicVisitCard({ visit, streamLabel, canAdvance, canRefer, onAdvance, onRefer, advancing, tint = "#fb7185" }) {
   return (
-    <div className="rounded-lg border border-border bg-card p-3 shadow-sm">
+    <div className="relative overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.03] p-3 pl-4 transition-colors hover:bg-white/[0.05]">
+      <span
+        className="absolute inset-y-0 left-0 w-0.5"
+        style={{ background: `linear-gradient(180deg, ${tint}, ${tint}33)` }}
+      />
       <div className="flex items-center justify-between">
-        <span className="font-mono text-sm font-bold">{visit.ticketCode}</span>
+        <span className="font-mono text-sm font-bold text-white">{visit.ticketCode}</span>
       </div>
-      <p className="mt-1 text-sm font-medium">{visit.patientName}</p>
-      <p className="text-xs font-semibold text-primary">{streamLabel}</p>
+      <p className="mt-1 text-sm font-medium text-white/85">{visit.patientName}</p>
+      <p className="text-xs font-semibold text-pink-300/90">{streamLabel}</p>
       {visit.notes && (
-        <p className="mt-1 text-xs italic text-muted-foreground">"{visit.notes}"</p>
+        <p className="mt-1 text-xs italic text-white/40">"{visit.notes}"</p>
       )}
       {visit.referredTo && (
-        <p className="mt-1 text-xs text-purple-600 dark:text-purple-300">
+        <p className="mt-1 text-xs text-violet-300">
           Referred to: {visit.referredTo}
         </p>
       )}
       {visit.createdBy && (
-        <p className="mt-2 text-[10px] text-muted-foreground">
+        <p className="mt-2 text-[10px] text-white/35">
           Created by {visit.createdBy.name}
         </p>
       )}
@@ -2737,7 +2959,7 @@ function OIClinicVisitCard({ visit, streamLabel, canAdvance, canRefer, onAdvance
           <button
             onClick={onAdvance}
             disabled={advancing}
-            className="inline-flex h-7 flex-1 items-center justify-center gap-1.5 rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+            className="inline-flex h-7 flex-1 items-center justify-center gap-1.5 rounded-md bg-[linear-gradient(135deg,#0f766e,#14b8a6)] px-3 text-xs font-medium text-white shadow-[0_6px_16px_-6px_rgba(20,184,166,0.5)] transition-transform hover:-translate-y-px disabled:opacity-50"
           >
             {advancing ? (
               <LoaderCircle className="h-3 w-3 animate-spin" />
@@ -2753,7 +2975,7 @@ function OIClinicVisitCard({ visit, streamLabel, canAdvance, canRefer, onAdvance
           <button
             onClick={onRefer}
             disabled={advancing}
-            className="inline-flex h-7 items-center justify-center gap-1.5 rounded-md border border-purple-500/30 bg-purple-500/10 px-3 text-xs font-medium text-purple-600 hover:bg-purple-500/20 dark:text-purple-300 disabled:opacity-50"
+            className="inline-flex h-7 items-center justify-center gap-1.5 rounded-md border border-violet-400/30 bg-violet-400/10 px-3 text-xs font-medium text-violet-300 transition-colors hover:bg-violet-400/20 disabled:opacity-50"
           >
             Refer
           </button>
@@ -2788,23 +3010,27 @@ const CONGESTION_BAR = {
   normal: "bg-priority-green",
 };
 
-function AdminMetricTile({ label, value, detail, icon: Icon, accent = "text-primary bg-primary/15" }) {
+function AdminMetricTile({ label, value, detail, icon: Icon, accent = "text-teal-300 bg-teal-400/15", tint = "#14b8a6" }) {
   return (
-    <div className="surface-panel p-5">
+    <div className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#111827] p-5 shadow-[0_12px_40px_rgba(0,0,0,0.18)] transition-all duration-300 hover:-translate-y-1 hover:border-white/[0.16]">
+      <span
+        className="absolute inset-x-0 top-0 h-0.5"
+        style={{ background: `linear-gradient(90deg, ${tint}00, ${tint}, ${tint}00)` }}
+      />
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+          <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/40">
             {label}
           </div>
-          <div className="mt-3 font-display text-4xl font-bold tracking-tight text-foreground">
+          <div className="mt-3 font-display text-4xl font-bold tracking-tight text-white">
             {value}
           </div>
           {detail ? (
-            <p className="mt-1.5 text-xs leading-5 text-muted-foreground">{detail}</p>
+            <p className="mt-1.5 text-xs leading-5 text-white/40">{detail}</p>
           ) : null}
         </div>
         {Icon ? (
-          <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${accent}`}>
+          <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/10 ${accent}`}>
             <Icon className="h-5 w-5" />
           </span>
         ) : null}

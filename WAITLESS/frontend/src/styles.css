@@ -224,6 +224,21 @@
   }
 }
 
+@keyframes auth-ring-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes queue-strike {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
 @keyframes surface-drift {
   0% {
     background-position:
@@ -630,6 +645,20 @@
   .auth-glass-select option[value=""] {
     color: #dbeafe;
   }
+}
+
+@keyframes page-route-fade {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Workspace routes: calm fade instead of the full-screen beam/shade sweep. */
+.staff-account-shell .page-route-shell {
+  animation: page-route-fade 240ms ease-out;
+}
+.staff-account-shell .page-route-shell::before,
+.staff-account-shell .page-route-shell::after {
+  content: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1204,7 +1233,7 @@
 .staff-account-sidebar {
   position: sticky !important;
   top: 7.5rem !important;
-  margin-top: 2.5rem !important;
+  margin-top: 1rem !important;
   border: 1px solid #1b2a43 !important;
   border-radius: 1.2rem !important;
   background: linear-gradient(180deg, #0b162a 0%, #081225 100%) !important;
@@ -1426,9 +1455,21 @@
 
 .staff-dashboard .eyebrow,
 .dashboard-workspace-shell .eyebrow {
-  color: #338cff;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: #5eead4;
   font-size: 0.68rem;
   letter-spacing: 0.26em;
+}
+
+.staff-dashboard .eyebrow::after,
+.dashboard-workspace-shell .eyebrow::after {
+  content: "";
+  display: inline-block;
+  height: 1px;
+  width: 2.25rem;
+  background: linear-gradient(to left, transparent, rgba(94, 234, 212, 0.6));
 }
 
 /* Consistent dark-shape inputs across the staff workspace.

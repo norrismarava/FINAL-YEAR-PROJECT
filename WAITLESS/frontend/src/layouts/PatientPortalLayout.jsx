@@ -7,21 +7,21 @@ import {
   Menu,
   X,
   AlertTriangle,
-  Camera,
   CalendarDays,
   Globe,
   ChevronDown,
   MessageSquare,
+  Moon,
   PanelLeftClose,
   PanelLeftOpen,
+  Sun,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import authBackground from "@/assets/BACKG.png";
 import waitlessLogoIcon from "@/assets/waitless-logo-icon.png";
 import { usePatientAuth } from "@/auth/PatientAuthProvider";
 import { LogoLoader } from "@/components/LogoLoader";
-import GlowToggle from "@/components/GlowToggle";
 import { useTranslation } from "@/i18n/useTranslation";
 import { LANGUAGES } from "@/i18n/I18nProvider";
 
@@ -63,26 +63,14 @@ export default function PatientPortalLayout() {
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [langOpen, setLangOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
   const [theme, setTheme] = useState(loadTheme);
   const [avatarUrl, setAvatarUrl] = useState(null);
-  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const stored = window.localStorage.getItem("waitless_patient_avatar");
     if (stored) setAvatarUrl(stored);
   }, []);
-
-  function handleAvatarChange(e) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      const dataUrl = reader.result;
-      setAvatarUrl(dataUrl);
-      window.localStorage.setItem("waitless_patient_avatar", dataUrl);
-    };
-    reader.readAsDataURL(file);
-  }
 
   const isLight = theme === "light";
 
@@ -115,7 +103,7 @@ export default function PatientPortalLayout() {
   const mainText = isLight ? "text-slate-900" : "text-white";
   const mobileBarBg = isLight
     ? "bg-white/80 border-slate-200"
-    : "bg-[#04141f]/80 border-white/10";
+    : "border-white/[0.06] bg-[linear-gradient(135deg,rgba(10,15,28,0.97),rgba(6,20,31,0.96)_45%,rgba(8,40,68,0.88)_100%)]";
 
   return (
     <section className={`relative isolate flex min-h-screen overflow-hidden ${mainText} ${mainBg}`}>
@@ -253,7 +241,11 @@ export default function PatientPortalLayout() {
       )}
 
       {/* Fixed top header, spans full width, above the sidebar */}
-      <div className={`fixed inset-x-0 top-0 z-40 hidden items-center justify-between gap-3 border-b ${borderColor} px-4 py-3 backdrop-blur-xl sm:px-6 lg:flex ${isLight ? "bg-white/80" : "bg-[#04141f]/70"}`}>
+      <div className={`fixed inset-x-0 top-0 z-40 hidden items-center justify-between gap-3 px-4 py-3 backdrop-blur-xl sm:px-6 lg:flex ${
+        isLight
+          ? "border-b border-slate-200 bg-white/80"
+          : "bg-[linear-gradient(135deg,rgba(10,15,28,0.97),rgba(6,20,31,0.96)_45%,rgba(8,40,68,0.88)_100%)]"
+      }`}>
         <div className="flex items-center gap-3">
           <img src={waitlessLogoIcon} alt="WaitLess" className="h-9 w-9 rounded-lg object-contain" />
           <div>
@@ -266,7 +258,7 @@ export default function PatientPortalLayout() {
             <div className="relative">
               <button
                 onClick={() => setLangOpen((v) => !v)}
-                className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-2 text-xs font-semibold transition-colors ${
+                className={`inline-flex h-10 items-center gap-1.5 rounded-full border px-3 text-xs font-semibold transition-colors ${
                   isLight
                     ? "border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200"
                     : "border-white/15 bg-white/[0.06] text-slate-100 hover:bg-white/[0.12]"
@@ -303,47 +295,120 @@ export default function PatientPortalLayout() {
             </div>
 
             {/* Theme toggle */}
-            <GlowToggle
-              label={isLight ? "Switch to dark mode" : "Switch to light mode"}
-              checked={!isLight}
-              onChange={(on) => {
-                const next = on ? "dark" : "light";
+            <button
+              type="button"
+              aria-label={isLight ? "Switch to dark mode" : "Switch to light mode"}
+              title={isLight ? "Switch to dark mode" : "Switch to light mode"}
+              onClick={() => {
+                const next = isLight ? "dark" : "light";
                 setTheme(next);
                 saveTheme(next);
               }}
-            />
+              className={`grid h-10 w-10 shrink-0 place-items-center rounded-full border transition-colors ${
+                isLight
+                  ? "border-slate-200 bg-slate-100 text-slate-700 hover:bg-slate-200"
+                  : "border-white/15 bg-white/[0.06] text-slate-100 hover:bg-white/[0.12]"
+              }`}
+            >
+              {isLight ? <Moon className="h-[18px] w-[18px]" /> : <Sun className="h-[18px] w-[18px]" />}
+            </button>
 
-            {/* Profile avatar */}
-            <div className="relative group">
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt="Profile"
-                  className="h-10 w-10 rounded-xl object-cover"
-                />
-              ) : (
-                <span className={`grid h-10 w-10 place-items-center rounded-xl text-xs font-bold ${isLight ? "bg-teal-500/15 text-teal-700" : "bg-teal-500/15 text-teal-300"}`}>
-                  {getInitials(patientUser?.fullName)}
-                </span>
-              )}
+            {/* Account menu, same style as staff workspace */}
+            <div className="relative">
               <button
-                onClick={() => fileInputRef.current?.click()}
-                className={`absolute -bottom-1 -right-1 grid h-5 w-5 place-items-center rounded-full border-2 transition-transform hover:scale-110 ${
+                type="button"
+                onClick={() => setAccountOpen((v) => !v)}
+                aria-expanded={accountOpen}
+                aria-haspopup="menu"
+                className={`inline-flex h-11 items-center gap-2.5 rounded-full border py-1.5 pl-1.5 pr-3 transition-all ${
                   isLight
-                    ? "border-white bg-teal-600 text-white"
-                    : "border-[#04141f] bg-teal-500 text-white"
+                    ? "border-slate-200 bg-white text-slate-800 shadow-sm hover:border-teal-400/40 hover:shadow-[0_0_0_3px_rgba(45,212,191,0.12)]"
+                    : "border-white/10 bg-white/[0.05] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-xl hover:border-teal-300/30 hover:bg-white/[0.08] hover:shadow-[0_0_0_3px_rgba(45,212,191,0.08)]"
                 }`}
-                title="Upload photo"
               >
-                <Camera className="h-3 w-3" />
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Profile" className="h-8 w-8 rounded-full object-cover" />
+                ) : (
+                  <span className="grid h-8 w-8 place-items-center rounded-full bg-[linear-gradient(135deg,rgba(13,148,136,0.55),rgba(34,211,238,0.35))] text-[11px] font-bold text-white">
+                    {getInitials(patientUser?.fullName)}
+                  </span>
+                )}
+                <span className="hidden min-w-0 text-left sm:flex sm:flex-col sm:justify-center">
+                  <span className={`truncate text-sm font-semibold leading-none ${isLight ? "text-slate-800" : "text-white"}`}>
+                    {patientUser?.fullName?.split(" ")[0] ?? "Patient"}
+                  </span>
+                  <span className={`mt-1 truncate text-[11px] leading-none ${isLight ? "text-teal-700" : "text-teal-200/70"}`}>
+                    Patient
+                  </span>
+                </span>
+                <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${accountOpen ? "rotate-180" : ""} ${isLight ? "text-slate-400" : "text-slate-400"}`} />
               </button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarChange}
-                className="hidden"
-              />
+
+              {accountOpen ? (
+                <>
+                  <div className="fixed inset-0 z-20" onClick={() => setAccountOpen(false)} />
+                  <div className={`absolute right-0 top-[calc(100%+0.75rem)] z-30 w-[min(15rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border shadow-[0_28px_80px_-28px_rgba(2,6,23,0.8)] backdrop-blur-2xl ${
+                    isLight
+                      ? "border-slate-200 bg-white text-slate-800"
+                      : "border-cyan-200/12 bg-[linear-gradient(180deg,rgba(8,22,38,0.98),rgba(5,17,30,0.98))] text-white"
+                  }`}>
+                    <div className={`border-b px-4 pb-3.5 pt-4 ${isLight ? "border-slate-100" : "border-white/10"}`}>
+                      <div className={`text-sm font-bold ${isLight ? "text-slate-800" : "text-white"}`}>
+                        {patientUser?.fullName ?? "Patient"}
+                      </div>
+                      <div className={`mt-0.5 truncate text-xs ${isLight ? "text-slate-500" : "text-slate-400"}`}>
+                        {patientUser?.email ?? patientUser?.username ?? ""}
+                      </div>
+                      <span className={`mt-2.5 inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] ring-1 ring-inset ${
+                        isLight
+                          ? "bg-teal-500/10 text-teal-700 ring-teal-500/25"
+                          : "bg-teal-400/12 text-teal-300 ring-teal-400/25"
+                      }`}>
+                        Patient
+                      </span>
+                    </div>
+
+                    <div className="space-y-1 p-2">
+                      <NavLink
+                        to="/patient/profile"
+                        onClick={() => setAccountOpen(false)}
+                        className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                          isLight ? "text-slate-700 hover:bg-slate-100" : "text-slate-100 hover:bg-white/8"
+                        }`}
+                      >
+                        <UserRound className={`h-4 w-4 ${isLight ? "text-teal-600" : "text-cyan-100/78"}`} />
+                        My Profile
+                      </NavLink>
+                      <NavLink
+                        to="/patient/settings"
+                        onClick={() => setAccountOpen(false)}
+                        className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                          isLight ? "text-slate-700 hover:bg-slate-100" : "text-slate-100 hover:bg-white/8"
+                        }`}
+                      >
+                        <SettingsIcon className={`h-4 w-4 ${isLight ? "text-teal-600" : "text-cyan-100/78"}`} />
+                        Settings
+                      </NavLink>
+                    </div>
+
+                    <div className={`my-1.5 border-t ${isLight ? "border-slate-100" : "border-white/10"}`} />
+
+                    <div className="px-2 pb-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAccountOpen(false);
+                          setShowLogoutConfirm(true);
+                        }}
+                        className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-400 transition-colors hover:bg-red-500/10"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        Sign out
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : null}
             </div>
           </div>
         </div>

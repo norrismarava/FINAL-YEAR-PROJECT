@@ -54,9 +54,15 @@ function ModulePage({ eyebrow, title, description, icon: Icon, children }) {
     <section className="staff-module-page mx-auto min-h-[calc(100vh-7rem)] w-full max-w-[96rem] px-1 py-6 sm:py-8">
       <header className="surface-panel flex flex-wrap items-start justify-between gap-5 p-6 sm:p-8">
         <div className="max-w-3xl">
-          <div className="eyebrow">{eyebrow}</div>
-          <h1 className="mt-3 font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+          <div className="flex items-center gap-3">
+            <span className="bg-gradient-to-r from-teal-300 to-teal-300 bg-clip-text text-[11px] font-black uppercase tracking-[0.32em] text-transparent">
+              {eyebrow}
+            </span>
+            <span className="h-px w-9 bg-gradient-to-l from-transparent to-teal-300/60" />
+          </div>
+          <h1 className="mt-3 inline-flex items-center gap-4 font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
             {title}
+            <span className="mt-1 h-px w-10 bg-gradient-to-l from-transparent to-teal-300/50" />
           </h1>
           <p className="mt-3 text-sm leading-6 text-muted-foreground sm:text-base">
             {description}
@@ -85,23 +91,27 @@ function QueryBoundary({ query, title, children }) {
   return children;
 }
 
-function MetricTile({ label, value, detail, icon: Icon, accent = "text-primary bg-primary/15" }) {
+function MetricTile({ label, value, detail, icon: Icon, accent = "text-teal-300 bg-teal-400/15", tint = "#14b8a6" }) {
   return (
-    <div className="surface-panel p-5">
+    <div className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#111827] p-5 shadow-[0_12px_40px_rgba(0,0,0,0.18)] transition-all duration-300 hover:-translate-y-1 hover:border-white/[0.16]">
+      <span
+        className="absolute inset-x-0 top-0 h-0.5"
+        style={{ background: `linear-gradient(90deg, ${tint}00, ${tint}, ${tint}00)` }}
+      />
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+          <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/40">
             {label}
           </div>
-          <div className="mt-3 font-display text-4xl font-bold tracking-tight text-foreground">
+          <div className="mt-3 font-display text-4xl font-bold tracking-tight text-white">
             {value}
           </div>
           {detail ? (
-            <p className="mt-1.5 text-xs leading-5 text-muted-foreground">{detail}</p>
+            <p className="mt-1.5 text-xs leading-5 text-white/40">{detail}</p>
           ) : null}
         </div>
         {Icon ? (
-          <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${accent}`}>
+          <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-white/10 ${accent}`}>
             <Icon className="h-5 w-5" />
           </span>
         ) : null}

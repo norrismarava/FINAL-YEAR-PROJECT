@@ -58,12 +58,21 @@ export async function createPatientUserRecord(data) {
 
   const normalizedUsername = (data.username ?? "").trim().toLowerCase();
   const normalizedEmail = (data.email ?? "").trim().toLowerCase();
+  const normalizedNationalId = (data.nationalId ?? "").trim().toLowerCase();
 
   if (users.some((u) => u.username.toLowerCase() === normalizedUsername)) {
     throw new Error("A patient account with this username already exists.");
   }
   if (users.some((u) => u.email.toLowerCase() === normalizedEmail)) {
     throw new Error("A patient account with this email already exists.");
+  }
+  if (
+    normalizedNationalId &&
+    users.some(
+      (u) => u.national_id && u.national_id.trim().toLowerCase() === normalizedNationalId,
+    )
+  ) {
+    throw new Error("A patient account with this ID number already exists.");
   }
 
   const passwordHash = await bcrypt.hash(data.password, 10);

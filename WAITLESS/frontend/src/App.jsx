@@ -83,6 +83,7 @@ export default function App() {
 
         {/* Staff routes under /admin */}
         <Route path="admin">
+          <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route
             path="dashboard"
             element={
@@ -260,7 +261,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="login" element={<Navigate to="/login" replace />} />
+          <Route path="login" element={<LoginChooserPage variant="staff" />} />
           <Route path="forgot-password" element={<ForgotPasswordPage />} />
           <Route path="reset-password" element={<ResetPasswordPage />} />
           <Route path="staff-register" element={<Navigate to="/admin/staff" replace />} />
