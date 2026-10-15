@@ -42,7 +42,7 @@ export function setThemePreference(preference) {
   try {
     window.localStorage.setItem(THEME_KEY, preference);
   } catch {
-    // storage unavailable — still apply for this session
+    // storage unavailable, still apply for this session
   }
   applyTheme(getEffectiveTheme(preference));
   window.dispatchEvent(new Event(THEME_EVENT));

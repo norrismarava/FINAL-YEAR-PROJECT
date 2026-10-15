@@ -102,7 +102,7 @@ export default function PatientPortalLayout() {
   }
 
   if (!isPatientAuthenticated) {
-    return <Navigate to="/patient/login" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   const sidebarText = isLight ? "text-slate-700" : "text-slate-300";
@@ -150,7 +150,7 @@ export default function PatientPortalLayout() {
         </button>
       </div>
 
-      {/* Sidebar — floating panel styled like the staff workspace */}
+      {/* Sidebar, floating panel styled like the staff workspace */}
       <aside
         className={`fixed left-0 top-0 z-20 h-full w-72 p-4 pt-20 transition-[width,transform] duration-300 lg:translate-x-0 ${
           navCollapsed ? "lg:w-24" : "lg:w-72"
@@ -163,7 +163,7 @@ export default function PatientPortalLayout() {
               : "border-[#1b2a43] bg-[linear-gradient(180deg,#0b162a_0%,#081225_100%)] shadow-[0_26px_70px_-48px_rgba(0,0,0,0.92)]"
           }`}
         >
-          {/* Header — pinned, never scrolls */}
+          {/* Header, pinned, never scrolls */}
           <div className={`flex shrink-0 items-center border-b ${borderColor} pb-3 ${navCollapsed ? "justify-center" : "justify-between px-2"}`}>
             {navCollapsed ? null : (
               <span className={`text-[11px] font-bold uppercase tracking-[0.22em] ${isLight ? "text-slate-800" : "text-foreground"}`}>
@@ -185,7 +185,7 @@ export default function PatientPortalLayout() {
             </button>
           </div>
 
-          {/* Scrollable nav — the only region that scrolls */}
+          {/* Scrollable nav, the only region that scrolls */}
           <nav className="patient-account-navigation min-h-0 flex-1 overflow-y-auto py-3" aria-label="Patient portal">
             <div className="space-y-1">
             {NAV_ITEMS.map((item) => {
@@ -225,7 +225,7 @@ export default function PatientPortalLayout() {
             </div>
           </nav>
 
-          {/* Sign out — pinned below the scrollable nav, always visible */}
+          {/* Sign out, pinned below the scrollable nav, always visible */}
           <div className={`mt-auto shrink-0 border-t ${borderColor} px-1 pt-4`}>
             <button
               type="button"
@@ -252,7 +252,7 @@ export default function PatientPortalLayout() {
         />
       )}
 
-      {/* Fixed top header — spans full width, above the sidebar */}
+      {/* Fixed top header, spans full width, above the sidebar */}
       <div className={`fixed inset-x-0 top-0 z-40 hidden items-center justify-between gap-3 border-b ${borderColor} px-4 py-3 backdrop-blur-xl sm:px-6 lg:flex ${isLight ? "bg-white/80" : "bg-[#04141f]/70"}`}>
         <div className="flex items-center gap-3">
           <img src={waitlessLogoIcon} alt="WaitLess" className="h-9 w-9 rounded-lg object-contain" />

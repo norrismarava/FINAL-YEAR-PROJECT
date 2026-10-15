@@ -8,12 +8,20 @@ import { PatientAuthShell } from "@/components/PatientAuthShell";
 import { resolveStaffLandingPath } from "@/services/staffProfilePrefs";
 import { LogoLoader } from "@/components/LogoLoader";
 
+const REMEMBER_KEY = "waitless.rememberedIdentifier";
+
 export default function UnifiedLoginPage() {
   const navigate = useNavigate();
   const { login: staffLogin } = useAuth();
   const { patientLogin } = usePatientAuth();
 
-  const [form, setForm] = useState({ identifier: "", password: "" });
+  const [rememberMe, setRememberMe] = useState(
+    () => !!localStorage.getItem(REMEMBER_KEY),
+  );
+  const [form, setForm] = useState({
+    identifier: localStorage.getItem(REMEMBER_KEY) || "",
+    password: "",
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -39,6 +47,12 @@ export default function UnifiedLoginPage() {
 
     setLoading(true);
 
+    if (rememberMe) {
+      localStorage.setItem(REMEMBER_KEY, identifier);
+    } else {
+      localStorage.removeItem(REMEMBER_KEY);
+    }
+
     try {
       const session = await staffLogin({
         username: identifier.toLowerCase(),
@@ -47,7 +61,7 @@ export default function UnifiedLoginPage() {
       navigate(resolveStaffLandingPath(session.user));
       return;
     } catch {
-      // Not a staff account — fall through to patient.
+      // Not a staff account, fall through to patient.
     }
 
     try {
@@ -129,8 +143,17 @@ export default function UnifiedLoginPage() {
           </div>
         </div>
 
-        {/* Forgot password */}
-        <div className="flex items-center justify-end text-sm">
+        {/* Remember me + forgot password */}
+        <div className="flex items-center justify-between text-sm">
+          <label className="flex cursor-pointer items-center gap-2 text-slate-300">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="h-4 w-4 cursor-pointer rounded border-white/20 bg-white/[0.06] accent-teal-500"
+            />
+            Remember me
+          </label>
           <Link
             to="/patient/forgot-password"
             className="font-medium text-teal-300 hover:text-teal-200"

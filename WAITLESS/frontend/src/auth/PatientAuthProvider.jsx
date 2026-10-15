@@ -18,6 +18,7 @@ const PatientAuthContext = createContext({
   isPatientReady: false,
   patientLogin: async () => {},
   patientLogout: () => {},
+  updatePatientAvatar: () => {},
 });
 
 function isExpired(expiresAt) {
@@ -71,6 +72,22 @@ export function PatientAuthProvider({ children }) {
     setPatientUser(null);
   }
 
+  function updatePatientAvatar(avatarUrl) {
+    setPatientUser((current) => {
+      if (!current) return current;
+      const next = { ...current, avatarUrl };
+      if (patientToken) {
+        const expiry = getStoredPatientExpiry();
+        storePatientSession({
+          token: patientToken,
+          user: next,
+          expiresAt: expiry,
+        });
+      }
+      return next;
+    });
+  }
+
   const handleIdleTimeout = useCallback(() => {
     patientLogout();
   }, []);
@@ -89,6 +106,7 @@ export function PatientAuthProvider({ children }) {
         isPatientReady,
         patientLogin,
         patientLogout,
+        updatePatientAvatar,
       }}
     >
       {children}

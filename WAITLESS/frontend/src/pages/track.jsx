@@ -130,7 +130,7 @@ export default function TrackPage() {
     const deptMissed = queueBoardQuery.data.missed.filter(
       (t) => t.department === selectedDepartment,
     );
-    const nowServingTicket = deptServing[0]?.ticket ?? "—";
+    const nowServingTicket = deptServing[0]?.ticket ?? "N/A";
     const estimatedWait = deptWaiting.length > 0
       ? `${Math.max(5, deptWaiting.length * 8)}m`
       : "0m";

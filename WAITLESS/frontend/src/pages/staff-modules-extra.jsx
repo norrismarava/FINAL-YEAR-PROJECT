@@ -85,19 +85,27 @@ function QueryBoundary({ query, title, children }) {
   return children;
 }
 
-function MetricTile({ label, value, detail, icon: Icon }) {
+function MetricTile({ label, value, detail, icon: Icon, accent = "text-primary bg-primary/15" }) {
   return (
     <div className="surface-panel p-5">
       <div className="flex items-start justify-between gap-3">
-        <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-          {label}
+        <div className="min-w-0">
+          <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+            {label}
+          </div>
+          <div className="mt-3 font-display text-4xl font-bold tracking-tight text-foreground">
+            {value}
+          </div>
+          {detail ? (
+            <p className="mt-1.5 text-xs leading-5 text-muted-foreground">{detail}</p>
+          ) : null}
         </div>
-        {Icon ? <Icon className="h-4 w-4 text-primary" /> : null}
+        {Icon ? (
+          <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${accent}`}>
+            <Icon className="h-5 w-5" />
+          </span>
+        ) : null}
       </div>
-      <div className="mt-4 font-display text-4xl font-bold tracking-tight text-foreground">
-        {value}
-      </div>
-      <p className="mt-2 text-xs leading-5 text-muted-foreground">{detail}</p>
     </div>
   );
 }
@@ -111,7 +119,7 @@ function EmptyMessage({ children }) {
 }
 
 /* =========================================================
-   MODULE 20.1 — Hospitals management (multi-hospital)
+   MODULE 20.1, Hospitals management (multi-hospital)
    ========================================================= */
 
 export function HospitalsPage() {
@@ -336,21 +344,21 @@ function HospitalRow({ hospital, onEdit }) {
 }
 
 /* =========================================================
-   MODULE 21 — AI Insights (wait prediction + bottlenecks)
+   MODULE 21, AI Insights (wait prediction + bottlenecks)
    ========================================================= */
 
 export function AIInsightsPage() {
-  const { refreshLiveData } = useLiveRefresh();
+  const { refreshLiveData, refreshToken } = useLiveRefresh();
   const [department, setDepartment] = useState(DEPARTMENTS[0]);
 
   const bottleneckLoader = useCallback(() => fetchBottleneckAnalysis(), []);
-  const bottleneckQuery = useApiResource(bottleneckLoader, { enabled: isBrowser });
+  const bottleneckQuery = useApiResource(bottleneckLoader, { enabled: isBrowser, refreshToken });
 
   const predictLoader = useCallback(
     () => fetchWaitTimePrediction(department),
     [department],
   );
-  const predictQuery = useApiResource(predictLoader, { enabled: isBrowser });
+  const predictQuery = useApiResource(predictLoader, { enabled: isBrowser, refreshToken });
 
   const bottlenecks = bottleneckQuery.data?.bottlenecks ?? EMPTY_LIST;
   const prediction = predictQuery.data;
@@ -362,112 +370,135 @@ export function AIInsightsPage() {
       description="Predicted waiting times and automatic bottleneck detection help you respond before queues become too long."
       icon={Brain}
     >
-      <div className="mb-5 grid gap-4 lg:grid-cols-2">
-        <article className="surface-panel p-6">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="font-display text-xl font-bold">Wait time prediction</h2>
-            <Sparkles className="h-5 w-5 text-primary" />
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* Wait-time prediction */}
+        <article className="surface-panel">
+          <div className="flex items-center gap-3 border-b border-border/60 px-5 py-4">
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/15 text-primary">
+              <Sparkles className="h-4 w-4" />
+            </span>
+            <div>
+              <h2 className="font-display text-base font-bold">Wait time prediction</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Estimated wait for the next patient in each department
+              </p>
+            </div>
           </div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            AI-estimated wait for the next patient, based on queue load, staff
-            availability and historical service speed.
-          </p>
-          <div className="mt-4 flex flex-wrap items-center gap-3">
-            <select
-              value={department}
-              onChange={(e) => setDepartment(e.target.value)}
-              className="input-base h-9 w-auto text-sm"
-            >
-              {DEPARTMENTS.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={() => refreshLiveData()}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted/60"
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-              Refresh
-            </button>
+          <div className="p-5">
+            <div className="flex flex-wrap items-center gap-3">
+              <select
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+                className="input-base h-9 w-auto text-sm"
+                aria-label="Department"
+              >
+                {DEPARTMENTS.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => refreshLiveData()}
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-xs font-semibold text-muted-foreground hover:text-foreground"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                Refresh
+              </button>
+            </div>
+            <QueryBoundary query={predictQuery} title="Loading prediction">
+              {prediction ? (
+                <div className="mt-6">
+                  <div className="flex items-end gap-3">
+                    <span className="font-display text-5xl font-bold tracking-tight text-foreground">
+                      {prediction.predictedWaitMinutes}
+                    </span>
+                    <span className="mb-2 text-sm font-semibold text-muted-foreground">
+                      min predicted
+                    </span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-primary">
+                      {prediction.patientsAhead} ahead
+                    </span>
+                    <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
+                      ~{prediction.avgServiceTimeMinutes} min / patient
+                    </span>
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                        prediction.confidence === "high"
+                          ? "bg-priority-green/15 text-priority-green"
+                          : prediction.confidence === "medium"
+                            ? "bg-priority-yellow/15 text-priority-yellow"
+                            : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {prediction.confidence} confidence
+                    </span>
+                  </div>
+                  {prediction.byPriority &&
+                    Object.keys(prediction.byPriority).length > 0 && (
+                      <div className="mt-5 space-y-2">
+                        <h3 className="text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
+                          Breakdown by priority
+                        </h3>
+                        {Object.entries(prediction.byPriority).map(([prio, info]) => (
+                          <div
+                            key={prio}
+                            className="flex items-center justify-between rounded-lg border border-border/60 bg-background/50 px-3 py-2 text-sm"
+                          >
+                            <span className="font-semibold capitalize">{prio}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {info.count} patient{info.count === 1 ? "" : "s"} · ~
+                              {info.estimatedWait} min
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                </div>
+              ) : null}
+            </QueryBoundary>
           </div>
-          <QueryBoundary query={predictQuery} title="Loading prediction">
-            {prediction ? (
-              <div className="mt-6">
-                <div className="flex items-end gap-3">
-                  <span className="font-display text-5xl font-bold tracking-tight text-foreground">
-                    {prediction.predictedWaitMinutes}
-                  </span>
-                  <span className="mb-2 text-sm font-semibold text-muted-foreground">
-                    min predicted
-                  </span>
-                </div>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <span className="rounded-full bg-primary-soft px-3 py-1 text-xs font-semibold text-primary">
-                    {prediction.patientsAhead} ahead
-                  </span>
-                  <span className="rounded-full bg-muted px-3 py-1 text-xs font-semibold text-muted-foreground">
-                    ~{prediction.avgServiceTimeMinutes} min / patient
-                  </span>
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                      prediction.confidence === "high"
-                        ? "bg-priority-green/15 text-priority-green"
-                        : prediction.confidence === "medium"
-                          ? "bg-priority-yellow/15 text-priority-yellow"
-                          : "bg-muted text-muted-foreground"
-                    }`}
-                  >
-                    {prediction.confidence} confidence
-                  </span>
-                </div>
-                {prediction.byPriority &&
-                  Object.keys(prediction.byPriority).length > 0 && (
-                    <div className="mt-5 space-y-2">
-                      <h3 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                        Breakdown by priority
-                      </h3>
-                      {Object.entries(prediction.byPriority).map(([prio, info]) => (
-                        <div
-                          key={prio}
-                          className="flex items-center justify-between rounded-lg border border-border bg-card px-3 py-2 text-sm"
-                        >
-                          <span className="font-semibold capitalize">{prio}</span>
-                          <span className="text-muted-foreground">
-                            {info.count} patient{info.count === 1 ? "" : "s"} · ~
-                            {info.estimatedWait} min
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-              </div>
-            ) : null}
-          </QueryBoundary>
         </article>
 
-        <article className="surface-panel p-6">
-          <div className="flex items-center justify-between gap-3">
-            <h2 className="font-display text-xl font-bold">Bottleneck detection</h2>
-            <AlertTriangle className="h-5 w-5 text-primary" />
-          </div>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Departments slowing down the whole hospital flow, flagged
-            automatically with a severity score.
-          </p>
-          <QueryBoundary query={bottleneckQuery} title="Loading bottlenecks">
-            <div className="mt-5 space-y-3">
-              {bottlenecks.length === 0 ? (
-                <EmptyMessage>No bottlenecks detected right now.</EmptyMessage>
-              ) : (
-                bottlenecks.map((b) => (
-                  <BottleneckCard key={b.department} bottleneck={b} />
-                ))
-              )}
+        {/* Bottleneck detection */}
+        <article className="surface-panel self-start">
+          <div className="flex items-center justify-between gap-3 border-b border-border/60 px-5 py-4">
+            <div className="flex items-center gap-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/15 text-primary">
+                <AlertTriangle className="h-4 w-4" />
+              </span>
+              <div>
+                <h2 className="font-display text-base font-bold">Bottleneck detection</h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Departments slowing the whole hospital flow
+                </p>
+              </div>
             </div>
-          </QueryBoundary>
+            {bottlenecks.length ? (
+              <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-bold tabular-nums">
+                {bottlenecks.length}
+              </span>
+            ) : null}
+          </div>
+          <div className="p-4">
+            <QueryBoundary query={bottleneckQuery} title="Loading bottlenecks">
+              <div className="space-y-2.5">
+                {bottlenecks.length === 0 ? (
+                  <EmptyMessage>
+                    <CheckCircle2 className="h-8 w-8 text-priority-green" />
+                    No bottlenecks detected right now.
+                  </EmptyMessage>
+                ) : (
+                  bottlenecks.map((b) => (
+                    <BottleneckCard key={b.department} bottleneck={b} />
+                  ))
+                )}
+              </div>
+            </QueryBoundary>
+          </div>
         </article>
       </div>
     </ModulePage>
@@ -529,7 +560,7 @@ function BottleneckCard({ bottleneck }) {
 }
 
 /* =========================================================
-   MODULE 13.3 / 20.4 — Sync & Backup
+   MODULE 13.3 / 20.4, Sync & Backup
    ========================================================= */
 
 export function SyncPage() {
@@ -587,7 +618,7 @@ export function SyncPage() {
       toast.success("Data imported successfully");
       refreshLiveData();
     } catch (err) {
-      toast.error(err.message ?? "Import failed — check the file format");
+      toast.error(err.message ?? "Import failed, check the file format");
     } finally {
       setBusy(false);
       event.target.value = "";
@@ -619,7 +650,7 @@ export function SyncPage() {
                 <span className="text-sm font-semibold text-foreground">
                   {status?.serverTime
                     ? new Date(status.serverTime).toLocaleTimeString()
-                    : "—"}
+                    : "N/A"}
                 </span>
               </div>
               {status?.lastSyncSummary && (
@@ -696,18 +727,18 @@ export function SyncPage() {
 }
 
 /* =========================================================
-   MODULE 14.3 — Appointment Reminders
+   MODULE 14.3, Appointment Reminders
    ========================================================= */
 
 export function AppointmentRemindersPage() {
-  const { refreshLiveData } = useLiveRefresh();
+  const { refreshLiveData, refreshToken } = useLiveRefresh();
   const [days, setDays] = useState(3);
 
   const loader = useCallback(
     () => fetchAppointmentReminders(days),
     [days],
   );
-  const query = useApiResource(loader, { enabled: isBrowser });
+  const query = useApiResource(loader, { enabled: isBrowser, refreshToken });
 
   const sendAction = useApiAction(markAppointmentReminderSent, {
     onSuccess: () => {
@@ -733,8 +764,9 @@ export function AppointmentRemindersPage() {
       description="See upcoming appointments and mark reminders as sent through WhatsApp, web push, SMS or email to reduce no-shows."
       icon={Send}
     >
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <label className="flex items-center gap-2 text-sm text-muted-foreground">
+      {/* Toolbar */}
+      <div className="surface-panel mb-4 flex flex-wrap items-center gap-3 p-3">
+        <label className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
           Next
           <select
             value={days}
@@ -750,7 +782,7 @@ export function AppointmentRemindersPage() {
         <button
           type="button"
           onClick={() => refreshLiveData()}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted/60"
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-xs font-semibold text-muted-foreground hover:text-foreground"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           Refresh
@@ -758,11 +790,24 @@ export function AppointmentRemindersPage() {
       </div>
 
       <QueryBoundary query={query} title="Loading reminders">
-        <div className="surface-panel p-6">
-          <h2 className="font-display text-2xl font-bold">
-            {reminders.length} reminder{reminders.length === 1 ? "" : "s"} due
-          </h2>
-          <div className="mt-5 space-y-3">
+        <div className="surface-panel">
+          <div className="flex items-center justify-between border-b border-border/60 px-5 py-4">
+            <div className="flex items-center gap-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/15 text-primary">
+                <Send className="h-4 w-4" />
+              </span>
+              <div>
+                <h2 className="font-display text-base font-bold">Upcoming reminders</h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Appointment reminders due in the next {days} day{days === 1 ? "" : "s"}
+                </p>
+              </div>
+            </div>
+            <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-bold tabular-nums">
+              {reminders.length}
+            </span>
+          </div>
+          <div className="space-y-2.5 p-4">
             {reminders.length === 0 ? (
               <EmptyMessage>
                 <CheckCircle2 className="h-8 w-8 text-priority-green" />
@@ -847,11 +892,11 @@ function ReminderRow({ reminder, onMarkSent, updating }) {
 }
 
 /* =========================================================
-   MODULE 14.2 — Follow-up Appointments
+   MODULE 14.2, Follow-up Appointments
    ========================================================= */
 
 export function FollowUpsPage() {
-  const { refreshLiveData } = useLiveRefresh();
+  const { refreshLiveData, refreshToken } = useLiveRefresh();
   const [ticketId, setTicketId] = useState("");
   const [showForm, setShowForm] = useState(false);
 
@@ -861,6 +906,7 @@ export function FollowUpsPage() {
   );
   const followUpsQuery = useApiResource(followUpsLoader, {
     enabled: isBrowser && Boolean(ticketId),
+    refreshToken,
   });
 
   const createAction = useApiAction(createFollowUpAppointment, {
@@ -888,39 +934,59 @@ export function FollowUpsPage() {
       description="Schedule the next visit for chronic-care patients after consultation and keep a history of follow-ups per patient."
       icon={CalendarDays}
     >
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <input
-          value={ticketId}
-          onChange={(e) => setTicketId(e.target.value)}
-          placeholder="Enter ticket / patient ID"
-          className="input-base h-10 w-full max-w-md text-sm"
-        />
+      {/* Toolbar */}
+      <div className="surface-panel mb-4 flex flex-wrap items-center gap-3 p-3">
+        <label className="relative min-w-56 flex-1">
+          <span className="sr-only">Ticket or patient ID</span>
+          <CalendarDays className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={ticketId}
+            onChange={(e) => setTicketId(e.target.value)}
+            placeholder="Enter ticket / patient ID"
+            className="input-base h-9 pl-9 text-sm"
+          />
+        </label>
         <button
           type="button"
           onClick={() => setShowForm((v) => !v)}
           disabled={!ticketId}
-          className="inline-flex items-center gap-1.5 rounded-lg gradient-primary px-3 py-2 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg gradient-primary px-4 text-xs font-semibold text-primary-foreground disabled:opacity-50"
         >
           <Plus className="h-3.5 w-3.5" />
           {showForm ? "Close form" : "New follow-up"}
         </button>
       </div>
 
-      {showForm && ticketId && (
+      {showForm && ticketId ? (
         <FollowUpForm
           onSubmit={handleCreate}
           isSubmitting={createAction.isPending}
           onCancel={() => setShowForm(false)}
         />
-      )}
+      ) : null}
 
       {ticketId ? (
         <QueryBoundary query={followUpsQuery} title="Loading follow-ups">
-          <div className="surface-panel p-6">
-            <h2 className="font-display text-2xl font-bold">
-              Follow-ups for {ticketId}
-            </h2>
-            <div className="mt-5 space-y-3">
+          <div className="surface-panel">
+            <div className="flex items-center justify-between border-b border-border/60 px-5 py-4">
+              <div className="flex items-center gap-3">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/15 text-primary">
+                  <CalendarDays className="h-4 w-4" />
+                </span>
+                <div>
+                  <h2 className="font-display text-base font-bold">
+                    Follow-ups for {ticketId}
+                  </h2>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
+                    Scheduled review visits for this patient
+                  </p>
+                </div>
+              </div>
+              <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-bold tabular-nums">
+                {followUps.length}
+              </span>
+            </div>
+            <div className="space-y-2.5 p-4">
               {followUps.length === 0 ? (
                 <EmptyMessage>No follow-ups recorded for this patient.</EmptyMessage>
               ) : (

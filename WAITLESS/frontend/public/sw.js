@@ -1,4 +1,4 @@
-const CACHE_NAME = "waitless-v4";
+const CACHE_NAME = "waitless-v7";
 const STATIC_ASSETS = ["/", "/index.html"];
 
 self.addEventListener("install", (event) => {

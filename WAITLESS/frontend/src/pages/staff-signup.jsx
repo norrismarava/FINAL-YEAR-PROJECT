@@ -101,7 +101,7 @@ export default function StaffSignupPage() {
         title="Account created"
         subtitle="Your staff account is ready. Sign in to open the operations console."
         footer={
-          <Link to="/admin/login" className="font-semibold text-cyan-100 hover:text-white">
+          <Link to="/login" className="font-semibold text-cyan-100 hover:text-white">
             Back to staff sign in
           </Link>
         }
@@ -124,7 +124,7 @@ export default function StaffSignupPage() {
 
           <button
             type="button"
-            onClick={() => navigate("/admin/login")}
+            onClick={() => navigate("/login")}
             className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,#0d9488,#14b8a6_50%,#0f766e)] px-4 text-sm font-bold uppercase tracking-[0.08em] text-white shadow-[0_24px_48px_-28px_rgba(13,148,136,0.74)] transition hover:-translate-y-0.5 hover:brightness-110"
           >
             Sign in now
@@ -143,7 +143,7 @@ export default function StaffSignupPage() {
       footer={
         <span>
           Already registered?{" "}
-          <Link to="/admin/login" className="font-semibold text-cyan-100 hover:text-white">
+          <Link to="/login" className="font-semibold text-cyan-100 hover:text-white">
             Sign in
           </Link>
         </span>
@@ -257,7 +257,7 @@ export default function StaffSignupPage() {
         <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-xs leading-relaxed text-slate-300">
           <p className="font-semibold text-cyan-100/80">
             <ShieldCheck className="mr-1 inline h-3.5 w-3.5" />
-            Your role and department are locked to the access code — you cannot change them here.
+            Your role and department are locked to the access code, you cannot change them here.
           </p>
         </div>
 

@@ -450,7 +450,7 @@ function AccessCodePanel() {
           {latest ? (
             <div className="rounded-xl border border-teal-300/30 bg-teal-400/[0.08] px-4 py-4">
               <div className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-teal-200/80">
-                New code — send to the staff member
+                New code, send to the staff member
               </div>
               <div className="mt-2 flex items-center justify-between gap-3">
                 <span className="font-display text-2xl font-bold tracking-[0.12em] text-white">

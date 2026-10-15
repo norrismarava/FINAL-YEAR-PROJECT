@@ -139,3 +139,9 @@ src/.generated/
 
 # Lovable
 .lovable/
+
+# large local documentation archives
+*.zip
+*.docx
+Documentation/
+Fourth_Year_Project_Documentation_Guide*.pdf

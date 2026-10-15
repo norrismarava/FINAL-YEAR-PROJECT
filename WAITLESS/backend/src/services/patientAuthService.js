@@ -30,6 +30,7 @@ function publicPatientUser(user) {
     nationalId: user.national_id ?? "",
     dob: user.dob ? String(user.dob).slice(0, 10) : "",
     gender: user.gender ?? "unknown",
+    avatarUrl: user.avatar_url ?? null,
     createdAt: user.created_at,
     lastLoginAt: user.last_login_at ?? null,
   };
@@ -309,6 +310,7 @@ export async function updatePatientProfile(req, patch) {
 
   if (useFile) {
     const updated = await filePatient.updatePatientUserRecord(userId, patch);
+    session.user = publicPatientUser(updated);
     const newSession = createPatientSession(updated);
     return newSession;
   }
@@ -341,6 +343,10 @@ export async function updatePatientProfile(req, patch) {
     fields.push("gender = ?");
     values.push(patch.gender);
   }
+  if (typeof patch.avatarUrl === "string") {
+    fields.push("avatar_url = ?");
+    values.push(patch.avatarUrl);
+  }
 
   if (fields.length === 0) {
     return session;
@@ -357,6 +363,7 @@ export async function updatePatientProfile(req, patch) {
     [userId],
   );
   const updatedUser = rows[0];
+  session.user = publicPatientUser(updatedUser);
   const newSession = createPatientSession(updatedUser);
   return newSession;
 }

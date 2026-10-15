@@ -54,7 +54,7 @@ export default function PatientResetPasswordPage() {
             <CheckCircle2 className="h-7 w-7" />
           </span>
           <Link
-            to="/patient/login"
+            to="/login"
             className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-6 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(13,148,136,0.5)] transition-transform hover:-translate-y-0.5"
           >
             {t("reset.signIn")}
@@ -70,7 +70,7 @@ export default function PatientResetPasswordPage() {
       title={t("reset.title")}
       subtitle={token ? t("reset.subtitle") : t("reset.missingToken")}
       footer={
-        <Link to="/patient/login" className="inline-flex items-center gap-1 font-semibold text-teal-300 hover:text-teal-200">
+        <Link to="/login" className="inline-flex items-center gap-1 font-semibold text-teal-300 hover:text-teal-200">
           <ArrowLeft className="h-3 w-3" />
           {t("forgot.backToLogin")}
         </Link>

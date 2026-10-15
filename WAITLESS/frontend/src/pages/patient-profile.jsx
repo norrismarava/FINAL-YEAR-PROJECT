@@ -22,11 +22,14 @@ import { toast } from "sonner";
 
 import { useOutletContext } from "react-router-dom";
 import { usePatientAuth } from "@/auth/PatientAuthProvider";
+import { ProfilePhotoPicker } from "@/components/ProfilePhotoPicker";
 import {
   fetchPatientProfileCard,
   updatePatientProfile,
   changePatientPassword,
+  uploadPatientAvatar,
 } from "@/services/patientAuthApi";
+import { resolveProfileImageUrl } from "@/utils/profileImage";
 import { useTranslation } from "@/i18n/useTranslation";
 
 const GENDER_OPTIONS = [
@@ -37,9 +40,12 @@ const GENDER_OPTIONS = [
 ];
 
 export default function PatientProfilePage() {
-  const { patientUser } = usePatientAuth();
+  const { patientUser, updatePatientAvatar } = usePatientAuth();
   const { isLight } = useOutletContext() || { isLight: false };
   const { t } = useTranslation();
+  const [avatarPreview, setAvatarPreview] = useState(() =>
+    resolveProfileImageUrl(patientUser?.avatarUrl),
+  );
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -75,6 +81,24 @@ export default function PatientProfilePage() {
       .catch(() => setProfileData(null))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    setAvatarPreview(resolveProfileImageUrl(patientUser?.avatarUrl));
+  }, [patientUser?.avatarUrl]);
+
+  async function handleAvatarChange({ base64, dataUrl }) {
+    const previousAvatar = avatarPreview;
+    setAvatarPreview(dataUrl);
+    try {
+      const response = await uploadPatientAvatar(base64);
+      updatePatientAvatar(response.avatarUrl);
+      setAvatarPreview(resolveProfileImageUrl(response.avatarUrl));
+      toast.success("Profile photo updated");
+    } catch (err) {
+      setAvatarPreview(previousAvatar);
+      throw err;
+    }
+  }
 
   function updateField(field, value) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -176,13 +200,27 @@ export default function PatientProfilePage() {
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 lg:px-10">
       {/* Page header */}
-      <div className="mb-8">
-        <h1 className={`font-display text-2xl font-bold tracking-tight ${headingText}`}>
-          {t("profile.title")}
-        </h1>
-        <p className={`mt-1 text-sm ${subtext}`}>
-          {t("profile.subtitle")}
-        </p>
+      <div className="mb-8 flex items-center gap-5">
+        <ProfilePhotoPicker
+          value={avatarPreview}
+          initials={patientInitials(form.fullName || patientUser?.fullName)}
+          onImageReady={handleAvatarChange}
+          label="Change profile photo"
+          cropSource={patientUser?.avatarUrl}
+          size="compact"
+          showHint={false}
+        />
+        <div>
+          <h1 className={`font-display text-2xl font-bold tracking-tight ${headingText}`}>
+            {t("profile.title")}
+          </h1>
+          <p className={`mt-1 text-sm ${subtext}`}>
+            {t("profile.subtitle")}
+          </p>
+          <p className={`mt-1.5 text-xs ${subtext}`}>
+            Tap the photo to upload or reposition your picture.
+          </p>
+        </div>
       </div>
 
       {/* Profile completeness */}
@@ -500,4 +538,13 @@ function InfoRow({ label, value, infoRowClass, infoLabelClass, infoValueClass })
       <div className={infoValueClass}>{value ?? "N/A"}</div>
     </div>
   );
+}
+
+function patientInitials(name = "") {
+  const parts = String(name).trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "WL";
+  return parts
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() ?? "")
+    .join("");
 }

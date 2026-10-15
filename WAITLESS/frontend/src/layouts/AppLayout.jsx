@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, Navigate, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowUpRight,
@@ -63,6 +63,8 @@ import {
 import { QueueRealtimeProvider } from "@/sockets/QueueRealtimeProvider";
 import { resolveProfileImageUrl } from "@/utils/profileImage";
 import { useIdleTimer } from "@/hooks/useIdleTimer";
+import { useApiResource } from "@/hooks/useApiResource";
+import { fetchDashboardSummary } from "@/services/queueApi";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -108,7 +110,7 @@ const STAFF_WORKSPACE_ITEMS = [
     icon: ShieldPlus,
     roles: ["reception"],
   },
-  { group: "Main", to: "/admin/track", label: "Track Ticket", icon: Ticket },
+
   { group: "Main", to: "/admin/queue", label: "Queue Board", icon: Search },
   {
     group: "Clinical",
@@ -174,11 +176,9 @@ const STAFF_WORKSPACE_ITEMS = [
 
 const AUTH_ROUTE_PREFIXES = [
   "/login",
-  "/admin/login",
   "/admin/forgot-password",
   "/admin/reset-password",
   "/admin/staff-signup",
-  "/patient/login",
   "/patient/register",
   "/patient/forgot-password",
   "/patient/reset-password",
@@ -207,7 +207,6 @@ function isPatientPortalPath(pathname) {
     pathname.startsWith("/self-register") ||
     pathname.startsWith("/kiosk") ||
     pathname.startsWith("/patient/register") ||
-    pathname.startsWith("/patient/login") ||
     pathname.startsWith("/patient/dashboard")
   );
 }
@@ -360,7 +359,7 @@ function AppScaffold() {
   }
 
   if (isWorkspaceRoute && auth.isReady && !auth.isAuthenticated) {
-    return <Navigate to="/admin/login" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (isPatientShellRoute) {
@@ -598,16 +597,7 @@ function Header({ onOpenMobileNav }) {
                 ) : (
                   <QuickNavSearch />
                 )}
-                {isStaffWorkspaceTheme ? (
-                  <Link
-                    to="/admin/notifications"
-                    title="Notifications"
-                    className="relative grid h-10 w-10 shrink-0 place-items-center text-slate-300 transition-colors hover:text-white"
-                  >
-                    <Bell className="h-5 w-5" />
-                    <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full border-2 border-[#08243d] bg-red-500" />
-                  </Link>
-                ) : null}
+                {isStaffWorkspaceTheme ? <NotificationsBell /> : null}
                 {isStaffWorkspaceTheme ? (
                   <StaffAccountMenu auth={auth} displayName={displayName} />
                 ) : auth.isAuthenticated ? (
@@ -875,7 +865,7 @@ function StaffSignOutDialog({ auth, open, onOpenChange }) {
   function handleSignOut() {
     auth.logout();
     onOpenChange(false);
-    navigate("/admin/login");
+    navigate("/login");
   }
 
   return (
@@ -1137,37 +1127,31 @@ function StaffAccountMenu({ auth, displayName }) {
         onClick={() => setIsOpen((current) => !current)}
         aria-expanded={isOpen}
         aria-haspopup="menu"
-        className="inline-flex h-11 items-center gap-3 rounded-full border border-cyan-200/15 bg-white/6 pl-1.5 pr-3 text-slate-100 backdrop-blur transition-all hover:border-cyan-200/28 hover:bg-white/10 hover:text-white"
+        className="relative inline-flex h-11 items-center gap-3 overflow-hidden rounded-full border border-blue-300/40 bg-[linear-gradient(180deg,#5b8def_0%,#2f63ea_48%,#1d4ed8_100%)] pl-1.5 pr-3 text-white shadow-[0_14px_30px_-12px_rgba(37,99,235,0.65),inset_0_1px_0_rgba(255,255,255,0.45),inset_0_-2px_6px_rgba(15,40,120,0.55)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_36px_-12px_rgba(37,99,235,0.75),inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-2px_6px_rgba(15,40,120,0.55)]"
       >
+        <span className="pointer-events-none absolute inset-x-2 top-0 h-[55%] rounded-b-[2rem] bg-[linear-gradient(180deg,rgba(255,255,255,0.35),rgba(255,255,255,0))]" />
         <StaffAvatar
           user={auth.user}
           displayName={accountName}
-          className="h-8 w-8 rounded-full bg-lime-400 shadow-[0_10px_24px_-14px_rgba(163,230,53,0.72)]"
-          fallbackClassName="text-[11px] font-bold text-[#0b1a0c]"
+          className="relative h-8 w-8 rounded-full bg-white/20 ring-2 ring-white/50"
+          fallbackClassName="text-[11px] font-bold text-white"
         />
-        <span className="hidden min-w-0 text-left sm:flex sm:flex-col sm:justify-center">
+        <span className="relative hidden min-w-0 text-left sm:flex sm:flex-col sm:justify-center">
           <span className="truncate text-sm font-semibold leading-none text-white">
             {accountName}
           </span>
-          <span className="mt-1 truncate text-xs leading-none text-slate-400">
+          <span className="mt-1 truncate text-xs leading-none text-blue-100/80">
             {accountContext}
           </span>
         </span>
         <ChevronDown
-          className={`h-4 w-4 shrink-0 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          className={`relative h-4 w-4 shrink-0 text-blue-100/80 transition-transform ${isOpen ? "rotate-180" : ""}`}
         />
       </button>
 
       {isOpen ? (
         <div className="absolute right-0 top-[calc(100%+0.75rem)] z-50 w-[min(18rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-cyan-200/12 bg-[linear-gradient(180deg,rgba(8,22,38,0.98),rgba(5,17,30,0.98))] p-2 text-white shadow-[0_28px_80px_-28px_rgba(2,6,23,0.8),0_0_0_1px_rgba(34,211,238,0.04)] backdrop-blur-2xl">
           <div className="space-y-1 px-1 py-1">
-            <Link
-              to="/"
-              className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-100 transition-colors hover:bg-white/8"
-            >
-              <House className="h-4 w-4 text-cyan-100/78" />
-              Main page
-            </Link>
             <Link
               to="/admin/profile"
               className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-100 transition-colors hover:bg-white/8"
@@ -1202,6 +1186,129 @@ function StaffAccountMenu({ auth, displayName }) {
         </div>
       ) : null}
       <StaffSignOutDialog auth={auth} open={isSignOutOpen} onOpenChange={setIsSignOutOpen} />
+    </div>
+  );
+}
+
+function NotificationsBell() {
+  const location = useLocation();
+  const menuRef = useRef(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const loader = useCallback(() => fetchDashboardSummary(), []);
+  const query = useApiResource(loader);
+  const notifications = query.data?.notifications ?? [];
+  const attentionCount = notifications.filter((n) =>
+    ["failed", "retrying"].includes(n.status),
+  ).length;
+  const latest = notifications.slice(0, 7);
+
+  useEffect(() => {
+    setIsOpen(false);
+  }, [location.pathname, location.search]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    function handlePointerDown(event) {
+      if (!menuRef.current?.contains(event.target)) setIsOpen(false);
+    }
+    function handleEscape(event) {
+      if (event.key === "Escape") setIsOpen(false);
+    }
+    window.addEventListener("mousedown", handlePointerDown);
+    window.addEventListener("keydown", handleEscape);
+    return () => {
+      window.removeEventListener("mousedown", handlePointerDown);
+      window.removeEventListener("keydown", handleEscape);
+    };
+  }, [isOpen]);
+
+  return (
+    <div ref={menuRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setIsOpen((v) => !v)}
+        aria-expanded={isOpen}
+        aria-haspopup="menu"
+        title="Notifications"
+        className={`relative grid h-10 w-10 shrink-0 place-items-center rounded-xl transition-all duration-200 ${
+          isOpen
+            ? "bg-white/10 text-white"
+            : "text-slate-300 hover:bg-white/6 hover:text-white"
+        }`}
+      >
+        <Bell className="h-5 w-5" />
+        {attentionCount > 0 ? (
+          <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full border-2 border-[#08243d] bg-red-500 px-0.5 text-[9px] font-bold leading-none text-white">
+            {attentionCount > 9 ? "9+" : attentionCount}
+          </span>
+        ) : null}
+      </button>
+
+      {isOpen ? (
+        <div className="absolute right-0 top-[calc(100%+0.75rem)] z-50 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-cyan-200/12 bg-[linear-gradient(180deg,rgba(8,22,38,0.98),rgba(5,17,30,0.98))] text-white shadow-[0_28px_80px_-28px_rgba(2,6,23,0.8),0_0_0_1px_rgba(34,211,238,0.04)] backdrop-blur-2xl">
+          <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
+            <span className="text-sm font-semibold text-white">Notifications</span>
+            <span className="rounded-full bg-white/8 px-2 py-0.5 text-[10px] font-semibold text-slate-300">
+              {notifications.length} total
+            </span>
+          </div>
+
+          <div className="max-h-80 overflow-y-auto p-1.5">
+            {query.isLoading ? (
+              <div className="px-4 py-8 text-center text-sm text-slate-400">
+                Loading notifications...
+              </div>
+            ) : latest.length === 0 ? (
+              <div className="px-4 py-8 text-center">
+                <BellRing className="mx-auto h-8 w-8 text-slate-500" />
+                <div className="mt-3 text-sm text-slate-400">
+                  No notifications right now.
+                </div>
+              </div>
+            ) : (
+              latest.map((n, i) => {
+                const isAttention = ["failed", "retrying"].includes(n.status);
+                const isInflight = ["queued", "sending", "sent"].includes(n.status);
+                return (
+                  <div
+                    key={n.id ?? i}
+                    className="flex items-start gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-white/6"
+                  >
+                    <span
+                      className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${
+                        isAttention
+                          ? "bg-red-400"
+                          : isInflight
+                            ? "bg-amber-400"
+                            : "bg-teal-400"
+                      }`}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-sm font-medium text-slate-100">
+                        {n.title || n.ticket || "Notification"}
+                      </div>
+                      <div className="mt-0.5 truncate text-xs text-slate-400">
+                        {[n.patientName, n.department, n.status]
+                          .filter(Boolean)
+                          .join(", ")}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          <Link
+            to="/admin/notifications"
+            onClick={() => setIsOpen(false)}
+            className="flex items-center justify-center gap-2 border-t border-white/10 px-4 py-2.5 text-sm font-semibold text-cyan-300 transition-colors hover:bg-white/6 hover:text-cyan-200"
+          >
+            View all notifications
+            <ArrowUpRight className="h-4 w-4" />
+          </Link>
+        </div>
+      ) : null}
     </div>
   );
 }

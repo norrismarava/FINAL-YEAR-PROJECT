@@ -17,6 +17,7 @@ import {
   listNotifications,
 } from "../repositories/queueRepository.js";
 import { getAppointments } from "../services/appointmentService.js";
+import { saveAvatarImage } from "../services/avatarService.js";
 import { HttpError } from "../utils/http.js";
 
 export async function patientRegisterController({ body }) {
@@ -326,6 +327,24 @@ export async function patientUpdateProfileController({ req, body }) {
   return {
     status: 200,
     body: session,
+  };
+}
+
+export async function patientAvatarController({ req, body }) {
+  const session = requirePatientSession(req);
+
+  const { avatarBase64 } = body ?? {};
+  if (!avatarBase64) {
+    return { status: 400, body: { message: "avatarBase64 is required" } };
+  }
+
+  const avatarUrl = saveAvatarImage(`patient-${session.user.id}`, avatarBase64);
+
+  const updated = await updatePatientProfile(req, { avatarUrl });
+
+  return {
+    status: 200,
+    body: { message: "Avatar updated", avatarUrl, user: updated?.user ?? session.user },
   };
 }
 

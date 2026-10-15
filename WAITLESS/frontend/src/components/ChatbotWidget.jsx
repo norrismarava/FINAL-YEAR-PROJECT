@@ -5,7 +5,7 @@ import { sendChatbotMessage } from "@/services/queueApi";
 import { DEPARTMENTS } from "@/services/queueMeta";
 
 const CALL_OPTIONS = [
-  { label: "Emergency — open 24/7", number: "+263 77 000 0000" },
+  { label: "Emergency, open 24/7", number: "+263 77 000 0000" },
   { label: "Reception", number: "+263 77 123 4567" },
 ];
 

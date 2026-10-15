@@ -24,8 +24,8 @@ function openDB() {
 
 /**
  * Save a form draft to IndexedDB.
- * @param {string} key — unique form identifier (e.g. "triage-assessment")
- * @param {object} data — form data to save
+ * @param {string} key, unique form identifier (e.g. "triage-assessment")
+ * @param {object} data, form data to save
  */
 export async function saveDraft(key, data) {
   try {
@@ -47,7 +47,7 @@ export async function saveDraft(key, data) {
 
 /**
  * Load a form draft from IndexedDB.
- * @param {string} key — unique form identifier
+ * @param {string} key, unique form identifier
  * @returns {{ data: object, savedAt: string } | null}
  */
 export async function loadDraft(key) {
@@ -66,7 +66,7 @@ export async function loadDraft(key) {
 
 /**
  * Delete a form draft from IndexedDB.
- * @param {string} key — unique form identifier
+ * @param {string} key, unique form identifier
  */
 export async function clearDraft(key) {
   try {
@@ -85,9 +85,9 @@ export async function clearDraft(key) {
 /**
  * React hook for auto-saving form data to IndexedDB with debounced writes.
  *
- * @param {string} key — unique form identifier
- * @param {object} data — form data (must be JSON-serializable)
- * @param {number} [intervalMs=3000] — debounce interval
+ * @param {string} key, unique form identifier
+ * @param {object} data, form data (must be JSON-serializable)
+ * @param {number} [intervalMs=3000], debounce interval
  * @returns {{ draft: { data: object, savedAt: string } | null, hasDraft: boolean, restore: () => void, clear: () => void }}
  */
 export function useFormDraft(key, data, intervalMs = 3000) {

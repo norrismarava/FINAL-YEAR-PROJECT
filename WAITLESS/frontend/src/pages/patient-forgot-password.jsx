@@ -34,7 +34,7 @@ export default function PatientForgotPasswordPage() {
   }
 
   const backLink = (
-    <Link to="/patient/login" className="inline-flex items-center gap-1 font-semibold text-teal-300 hover:text-teal-200">
+    <Link to="/login" className="inline-flex items-center gap-1 font-semibold text-teal-300 hover:text-teal-200">
       <ArrowLeft className="h-3 w-3" />
       {t("forgot.backToLogin")}
     </Link>

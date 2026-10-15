@@ -5,7 +5,6 @@ import {
   BellRing,
   Brain,
   Building2,
-  CalendarDays,
   CheckCircle2,
   Clock3,
   Database,
@@ -19,7 +18,6 @@ import {
   Pill,
   Plus,
   RefreshCw,
-  Save,
   Search,
   Send,
   ShieldCheck,
@@ -74,11 +72,6 @@ import {
   fetchOIClinicSummary,
   createOIClinicVisit,
   updateOIClinicVisitState,
-  fetchAppointments,
-  createAppointment,
-  fetchAppointmentMeta,
-  fetchAppointmentSummary,
-  updateAppointmentStatus,
   fetchHospitals,
   createHospital,
   updateHospital,
@@ -87,10 +80,6 @@ import {
   exportSyncData,
   importSyncData,
   createBackup,
-  fetchAppointmentReminders,
-  markAppointmentReminderSent,
-  createFollowUpAppointment,
-  fetchFollowUpsForTicket,
 } from "@/services/queueApi";
 import { useQueueRealtime } from "@/sockets/QueueRealtimeProvider";
 import { exportCSV, exportPDF, exportXLSX } from "@/utils/reportExport";
@@ -99,8 +88,9 @@ const isBrowser = typeof window !== "undefined";
 const EMPTY_LIST = [];
 
 function useDashboardSummary() {
+  const { refreshToken } = useLiveRefresh();
   const loader = useCallback(() => fetchDashboardSummary(), []);
-  return useApiResource(loader, { enabled: isBrowser });
+  return useApiResource(loader, { enabled: isBrowser, refreshToken });
 }
 
 function ModulePage({ eyebrow, title, description, icon: Icon, children }) {
@@ -139,19 +129,27 @@ function QueryBoundary({ query, title, children }) {
   return children;
 }
 
-function MetricTile({ label, value, detail, icon: Icon }) {
+function MetricTile({ label, value, detail, icon: Icon, accent = "text-primary bg-primary/15" }) {
   return (
     <div className="surface-panel p-5">
       <div className="flex items-start justify-between gap-3">
-        <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
-          {label}
+        <div className="min-w-0">
+          <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+            {label}
+          </div>
+          <div className="mt-3 font-display text-4xl font-bold tracking-tight text-foreground">
+            {value}
+          </div>
+          {detail ? (
+            <p className="mt-1.5 text-xs leading-5 text-muted-foreground">{detail}</p>
+          ) : null}
         </div>
-        {Icon ? <Icon className="h-4 w-4 text-primary" /> : null}
+        {Icon ? (
+          <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${accent}`}>
+            <Icon className="h-5 w-5" />
+          </span>
+        ) : null}
       </div>
-      <div className="mt-4 font-display text-4xl font-bold tracking-tight text-foreground">
-        {value}
-      </div>
-      <p className="mt-2 text-xs leading-5 text-muted-foreground">{detail}</p>
     </div>
   );
 }
@@ -166,6 +164,7 @@ export function StaffQueueBoardPage() {
   const departmentETAs = query.data?.departmentETAs ?? {};
   const bottlenecks = query.data?.bottlenecks ?? EMPTY_LIST;
   const avgServiceTime = query.data?.avgServiceTimeMinutes ?? null;
+  const isLive = realtime.status === "connected";
 
   return (
     <ModulePage
@@ -175,34 +174,56 @@ export function StaffQueueBoardPage() {
       icon={Users}
     >
       <QueryBoundary query={query} title="Loading the queue board">
+        {/* KPI row */}
         <div className="grid gap-4 sm:grid-cols-3">
-          <MetricTile
+          <AdminMetricTile
             label="Now serving"
             value={serving.length}
             detail="Patients at a service desk"
             icon={Wifi}
+            accent="text-priority-green bg-priority-green/15"
           />
-          <MetricTile
+          <AdminMetricTile
             label="Waiting"
             value={waiting.length}
             detail="Ordered by clinical priority"
             icon={Clock3}
+            accent="text-amber-500 bg-amber-500/15"
           />
-          <MetricTile
-            label="Missed"
+          <AdminMetricTile
+            label="Missed turns"
             value={missed.length}
             detail="Available for staff recall"
             icon={AlertTriangle}
+            accent={missed.length ? "text-destructive bg-destructive/15" : "text-priority-green bg-priority-green/15"}
           />
         </div>
 
+        {/* Bottleneck warnings */}
         {bottlenecks.length > 0 ? (
-          <div className="mt-5 space-y-2">
+          <div className="mt-4 space-y-2">
             {bottlenecks.map((b, i) => (
-              <div key={i} className={"flex items-start gap-3 rounded-2xl border px-4 py-3 " + (b.severity === "critical" ? "border-red-500/40 bg-red-500/10" : "border-amber-500/40 bg-amber-500/10")}>
-                <AlertTriangle className={"mt-0.5 h-4 w-4 shrink-0 " + (b.severity === "critical" ? "text-red-500" : "text-amber-500")} />
+              <div
+                key={i}
+                className={`flex items-start gap-3 rounded-xl border px-4 py-3 ${
+                  b.severity === "critical"
+                    ? "border-red-500/40 bg-red-500/10"
+                    : "border-amber-500/40 bg-amber-500/10"
+                }`}
+              >
+                <AlertTriangle
+                  className={`mt-0.5 h-4 w-4 shrink-0 ${
+                    b.severity === "critical" ? "text-red-500" : "text-amber-500"
+                  }`}
+                />
                 <div>
-                  <div className={"text-xs font-bold uppercase tracking-wider " + (b.severity === "critical" ? "text-red-500" : "text-amber-600")}>{b.type.replace("-", " ")}</div>
+                  <div
+                    className={`text-xs font-bold uppercase tracking-wider ${
+                      b.severity === "critical" ? "text-red-500" : "text-amber-600 dark:text-amber-300"
+                    }`}
+                  >
+                    {b.type.replace("-", " ")}
+                  </div>
                   <div className="mt-0.5 text-sm text-muted-foreground">{b.message}</div>
                 </div>
               </div>
@@ -210,92 +231,170 @@ export function StaffQueueBoardPage() {
           </div>
         ) : null}
 
+        {/* Serving + waiting */}
+        <div className="mt-5 grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
+          <div className="surface-panel">
+            <AdminPanelHeader
+              icon={Activity}
+              title="Now serving"
+              subtitle="Patients currently at a desk"
+              count={serving.length}
+            />
+            {serving.length ? (
+              <div className="grid gap-3 p-5 sm:grid-cols-2">
+                {serving.map((ticket) => (
+                  <ServingTile key={ticket.id} ticket={ticket} />
+                ))}
+              </div>
+            ) : (
+              <AdminEmptyState message="No patients are currently being served." />
+            )}
+          </div>
+
+          <div className="surface-panel">
+            <AdminPanelHeader
+              icon={Clock3}
+              title="Up next"
+              subtitle={isLive ? "Live · ordered by priority" : "Syncing · ordered by priority"}
+              count={waiting.length}
+            />
+            {waiting.length ? (
+              <div className="divide-y divide-border/50">
+                {waiting.map((ticket, index) => (
+                  <WaitingQueueRow key={ticket.id} ticket={ticket} position={index + 1} />
+                ))}
+              </div>
+            ) : (
+              <AdminEmptyState message="The live waiting queue is clear." />
+            )}
+          </div>
+        </div>
+
+        {/* Service pace */}
         {avgServiceTime ? (
-          <div className="mt-5 rounded-2xl border border-border/70 bg-background/60 px-5 py-4">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">Average service time</div>
-            <div className="mt-1 font-display text-2xl font-bold">{avgServiceTime} min</div>
-            <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {Object.entries(departmentETAs).filter(([, d]) => d.waitingCount > 0).map(([dept, data]) => (
-                <div key={dept} className="rounded-xl border border-border/50 bg-background/40 px-3 py-2">
-                  <div className="text-xs font-semibold text-foreground">{dept}</div>
-                  <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                    <Clock3 className="h-3 w-3" />
-                    ETA ~{data.etaMinutes}m
-                  </div>
-                  <div className="mt-0.5 text-[10px] text-muted-foreground">{data.waitingCount} waiting · {data.activeCount} active</div>
-                </div>
-              ))}
+          <div className="surface-panel mt-5">
+            <AdminPanelHeader
+              icon={Timer}
+              title="Service pace"
+              subtitle="Average service time and estimated wait per department"
+            />
+            <div className="p-5">
+              <div className="flex items-baseline gap-2">
+                <span className="font-display text-3xl font-bold tracking-tight text-foreground">
+                  {avgServiceTime}
+                </span>
+                <span className="text-sm text-muted-foreground">min average service time</span>
+              </div>
+              <div className="mt-4 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                {Object.entries(departmentETAs)
+                  .filter(([, d]) => d.waitingCount > 0)
+                  .map(([dept, data]) => (
+                    <div
+                      key={dept}
+                      className="rounded-xl border border-border/60 bg-background/50 px-3.5 py-2.5"
+                    >
+                      <div className="text-xs font-semibold text-foreground">{dept}</div>
+                      <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Clock3 className="h-3 w-3" />
+                        ETA ~{data.etaMinutes}m
+                      </div>
+                      <div className="mt-0.5 text-[10px] text-muted-foreground">
+                        {data.waitingCount} waiting · {data.activeCount} active
+                      </div>
+                    </div>
+                  ))}
+              </div>
             </div>
           </div>
         ) : null}
 
-        <div className="mt-5 grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-          <article className="surface-panel p-6">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <div className="eyebrow">Current calls</div>
-                <h2 className="mt-2 font-display text-2xl font-bold">Now serving</h2>
-              </div>
-              <span className="inline-flex items-center gap-2 rounded-full bg-priority-green/15 px-3 py-1.5 text-xs font-semibold text-priority-green">
-                <span className="h-2 w-2 rounded-full bg-priority-green" />
-                {realtime.status === "connected" ? "Live" : "Syncing"}
-              </span>
-            </div>
-            <div className="mt-5 space-y-3">
-              {serving.length ? (
-                serving.map((ticket) => <QueueTicketRow key={ticket.id} ticket={ticket} />)
-              ) : (
-                <EmptyMessage>No patients are currently being served.</EmptyMessage>
-              )}
-            </div>
-          </article>
-
-          <article className="surface-panel overflow-hidden">
-            <div className="border-b border-border/70 px-6 py-5">
-              <div className="eyebrow">Waiting room</div>
-              <h2 className="mt-2 font-display text-2xl font-bold">Up next</h2>
-            </div>
-            {waiting.length ? (
-              <div className="divide-y divide-border/70">
-                {waiting.map((ticket) => (
-                  <QueueTicketRow key={ticket.id} ticket={ticket} compact />
-                ))}
-              </div>
-            ) : (
-              <div className="p-6">
-                <EmptyMessage>The live waiting queue is clear.</EmptyMessage>
-              </div>
-            )}
-          </article>
-        </div>
-
+        {/* Missed turns */}
         {missed.length > 0 ? (
-          <article className="surface-panel mt-5 overflow-hidden">
-            <div className="border-b border-border/70 px-6 py-5">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <div className="eyebrow">Missed turns</div>
-                  <h2 className="mt-2 font-display text-2xl font-bold">Recall patients</h2>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    Choose a fair reinsertion position when recalling missed patients.
-                  </p>
-                </div>
-                <span className="inline-flex items-center gap-2 rounded-full bg-amber-500/15 px-3 py-1.5 text-xs font-semibold text-amber-600">
-                  <AlertTriangle className="h-3.5 w-3.5" />
-                  {missed.length} missed
-                </span>
-              </div>
-            </div>
-            <div className="divide-y divide-border/70">
+          <div className="surface-panel mt-5">
+            <AdminPanelHeader
+              icon={AlertTriangle}
+              title="Missed turns"
+              subtitle="Choose a fair reinsertion position when recalling"
+              count={missed.length}
+            />
+            <div className="divide-y divide-border/50">
               {missed.map((ticket) => (
                 <MissedRecallRow key={ticket.id} ticket={ticket} />
               ))}
             </div>
-          </article>
+          </div>
         ) : null}
-
       </QueryBoundary>
     </ModulePage>
+  );
+}
+
+const PRIORITY_TOP_BAR = {
+  red: "bg-priority-red",
+  yellow: "bg-priority-yellow",
+  green: "bg-priority-green",
+  black: "bg-priority-black",
+};
+
+function ServingTile({ ticket }) {
+  return (
+    <article className="relative overflow-hidden rounded-xl border border-border/70 bg-background/60 p-4">
+      <div
+        className={`absolute inset-x-0 top-0 h-0.5 ${PRIORITY_TOP_BAR[ticket.priority] ?? "bg-primary"}`}
+      />
+      <div className="flex items-start justify-between gap-2">
+        <span
+          className={`inline-grid h-10 w-16 place-items-center rounded-lg font-display text-sm font-bold ${priorityChipClass[ticket.priority]}`}
+        >
+          {ticket.ticket}
+        </span>
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-priority-green/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-priority-green">
+          <span className="h-1.5 w-1.5 rounded-full bg-priority-green" />
+          {STATUS_META[ticket.status]?.label ?? ticket.status}
+        </span>
+      </div>
+      <div className="mt-3 text-sm font-semibold text-foreground">{ticket.department}</div>
+      <div className="mt-0.5 text-xs text-muted-foreground">
+        {PRIORITY_META[ticket.priority]?.label ?? ticket.priority}
+      </div>
+      <div className="mt-3 flex items-center gap-1.5 border-t border-border/50 pt-3 text-xs text-muted-foreground">
+        <Clock3 className="h-3.5 w-3.5" />
+        {ticket.waitMinutes}m in service
+      </div>
+    </article>
+  );
+}
+
+function WaitingQueueRow({ ticket, position }) {
+  return (
+    <div className="flex items-center justify-between gap-4 px-5 py-3 transition-colors hover:bg-muted/40">
+      <div className="flex min-w-0 items-center gap-3">
+        <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-muted font-display text-[11px] font-bold text-muted-foreground">
+          {position}
+        </span>
+        <span
+          className={`inline-grid h-9 w-14 shrink-0 place-items-center rounded-lg font-display text-xs font-bold ${priorityChipClass[ticket.priority]}`}
+        >
+          {ticket.ticket}
+        </span>
+        <div className="min-w-0">
+          <div className="truncate text-sm font-semibold text-foreground">
+            {ticket.department}
+          </div>
+          <div className="mt-0.5 truncate text-xs text-muted-foreground">
+            {PRIORITY_META[ticket.priority]?.label ?? ticket.priority}
+          </div>
+        </div>
+      </div>
+      <div className="shrink-0 text-right">
+        <div className="font-display text-sm font-bold text-foreground">
+          {ticket.waitMinutes}m
+        </div>
+        <div className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+          {STATUS_META[ticket.status]?.label ?? ticket.status}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -386,31 +485,6 @@ function MissedRecallRow({ ticket }) {
   );
 }
 
-function QueueTicketRow({ ticket, compact = false }) {
-  return (
-    <div
-      className={`${compact ? "px-6 py-4" : "rounded-xl border border-border/70 bg-background/70 p-4"} flex items-center justify-between gap-4`}
-    >
-      <div className="flex min-w-0 items-center gap-3">
-        <span
-          className={`inline-grid h-9 w-16 shrink-0 place-items-center rounded-lg font-display text-xs font-bold ${priorityChipClass[ticket.priority]}`}
-        >
-          {ticket.ticket}
-        </span>
-        <div className="min-w-0">
-          <div className="truncate text-sm font-semibold text-foreground">{ticket.department}</div>
-          <div className="mt-1 truncate text-xs text-muted-foreground">
-            {PRIORITY_META[ticket.priority]?.label ?? ticket.priority}
-          </div>
-        </div>
-      </div>
-      <div className="shrink-0 text-right text-xs text-muted-foreground">
-        <div className="font-semibold text-foreground">{ticket.waitMinutes}m</div>
-        <div className="mt-1">{STATUS_META[ticket.status]?.label ?? ticket.status}</div>
-      </div>
-    </div>
-  );
-}
 
 export function DepartmentsPage() {
   const query = useDashboardSummary();
@@ -464,376 +538,6 @@ function DepartmentStat({ label, value }) {
     <div className="rounded-lg border border-border/70 bg-background/70 p-3">
       <div className="text-[9px] uppercase tracking-[0.18em] text-muted-foreground">{label}</div>
       <div className="mt-2 font-display text-2xl font-bold">{value}</div>
-    </div>
-  );
-}
-
-export function AppointmentsPage() {
-  const { refreshToken, refreshLiveData } = useLiveRefresh();
-  const [showBookingForm, setShowBookingForm] = useState(false);
-  const [statusFilter, setStatusFilter] = useState("");
-  const [dateFilter, setDateFilter] = useState("");
-
-  const metaLoader = useCallback(() => fetchAppointmentMeta(), []);
-  const metaQuery = useApiResource(metaLoader, { enabled: isBrowser });
-
-  const summaryLoader = useCallback(() => fetchAppointmentSummary(), []);
-  const summaryQuery = useApiResource(summaryLoader, { enabled: isBrowser, refreshToken });
-
-  const appointmentsLoader = useCallback(
-    () => fetchAppointments({ status: statusFilter, date: dateFilter }),
-    [statusFilter, dateFilter, refreshToken],
-  );
-  const appointmentsQuery = useApiResource(appointmentsLoader, { enabled: isBrowser });
-
-  const createAction = useApiAction(createAppointment, {
-    onSuccess: () => {
-      refreshLiveData();
-      toast.success("Appointment booked successfully");
-    },
-  });
-
-  const statusAction = useApiAction(
-    (vars) => updateAppointmentStatus(vars.id, vars.status),
-    {
-      onSuccess: () => {
-        refreshLiveData();
-      },
-    },
-  );
-
-  const meta = metaQuery.data;
-  const serviceCategories = meta?.serviceCategories ?? [];
-  const timeSlots = meta?.timeSlots ?? [];
-  const summary = summaryQuery.data;
-  const appointments = appointmentsQuery.data ?? [];
-
-  async function handleBook(formData) {
-    try {
-      await createAction.mutate(formData);
-      setShowBookingForm(false);
-    } catch (err) {
-      toast.error(err.message ?? "Failed to book appointment");
-    }
-  }
-
-  async function handleStatusChange(id, status) {
-    try {
-      await statusAction.mutate({ id, status });
-      toast.success(`Appointment ${status}`);
-    } catch (err) {
-      toast.error(err.message ?? "Failed to update appointment");
-    }
-  }
-
-  if (appointmentsQuery.isLoading && !appointmentsQuery.data) {
-    return <LoadingPanel label="Loading appointments…" />;
-  }
-
-  return (
-    <ModulePage
-      eyebrow="Clinical schedule"
-      title="Appointments"
-      description="Book patient appointments by service category and time slot, then confirm check-in on arrival."
-      icon={CalendarDays}
-    >
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="input-base h-9 w-auto text-xs"
-          >
-            <option value="">All statuses</option>
-            <option value="pending">Pending</option>
-            <option value="confirmed">Confirmed</option>
-            <option value="checked-in">Checked In</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-          <input
-            type="date"
-            value={dateFilter}
-            onChange={(e) => setDateFilter(e.target.value)}
-            className="input-base h-9 w-auto text-xs"
-          />
-          {(statusFilter || dateFilter) && (
-            <button
-              type="button"
-              onClick={() => { setStatusFilter(""); setDateFilter(""); }}
-              className="text-xs text-muted-foreground hover:text-foreground"
-            >
-              Clear
-            </button>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowBookingForm((v) => !v)}
-          className="inline-flex items-center gap-1.5 rounded-lg gradient-primary px-3 py-2 text-xs font-semibold text-primary-foreground"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          {showBookingForm ? "Close form" : "New appointment"}
-        </button>
-      </div>
-
-      {summary && (
-        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-5">
-          {[
-            { label: "Total", value: summary.total, color: "bg-blue-500/10 border-blue-500/30" },
-            { label: "Today", value: summary.today, color: "bg-teal-500/10 border-teal-500/30" },
-            { label: "Pending", value: summary.byStatus?.pending ?? 0, color: "bg-amber-500/10 border-amber-500/30" },
-            { label: "Confirmed", value: summary.byStatus?.confirmed ?? 0, color: "bg-indigo-500/10 border-indigo-500/30" },
-            { label: "Checked In", value: summary.byStatus?.["checked-in"] ?? 0, color: "bg-emerald-500/10 border-emerald-500/30" },
-          ].map((stat) => (
-            <div key={stat.label} className={`rounded-xl border p-4 ${stat.color}`}>
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{stat.label}</p>
-              <p className="mt-1 text-2xl font-bold">{stat.value}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {showBookingForm && (
-        <BookingForm
-          serviceCategories={serviceCategories}
-          timeSlots={timeSlots}
-          onSubmit={handleBook}
-          isSubmitting={createAction.isPending}
-        />
-      )}
-
-      <div className="surface-panel p-6">
-        <h2 className="font-display text-2xl font-bold">Scheduled appointments</h2>
-        <div className="mt-5 space-y-3">
-          {appointments.length === 0 ? (
-            <EmptyMessage>No appointments scheduled.</EmptyMessage>
-          ) : (
-            appointments.map((appt) => (
-              <AppointmentRow
-                key={appt.id}
-                appointment={appt}
-                onStatusChange={handleStatusChange}
-                updating={statusAction.isPending && statusAction.variables?.id === appt.id}
-              />
-            ))
-          )}
-        </div>
-      </div>
-    </ModulePage>
-  );
-}
-
-function BookingForm({ serviceCategories, timeSlots, onSubmit, isSubmitting }) {
-  const [patientName, setPatientName] = useState("");
-  const [patientContact, setPatientContact] = useState("");
-  const [patientAge, setPatientAge] = useState("");
-  const [patientGender, setPatientGender] = useState("");
-  const [serviceCategory, setServiceCategory] = useState("");
-  const [date, setDate] = useState("");
-  const [timeSlot, setTimeSlot] = useState("");
-  const [notes, setNotes] = useState("");
-
-  function handleSubmit(e) {
-    e.preventDefault();
-    if (!patientName.trim() || !serviceCategory || !date || !timeSlot) return;
-    onSubmit({
-      patientName: patientName.trim(),
-      patientContact: patientContact.trim(),
-      patientAge: patientAge ? Number(patientAge) : null,
-      patientGender,
-      serviceCategory,
-      date,
-      timeSlot,
-      notes: notes.trim(),
-    });
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="surface-panel mb-4 space-y-4 p-6">
-      <h3 className="font-display text-lg font-bold">Book new appointment</h3>
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div>
-          <label className="text-xs font-semibold text-muted-foreground">Patient name *</label>
-          <input
-            type="text"
-            required
-            value={patientName}
-            onChange={(e) => setPatientName(e.target.value)}
-            className="input-base mt-1 h-9 w-full text-sm"
-            placeholder="Full name"
-          />
-        </div>
-        <div>
-          <label className="text-xs font-semibold text-muted-foreground">Contact number</label>
-          <input
-            type="tel"
-            value={patientContact}
-            onChange={(e) => setPatientContact(e.target.value)}
-            className="input-base mt-1 h-9 w-full text-sm"
-            placeholder="+263..."
-          />
-        </div>
-        <div>
-          <label className="text-xs font-semibold text-muted-foreground">Age</label>
-          <input
-            type="number"
-            min={0}
-            max={130}
-            value={patientAge}
-            onChange={(e) => setPatientAge(e.target.value)}
-            className="input-base mt-1 h-9 w-full text-sm"
-            placeholder="Years"
-          />
-        </div>
-        <div>
-          <label className="text-xs font-semibold text-muted-foreground">Gender</label>
-          <select
-            value={patientGender}
-            onChange={(e) => setPatientGender(e.target.value)}
-            className="input-base mt-1 h-9 w-full text-sm"
-          >
-            <option value="">Select</option>
-            <option value="male">Male</option>
-            <option value="female">Female</option>
-            <option value="other">Other</option>
-          </select>
-        </div>
-        <div>
-          <label className="text-xs font-semibold text-muted-foreground">Service category *</label>
-          <select
-            required
-            value={serviceCategory}
-            onChange={(e) => setServiceCategory(e.target.value)}
-            className="input-base mt-1 h-9 w-full text-sm"
-          >
-            <option value="">Select service</option>
-            {serviceCategories.map((s) => (
-              <option key={s.id} value={s.id}>{s.label}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="text-xs font-semibold text-muted-foreground">Date *</label>
-          <input
-            type="date"
-            required
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="input-base mt-1 h-9 w-full text-sm"
-          />
-        </div>
-        <div>
-          <label className="text-xs font-semibold text-muted-foreground">Time slot *</label>
-          <select
-            required
-            value={timeSlot}
-            onChange={(e) => setTimeSlot(e.target.value)}
-            className="input-base mt-1 h-9 w-full text-sm"
-          >
-            <option value="">Select time</option>
-            {timeSlots.map((slot) => (
-              <option key={slot} value={slot}>{slot}</option>
-            ))}
-          </select>
-        </div>
-        <div className="sm:col-span-2 lg:col-span-3">
-          <label className="text-xs font-semibold text-muted-foreground">Notes</label>
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            className="input-base mt-1 w-full text-sm"
-            rows={2}
-            placeholder="Optional notes for the clinic"
-          />
-        </div>
-      </div>
-      <div className="flex items-center gap-3">
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="inline-flex items-center gap-1.5 rounded-lg gradient-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50"
-        >
-          {isSubmitting ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-          Book appointment
-        </button>
-      </div>
-    </form>
-  );
-}
-
-const APPT_STATUS_BADGE = {
-  pending: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
-  confirmed: "bg-blue-500/15 text-blue-700 dark:text-blue-300",
-  "checked-in": "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
-  cancelled: "bg-red-500/15 text-red-700 dark:text-red-300",
-  completed: "bg-violet-500/15 text-violet-700 dark:text-violet-300",
-};
-
-function AppointmentRow({ appointment, onStatusChange, updating }) {
-  const appt = appointment;
-  return (
-    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/60 p-4">
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="font-display text-sm font-bold">{appt.patientName}</span>
-          <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${APPT_STATUS_BADGE[appt.status] ?? "bg-muted text-muted-foreground"}`}>
-            {appt.status}
-          </span>
-        </div>
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-          <span className="font-medium text-foreground">{appt.serviceLabel}</span>
-          <span>{appt.date} · {appt.timeSlot}</span>
-          {appt.patientContact && <span>{appt.patientContact}</span>}
-          {appt.patientAge != null && <span>{appt.patientAge}y</span>}
-          {appt.patientGender && <span className="capitalize">{appt.patientGender}</span>}
-        </div>
-        {appt.notes && (
-          <p className="mt-1 text-xs italic text-muted-foreground">"{appt.notes}"</p>
-        )}
-      </div>
-      <div className="flex items-center gap-2">
-        {appt.status === "pending" && (
-          <button
-            type="button"
-            disabled={updating}
-            onClick={() => onStatusChange(appt.id, "confirmed")}
-            className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-semibold hover:bg-accent disabled:opacity-50"
-          >
-            Confirm
-          </button>
-        )}
-        {appt.status === "confirmed" && (
-          <button
-            type="button"
-            disabled={updating}
-            onClick={() => onStatusChange(appt.id, "checked-in")}
-            className="inline-flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-500/20 disabled:opacity-50 dark:text-emerald-300"
-          >
-            Check in
-          </button>
-        )}
-        {(appt.status === "pending" || appt.status === "confirmed") && (
-          <button
-            type="button"
-            disabled={updating}
-            onClick={() => onStatusChange(appt.id, "cancelled")}
-            className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-semibold text-destructive hover:bg-destructive/10 disabled:opacity-50"
-          >
-            Cancel
-          </button>
-        )}
-        {appt.status === "checked-in" && (
-          <button
-            type="button"
-            disabled={updating}
-            onClick={() => onStatusChange(appt.id, "completed")}
-            className="inline-flex items-center gap-1 rounded-md border border-violet-500/30 bg-violet-500/10 px-2.5 py-1 text-xs font-semibold text-violet-700 hover:bg-violet-500/20 disabled:opacity-50 dark:text-violet-300"
-          >
-            Complete
-          </button>
-        )}
-      </div>
     </div>
   );
 }
@@ -1592,7 +1296,7 @@ export function ReportsPage() {
                 const maxReg = Math.max(1, ...(peakHoursQuery.data?.hourly ?? []).map((x) => x.registrations));
                 const heightPct = Math.max(2, Math.round((h.registrations / maxReg) * 100));
                 return (
-                  <div key={h.hour} className="flex flex-1 flex-col items-center justify-end" title={`${h.hour}:00 — ${h.registrations} registrations`}>
+                  <div key={h.hour} className="flex flex-1 flex-col items-center justify-end" title={`${h.hour}:00, ${h.registrations} registrations`}>
                     <div className="w-full rounded-t bg-primary/70" style={{ height: `${heightPct}%` }} />
                     <span className="mt-1 text-[9px] text-muted-foreground">{h.hour}</span>
                   </div>
@@ -1643,7 +1347,7 @@ export function ReportsPage() {
                   <span key={d.department} className={`rounded-full px-3 py-1 text-xs font-bold ${
                     d.congestionLevel === "critical" ? "bg-destructive/20 text-destructive" : "bg-amber-500/15 text-amber-600 dark:text-amber-300"
                   }`}>
-                    {d.department} — {d.congestionLevel} ({d.utilization}%)
+                    {d.department}, {d.congestionLevel} ({d.utilization}%)
                   </span>
                 ))}
               </div>
@@ -1793,15 +1497,15 @@ export function ReportsPage() {
             <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="rounded-xl border border-border/70 bg-background/70 p-4">
                 <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Provider</div>
-                <div className="mt-2 font-display text-xl font-bold">{whatsAppQuery.data?.provider ?? "—"}</div>
+                <div className="mt-2 font-display text-xl font-bold">{whatsAppQuery.data?.provider ?? "N/A"}</div>
               </div>
               <div className="rounded-xl border border-border/70 bg-background/70 p-4">
                 <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">API Version</div>
-                <div className="mt-2 font-display text-xl font-bold">{whatsAppQuery.data?.apiVersion ?? "—"}</div>
+                <div className="mt-2 font-display text-xl font-bold">{whatsAppQuery.data?.apiVersion ?? "N/A"}</div>
               </div>
               <div className="rounded-xl border border-border/70 bg-background/70 p-4">
                 <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Language</div>
-                <div className="mt-2 font-display text-xl font-bold">{whatsAppQuery.data?.language ?? "—"}</div>
+                <div className="mt-2 font-display text-xl font-bold">{whatsAppQuery.data?.language ?? "N/A"}</div>
               </div>
               <div className="rounded-xl border border-border/70 bg-background/70 p-4">
                 <div className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">Configured</div>
@@ -1892,12 +1596,26 @@ function WhatsAppCheckItem({ label, configured }) {
 export function QueueAnalyticsPage() {
   const query = useDashboardSummary();
   const tickets = query.data?.tickets ?? EMPTY_LIST;
-  const maxLoad = Math.max(
-    ...DEPARTMENTS.map(
-      (department) => tickets.filter((ticket) => ticket.department === department).length,
-    ),
-    1,
+  const metrics = query.data?.metrics;
+
+  const deptLoads = useMemo(
+    () =>
+      DEPARTMENTS.map((department) => {
+        const scoped = tickets.filter((ticket) => ticket.department === department);
+        return {
+          department,
+          total: scoped.length,
+          waiting: scoped.filter((ticket) => ticket.status === "waiting").length,
+        };
+      }),
+    [tickets],
   );
+  const maxLoad = Math.max(...deptLoads.map((d) => d.total), 1);
+  const busiest = deptLoads.reduce(
+    (top, d) => (d.total > top.total ? d : top),
+    { department: "—", total: 0 },
+  );
+  const totalWaiting = deptLoads.reduce((sum, d) => sum + d.waiting, 0);
 
   return (
     <ModulePage
@@ -1907,24 +1625,59 @@ export function QueueAnalyticsPage() {
       icon={TrendingUp}
     >
       <QueryBoundary query={query} title="Loading queue analytics">
-        <article className="surface-panel p-6">
-          <h2 className="font-display text-2xl font-bold">Department load</h2>
-          <div className="mt-6 space-y-5">
-            {DEPARTMENTS.map((department) => {
-              const scoped = tickets.filter((ticket) => ticket.department === department);
-              const waiting = scoped.filter((ticket) => ticket.status === "waiting").length;
-              const width = scoped.length ? Math.max((scoped.length / maxLoad) * 100, 8) : 0;
+        {/* KPI row */}
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <MetricTile
+            label="Tracked tickets"
+            value={tickets.length}
+            detail="Across all departments"
+            icon={Users}
+            accent="text-primary bg-primary/15"
+          />
+          <MetricTile
+            label="Currently waiting"
+            value={totalWaiting}
+            detail="Not yet seen by staff"
+            icon={Clock3}
+            accent="text-amber-500 bg-amber-500/15"
+          />
+          <MetricTile
+            label="Average wait"
+            value={`${metrics?.avgWait ?? 0}m`}
+            detail="Across active patient flow"
+            icon={Timer}
+            accent="text-sky-400 bg-sky-400/15"
+          />
+          <MetricTile
+            label="Busiest department"
+            value={busiest.department}
+            detail={`${busiest.total} tickets tracked`}
+            icon={Building2}
+            accent="text-violet-500 bg-violet-500/15"
+          />
+        </div>
+
+        {/* Department load */}
+        <div className="surface-panel mt-5">
+          <AdminPanelHeader
+            icon={TrendingUp}
+            title="Department load"
+            subtitle="Tracked tickets and live waiting counts per department"
+          />
+          <div className="space-y-4 p-5">
+            {deptLoads.map(({ department, total, waiting }) => {
+              const width = total ? Math.max((total / maxLoad) * 100, 6) : 0;
               return (
                 <div key={department}>
                   <div className="flex items-center justify-between gap-3 text-sm">
                     <span className="font-semibold">{department}</span>
-                    <span className="text-muted-foreground">
-                      {scoped.length} tracked - {waiting} waiting
+                    <span className="text-xs tabular-nums text-muted-foreground">
+                      {total} tracked · {waiting} waiting
                     </span>
                   </div>
-                  <div className="mt-2 h-2 overflow-hidden rounded-full bg-muted">
+                  <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-muted">
                     <div
-                      className="h-full rounded-full gradient-primary"
+                      className="h-full rounded-full gradient-primary transition-all duration-500"
                       style={{ width: `${width}%` }}
                     />
                   </div>
@@ -1932,7 +1685,7 @@ export function QueueAnalyticsPage() {
               );
             })}
           </div>
-        </article>
+        </div>
       </QueryBoundary>
     </ModulePage>
   );
@@ -1945,6 +1698,15 @@ export function NotificationsPage() {
   const [search, setSearch] = useState("");
   const retryMutation = useApiAction(retryNotificationDelivery, { onSuccess: refreshLiveData });
   const notifications = query.data?.notifications ?? EMPTY_LIST;
+  const deliveryStats = useMemo(() => {
+    const stats = { attention: 0, inflight: 0, delivered: 0 };
+    for (const n of notifications) {
+      if (["failed", "retrying"].includes(n.status)) stats.attention += 1;
+      else if (["queued", "sending", "sent"].includes(n.status)) stats.inflight += 1;
+      else if (["delivered", "read"].includes(n.status)) stats.delivered += 1;
+    }
+    return stats;
+  }, [notifications]);
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
     return notifications.filter((notification) => {
@@ -1977,84 +1739,126 @@ export function NotificationsPage() {
       icon={BellRing}
     >
       <QueryBoundary query={query} title="Loading notifications">
-        <div className="surface-panel p-5">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap gap-2">
-              {[
-                { value: "attention", label: "Needs attention" },
-                { value: "inflight", label: "In flight" },
-                { value: "delivered", label: "Delivered" },
-                { value: "all", label: "All" },
-              ].map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setFilter(option.value)}
-                  className={`rounded-full px-3 py-2 text-xs font-semibold ${filter === option.value ? "gradient-primary text-primary-foreground" : "border border-border bg-background/70 text-muted-foreground"}`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-            <label className="relative min-w-[16rem] flex-1 sm:max-w-sm">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search notifications"
-                className="input-base pl-10"
-              />
-            </label>
-          </div>
+        {/* Delivery stats */}
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <MetricTile
+            label="Needs attention"
+            value={deliveryStats.attention}
+            detail="Failed or retrying deliveries"
+            icon={AlertTriangle}
+            accent="text-destructive bg-destructive/15"
+          />
+          <MetricTile
+            label="In flight"
+            value={deliveryStats.inflight}
+            detail="Queued or sending now"
+            icon={Send}
+            accent="text-primary bg-primary/15"
+          />
+          <MetricTile
+            label="Delivered"
+            value={deliveryStats.delivered}
+            detail="Reached the patient"
+            icon={CheckCircle2}
+            accent="text-priority-green bg-priority-green/15"
+          />
+          <MetricTile
+            label="Total events"
+            value={notifications.length}
+            detail="In the notification log"
+            icon={BellRing}
+            accent="text-violet-500 bg-violet-500/15"
+          />
         </div>
-        <div className="mt-4 space-y-3">
-          {filtered.length ? (
-            filtered.map((notification) => (
-              <article
-                key={notification.id}
-                className="surface-panel flex flex-wrap items-start justify-between gap-4 p-5"
+
+        {/* Toolbar */}
+        <div className="surface-panel mt-4 flex flex-wrap items-center gap-3 p-3">
+          <div className="flex flex-wrap gap-2">
+            {[
+              { value: "attention", label: "Needs attention" },
+              { value: "inflight", label: "In flight" },
+              { value: "delivered", label: "Delivered" },
+              { value: "all", label: "All" },
+            ].map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setFilter(option.value)}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold ${filter === option.value ? "gradient-primary text-primary-foreground" : "border border-border bg-background/70 text-muted-foreground"}`}
               >
-                <div className="flex min-w-0 items-start gap-3">
-                  <span
-                    className={`inline-grid h-9 w-16 shrink-0 place-items-center rounded-lg font-display text-xs font-bold ${priorityChipClass[notification.priority]}`}
-                  >
-                    {notification.ticket}
-                  </span>
-                  <div className="min-w-0">
-                    <div className="font-semibold text-foreground">{notification.title}</div>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {notification.patientName} - {notification.department}
-                    </p>
-                    <p className="mt-2 text-xs leading-5 text-muted-foreground">
-                      {notification.message}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex shrink-0 items-center gap-2">
-                  <NotificationState status={notification.status} />
-                  {["failed", "retrying", "queued"].includes(notification.status) ? (
-                    <button
-                      type="button"
-                      onClick={() => retryMutation.mutate(notification.id)}
-                      disabled={retryMutation.isPending}
-                      className="inline-flex h-9 items-center gap-2 rounded-lg border border-border bg-background px-3 text-xs font-semibold hover:bg-muted disabled:opacity-60"
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <label className="relative min-w-[16rem] flex-1">
+            <span className="sr-only">Search notifications</span>
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search notifications"
+              className="input-base h-9 pl-10 text-sm"
+            />
+          </label>
+        </div>
+
+        {/* Notification list */}
+        <div className="surface-panel mt-4">
+          <AdminPanelHeader
+            icon={BellRing}
+            title="Notification log"
+            subtitle="Delivery events across every channel"
+            count={filtered.length}
+          />
+          <div className="divide-y divide-border/50">
+            {filtered.length ? (
+              filtered.map((notification) => (
+                <article
+                  key={notification.id}
+                  className="flex flex-wrap items-start justify-between gap-4 px-5 py-4"
+                >
+                  <div className="flex min-w-0 items-start gap-3">
+                    <span
+                      className={`inline-grid h-9 w-16 shrink-0 place-items-center rounded-lg font-display text-xs font-bold ${priorityChipClass[notification.priority]}`}
                     >
-                      {retryMutation.isPending && retryMutation.variables === notification.id ? (
-                        <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
-                      ) : (
-                        <RefreshCw className="h-3.5 w-3.5" />
-                      )}
-                      Retry
-                    </button>
-                  ) : null}
-                </div>
-              </article>
-            ))
-          ) : (
-            <div className="surface-panel p-6">
-              <EmptyMessage>No notifications match this view.</EmptyMessage>
-            </div>
-          )}
+                      {notification.ticket}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-foreground">{notification.title}</div>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
+                        {notification.patientName} · {notification.department}
+                      </p>
+                      <p className="mt-1.5 text-xs leading-5 text-muted-foreground">
+                        {notification.message}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <NotificationState status={notification.status} />
+                    {["failed", "retrying", "queued"].includes(notification.status) ? (
+                      <button
+                        type="button"
+                        onClick={() => retryMutation.mutate(notification.id)}
+                        disabled={retryMutation.isPending}
+                        className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-xs font-semibold hover:bg-muted disabled:opacity-60"
+                      >
+                        {retryMutation.isPending && retryMutation.variables === notification.id ? (
+                          <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-3.5 w-3.5" />
+                        )}
+                        Retry
+                      </button>
+                    ) : null}
+                  </div>
+                </article>
+              ))
+            ) : (
+              <div className="p-6">
+                <EmptyMessage>No notifications match this view.</EmptyMessage>
+              </div>
+            )}
+          </div>
         </div>
       </QueryBoundary>
     </ModulePage>
@@ -2088,10 +1892,10 @@ function EmptyMessage({ children }) {
 }
 
 const PRESCRIPTION_COLUMNS = [
-  { state: "prescribed", label: "Prescribed", color: "bg-blue-500/10 border-blue-500/30", badge: "bg-blue-500/15 text-blue-700 dark:text-blue-300" },
-  { state: "dispensing", label: "Dispensing", color: "bg-amber-500/10 border-amber-500/30", badge: "bg-amber-500/15 text-amber-700 dark:text-amber-300" },
-  { state: "ready", label: "Ready for Collection", color: "bg-emerald-500/10 border-emerald-500/30", badge: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" },
-  { state: "collected", label: "Collected", color: "bg-zinc-500/10 border-zinc-500/30", badge: "bg-zinc-500/15 text-zinc-600 dark:text-zinc-400" },
+  { state: "prescribed", label: "Prescribed", badge: "bg-blue-500/15 text-blue-700 dark:text-blue-300", accent: "text-blue-500 bg-blue-500/15" },
+  { state: "dispensing", label: "Dispensing", badge: "bg-amber-500/15 text-amber-700 dark:text-amber-300", accent: "text-amber-500 bg-amber-500/15" },
+  { state: "ready", label: "Ready for Collection", badge: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300", accent: "text-emerald-500 bg-emerald-500/15" },
+  { state: "collected", label: "Collected", badge: "bg-zinc-500/15 text-zinc-600 dark:text-zinc-400", accent: "text-zinc-500 bg-zinc-500/15" },
 ];
 
 const NEXT_STATE_MAP = {
@@ -2107,7 +1911,7 @@ export function PharmacyPage() {
   const [flagging, setFlagging] = useState(null);
 
   const summaryLoader = useCallback(() => fetchPrescriptionSummary(), []);
-  const summaryQuery = useApiResource(summaryLoader, { enabled: isBrowser });
+  const summaryQuery = useApiResource(summaryLoader, { enabled: isBrowser, refreshToken });
 
   const stockSummaryLoader = useCallback(() => fetchStockSummary(), []);
   const stockSummaryQuery = useApiResource(stockSummaryLoader, { enabled: isBrowser, refreshToken });
@@ -2166,115 +1970,117 @@ export function PharmacyPage() {
     }
   }
 
-  if (prescriptionsQuery.loading && !prescriptionsQuery.data) {
-    return <LoadingPanel label="Loading prescriptions…" />;
-  }
+  const isLoading = prescriptionsQuery.loading && !prescriptionsQuery.data;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Pharmacy</h1>
-          <p className="text-sm text-muted-foreground">
-            Manage prescriptions from prescribed to collection
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search ticket or patient…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-9 w-56 rounded-lg border border-input bg-background pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
-          <button
-            onClick={() => {
-              prescriptionsQuery.refetch();
-              summaryQuery.refetch();
-            }}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-input bg-background px-3 text-sm font-medium hover:bg-accent"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Refresh
-          </button>
-        </div>
+    <ModulePage
+      eyebrow="Clinical workflow"
+      title="Pharmacy"
+      description="Manage prescriptions from prescribed to collection — live queue updates flow in automatically."
+      icon={Pill}
+    >
+      {/* Toolbar */}
+      <div className="surface-panel flex flex-wrap items-center gap-3 p-3">
+        <label className="relative min-w-56 flex-1">
+          <span className="sr-only">Search prescriptions</span>
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search ticket or patient…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="input-base h-9 pl-9 text-sm"
+          />
+        </label>
+        <button
+          type="button"
+          onClick={() => {
+            prescriptionsQuery.refetch();
+            summaryQuery.refetch();
+            stockSummaryQuery.refetch();
+          }}
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-xs font-semibold text-muted-foreground hover:text-foreground"
+        >
+          <RefreshCw className="h-3.5 w-3.5" />
+          Refresh
+        </button>
       </div>
 
-      {summary && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {PRESCRIPTION_COLUMNS.map((col) => (
-            <div
-              key={col.state}
-              className={`rounded-xl border p-4 ${col.color}`}
-            >
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {col.label}
-              </p>
-              <p className="mt-1 text-2xl font-bold">
-                {summary.byState?.[col.state] ?? 0}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {stockSummary && stockSummary.outOfStockCount > 0 && (
-        <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-4">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-destructive" />
-            <span className="text-sm font-semibold text-destructive">
-              {stockSummary.outOfStockCount} medication(s) out of stock
-            </span>
-          </div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {stockSummary.outOfStockItems.map((item) => (
-              <span key={item.id} className="rounded-full bg-destructive/15 px-2.5 py-1 text-xs font-medium text-destructive">
-                {item.drugName}
-              </span>
+      {isLoading ? (
+        <LoadingPanel className="mt-5" title="Loading prescriptions" message="Fetching the live pharmacy queue." />
+      ) : (
+        <>
+          {/* State summary */}
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {PRESCRIPTION_COLUMNS.map((col) => (
+              <AdminMetricTile
+                key={col.state}
+                label={col.label}
+                value={summary?.byState?.[col.state] ?? byState[col.state]?.length ?? 0}
+                icon={Pill}
+                accent={col.accent}
+              />
             ))}
           </div>
-        </div>
-      )}
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
-        {PRESCRIPTION_COLUMNS.map((col) => (
-          <div key={col.state} className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span
-                className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${col.badge}`}
-              >
-                {col.label}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {byState[col.state]?.length ?? 0}
-              </span>
+          {/* Out-of-stock alert */}
+          {stockSummary && stockSummary.outOfStockCount > 0 ? (
+            <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-destructive" />
+                <span className="text-sm font-semibold text-destructive">
+                  {stockSummary.outOfStockCount} medication(s) out of stock
+                </span>
+              </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {stockSummary.outOfStockItems.map((item) => (
+                  <span key={item.id} className="rounded-full bg-destructive/15 px-2.5 py-1 text-xs font-medium text-destructive">
+                    {item.drugName}
+                  </span>
+                ))}
+              </div>
             </div>
-            <div className="space-y-2">
-              {byState[col.state]?.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
-                  No prescriptions
+          ) : null}
+
+          {/* Kanban columns */}
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {PRESCRIPTION_COLUMNS.map((col) => (
+              <div key={col.state} className="surface-panel p-3">
+                <div className="flex items-center justify-between border-b border-border/60 px-2 pb-3">
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${col.badge}`}
+                  >
+                    {col.label}
+                  </span>
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-bold tabular-nums">
+                    {byState[col.state]?.length ?? 0}
+                  </span>
                 </div>
-              ) : (
-                byState[col.state].map((rx) => (
-                  <PrescriptionCard
-                    key={rx.id}
-                    prescription={rx}
-                    canAdvance={!!NEXT_STATE_MAP[rx.state]}
-                    onAdvance={() => handleAdvance(rx)}
-                    advancing={advancing === rx.id}
-                    onStockFlag={handleStockFlag}
-                    flagging={flagging}
-                  />
-                ))
-              )}
-            </div>
+                <div className="mt-3 space-y-2">
+                  {byState[col.state]?.length === 0 ? (
+                    <div className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-xs text-muted-foreground">
+                      No prescriptions
+                    </div>
+                  ) : (
+                    byState[col.state].map((rx) => (
+                      <PrescriptionCard
+                        key={rx.id}
+                        prescription={rx}
+                        canAdvance={!!NEXT_STATE_MAP[rx.state]}
+                        onAdvance={() => handleAdvance(rx)}
+                        advancing={advancing === rx.id}
+                        onStockFlag={handleStockFlag}
+                        flagging={flagging}
+                      />
+                    ))
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-    </div>
+        </>
+      )}
+    </ModulePage>
   );
 }
 
@@ -2304,7 +2110,7 @@ function PrescriptionCard({ prescription, canAdvance, onAdvance, advancing, onSt
                 <span className={`font-medium ${item.inStock === false ? "text-destructive" : ""}`}>
                   {item.drugName}
                 </span>
-                {" — "}
+                {", "}
                 <span className="text-muted-foreground">{item.dosage}</span>
                 {item.quantity && (
                   <span className="text-muted-foreground"> ({item.quantity})</span>
@@ -2371,11 +2177,11 @@ function PrescriptionCard({ prescription, canAdvance, onAdvance, advancing, onSt
 }
 
 const TEST_ORDER_COLUMNS = [
-  { state: "ordered", label: "Ordered", color: "bg-blue-500/10 border-blue-500/30", badge: "bg-blue-500/15 text-blue-700 dark:text-blue-300" },
-  { state: "sample-collected", label: "Sample Collected", color: "bg-cyan-500/10 border-cyan-500/30", badge: "bg-cyan-500/15 text-cyan-700 dark:text-cyan-300" },
-  { state: "in-progress", label: "In Progress", color: "bg-amber-500/10 border-amber-500/30", badge: "bg-amber-500/15 text-amber-700 dark:text-amber-300" },
-  { state: "completed", label: "Completed", color: "bg-violet-500/10 border-violet-500/30", badge: "bg-violet-500/15 text-violet-700 dark:text-violet-300" },
-  { state: "result-ready", label: "Result Ready", color: "bg-emerald-500/10 border-emerald-500/30", badge: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300" },
+  { state: "ordered", label: "Ordered", badge: "bg-blue-500/15 text-blue-700 dark:text-blue-300", accent: "text-blue-500 bg-blue-500/15" },
+  { state: "sample-collected", label: "Sample Collected", badge: "bg-cyan-500/15 text-cyan-700 dark:text-cyan-300", accent: "text-cyan-500 bg-cyan-500/15" },
+  { state: "in-progress", label: "In Progress", badge: "bg-amber-500/15 text-amber-700 dark:text-amber-300", accent: "text-amber-500 bg-amber-500/15" },
+  { state: "completed", label: "Completed", badge: "bg-violet-500/15 text-violet-700 dark:text-violet-300", accent: "text-violet-500 bg-violet-500/15" },
+  { state: "result-ready", label: "Result Ready", badge: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300", accent: "text-emerald-500 bg-emerald-500/15" },
 ];
 
 const TEST_NEXT_STATE = {
@@ -2404,7 +2210,7 @@ export function LabPage() {
   const [advancing, setAdvancing] = useState(null);
 
   const summaryLoader = useCallback(() => fetchTestOrderSummary(), []);
-  const summaryQuery = useApiResource(summaryLoader, { enabled: isBrowser });
+  const summaryQuery = useApiResource(summaryLoader, { enabled: isBrowser, refreshToken });
 
   const ordersLoader = useCallback(() => fetchTestOrders(), []);
   const ordersQuery = useApiResource(ordersLoader, { enabled: isBrowser, refreshToken });
@@ -2446,106 +2252,110 @@ export function LabPage() {
     }
   }
 
-  if (ordersQuery.loading && !ordersQuery.data) {
-    return <LoadingPanel label="Loading test orders…" />;
-  }
+  const isLoading = ordersQuery.loading && !ordersQuery.data;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Laboratory &amp; Radiology</h1>
-          <p className="text-sm text-muted-foreground">
-            Track test orders from collection to result readiness
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search ticket, patient, test…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-9 w-64 rounded-lg border border-input bg-background pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
-          <button
-            onClick={() => {
-              ordersQuery.refetch();
-              summaryQuery.refetch();
-            }}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-input bg-background px-3 text-sm font-medium hover:bg-accent"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Refresh
-          </button>
-        </div>
+    <ModulePage
+      eyebrow="Clinical workflow"
+      title="Laboratory &amp; Radiology"
+      description="Track test orders from collection to result readiness — updates arrive in real time."
+      icon={FlaskConical}
+    >
+      {/* Toolbar */}
+      <div className="surface-panel flex flex-wrap items-center gap-3 p-3">
+        <label className="relative min-w-56 flex-1">
+          <span className="sr-only">Search test orders</span>
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search ticket, patient, test…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="input-base h-9 pl-9 text-sm"
+          />
+        </label>
+        <button
+          type="button"
+          onClick={() => {
+            ordersQuery.refetch();
+            summaryQuery.refetch();
+          }}
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-xs font-semibold text-muted-foreground hover:text-foreground"
+        >
+          <RefreshCw className="h-3.5 w-3.5" />
+          Refresh
+        </button>
       </div>
 
-      {summary && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          {TEST_ORDER_COLUMNS.map((col) => (
-            <div key={col.state} className={`rounded-xl border p-4 ${col.color}`}>
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {col.label}
-              </p>
-              <p className="mt-1 text-2xl font-bold">
-                {summary.byState?.[col.state] ?? 0}
-              </p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {(byState["result-ready"]?.length ?? 0) > 0 && (
-        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-4">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-            <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-              {byState["result-ready"].length} result{byState["result-ready"].length !== 1 ? "s" : ""} ready for clinician review
-            </span>
+      {isLoading ? (
+        <LoadingPanel className="mt-5" title="Loading test orders" message="Fetching the live lab queue." />
+      ) : (
+        <>
+          {/* State summary */}
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+            {TEST_ORDER_COLUMNS.map((col) => (
+              <AdminMetricTile
+                key={col.state}
+                label={col.label}
+                value={summary?.byState?.[col.state] ?? byState[col.state]?.length ?? 0}
+                icon={FlaskConical}
+                accent={col.accent}
+              />
+            ))}
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Patients have been notified via display board and WhatsApp to return for results.
-          </p>
-        </div>
-      )}
 
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        {TEST_ORDER_COLUMNS.map((col) => (
-          <div key={col.state} className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span
-                className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${col.badge}`}
-              >
-                {col.label}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {byState[col.state]?.length ?? 0}
-              </span>
+          {/* Results-ready alert */}
+          {(byState["result-ready"]?.length ?? 0) > 0 ? (
+            <div className="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+                  {byState["result-ready"].length} result{byState["result-ready"].length !== 1 ? "s" : ""} ready for clinician review
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Patients have been notified via display board and WhatsApp to return for results.
+              </p>
             </div>
-            <div className="space-y-2">
-              {byState[col.state]?.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
-                  No orders
+          ) : null}
+
+          {/* Kanban columns */}
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+            {TEST_ORDER_COLUMNS.map((col) => (
+              <div key={col.state} className="surface-panel p-3">
+                <div className="flex items-center justify-between border-b border-border/60 px-2 pb-3">
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${col.badge}`}
+                  >
+                    {col.label}
+                  </span>
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-bold tabular-nums">
+                    {byState[col.state]?.length ?? 0}
+                  </span>
                 </div>
-              ) : (
-                byState[col.state].map((order) => (
-                  <TestOrderCard
-                    key={order.id}
-                    order={order}
-                    canAdvance={!!TEST_NEXT_STATE[order.state]}
-                    onAdvance={() => handleAdvance(order)}
-                    advancing={advancing === order.id}
-                  />
-                ))
-              )}
-            </div>
+                <div className="mt-3 space-y-2">
+                  {byState[col.state]?.length === 0 ? (
+                    <div className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-xs text-muted-foreground">
+                      No orders
+                    </div>
+                  ) : (
+                    byState[col.state].map((order) => (
+                      <TestOrderCard
+                        key={order.id}
+                        order={order}
+                        canAdvance={!!TEST_NEXT_STATE[order.state]}
+                        onAdvance={() => handleAdvance(order)}
+                        advancing={advancing === order.id}
+                      />
+                    ))
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
-    </div>
+        </>
+      )}
+    </ModulePage>
   );
 }
 
@@ -2633,7 +2443,7 @@ export function OIClinicPage() {
   const [visitForm, setVisitForm] = useState({ ticketCode: "", streamId: "", notes: "" });
 
   const streamsLoader = useCallback(() => fetchOIClinicStreams(), []);
-  const streamsQuery = useApiResource(streamsLoader, { enabled: isBrowser });
+  const streamsQuery = useApiResource(streamsLoader, { enabled: isBrowser, refreshToken });
 
   const summaryLoader = useCallback(() => fetchOIClinicSummary(), []);
   const summaryQuery = useApiResource(summaryLoader, { enabled: isBrowser, refreshToken });
@@ -2709,75 +2519,81 @@ export function OIClinicPage() {
     }
   }
 
-  if (visitsQuery.loading && !visitsQuery.data) {
-    return <LoadingPanel label="Loading OI Clinic visits…" />;
-  }
+  const isLoading = visitsQuery.loading && !visitsQuery.data;
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">OI Clinic</h1>
-          <p className="text-sm text-muted-foreground">
-            Manage ART, TB, viral load, counselling, and screening service streams
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <select
-            value={selectedStream}
-            onChange={(e) => setSelectedStream(e.target.value)}
-            className="h-9 rounded-lg border border-input bg-background px-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value="all">All streams</option>
-            {streams.map((s) => (
-              <option key={s.id} value={s.id}>{s.label}</option>
-            ))}
-          </select>
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              type="text"
-              placeholder="Search ticket or patient…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="h-9 w-56 rounded-lg border border-input bg-background pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-ring"
-            />
-          </div>
-          <button
-            onClick={() => {
-              visitsQuery.refetch();
-              summaryQuery.refetch();
-            }}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-input bg-background px-3 text-sm font-medium hover:bg-accent"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Refresh
-          </button>
-          <button
-            onClick={() => setShowVisitForm((v) => !v)}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            <Plus className="h-4 w-4" />
-            New visit
-          </button>
-        </div>
+    <ModulePage
+      eyebrow="Clinical workflow"
+      title="OI Clinic"
+      description="Manage ART, TB, viral load, counselling, and screening service streams — live updates flow in automatically."
+      icon={Stethoscope}
+    >
+      {/* Toolbar */}
+      <div className="surface-panel flex flex-wrap items-center gap-3 p-3">
+        <select
+          value={selectedStream}
+          onChange={(e) => setSelectedStream(e.target.value)}
+          className="input-base h-9 w-auto text-sm"
+          aria-label="Filter by stream"
+        >
+          <option value="all">All streams</option>
+          {streams.map((s) => (
+            <option key={s.id} value={s.id}>{s.label}</option>
+          ))}
+        </select>
+        <label className="relative min-w-56 flex-1">
+          <span className="sr-only">Search OI Clinic visits</span>
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Search ticket or patient…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="input-base h-9 pl-9 text-sm"
+          />
+        </label>
+        <button
+          type="button"
+          onClick={() => {
+            visitsQuery.refetch();
+            summaryQuery.refetch();
+            streamsQuery.refetch();
+          }}
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-xs font-semibold text-muted-foreground hover:text-foreground"
+        >
+          <RefreshCw className="h-3.5 w-3.5" />
+          Refresh
+        </button>
+        <button
+          type="button"
+          onClick={() => setShowVisitForm((v) => !v)}
+          className="inline-flex h-9 items-center gap-1.5 rounded-lg gradient-primary px-4 text-xs font-semibold text-primary-foreground"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          New visit
+        </button>
       </div>
 
-      {showVisitForm && (
-        <div className="surface-panel p-5">
+      {showVisitForm ? (
+        <div className="surface-panel mt-4 p-5">
           <div className="flex items-center justify-between">
-            <h3 className="font-display text-lg font-bold">Create OI Clinic visit</h3>
+            <div className="flex items-center gap-3">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/15 text-primary">
+                <Stethoscope className="h-4 w-4" />
+              </span>
+              <h3 className="font-display text-base font-bold">Create OI Clinic visit</h3>
+            </div>
             <button
               type="button"
               onClick={() => setShowVisitForm(false)}
-              className="rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-accent"
+              className="rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-muted"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             <div>
-              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Ticket code</label>
+              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Ticket code</label>
               <input
                 type="text"
                 placeholder="e.g. OPD-001"
@@ -2787,7 +2603,7 @@ export function OIClinicPage() {
               />
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Service stream</label>
+              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Service stream</label>
               <select
                 value={visitForm.streamId}
                 onChange={(e) => setVisitForm((p) => ({ ...p, streamId: e.target.value }))}
@@ -2800,7 +2616,7 @@ export function OIClinicPage() {
               </select>
             </div>
             <div>
-              <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-muted-foreground">Notes</label>
+              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Notes</label>
               <input
                 type="text"
                 placeholder="Optional notes"
@@ -2818,7 +2634,7 @@ export function OIClinicPage() {
               type="button"
               onClick={handleCreateVisit}
               disabled={createVisitMut.isPending || !visitForm.ticketCode.trim() || !visitForm.streamId}
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg gradient-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50"
             >
               {createVisitMut.isPending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Stethoscope className="h-4 w-4" />}
               Create visit
@@ -2826,74 +2642,72 @@ export function OIClinicPage() {
             <button
               type="button"
               onClick={() => setShowVisitForm(false)}
-              className="inline-flex h-9 items-center rounded-lg border border-border px-3 text-sm hover:bg-accent"
+              className="inline-flex h-9 items-center rounded-lg border border-border px-3 text-sm hover:bg-muted"
             >
               Cancel
             </button>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {summary && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {streams.map((stream) => (
-            <div
-              key={stream.id}
-              className="rounded-xl border border-border/70 bg-background/70 p-4"
-            >
-              <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                {stream.label}
-              </p>
-              <div className="mt-1 flex items-baseline gap-2">
-                <p className="text-2xl font-bold">
-                  {summary.byStream?.[stream.id]?.total ?? 0}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  ({summary.byStream?.[stream.id]?.waiting ?? 0} waiting)
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-4">
-        {Object.entries(byState).map(([state, stateVisits]) => (
-          <div key={state} className="space-y-3">
-            <div className="flex items-center justify-between">
-              <span
-                className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${OI_STREAM_BADGE[state] ?? ""}`}
-              >
-                {state.replace(/-/g, " ")}
-              </span>
-              <span className="text-xs text-muted-foreground">
-                {stateVisits.length}
-              </span>
-            </div>
-            <div className="space-y-2">
-              {stateVisits.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
-                  No visits
-                </div>
-              ) : (
-                stateVisits.map((visit) => (
-                  <OIClinicVisitCard
-                    key={visit.id}
-                    visit={visit}
-                    streamLabel={streams.find((s) => s.id === visit.streamId)?.label ?? visit.streamLabel}
-                    canAdvance={!!OI_NEXT_STATE[visit.state]}
-                    canRefer={visit.state === "waiting" || visit.state === "in-session"}
-                    onAdvance={() => handleAdvance(visit)}
-                    onRefer={() => handleRefer(visit)}
-                    advancing={advancing === visit.id}
-                  />
-                ))
-              )}
-            </div>
+      {isLoading ? (
+        <LoadingPanel className="mt-5" title="Loading OI Clinic visits" message="Fetching live service streams." />
+      ) : (
+        <>
+          {/* Per-stream summary */}
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {streams.map((stream) => (
+              <AdminMetricTile
+                key={stream.id}
+                label={stream.label}
+                value={summary?.byStream?.[stream.id]?.total ?? 0}
+                detail={`${summary?.byStream?.[stream.id]?.waiting ?? 0} waiting`}
+                icon={Activity}
+                accent="text-primary bg-primary/15"
+              />
+            ))}
           </div>
-        ))}
-      </div>
-    </div>
+
+          {/* Kanban columns */}
+          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {Object.entries(byState).map(([state, stateVisits]) => (
+              <div key={state} className="surface-panel p-3">
+                <div className="flex items-center justify-between border-b border-border/60 px-2 pb-3">
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ${OI_STREAM_BADGE[state] ?? ""}`}
+                  >
+                    {state.replace(/-/g, " ")}
+                  </span>
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-bold tabular-nums">
+                    {stateVisits.length}
+                  </span>
+                </div>
+                <div className="mt-3 space-y-2">
+                  {stateVisits.length === 0 ? (
+                    <div className="rounded-lg border border-dashed border-border px-3 py-6 text-center text-xs text-muted-foreground">
+                      No visits
+                    </div>
+                  ) : (
+                    stateVisits.map((visit) => (
+                      <OIClinicVisitCard
+                        key={visit.id}
+                        visit={visit}
+                        streamLabel={streams.find((s) => s.id === visit.streamId)?.label ?? visit.streamLabel}
+                        canAdvance={!!OI_NEXT_STATE[visit.state]}
+                        canRefer={visit.state === "waiting" || visit.state === "in-session"}
+                        onAdvance={() => handleAdvance(visit)}
+                        onRefer={() => handleRefer(visit)}
+                        advancing={advancing === visit.id}
+                      />
+                    ))
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </ModulePage>
   );
 }
 
@@ -2949,20 +2763,90 @@ function OIClinicVisitCard({ visit, streamLabel, canAdvance, canRefer, onAdvance
   );
 }
 
-function AdminMetricTile({ label, value, detail, icon: Icon, accent }) {
+const ADMIN_PRIORITY_ORDER = ["red", "yellow", "green", "black"];
+
+const ADMIN_PRIORITY_BAR = {
+  red: "bg-priority-red",
+  yellow: "bg-priority-yellow",
+  green: "bg-priority-green",
+  black: "bg-priority-black",
+};
+
+const ADMIN_STATUS_ORDER = ["waiting", "called", "in-service", "missed", "completed"];
+
+const CONGESTION_BADGE = {
+  critical: "bg-destructive/15 text-destructive",
+  high: "bg-amber-500/15 text-amber-600 dark:text-amber-300",
+  moderate: "bg-blue-500/15 text-blue-600 dark:text-blue-300",
+  normal: "bg-priority-green/15 text-priority-green",
+};
+
+const CONGESTION_BAR = {
+  critical: "bg-destructive",
+  high: "bg-amber-500",
+  moderate: "bg-blue-500",
+  normal: "bg-priority-green",
+};
+
+function AdminMetricTile({ label, value, detail, icon: Icon, accent = "text-primary bg-primary/15" }) {
   return (
     <div className="surface-panel p-5">
-      <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{label}</span>
-        {Icon && <Icon className={`h-4 w-4 ${accent ?? "text-primary"}`} />}
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+            {label}
+          </div>
+          <div className="mt-3 font-display text-4xl font-bold tracking-tight text-foreground">
+            {value}
+          </div>
+          {detail ? (
+            <p className="mt-1.5 text-xs leading-5 text-muted-foreground">{detail}</p>
+          ) : null}
+        </div>
+        {Icon ? (
+          <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-xl ${accent}`}>
+            <Icon className="h-5 w-5" />
+          </span>
+        ) : null}
       </div>
-      <div className="mt-2 font-display text-3xl font-bold">{value}</div>
-      {detail && <p className="mt-1 text-xs text-muted-foreground">{detail}</p>}
+    </div>
+  );
+}
+
+function AdminPanelHeader({ icon: Icon, title, subtitle, count }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-5 py-4">
+      <div className="flex items-center gap-3">
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/15 text-primary">
+          <Icon className="h-4 w-4" />
+        </span>
+        <div>
+          <h3 className="font-display text-base font-bold">{title}</h3>
+          {subtitle ? <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p> : null}
+        </div>
+      </div>
+      {count != null ? (
+        <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-bold text-foreground">
+          {count}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+function AdminEmptyState({ message }) {
+  return (
+    <div className="flex flex-col items-center px-5 py-8 text-center">
+      <span className="grid h-11 w-11 place-items-center rounded-full bg-priority-green/15 text-priority-green">
+        <CheckCircle2 className="h-5 w-5" />
+      </span>
+      <p className="mt-3 text-sm text-muted-foreground">{message}</p>
     </div>
   );
 }
 
 export function AdminDashboardPage() {
+  const { refreshLiveData } = useLiveRefresh();
   const dashboardQuery = useDashboardSummary();
   const hospitalInfoQuery = useApiResource(
     useCallback(() => fetchHospitalInfo(), []),
@@ -2995,6 +2879,8 @@ export function AdminDashboardPage() {
   }
 
   const metrics = dashboardQuery.data?.metrics;
+  const tickets = dashboardQuery.data?.tickets ?? EMPTY_LIST;
+  const lastUpdatedAt = dashboardQuery.data?.lastUpdatedAt;
   const hospital = hospitalInfoQuery.data?.current;
   const congestion = congestionQuery.data;
   const reassessment = reassessmentQuery.data;
@@ -3002,14 +2888,28 @@ export function AdminDashboardPage() {
 
   const totalTickets = metrics?.total ?? 0;
   const waiting = metrics?.waiting ?? 0;
+  const active = metrics?.active ?? 0;
   const avgWait = metrics?.avgWait ?? 0;
   const notificationsToday = metrics?.notificationsToday ?? 0;
-  const missedCount = metrics?.byStatus?.missed ?? 0;
-  const completedCount = metrics?.byStatus?.completed ?? 0;
+  const byStatus = metrics?.byStatus ?? {};
+  const byPriority = metrics?.byPriority ?? {};
+  const missedCount = byStatus.missed ?? 0;
+  const completedCount = byStatus.completed ?? 0;
+  const priorityTotal = ADMIN_PRIORITY_ORDER.reduce((sum, p) => sum + (byPriority[p] ?? 0), 0);
 
   const congestedDepts = congestion?.congestedDepartments ?? [];
   const criticalBottlenecks = bottlenecks?.criticalBottlenecks ?? [];
   const reassessmentAlerts = reassessment?.alerts ?? [];
+
+  const congestionRows = Object.entries(congestion?.byDept ?? {}).sort(
+    (a, b) => (b[1].utilization ?? 0) - (a[1].utilization ?? 0),
+  );
+
+  const longestWaits = tickets
+    .filter((t) => t.status === "waiting")
+    .slice()
+    .sort((a, b) => (b.waitMinutes ?? 0) - (a.waitMinutes ?? 0))
+    .slice(0, 6);
 
   return (
     <ModulePage
@@ -3018,8 +2918,9 @@ export function AdminDashboardPage() {
       description="High-level operational overview for hospital managers and administrators."
       icon={ShieldCheck}
     >
-      {hospital && (
-        <div className="surface-panel mb-6 flex flex-wrap items-center justify-between gap-4 p-5">
+      {/* Facility banner */}
+      {hospital ? (
+        <div className="surface-panel mb-5 flex flex-wrap items-center justify-between gap-4 px-5 py-4">
           <div className="flex items-center gap-3">
             <span className="grid h-11 w-11 place-items-center rounded-xl bg-primary/15 text-primary">
               <Building2 className="h-5 w-5" />
@@ -3032,61 +2933,254 @@ export function AdminDashboardPage() {
               </div>
             </div>
           </div>
-          <span className={`rounded-full px-3 py-1 text-xs font-bold ${hospital.active ? "bg-priority-green/15 text-priority-green" : "bg-destructive/15 text-destructive"}`}>
-            {hospital.active ? "Active" : "Inactive"}
-          </span>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Clock3 className="h-3.5 w-3.5" />
+              Updated{" "}
+              {lastUpdatedAt
+                ? new Date(lastUpdatedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                : "recently"}
+            </span>
+            <button
+              type="button"
+              onClick={refreshLiveData}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              Refresh
+            </button>
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${
+                hospital.active
+                  ? "bg-priority-green/15 text-priority-green"
+                  : "bg-destructive/15 text-destructive"
+              }`}
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  hospital.active ? "bg-priority-green" : "bg-destructive"
+                }`}
+              />
+              {hospital.active ? "Active" : "Inactive"}
+            </span>
+          </div>
         </div>
-      )}
+      ) : null}
 
+      {/* KPI row */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <AdminMetricTile label="Total Tickets" value={totalTickets} detail="All time" icon={Users} />
-        <AdminMetricTile label="Waiting" value={waiting} detail="In queue now" icon={Clock3} accent="text-amber-500" />
-        <AdminMetricTile label="Avg Wait" value={`${avgWait}m`} detail="Average wait time" icon={Timer} />
-        <AdminMetricTile label="Completed" value={completedCount} detail="Tickets served" icon={CheckCircle2} accent="text-priority-green" />
-        <AdminMetricTile label="Missed" value={missedCount} detail="No-shows" icon={XCircle} accent="text-destructive" />
-        <AdminMetricTile label="Notifications" value={notificationsToday} detail="Sent today" icon={BellRing} />
-        <AdminMetricTile label="Congested Depts" value={congestedDepts.length} detail="High utilization" icon={AlertTriangle} accent={congestedDepts.length > 0 ? "text-destructive" : "text-priority-green"} />
-        <AdminMetricTile label="Reassessment Alerts" value={reassessmentAlerts.length} detail="Overdue patients" icon={ShieldCheck} accent={reassessmentAlerts.length > 0 ? "text-amber-500" : "text-priority-green"} />
+        <AdminMetricTile
+          label="Total tickets"
+          value={totalTickets}
+          detail="All tickets in the system"
+          icon={Users}
+        />
+        <AdminMetricTile
+          label="Waiting now"
+          value={waiting}
+          detail="Patients in the queue"
+          icon={Clock3}
+          accent="text-amber-500 bg-amber-500/15"
+        />
+        <AdminMetricTile
+          label="In service"
+          value={active}
+          detail="Currently being served"
+          icon={Stethoscope}
+          accent="text-accent bg-accent/15"
+        />
+        <AdminMetricTile
+          label="Avg wait"
+          value={`${avgWait}m`}
+          detail="Across waiting patients"
+          icon={Timer}
+          accent="text-blue-400 bg-blue-500/15"
+        />
       </div>
 
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <div className="surface-panel p-5">
-          <h3 className="font-display text-lg font-bold">Critical Bottlenecks</h3>
+      {/* Queue composition + operational pressure */}
+      <div className="mt-5 grid gap-5 xl:grid-cols-[1.55fr_1fr]">
+        <div className="surface-panel">
+          <AdminPanelHeader
+            icon={Activity}
+            title="Queue composition"
+            subtitle="Live status and triage priority breakdown"
+          />
+          <div className="p-5">
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-5">
+              {ADMIN_STATUS_ORDER.map((status) => (
+                <div
+                  key={status}
+                  className="rounded-xl border border-border/60 bg-background/50 px-3 py-2.5"
+                >
+                  <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
+                    {STATUS_META[status]?.label ?? status}
+                  </div>
+                  <div className="mt-1.5 font-display text-2xl font-bold">
+                    {byStatus[status] ?? 0}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5">
+              <div className="mb-2 flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+                  Triage priority mix
+                </span>
+                <span className="text-xs text-muted-foreground">{priorityTotal} patients</span>
+              </div>
+              <div className="flex h-3 w-full overflow-hidden rounded-full bg-muted">
+                {ADMIN_PRIORITY_ORDER.map((p) => {
+                  const count = byPriority[p] ?? 0;
+                  if (!count || !priorityTotal) return null;
+                  return (
+                    <div
+                      key={p}
+                      className={`h-full ${ADMIN_PRIORITY_BAR[p]}`}
+                      style={{ width: `${(count / priorityTotal) * 100}%` }}
+                      title={`${PRIORITY_META[p]?.short ?? p}: ${count}`}
+                    />
+                  );
+                })}
+              </div>
+              <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1.5">
+                {ADMIN_PRIORITY_ORDER.map((p) => (
+                  <span key={p} className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <span className={`h-2 w-2 rounded-full ${ADMIN_PRIORITY_BAR[p]}`} />
+                    {PRIORITY_META[p]?.short ?? p}
+                    <span className="font-bold text-foreground">{byPriority[p] ?? 0}</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="surface-panel">
+          <AdminPanelHeader
+            icon={TrendingUp}
+            title="Operational pressure"
+            subtitle="Signals needing attention"
+          />
+          <div className="divide-y divide-border/50">
+            {[
+              {
+                label: "Completed tickets",
+                value: completedCount,
+                icon: CheckCircle2,
+                cls: "text-priority-green",
+              },
+              {
+                label: "Missed turns",
+                value: missedCount,
+                icon: XCircle,
+                cls: missedCount > 0 ? "text-destructive" : "text-priority-green",
+              },
+              {
+                label: "Notifications sent today",
+                value: notificationsToday,
+                icon: BellRing,
+                cls: "text-primary",
+              },
+              {
+                label: "Congested departments",
+                value: congestedDepts.length,
+                icon: AlertTriangle,
+                cls: congestedDepts.length > 0 ? "text-destructive" : "text-priority-green",
+              },
+              {
+                label: "Reassessment alerts",
+                value: reassessmentAlerts.length,
+                icon: ShieldCheck,
+                cls: reassessmentAlerts.length > 0 ? "text-amber-500" : "text-priority-green",
+              },
+            ].map((row) => (
+              <div key={row.label} className="flex items-center justify-between px-5 py-3">
+                <span className="inline-flex items-center gap-2.5 text-sm text-muted-foreground">
+                  <row.icon className={`h-4 w-4 ${row.cls}`} />
+                  {row.label}
+                </span>
+                <span className="font-display text-lg font-bold">{row.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Alerts row */}
+      <div className="mt-5 grid gap-5 lg:grid-cols-2">
+        <div className="surface-panel">
+          <AdminPanelHeader
+            icon={AlertTriangle}
+            title="Critical bottlenecks"
+            subtitle="Departments under sustained load"
+            count={criticalBottlenecks.length}
+          />
           {criticalBottlenecks.length > 0 ? (
-            <div className="mt-3 space-y-2">
+            <div className="space-y-2.5 p-5">
               {criticalBottlenecks.map((b) => (
-                <div key={b.department} className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold">{b.department}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${b.severity === "critical" ? "bg-destructive/15 text-destructive" : "bg-amber-500/15 text-amber-600 dark:text-amber-300"}`}>
+                <div
+                  key={b.department}
+                  className="rounded-xl border border-destructive/30 bg-destructive/5 p-3.5"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-semibold">{b.department}</span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                        b.severity === "critical"
+                          ? "bg-destructive/15 text-destructive"
+                          : "bg-amber-500/15 text-amber-600 dark:text-amber-300"
+                      }`}
+                    >
                       {b.severity}
                     </span>
                   </div>
-                  <div className="mt-1.5 flex flex-wrap gap-1.5">
-                    {b.factors.map((f, i) => (
-                      <span key={i} className="rounded bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">{f}</span>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {(b.factors ?? []).map((f, i) => (
+                      <span
+                        key={i}
+                        className="rounded-md bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground"
+                      >
+                        {f}
+                      </span>
                     ))}
                   </div>
-                  <p className="mt-2 text-xs text-muted-foreground">{b.recommendation}</p>
+                  {b.recommendation ? (
+                    <p className="mt-2 text-xs leading-5 text-muted-foreground">
+                      {b.recommendation}
+                    </p>
+                  ) : null}
                 </div>
               ))}
             </div>
           ) : (
-            <div className="mt-3 flex flex-col items-center py-6 text-center">
-              <CheckCircle2 className="h-8 w-8 text-priority-green" />
-              <p className="mt-2 text-sm text-muted-foreground">No critical bottlenecks detected.</p>
-            </div>
+            <AdminEmptyState message="No critical bottlenecks detected." />
           )}
         </div>
 
-        <div className="surface-panel p-5">
-          <h3 className="font-display text-lg font-bold">Reassessment Alerts</h3>
+        <div className="surface-panel">
+          <AdminPanelHeader
+            icon={ShieldCheck}
+            title="Reassessment alerts"
+            subtitle="Patients past their review threshold"
+            count={reassessmentAlerts.length}
+          />
           {reassessmentAlerts.length > 0 ? (
-            <div className="mt-3 space-y-2">
+            <div className="space-y-2.5 p-5">
               {reassessmentAlerts.slice(0, 5).map((alert) => (
-                <div key={alert.id} className="flex items-center justify-between rounded-lg border border-border/70 bg-background/70 p-3">
+                <div
+                  key={alert.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/70 px-3.5 py-3"
+                >
                   <div className="flex items-center gap-3">
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${alert.priority === "red" ? "bg-red-500/15 text-red-500" : "bg-amber-500/15 text-amber-600 dark:text-amber-300"}`}>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                        alert.priority === "red"
+                          ? "bg-red-500/15 text-red-500"
+                          : "bg-amber-500/15 text-amber-600 dark:text-amber-300"
+                      }`}
+                    >
                       {alert.priority}
                     </span>
                     <div>
@@ -3095,71 +3189,128 @@ export function AdminDashboardPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm font-bold text-amber-500">{alert.waitMinutes}m</div>
-                    <div className="text-[10px] text-muted-foreground">threshold: {alert.thresholdMinutes}m</div>
+                    <div className="font-display text-sm font-bold text-amber-500">
+                      {alert.waitMinutes}m
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">
+                      threshold {alert.thresholdMinutes}m
+                    </div>
                   </div>
                 </div>
               ))}
-              {reassessmentAlerts.length > 5 && (
-                <p className="text-center text-xs text-muted-foreground">+{reassessmentAlerts.length - 5} more alerts</p>
-              )}
+              {reassessmentAlerts.length > 5 ? (
+                <p className="pt-1 text-center text-xs text-muted-foreground">
+                  +{reassessmentAlerts.length - 5} more alerts
+                </p>
+              ) : null}
             </div>
           ) : (
-            <div className="mt-3 flex flex-col items-center py-6 text-center">
-              <CheckCircle2 className="h-8 w-8 text-priority-green" />
-              <p className="mt-2 text-sm text-muted-foreground">No reassessment alerts. All patients within thresholds.</p>
-            </div>
+            <AdminEmptyState message="No reassessment alerts. All patients are within thresholds." />
           )}
         </div>
       </div>
 
-      {congestion && (
-        <div className="mt-6 surface-panel p-5">
-          <h3 className="font-display text-lg font-bold">Department Congestion Overview</h3>
-          <div className="mt-3 overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border/70 text-left text-xs uppercase tracking-wider text-muted-foreground">
-                  <th className="pb-2 pr-4">Department</th>
-                  <th className="pb-2 pr-4">Waiting</th>
-                  <th className="pb-2 pr-4">In Service</th>
-                  <th className="pb-2 pr-4">Avg Wait</th>
-                  <th className="pb-2 pr-4">Utilization</th>
-                  <th className="pb-2 pr-4">Level</th>
-                </tr>
-              </thead>
-              <tbody>
-                {Object.entries(congestion.byDept ?? {}).map(([dept, d]) => (
-                  <tr key={dept} className="border-b border-border/40">
-                    <td className="py-2 pr-4 font-medium">{dept}</td>
-                    <td className="py-2 pr-4">{d.waiting}</td>
-                    <td className="py-2 pr-4">{d.inService}</td>
-                    <td className="py-2 pr-4">{d.avgWaitMinutes}m</td>
-                    <td className="py-2 pr-4">
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-20 rounded-full bg-border/50">
-                          <div className={`h-2 rounded-full ${d.congestionLevel === "critical" ? "bg-destructive" : d.congestionLevel === "high" ? "bg-amber-500" : d.congestionLevel === "moderate" ? "bg-blue-500" : "bg-priority-green"}`} style={{ width: `${d.utilization}%` }} />
-                        </div>
-                        <span className="text-xs">{d.utilization}%</span>
-                      </div>
-                    </td>
-                    <td className="py-2 pr-4">
-                      <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                        d.congestionLevel === "critical" ? "bg-destructive/15 text-destructive" :
-                        d.congestionLevel === "high" ? "bg-amber-500/15 text-amber-600 dark:text-amber-300" :
-                        d.congestionLevel === "moderate" ? "bg-blue-500/15 text-blue-600 dark:text-blue-300" :
-                        "bg-priority-green/15 text-priority-green"
-                      }`}>
-                        {d.congestionLevel}
-                      </span>
-                    </td>
+      {/* Congestion table + longest waits */}
+      <div className="mt-5 grid gap-5 xl:grid-cols-[1.5fr_1fr]">
+        {congestion ? (
+          <div className="surface-panel">
+            <AdminPanelHeader
+              icon={Building2}
+              title="Department congestion"
+              subtitle="Utilization by department, highest first"
+            />
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border/60 text-left">
+                    {["Department", "Waiting", "In service", "Avg wait", "Utilization", "Level"].map(
+                      (h) => (
+                        <th
+                          key={h}
+                          className="px-5 py-3 text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground"
+                        >
+                          {h}
+                        </th>
+                      ),
+                    )}
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {congestionRows.map(([dept, d]) => (
+                    <tr
+                      key={dept}
+                      className="border-b border-border/40 transition-colors hover:bg-muted/40"
+                    >
+                      <td className="px-5 py-3 font-medium">{dept}</td>
+                      <td className="px-5 py-3">{d.waiting}</td>
+                      <td className="px-5 py-3">{d.inService}</td>
+                      <td className="px-5 py-3">{d.avgWaitMinutes}m</td>
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-2">
+                          <div className="h-1.5 w-20 overflow-hidden rounded-full bg-muted">
+                            <div
+                              className={`h-full rounded-full ${CONGESTION_BAR[d.congestionLevel] ?? "bg-priority-green"}`}
+                              style={{ width: `${Math.min(d.utilization ?? 0, 100)}%` }}
+                            />
+                          </div>
+                          <span className="text-xs text-muted-foreground">{d.utilization}%</span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3">
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                            CONGESTION_BADGE[d.congestionLevel] ?? CONGESTION_BADGE.normal
+                          }`}
+                        >
+                          {d.congestionLevel}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
+        ) : null}
+
+        <div className="surface-panel">
+          <AdminPanelHeader
+            icon={Clock3}
+            title="Longest waits"
+            subtitle="Patients waiting longest right now"
+            count={longestWaits.length}
+          />
+          {longestWaits.length > 0 ? (
+            <div className="divide-y divide-border/50">
+              {longestWaits.map((t) => (
+                <div key={t.id} className="flex items-center justify-between gap-3 px-5 py-3">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <span
+                      className={`inline-grid h-8 w-14 shrink-0 place-items-center rounded-lg font-display text-[11px] font-bold ${
+                        priorityChipClass[t.priority] ?? "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {t.ticket}
+                    </span>
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold">{t.patientName}</div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        {t.department}
+                        {t.chiefComplaint ? ` · ${t.chiefComplaint}` : ""}
+                      </div>
+                    </div>
+                  </div>
+                  <span className="shrink-0 font-display text-sm font-bold text-amber-500">
+                    {t.waitMinutes}m
+                  </span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <AdminEmptyState message="No patients are currently waiting." />
+          )}
         </div>
-      )}
+      </div>
     </ModulePage>
   );
 }
