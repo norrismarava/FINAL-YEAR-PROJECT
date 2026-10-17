@@ -1,22 +1,13 @@
 import { Link } from "react-router-dom";
 import {
   Building2,
-  Clock3,
   Facebook,
-  FlaskConical,
-  HeartPulse,
   Instagram,
   Mail,
   MapPin,
-  MonitorSmartphone,
-  Pill,
-  Search,
   Siren,
-  Stethoscope,
-  ShieldCheck,
   Phone,
   Twitter,
-  UserRound,
 } from "lucide-react";
 
 import { WaitLessLogo } from "@/components/WaitLessLogo";
@@ -105,20 +96,19 @@ export default function SiteFooter() {
             <ColumnTitle>Patient services</ColumnTitle>
             <ul className="mt-5 space-y-2.5 text-sm">
               {[
-                [UserRound, "Self check-in", "/self-register"],
-                [Search, "Track your ticket", "/track"],
-                [MonitorSmartphone, "Live queue board", "/queue"],
-                [Clock3, "Kiosk check-in", "/kiosk"],
-                [HeartPulse, "Sign in", "/login"],
-                [ShieldCheck, "Create an account", "/patient/register"],
-                [Pill, "Share feedback", "/patient/feedback"],
-              ].map(([Icon, label, to]) => (
+                ["Self check-in", "/self-register"],
+                ["Track your ticket", "/track"],
+                ["Live queue board", "/queue"],
+                ["Kiosk check-in", "/kiosk"],
+                ["Sign in", "/login"],
+                ["Create an account", "/patient/register"],
+                ["Share feedback", "/patient/feedback"],
+              ].map(([label, to]) => (
                 <li key={to}>
                   <Link
                     to={to}
-                    className="group inline-flex items-center gap-2.5 text-white/45 transition-colors hover:text-teal-300"
+                    className="text-white/45 transition-colors hover:text-teal-300"
                   >
-                    <Icon className="h-3.5 w-3.5 text-teal-400/40 transition-colors group-hover:text-teal-300" />
                     {label}
                   </Link>
                 </li>
@@ -134,9 +124,8 @@ export default function SiteFooter() {
                 <li key={dept}>
                   <Link
                     to={`/department-board?dept=${encodeURIComponent(dept)}`}
-                    className="group inline-flex items-center gap-2.5 text-white/45 transition-colors hover:text-teal-300"
+                    className="text-white/45 transition-colors hover:text-teal-300"
                   >
-                    <Stethoscope className="h-3.5 w-3.5 text-teal-400/40 transition-colors group-hover:text-teal-300" />
                     {label}
                   </Link>
                 </li>
@@ -144,9 +133,8 @@ export default function SiteFooter() {
               <li>
                 <Link
                   to="/department-board"
-                  className="group inline-flex items-center gap-2.5 text-white/45 transition-colors hover:text-teal-300"
+                  className="text-white/45 transition-colors hover:text-teal-300"
                 >
-                  <FlaskConical className="h-3.5 w-3.5 text-teal-400/40 transition-colors group-hover:text-teal-300" />
                   All department boards
                 </Link>
               </li>

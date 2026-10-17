@@ -113,7 +113,7 @@ export default function ChatbotWidget() {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex h-[560px] max-h-[calc(100vh-3rem)] w-[min(380px,calc(100vw-2rem))] flex-col rounded-2xl border border-border bg-card shadow-xl">
+    <div className="fixed bottom-6 right-6 z-50 flex h-[560px] max-h-[calc(100vh-3rem)] w-[min(380px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#04141f]/95 shadow-[0_24px_60px_-20px_rgba(2,8,20,0.7)] backdrop-blur-xl">
       <div className="flex items-center justify-between rounded-t-2xl gradient-primary px-4 py-3 text-primary-foreground">
         <div className="flex items-center gap-2">
           <img src={robotIcon} alt="" className="h-7 w-7 rounded-full bg-white/85 object-contain p-0.5" />
@@ -139,7 +139,7 @@ export default function ChatbotWidget() {
               className={`max-w-[80%] whitespace-pre-wrap rounded-2xl px-3.5 py-2.5 text-sm ${
                 msg.role === "user"
                   ? "gradient-primary text-primary-foreground"
-                  : "bg-muted text-foreground"
+                  : "border border-white/[0.07] bg-white/[0.07] text-slate-100"
               }`}
             >
               {msg.text}
@@ -148,17 +148,17 @@ export default function ChatbotWidget() {
         ))}
         {loading && (
           <div className="flex justify-start">
-            <div className="rounded-2xl bg-muted px-3.5 py-2.5 text-sm text-muted-foreground">
+            <div className="rounded-2xl border border-white/[0.07] bg-white/[0.07] px-3.5 py-2.5 text-sm text-slate-400">
               Typing...
             </div>
           </div>
         )}
       </div>
 
-      <div className="space-y-2 border-t border-border p-3">
+      <div className="space-y-2 border-t border-white/10 p-3">
         <div className="grid grid-cols-2 gap-2">
           <label className="relative block">
-            <Ticket className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Ticket className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={ticketCode}
@@ -166,17 +166,17 @@ export default function ChatbotWidget() {
               placeholder="Ticket code"
               aria-label="Ticket code"
               maxLength={80}
-              className="w-full rounded-lg border border-border bg-background py-2 pl-8 pr-2 text-xs uppercase outline-none focus:border-primary"
+              className="w-full rounded-lg border border-white/10 bg-white/[0.06] py-2 pl-8 pr-2 text-xs uppercase text-white outline-none transition-colors placeholder:text-slate-500 focus:border-teal-300/50"
               disabled={loading}
             />
           </label>
           <label className="relative block">
-            <Building2 className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Building2 className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
             <select
               value={department}
               onChange={(event) => setDepartment(event.target.value)}
               aria-label="Department"
-              className="w-full appearance-none rounded-lg border border-border bg-background py-2 pl-8 pr-2 text-xs outline-none focus:border-primary"
+              className="w-full appearance-none rounded-lg border border-white/10 bg-white/[0.06] py-2 pl-8 pr-2 text-xs text-white outline-none transition-colors focus:border-teal-300/50 [&>option]:bg-[#062a35] [&>option]:text-white"
               disabled={loading}
             >
               <option value="">Any department</option>
@@ -202,7 +202,7 @@ export default function ChatbotWidget() {
             }}
             placeholder="Ask about wait times, tickets, prescriptions..."
             maxLength={500}
-            className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+            className="flex-1 rounded-lg border border-white/10 bg-white/[0.06] px-3 py-2 text-sm text-white outline-none transition-colors placeholder:text-slate-500 focus:border-teal-300/50"
             disabled={loading}
           />
           <button

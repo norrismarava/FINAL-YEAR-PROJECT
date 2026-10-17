@@ -17,6 +17,10 @@ function quoteIdentifier(identifier) {
   return `\`${String(identifier).replaceAll("`", "``")}\``;
 }
 
+function connectionSslOptions() {
+  return env.databaseSsl ? { ssl: { minVersion: "TLSv1.2" } } : {};
+}
+
 async function ensureDatabaseExists() {
   if (databaseReady) {
     return;
@@ -28,7 +32,7 @@ async function ensureDatabaseExists() {
     port: env.databasePort,
     user: env.databaseUser,
     password: env.databasePassword,
-    ...(env.databaseSsl ? { ssl: { minVersion: "TLSv1.2" } } : {}),
+    ...connectionSslOptions(),
   });
 
   try {
@@ -75,7 +79,7 @@ async function getPool() {
     connectionLimit: env.databaseConnectionLimit,
     timezone: "Z",
     dateStrings: true,
-    ...(env.databaseSsl ? { ssl: { minVersion: "TLSv1.2" } } : {}),
+    ...connectionSslOptions(),
   });
 
   return pool;

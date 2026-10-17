@@ -1,7 +1,12 @@
-const CACHE_NAME = "waitless-v8";
+const CACHE_NAME = "waitless-v9";
 const STATIC_ASSETS = ["/", "/index.html"];
+const IS_DEV_HOST = ["localhost", "127.0.0.1"].includes(self.location.hostname);
 
 self.addEventListener("install", (event) => {
+  if (IS_DEV_HOST) {
+    self.skipWaiting();
+    return;
+  }
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS).catch(() => {})),
   );
@@ -9,6 +14,15 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
+  if (IS_DEV_HOST) {
+    event.waitUntil(
+      caches
+        .keys()
+        .then((keys) => Promise.all(keys.map((k) => caches.delete(k))))
+        .then(() => self.registration.unregister()),
+    );
+    return;
+  }
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))),
@@ -18,6 +32,8 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
+  if (IS_DEV_HOST) return;
+
   const { request } = event;
 
   if (request.method !== "GET") return;

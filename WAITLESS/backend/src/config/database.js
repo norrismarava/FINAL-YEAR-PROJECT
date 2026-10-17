@@ -23,7 +23,8 @@ if (useMySQL) {
         connectionLimit: parseInt(process.env.DB_CONNECTION_LIMIT) || 10,
         queueLimit: 0,
         enableKeepAlive: true,
-        keepAliveInitialDelay: 0
+        keepAliveInitialDelay: 0,
+        ...(process.env.DB_SSL === 'true' ? { ssl: { minVersion: 'TLSv1.2' } } : {})
     });
 
     // Test connection on startup

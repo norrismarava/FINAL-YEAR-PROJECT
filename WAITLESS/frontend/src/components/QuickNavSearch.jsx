@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
-import { ArrowRight, Search } from "lucide-react";
+import { Search } from "lucide-react";
 
 const DESTINATIONS = [
   { label: "Check in and get a queue ticket", to: "/self-register", keywords: "check in ticket queue register walk in book spot" },
@@ -97,7 +97,6 @@ export default function QuickNavSearch() {
             i === active ? "bg-teal-400/10 text-white" : "text-white/60"
           }`}
         >
-          <ArrowRight className={`h-3.5 w-3.5 shrink-0 transition-colors ${i === active ? "text-teal-300" : "text-white/25"}`} />
           <span className="flex-1">{d.label}</span>
         </button>
       ))}
