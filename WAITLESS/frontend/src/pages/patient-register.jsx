@@ -122,6 +122,10 @@ export default function PatientRegisterPage() {
           <Link to="/self-register" className="font-medium text-slate-300 hover:text-teal-300">
             {t("register.bookWithout")}
           </Link>
+          <span className="text-white/20">|</span>
+          <Link to="/" className="font-medium text-slate-300 hover:text-teal-300">
+            Home
+          </Link>
         </>
       }
     >
@@ -147,7 +151,7 @@ export default function PatientRegisterPage() {
                 value={form.fullName}
                 onChange={handleChange}
                 placeholder={t("register.fullNamePlaceholder")}
-                className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
+                className="h-12 w-full rounded-full border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),0_0_0_3px_rgba(45,212,191,0.15)]"
                 required
               />
             </div>
@@ -170,7 +174,7 @@ export default function PatientRegisterPage() {
                 maxLength={32}
                 pattern="[A-Za-z0-9._-]+"
                 autoComplete="username"
-                className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
+                className="h-12 w-full rounded-full border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),0_0_0_3px_rgba(45,212,191,0.15)]"
                 required
               />
             </div>
@@ -189,7 +193,7 @@ export default function PatientRegisterPage() {
                 value={form.email}
                 onChange={handleChange}
                 placeholder={t("register.emailPlaceholder")}
-                className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
+                className="h-12 w-full rounded-full border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),0_0_0_3px_rgba(45,212,191,0.15)]"
                 required
               />
             </div>
@@ -208,7 +212,7 @@ export default function PatientRegisterPage() {
                 value={form.phone}
                 onChange={handleChange}
                 placeholder={t("register.phonePlaceholder")}
-                className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
+                className="h-12 w-full rounded-full border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),0_0_0_3px_rgba(45,212,191,0.15)]"
                 required
               />
             </div>
@@ -226,7 +230,7 @@ export default function PatientRegisterPage() {
               onChange={handleChange}
               placeholder={t("register.nationalIdPlaceholder")}
               required
-              className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
+              className="h-12 w-full rounded-full border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] px-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),0_0_0_3px_rgba(45,212,191,0.15)]"
             />
           </div>
 
@@ -242,7 +246,7 @@ export default function PatientRegisterPage() {
                 name="dob"
                 value={form.dob}
                 onChange={handleChange}
-                className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
+                className="h-12 w-full rounded-full border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] pl-11 pr-4 text-sm text-white focus:border-teal-400/50 focus:outline-none focus:shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),0_0_0_3px_rgba(45,212,191,0.15)]"
               />
             </div>
           </div>
@@ -260,7 +264,7 @@ export default function PatientRegisterPage() {
                 value={form.password}
                 onChange={handleChange}
                 placeholder={t("register.passwordPlaceholder")}
-                className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-11 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
+                className="h-12 w-full rounded-full border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] pl-11 pr-11 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),0_0_0_3px_rgba(45,212,191,0.15)]"
                 required
               />
               <button
@@ -286,7 +290,7 @@ export default function PatientRegisterPage() {
                 value={form.confirmPassword}
                 onChange={handleChange}
                 placeholder={t("register.confirmPasswordPlaceholder")}
-                className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
+                className="h-12 w-full rounded-full border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),0_0_0_3px_rgba(45,212,191,0.15)]"
                 required
               />
             </div>
@@ -296,14 +300,16 @@ export default function PatientRegisterPage() {
         <button
           type="submit"
           disabled={loading}
-          className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-6 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(13,148,136,0.5)] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+          className="relative inline-flex h-12 w-full items-center justify-center rounded-full bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-6 text-sm font-semibold text-white shadow-[0_14px_30px_-10px_rgba(13,148,136,0.55),inset_0_1px_0_rgba(255,255,255,0.3),inset_0_-2px_6px_rgba(4,60,54,0.4)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_36px_-10px_rgba(13,148,136,0.65),inset_0_1px_0_rgba(255,255,255,0.35)] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? (
             t("register.creating")
           ) : (
             <>
               {t("register.createAccount")}
-              <ArrowRight className="h-4 w-4" />
+              <span className="absolute right-1.5 grid h-9 w-9 place-items-center rounded-full bg-white/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]">
+                <ArrowRight className="h-4 w-4" />
+              </span>
             </>
           )}
         </button>

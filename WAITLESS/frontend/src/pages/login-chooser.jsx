@@ -215,7 +215,7 @@ export default function UnifiedLoginPage({ variant = "unified" }) {
           <button
             type="submit"
             disabled={loading}
-            className="relative inline-flex h-12 w-full items-center justify-center rounded-full bg-[linear-gradient(135deg,#0d9488,#14b8a6_55%,#22d3ee)] px-6 text-sm font-semibold text-white shadow-[0_14px_30px_-10px_rgba(20,184,166,0.55),inset_0_1px_0_rgba(255,255,255,0.3),inset_0_-2px_6px_rgba(4,60,54,0.4)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_36px_-10px_rgba(20,184,166,0.65),inset_0_1px_0_rgba(255,255,255,0.35)] disabled:cursor-not-allowed disabled:opacity-60"
+            className="relative inline-flex h-12 w-full items-center justify-center rounded-full bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-6 text-sm font-semibold text-white shadow-[0_14px_30px_-10px_rgba(13,148,136,0.55),inset_0_1px_0_rgba(255,255,255,0.3),inset_0_-2px_6px_rgba(4,60,54,0.4)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_36px_-10px_rgba(13,148,136,0.65),inset_0_1px_0_rgba(255,255,255,0.35)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? (
               "Signing you in..."
@@ -251,7 +251,7 @@ export default function UnifiedLoginPage({ variant = "unified" }) {
         <div className="mt-3 text-center">
           <Link
             to="/"
-            className="inline-flex items-center gap-2 text-xs font-medium text-slate-500 transition-colors hover:text-slate-300"
+            className="inline-flex items-center gap-2 text-xs font-medium text-teal-300 transition-colors hover:text-teal-200"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Back to portal

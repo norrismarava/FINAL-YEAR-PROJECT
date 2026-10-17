@@ -238,15 +238,17 @@ export default function SelfRegisterPage() {
               <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
                 <Link
                   to={`/track?ticket=${encodeURIComponent(success.ticket)}`}
-                  className="inline-flex h-11 items-center gap-2 rounded-xl bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-5 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(13,148,136,0.5)] transition-transform hover:-translate-y-0.5"
+                  className="relative inline-flex h-12 items-center gap-2 rounded-full bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-6 text-sm font-semibold text-white shadow-[0_14px_30px_-10px_rgba(13,148,136,0.55),inset_0_1px_0_rgba(255,255,255,0.3),inset_0_-2px_6px_rgba(4,60,54,0.4)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_36px_-10px_rgba(13,148,136,0.65),inset_0_1px_0_rgba(255,255,255,0.35)]"
                 >
                   Track your ticket
-                  <ArrowRight className="h-4 w-4" />
+                  <span className="grid h-8 w-8 place-items-center rounded-full bg-white/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]">
+                    <ArrowRight className="h-4 w-4" />
+                  </span>
                 </Link>
                 <button
                   type="button"
                   onClick={handlePrintTicket}
-                  className="inline-flex h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08]"
+                  className="inline-flex h-12 items-center gap-2 rounded-full border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] px-4 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08]"
                 >
                   <Printer className="h-4 w-4" />
                   Print
@@ -254,7 +256,7 @@ export default function SelfRegisterPage() {
                 <button
                   type="button"
                   onClick={handleShareTicket}
-                  className="inline-flex h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08]"
+                  className="inline-flex h-12 items-center gap-2 rounded-full border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] px-4 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08]"
                 >
                   <Share2 className="h-4 w-4" />
                   Send to phone
@@ -266,7 +268,7 @@ export default function SelfRegisterPage() {
                     setHandoffState("");
                     setCopied(false);
                   }}
-                  className="inline-flex h-11 items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-5 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08]"
+                  className="inline-flex h-12 items-center gap-2 rounded-full border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] px-5 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08]"
                 >
                   Register another patient
                 </button>
@@ -304,6 +306,15 @@ export default function SelfRegisterPage() {
         {/* ambient glow behind the card */}
         <div className="pointer-events-none absolute -inset-x-10 top-24 -z-10 h-96 rounded-full bg-teal-400/[0.08] blur-[80px]" />
 
+        <div className="relative">
+          {/* Orbiting radiant ring */}
+          <div className="pointer-events-none absolute -inset-[3px] overflow-hidden rounded-[1.3rem]">
+            <div
+              className="absolute -inset-[150%] bg-[conic-gradient(from_0deg,transparent_0deg,rgba(45,212,191,0.85)_45deg,transparent_100deg,transparent_180deg,rgba(59,130,246,0.85)_225deg,transparent_280deg)]"
+              style={{ animation: "auth-ring-spin 8s linear infinite" }}
+            />
+            <div className="absolute inset-[3px] rounded-2xl bg-[#04141f]" />
+          </div>
         <div className="self-reg-enter relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#04141f]/60 shadow-[0_32px_80px_-28px_rgba(2,8,20,0.45)] ring-1 ring-inset ring-teal-400/[0.08] backdrop-blur-2xl" style={{ animationDelay: "0.12s" }}>
           <div className="relative z-10">
             {/* Header */}
@@ -348,7 +359,7 @@ export default function SelfRegisterPage() {
                       value={form.fullName}
                       onChange={(e) => updateField("fullName", e.target.value)}
                       placeholder="e.g. Tendai Mukamuri"
-                      className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
+                      className="h-12 w-full rounded-full border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),0_0_0_3px_rgba(45,212,191,0.15)]"
                       required
                     />
                   </div>
@@ -364,7 +375,7 @@ export default function SelfRegisterPage() {
                       value={form.phone}
                       onChange={(e) => updateField("phone", e.target.value)}
                       placeholder="e.g. 077 123 4567"
-                      className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
+                      className="h-12 w-full rounded-full border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),0_0_0_3px_rgba(45,212,191,0.15)]"
                       required
                     />
                   </div>
@@ -382,7 +393,7 @@ export default function SelfRegisterPage() {
                 <select
                   value={form.dept}
                   onChange={(e) => updateField("dept", e.target.value)}
-                  className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm text-white focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
+                  className="h-12 w-full rounded-full border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] px-4 text-sm text-white focus:border-teal-400/50 focus:outline-none focus:shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),0_0_0_3px_rgba(45,212,191,0.15)]"
                 >
                   {DEPARTMENTS.map((dept) => (
                     <option key={dept} value={dept} className="bg-[#04141f] text-white">
@@ -402,12 +413,12 @@ export default function SelfRegisterPage() {
                   onChange={(e) => updateField("chiefComplaint", e.target.value)}
                   placeholder="Briefly describe your symptoms or reason for visiting"
                   rows={2}
-                  className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
+                  className="w-full rounded-2xl border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),0_0_0_3px_rgba(45,212,191,0.15)]"
                 />
               </div>
 
               {/* Notification consent */}
-              <div className="flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3.5">
+              <div className="flex items-center justify-between gap-4 rounded-full border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] px-4 py-3.5">
                 <div className="text-sm leading-5 text-slate-200">
                   <span className="flex items-center gap-1.5 font-semibold">
                     <MessageCircle className="h-3.5 w-3.5 text-teal-300" />
@@ -433,7 +444,7 @@ export default function SelfRegisterPage() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-6 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(13,148,136,0.5)] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="relative inline-flex h-12 w-full items-center justify-center rounded-full bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-6 text-sm font-semibold text-white shadow-[0_14px_30px_-10px_rgba(13,148,136,0.55),inset_0_1px_0_rgba(255,255,255,0.3),inset_0_-2px_6px_rgba(4,60,54,0.4)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_36px_-10px_rgba(13,148,136,0.65),inset_0_1px_0_rgba(255,255,255,0.35)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {submitting ? (
                     <>
@@ -443,7 +454,9 @@ export default function SelfRegisterPage() {
                   ) : (
                     <>
                       Get my ticket
-                      <ArrowRight className="h-4 w-4" />
+                      <span className="absolute right-1.5 grid h-9 w-9 place-items-center rounded-full bg-white/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]">
+                        <ArrowRight className="h-4 w-4" />
+                      </span>
                     </>
                   )}
                 </button>
@@ -451,7 +464,7 @@ export default function SelfRegisterPage() {
                   type="button"
                   onClick={handlePreRegister}
                   disabled={submitting}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-5 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
+                  className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] px-5 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {submitting ? (
                     <LoaderCircle className="h-4 w-4 animate-spin" />
@@ -493,6 +506,7 @@ export default function SelfRegisterPage() {
               </div>
             </form>
           </div>
+        </div>
         </div>
 
         {/* Security footer */}
