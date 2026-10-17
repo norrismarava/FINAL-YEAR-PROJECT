@@ -1,5 +1,7 @@
 import {
   registerPatientAccount,
+  deletePatientAccount,
+  listPatientUsers,
   loginPatient,
   getPatientSessionFromRequest,
   requirePatientSession,
@@ -17,6 +19,10 @@ import {
   listNotifications,
 } from "../repositories/queueRepository.js";
 import { getAppointments } from "../services/appointmentService.js";
+import {
+  getPatientHistory,
+  searchPatientDirectory,
+} from "../services/patientHistoryService.js";
 import { saveAvatarImage } from "../services/avatarService.js";
 import { HttpError } from "../utils/http.js";
 
@@ -381,5 +387,34 @@ export async function patientChangePasswordController({ req, body }) {
   return {
     status: 200,
     body: { success: true },
+  };
+}
+
+export async function patientUsersListController() {
+  return {
+    status: 200,
+    body: { users: await listPatientUsers() },
+  };
+}
+
+export async function patientUserDeleteController({ params }) {
+  const removed = await deletePatientAccount(params.id);
+  return {
+    status: 200,
+    body: { message: "Patient account deleted.", user: removed },
+  };
+}
+
+export async function patientDirectoryController({ query }) {
+  return {
+    status: 200,
+    body: { patients: await searchPatientDirectory(query?.get("search") ?? "") },
+  };
+}
+
+export async function patientHistoryController({ query }) {
+  return {
+    status: 200,
+    body: await getPatientHistory(query?.get("key") ?? ""),
   };
 }

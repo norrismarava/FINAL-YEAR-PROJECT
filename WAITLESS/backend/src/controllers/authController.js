@@ -1,5 +1,8 @@
 import {
+  changeStaffPassword,
+  deleteStaffUser,
   getSessionFromRequest,
+  listStaffUsers,
   loginStaff,
   registerStaff,
   registerStaffWithAccessCode,
@@ -150,6 +153,51 @@ export async function staffAccessCodeListController() {
   return {
     status: 200,
     body: { codes: await listStaffAccessCodes() },
+  };
+}
+
+export async function staffChangePasswordController({ body, staff }) {
+  const result = await changeStaffPassword(staff?.id, {
+    currentPassword: body?.currentPassword,
+    newPassword: body?.newPassword,
+  });
+
+  await recordAuditEventSafely({
+    actor: staff,
+    action: "staff.password_changed",
+    entityType: "staff",
+    entityId: staff?.id,
+    entityLabel: staff?.username,
+  });
+
+  return {
+    status: 200,
+    body: result,
+  };
+}
+
+export async function staffUsersListController() {
+  return {
+    status: 200,
+    body: { users: await listStaffUsers() },
+  };
+}
+
+export async function staffUserDeleteController({ params, staff }) {
+  const removed = await deleteStaffUser(params.id, staff?.id);
+
+  await recordAuditEventSafely({
+    actor: staff,
+    action: "staff.deleted",
+    entityType: "staff",
+    entityId: removed.id,
+    entityLabel: removed.username,
+    after: { role: removed.role, department: removed.department },
+  });
+
+  return {
+    status: 200,
+    body: { message: "Staff account deleted.", user: removed },
   };
 }
 

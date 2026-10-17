@@ -1,6 +1,7 @@
 import axios from "axios";
 
 import { getStoredAuthToken } from "./authSession";
+import { getStoredPatientToken } from "./patientAuthSession";
 
 // Prefer same-origin + Vite proxy (`/api` -> http://localhost:4242) to avoid browser Network/CORS issues.
 // If you explicitly set VITE_API_BASE_URL, we’ll use it.
@@ -11,7 +12,13 @@ export const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use((config) => {
-  const authToken = getStoredAuthToken();
+  // Patient endpoints need the patient token; everything else uses staff.
+  // Match "/api/patient/" exactly so staff routes like /api/patients/* don't
+  // accidentally carry the patient token.
+  const isPatientEndpoint = (config.url ?? "").startsWith("/api/patient/");
+  const authToken = isPatientEndpoint
+    ? (getStoredPatientToken() ?? getStoredAuthToken())
+    : (getStoredAuthToken() ?? getStoredPatientToken());
 
   if (authToken && !config.headers.Authorization) {
     config.headers.Authorization = `Bearer ${authToken}`;
@@ -19,6 +26,18 @@ apiClient.interceptors.request.use((config) => {
 
   return config;
 });
+
+// Any 401 on an authenticated endpoint means the stored session is dead —
+// broadcast it so auth providers can log out and send the user to /login.
+apiClient.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      window.dispatchEvent(new Event("waitless:auth-expired"));
+    }
+    return Promise.reject(error);
+  },
+);
 
 export function buildApiUrl(path) {
   // Prefer `/api/...` (same-origin) when API_BASE_URL is not set.

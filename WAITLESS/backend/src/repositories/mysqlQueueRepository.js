@@ -28,6 +28,7 @@ async function ensureDatabaseExists() {
     port: env.databasePort,
     user: env.databaseUser,
     password: env.databasePassword,
+    ...(env.databaseSsl ? { ssl: { minVersion: "TLSv1.2" } } : {}),
   });
 
   try {
@@ -74,6 +75,7 @@ async function getPool() {
     connectionLimit: env.databaseConnectionLimit,
     timezone: "Z",
     dateStrings: true,
+    ...(env.databaseSsl ? { ssl: { minVersion: "TLSv1.2" } } : {}),
   });
 
   return pool;

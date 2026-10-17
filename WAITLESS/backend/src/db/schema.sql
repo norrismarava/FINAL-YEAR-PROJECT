@@ -140,7 +140,7 @@ CREATE TABLE IF NOT EXISTS patient_users (
   password_hash VARCHAR(255) NOT NULL,
   full_name VARCHAR(160) NOT NULL,
   phone VARCHAR(80) NOT NULL,
-  national_id VARCHAR(80) NULL,
+  national_id VARCHAR(80) NOT NULL UNIQUE,
   dob DATE NULL,
   gender VARCHAR(40) NOT NULL DEFAULT 'unknown',
   avatar_url TEXT NULL,

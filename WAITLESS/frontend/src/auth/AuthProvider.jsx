@@ -92,6 +92,14 @@ export function AuthProvider({ children }) {
     setExpiresAt(null);
   }
 
+  // If the server reports the stored session is dead (401), drop the local
+  // session so ProtectedRoute sends the user back to /login.
+  useEffect(() => {
+    const onExpired = () => logout();
+    window.addEventListener("waitless:auth-expired", onExpired);
+    return () => window.removeEventListener("waitless:auth-expired", onExpired);
+  }, []);
+
   function hasRole(roles = []) {
     if (!user) {
       return false;

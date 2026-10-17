@@ -149,7 +149,7 @@ export default function StaffSignupPage() {
         </span>
       }
     >
-      <form className="space-y-3.5" onSubmit={handleSubmit}>
+      <form noValidate className="space-y-3.5" onSubmit={handleSubmit}>
         <AuthError icon={AlertCircle} message={error} />
 
         <AuthInput

@@ -72,6 +72,14 @@ export function PatientAuthProvider({ children }) {
     setPatientUser(null);
   }
 
+  // Drop the patient session if the server reports it expired (401),
+  // so the portal routes bounce back to /login.
+  useEffect(() => {
+    const onExpired = () => patientLogout();
+    window.addEventListener("waitless:auth-expired", onExpired);
+    return () => window.removeEventListener("waitless:auth-expired", onExpired);
+  }, []);
+
   function updatePatientAvatar(avatarUrl) {
     setPatientUser((current) => {
       if (!current) return current;

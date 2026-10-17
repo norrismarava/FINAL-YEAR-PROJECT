@@ -6,5 +6,17 @@
     "active": true,
     "isDefault": true,
     "createdAt": "2026-09-20T17:59:00.769Z"
+  },
+  {
+    "id": "chinhoyi-provincial-hospital",
+    "name": "Chinhoyi Provincial Hospital",
+    "location": "Chinhoyi",
+    "active": true,
+    "isDefault": false,
+    "createdAt": "2026-10-15T15:20:51.388Z",
+    "createdBy": {
+      "id": "f8f78fd2-a7d7-4dad-97c3-c193c3ceb010",
+      "name": "System Administrator"
+    }
   }
 ]

@@ -68,6 +68,7 @@ export const env = {
   databaseUser: process.env.DB_USER?.trim() || "root",
   databasePassword: process.env.DB_PASSWORD ?? "",
   databaseConnectionLimit: parseInteger(process.env.DB_CONNECTION_LIMIT, 10),
+  databaseSsl: parseBoolean(process.env.DB_SSL, false),
   databaseSeedDemoData: parseBoolean(process.env.DB_SEED_DEMO_DATA, true),
   authSessionTtlMs: parseInteger(
     process.env.AUTH_SESSION_TTL_MS,

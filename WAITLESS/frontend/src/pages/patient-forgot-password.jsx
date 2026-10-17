@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertCircle, ArrowLeft, ArrowRight, AtSign, CheckCircle2 } from "lucide-react";
+import { AlertCircle, ArrowLeft, ArrowRight, AtSign } from "lucide-react";
 
+import doneImage from "@/assets/OTHER/DONE.jpeg";
 import { PatientAuthShell } from "@/components/PatientAuthShell";
 import { requestPatientPasswordReset } from "@/services/patientAuthApi";
 import { useTranslation } from "@/i18n/useTranslation";
@@ -49,8 +50,8 @@ export default function PatientForgotPasswordPage() {
         footer={backLink}
       >
         <div className="space-y-4 text-center">
-          <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-teal-500/15 text-teal-300">
-            <CheckCircle2 className="h-7 w-7" />
+          <span className="mx-auto grid h-20 w-20 place-items-center overflow-hidden rounded-full bg-white shadow-[0_12px_32px_-10px_rgba(34,197,94,0.45)] ring-4 ring-emerald-400/20">
+            <img src={doneImage} alt="" className="h-full w-full object-cover" />
           </span>
           <button
             type="button"
@@ -71,7 +72,7 @@ export default function PatientForgotPasswordPage() {
       subtitle={t("forgot.subtitle")}
       footer={backLink}
     >
-      <form className="space-y-4" onSubmit={handleSubmit}>
+      <form noValidate className="space-y-4" onSubmit={handleSubmit}>
         {error ? (
           <div className="flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-300">
             <AlertCircle className="h-4 w-4 shrink-0" />

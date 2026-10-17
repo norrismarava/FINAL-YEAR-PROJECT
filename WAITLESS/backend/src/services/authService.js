@@ -265,6 +265,121 @@ export async function registerStaff({
   };
 }
 
+export async function listStaffUsers() {
+  if (useFileStaff) {
+    const rows = await fileStaff.listAllStaff();
+    return rows.map(publicStaffUserFromRow);
+  }
+
+  const pool = getPool();
+  const [rows] = await pool.execute(
+    `SELECT id, username, email, full_name, role, department, phone, employee_id,
+            avatar_url, created_at, last_login_at
+     FROM staff_users
+     ORDER BY created_at DESC`,
+  );
+  return rows.map(publicStaffUserFromRow);
+}
+
+export async function changeStaffPassword(userId, { currentPassword, newPassword }) {
+  if (!currentPassword || typeof currentPassword !== "string") {
+    throw new HttpError(400, "Your current password is required.");
+  }
+  const policyError = getPasswordPolicyError(newPassword);
+  if (policyError) {
+    throw new HttpError(400, policyError);
+  }
+  if (newPassword === currentPassword) {
+    throw new HttpError(400, "Your new password must be different from the current one.");
+  }
+
+  if (useFileStaff) {
+    const user = await fileStaff.findStaffById(userId);
+    if (!user || !(await fileStaff.verifyStaffPassword(currentPassword, user.password_hash))) {
+      throw new HttpError(401, "Current password is incorrect.");
+    }
+    await fileStaff.updateStaffPassword(user.email, newPassword);
+  } else {
+    const pool = getPool();
+    const [rows] = await pool.execute(
+      "SELECT * FROM staff_users WHERE id = ? LIMIT 1",
+      [userId],
+    );
+    const user = rows[0];
+    if (!user || !(await verifyPassword(currentPassword, user.password_hash))) {
+      throw new HttpError(401, "Current password is incorrect.");
+    }
+
+    const passwordHash = await hashPassword(newPassword);
+    await pool.execute(
+      "UPDATE staff_users SET password_hash = ? WHERE id = ?",
+      [passwordHash, userId],
+    );
+  }
+
+  // Drop every session for this user — they sign back in with the new password.
+  for (const [token, session] of sessions.entries()) {
+    if (session.user?.id === userId) {
+      sessions.delete(token);
+    }
+  }
+
+  return { message: "Password updated." };
+}
+
+export async function deleteStaffUser(id, actorId) {
+  if (id === actorId) {
+    throw new HttpError(400, "You cannot delete your own account.");
+  }
+
+  const findUser = async () => {
+    if (useFileStaff) {
+      const rows = await fileStaff.listAllStaff();
+      return rows.find((u) => u.id === id) ?? null;
+    }
+    const pool = getPool();
+    const [rows] = await pool.execute("SELECT * FROM staff_users WHERE id = ? LIMIT 1", [id]);
+    return rows[0] ?? null;
+  };
+
+  const user = await findUser();
+  if (!user) {
+    throw new HttpError(404, "Staff account not found.");
+  }
+
+  if (user.role === "admin") {
+    let adminCount;
+    if (useFileStaff) {
+      const rows = await fileStaff.listAllStaff();
+      adminCount = rows.filter((u) => u.role === "admin").length;
+    } else {
+      const pool = getPool();
+      const [rows] = await pool.execute(
+        "SELECT COUNT(*) AS total FROM staff_users WHERE role = 'admin'",
+      );
+      adminCount = rows[0]?.total ?? 0;
+    }
+    if (adminCount <= 1) {
+      throw new HttpError(400, "Cannot delete the last administrator account.");
+    }
+  }
+
+  if (useFileStaff) {
+    await fileStaff.deleteStaff(id);
+  } else {
+    const pool = getPool();
+    await pool.execute("DELETE FROM staff_users WHERE id = ?", [id]);
+  }
+
+  for (const [token, session] of sessions.entries()) {
+    if (session.user?.id === id) {
+      sessions.delete(token);
+    }
+  }
+
+  return publicStaffUserFromRow(user);
+}
+
 export async function registerStaffWithAccessCode({
   accessCode,
   fullName,

@@ -370,7 +370,7 @@ export default function KioskPage() {
                 </div>
               </div>
 
-              <form className="space-y-5 px-6 py-7 sm:px-8" onSubmit={handlePhoneSubmit}>
+              <form noValidate className="space-y-5 px-6 py-7 sm:px-8" onSubmit={handlePhoneSubmit}>
                 <div>
                   <label className="mb-1.5 block text-sm font-semibold text-white">
                     Phone number <span className="text-red-400">*</span>
@@ -542,7 +542,7 @@ export default function KioskPage() {
                 </p>
               </div>
 
-              <form className="space-y-5 px-6 py-7 sm:px-8" onSubmit={handleCheckIn}>
+              <form noValidate className="space-y-5 px-6 py-7 sm:px-8" onSubmit={handleCheckIn}>
                 <div>
                   <label className="mb-1.5 block text-sm font-semibold text-white">
                     Department <span className="text-red-400">*</span>

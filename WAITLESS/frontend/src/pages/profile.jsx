@@ -7,6 +7,7 @@ import {
   Edit3,
   IdCard,
   LoaderCircle,
+  Lock,
   Mail,
   Phone,
   Save,
@@ -19,7 +20,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { ProfilePhotoPicker } from "@/components/ProfilePhotoPicker";
 import { LoadingPanel } from "@/components/ui/system-loader";
-import { uploadStaffAvatar } from "@/services/authApi";
+import { changeStaffPassword, uploadStaffAvatar } from "@/services/authApi";
 import {
   formatStaffRoleLabel,
   getAvailableLandingPages,
@@ -69,6 +70,12 @@ export default function ProfilePage() {
     email: "",
     department: "",
   });
+  const [pwForm, setPwForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [pwSaving, setPwSaving] = useState(false);
 
   useEffect(() => {
     setFormState(buildPrefsForm(auth.user));
@@ -163,6 +170,34 @@ export default function ProfilePage() {
       toast.error(error.message || "Failed to update staff record");
     } finally {
       setRecordSaving(false);
+    }
+  }
+
+  async function handlePasswordChange(e) {
+    e.preventDefault();
+    if (!pwForm.currentPassword || !pwForm.newPassword) {
+      toast.error("Enter your current and new password");
+      return;
+    }
+    if (pwForm.newPassword.length < 10) {
+      toast.error("New password must be at least 10 characters");
+      return;
+    }
+    if (pwForm.newPassword !== pwForm.confirmPassword) {
+      toast.error("New passwords do not match");
+      return;
+    }
+    setPwSaving(true);
+    try {
+      await changeStaffPassword({
+        currentPassword: pwForm.currentPassword,
+        newPassword: pwForm.newPassword,
+      });
+      toast.success("Password changed — sign in again with the new password");
+      setTimeout(() => auth.logout(), 1200);
+    } catch (error) {
+      toast.error(error.message || "Failed to change password");
+      setPwSaving(false);
     }
   }
 
@@ -445,6 +480,70 @@ export default function ProfilePage() {
             >
               <Save className="h-3.5 w-3.5" />
               Save preferences
+            </button>
+          </div>
+        </form>
+
+        {/* Security / password */}
+        <form onSubmit={handlePasswordChange} className="surface-panel self-start xl:col-span-2">
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border/60 px-5 py-4">
+            <div className="flex items-center gap-3">
+              <span className="grid h-9 w-9 place-items-center rounded-lg bg-rose-500/15 text-rose-500">
+                <Lock className="h-4 w-4" />
+              </span>
+              <div>
+                <h2 className="font-display text-base font-bold">Security</h2>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Change your account password
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-4 p-5 sm:grid-cols-3">
+            <Field label="Current password">
+              <input
+                type="password"
+                autoComplete="current-password"
+                value={pwForm.currentPassword}
+                onChange={(e) => setPwForm((p) => ({ ...p, currentPassword: e.target.value }))}
+                className="input-base h-9 text-sm"
+                placeholder="Current password"
+              />
+            </Field>
+            <Field label="New password">
+              <input
+                type="password"
+                autoComplete="new-password"
+                value={pwForm.newPassword}
+                onChange={(e) => setPwForm((p) => ({ ...p, newPassword: e.target.value }))}
+                className="input-base h-9 text-sm"
+                placeholder="10+ characters"
+              />
+            </Field>
+            <Field label="Confirm new password">
+              <input
+                type="password"
+                autoComplete="new-password"
+                value={pwForm.confirmPassword}
+                onChange={(e) => setPwForm((p) => ({ ...p, confirmPassword: e.target.value }))}
+                className="input-base h-9 text-sm"
+                placeholder="Re-enter new password"
+              />
+            </Field>
+          </div>
+
+          <div className="flex items-center justify-between gap-3 border-t border-border/60 px-5 py-4">
+            <span className="text-xs text-muted-foreground">
+              You'll be signed out everywhere after changing it.
+            </span>
+            <button
+              type="submit"
+              disabled={pwSaving}
+              className="inline-flex items-center gap-1.5 rounded-lg gradient-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-elegant disabled:opacity-60"
+            >
+              {pwSaving ? <LoaderCircle className="h-3.5 w-3.5 animate-spin" /> : <Lock className="h-3.5 w-3.5" />}
+              {pwSaving ? "Updating…" : "Change password"}
             </button>
           </div>
         </form>

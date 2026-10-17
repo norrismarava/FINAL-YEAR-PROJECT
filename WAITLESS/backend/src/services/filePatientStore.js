@@ -108,6 +108,23 @@ export async function verifyPatientPassword(password, passwordHash) {
   return bcrypt.compare(password, passwordHash);
 }
 
+export async function listAllPatients() {
+  await ensureInitialized();
+  return loadPatients()
+    .slice()
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .map(({ password_hash, ...user }) => user);
+}
+
+export async function deletePatientUser(id) {
+  const users = loadPatients();
+  const idx = users.findIndex((u) => u.id === id);
+  if (idx < 0) return false;
+  users.splice(idx, 1);
+  savePatients(users);
+  return true;
+}
+
 export async function updatePatientUserRecord(id, patch) {
   const users = loadPatients();
   const idx = users.findIndex((u) => u.id === id);
