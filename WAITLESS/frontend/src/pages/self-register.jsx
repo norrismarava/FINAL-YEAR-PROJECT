@@ -458,7 +458,7 @@ export default function SelfRegisterPage() {
                   ) : (
                     <>
                       Pre-register
-                      <Clock3 className="h-4 w-4" />
+                      <Clock3 className="h-3.5 w-3.5" />
                     </>
                   )}
                 </button>
@@ -468,26 +468,24 @@ export default function SelfRegisterPage() {
                 Pre-register online and confirm your arrival at the reception desk to enter the queue.
               </p>
 
-              <div className="flex items-center justify-center gap-4 pt-2 text-xs text-slate-500">
+              <div className="flex flex-nowrap items-center justify-center gap-2 pt-2">
                 <Link
                   to="/track"
-                  className="inline-flex items-center gap-1.5 font-medium text-teal-300 hover:text-teal-200"
+                  className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-teal-300/25 bg-teal-400/[0.08] px-3 py-1.5 text-xs font-medium text-teal-200 transition-colors hover:border-teal-300/50 hover:bg-teal-400/[0.15] hover:text-white"
                 >
                   <Search className="h-3.5 w-3.5" />
                   Track an existing ticket
                 </Link>
-                <span className="text-white/20">|</span>
                 <Link
                   to="/queue"
-                  className="inline-flex items-center gap-1.5 font-medium text-teal-300 hover:text-teal-200"
+                  className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-teal-300/25 bg-teal-400/[0.08] px-3 py-1.5 text-xs font-medium text-teal-200 transition-colors hover:border-teal-300/50 hover:bg-teal-400/[0.15] hover:text-white"
                 >
                   <Clock3 className="h-3.5 w-3.5" />
                   View queue board
                 </Link>
-                <span className="text-white/20">|</span>
                 <Link
                   to="/"
-                  className="inline-flex items-center gap-1.5 font-medium text-teal-300 hover:text-teal-200"
+                  className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border border-teal-300/25 bg-teal-400/[0.08] px-3 py-1.5 text-xs font-medium text-teal-200 transition-colors hover:border-teal-300/50 hover:bg-teal-400/[0.15] hover:text-white"
                 >
                   <House className="h-3.5 w-3.5" />
                   Home

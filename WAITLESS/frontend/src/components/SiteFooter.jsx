@@ -6,6 +6,7 @@ import {
   Mail,
   MapPin,
   Siren,
+  ShieldCheck,
   Phone,
   Twitter,
 } from "lucide-react";
