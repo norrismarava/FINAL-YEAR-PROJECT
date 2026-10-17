@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertCircle, ArrowLeft, CheckCircle2, Mail } from "lucide-react";
+import { AlertCircle, ArrowLeft, Mail } from "lucide-react";
+
+import doneImage from "@/assets/OTHER/DONE.jpeg";
 
 import {
   AuthButton,
@@ -57,8 +59,8 @@ export default function ForgotPasswordPage() {
         }
       >
         <div className="space-y-5 text-center">
-          <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-green-400/18 text-green-100">
-            <CheckCircle2 className="h-8 w-8" />
+          <span className="mx-auto grid h-20 w-20 place-items-center overflow-hidden rounded-full bg-white shadow-[0_12px_32px_-10px_rgba(34,197,94,0.45)] ring-4 ring-emerald-400/20">
+            <img src={doneImage} alt="" className="h-full w-full object-cover" />
           </span>
           <AuthButton type="button" onClick={() => setSubmitted(false)}>
             Send another link
@@ -80,7 +82,7 @@ export default function ForgotPasswordPage() {
         </Link>
       }
     >
-      <form className="space-y-5" onSubmit={handleSubmit}>
+      <form noValidate className="space-y-5" onSubmit={handleSubmit}>
         <AuthError icon={AlertCircle} message={error} />
         <AuthInput
           icon={Mail}

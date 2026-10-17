@@ -94,6 +94,10 @@ export async function registerPatientAccount({
   if (!phone?.trim()) {
     throw new HttpError(400, "Phone number is required.");
   }
+  const trimmedNationalId = nationalId?.trim();
+  if (!trimmedNationalId) {
+    throw new HttpError(400, "National ID is required.");
+  }
   if (!password || password.length < 6) {
     throw new HttpError(400, "Password must be at least 6 characters.");
   }
@@ -107,13 +111,19 @@ export async function registerPatientAccount({
     if (existingEmail) {
       throw new HttpError(400, "A patient account with this email already exists.");
     }
+    const nationalIdTaken = (await filePatient.listAllPatients()).some(
+      (u) => u.national_id === trimmedNationalId,
+    );
+    if (nationalIdTaken) {
+      throw new HttpError(400, "A patient account with this ID number already exists.");
+    }
 
     const newUser = await filePatient.createPatientUserRecord({
       fullName: trimmedName,
       username: normalizedUsername,
       email: normalizedEmail,
       phone: phone.trim(),
-      nationalId: nationalId?.trim() || null,
+      nationalId: trimmedNationalId,
       dob: dob || null,
       gender: gender ?? "unknown",
       password,
@@ -140,15 +150,12 @@ export async function registerPatientAccount({
     throw new HttpError(400, "A patient account with this email already exists.");
   }
 
-  const trimmedNationalId = nationalId?.trim();
-  if (trimmedNationalId) {
-    const [nationalIdRows] = await pool.execute(
-      "SELECT id FROM patient_users WHERE national_id = ? LIMIT 1",
-      [trimmedNationalId],
-    );
-    if (nationalIdRows.length) {
-      throw new HttpError(400, "A patient account with this ID number already exists.");
-    }
+  const [nationalIdRows] = await pool.execute(
+    "SELECT id FROM patient_users WHERE national_id = ? LIMIT 1",
+    [trimmedNationalId],
+  );
+  if (nationalIdRows.length) {
+    throw new HttpError(400, "A patient account with this ID number already exists.");
   }
 
   const passwordHash = await bcrypt.hash(password, 10);
@@ -166,7 +173,7 @@ export async function registerPatientAccount({
       passwordHash,
       trimmedName,
       phone.trim(),
-      nationalId?.trim() || null,
+      trimmedNationalId,
       dob || null,
       gender ?? "unknown",
     ],
@@ -418,4 +425,51 @@ export async function changePatientPassword(req, currentPassword, newPassword) {
     "UPDATE patient_users SET password_hash = ? WHERE id = ?",
     [newHash, userId],
   );
+}
+
+export async function listPatientUsers() {
+  if (useFile) {
+    const users = await filePatient.listAllPatients();
+    return users.map(publicPatientUser);
+  }
+
+  const pool = getPool();
+  const [rows] = await pool.execute(
+    `SELECT id, username, email, full_name, phone, national_id, dob, gender,
+            avatar_url, created_at, last_login_at
+     FROM patient_users
+     ORDER BY created_at DESC`,
+  );
+  return rows.map(publicPatientUser);
+}
+
+export async function deletePatientAccount(id) {
+  let user;
+  if (useFile) {
+    const users = await filePatient.listAllPatients();
+    user = users.find((u) => u.id === id) ?? null;
+    if (!user) {
+      throw new HttpError(404, "Patient account not found.");
+    }
+    await filePatient.deletePatientUser(id);
+  } else {
+    const pool = getPool();
+    const [rows] = await pool.execute(
+      "SELECT * FROM patient_users WHERE id = ? LIMIT 1",
+      [id],
+    );
+    user = rows[0] ?? null;
+    if (!user) {
+      throw new HttpError(404, "Patient account not found.");
+    }
+    await pool.execute("DELETE FROM patient_users WHERE id = ?", [id]);
+  }
+
+  for (const [token, session] of patientSessions.entries()) {
+    if (session.user?.id === id) {
+      patientSessions.delete(token);
+    }
+  }
+
+  return publicPatientUser(user);
 }

@@ -24,11 +24,13 @@ export function useApiResource(loader, { enabled = true } = {}) {
 
     let cancelled = false;
 
+    // Silent refresh: when data already exists, keep it on screen and
+    // update in the background instead of flipping back to the loader.
     setState((current) => ({
       ...current,
       error: null,
       isError: false,
-      isLoading: true,
+      isLoading: !current.data,
     }));
 
     loader()

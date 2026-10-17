@@ -11,6 +11,9 @@ import {
   staffAccessCodeListController,
   staffRegisterController,
   staffSelfRegisterController,
+  staffUsersListController,
+  staffUserDeleteController,
+  staffChangePasswordController,
 } from "./controllers/authController.js";
 import { auditEventsController } from "./controllers/auditController.js";
 import {
@@ -24,6 +27,10 @@ import {
   patientChangePasswordController,
   patientForgotPasswordController,
   patientResetPasswordController,
+  patientUsersListController,
+  patientUserDeleteController,
+  patientDirectoryController,
+  patientHistoryController,
 } from "./controllers/patientAuthController.js";
 
 import {
@@ -213,6 +220,31 @@ router.register(
 );
 router.register(
   "GET",
+  "/api/auth/staff",
+  withStaffAuth(["admin"], staffUsersListController),
+);
+router.register(
+  "DELETE",
+  "/api/auth/staff/:id",
+  withStaffAuth(["admin"], staffUserDeleteController),
+);
+router.register(
+  "POST",
+  "/api/auth/change-password",
+  withStaffAuth([], staffChangePasswordController),
+);
+router.register(
+  "GET",
+  "/api/patients",
+  withStaffAuth(["admin"], patientUsersListController),
+);
+router.register(
+  "DELETE",
+  "/api/patients/:id",
+  withStaffAuth(["admin"], patientUserDeleteController),
+);
+router.register(
+  "GET",
   "/api/audit-events",
   withStaffAuth(["admin"], auditEventsController),
 );
@@ -279,6 +311,16 @@ router.register(
   "GET",
   "/api/patients/search",
   withStaffAuth(["reception"], patientSearchController),
+);
+router.register(
+  "GET",
+  "/api/patients/directory",
+  withStaffAuth([], patientDirectoryController),
+);
+router.register(
+  "GET",
+  "/api/patients/history",
+  withStaffAuth([], patientHistoryController),
 );
 router.register(
   "PATCH",

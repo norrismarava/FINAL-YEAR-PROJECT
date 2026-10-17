@@ -214,6 +214,15 @@ export async function listAllStaff() {
   return loadStaff();
 }
 
+export async function deleteStaff(id) {
+  const users = loadStaff();
+  const idx = users.findIndex((u) => u.id === id);
+  if (idx < 0) return false;
+  users.splice(idx, 1);
+  saveStaff(users);
+  return true;
+}
+
 export async function updateStaffProfile(id, patch) {
   const users = loadStaff();
   const idx = users.findIndex((u) => u.id === id);

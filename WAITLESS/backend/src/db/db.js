@@ -15,6 +15,7 @@ export function getPool() {
       connectionLimit: env.databaseConnectionLimit,
       enableKeepAlive: true,
       keepAliveInitialDelay: 0,
+      ...(env.databaseSsl ? { ssl: { minVersion: "TLSv1.2" } } : {}),
     });
   }
   return pool;

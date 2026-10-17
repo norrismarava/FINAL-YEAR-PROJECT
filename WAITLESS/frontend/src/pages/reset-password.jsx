@@ -87,7 +87,7 @@ export default function ResetPasswordPage() {
       title="Create new password"
       subtitle="Choose a strong password before returning to the WaitLess staff console."
     >
-      <form className="space-y-5" onSubmit={handleSubmit}>
+      <form noValidate className="space-y-5" onSubmit={handleSubmit}>
         <AuthError icon={AlertCircle} message={error} />
 
         <PasswordInput

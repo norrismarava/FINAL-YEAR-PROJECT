@@ -16,10 +16,8 @@ import {
 } from "lucide-react";
 
 import { AuthButton, AuthError, AuthInput, AuthSelect, AuthShell } from "@/components/AuthShell";
-import { ProfileCompleteness } from "@/components/ProfileCompleteness";
-import { ProfilePhotoPicker } from "@/components/ProfilePhotoPicker";
 import { createStaffAccessCode, listStaffAccessCodes, registerStaffAccount } from "@/services/authApi";
-import { getStaffInitials } from "@/services/staffProfilePrefs";
+
 
 const DEPARTMENTS = [
   "OPD",
@@ -41,88 +39,131 @@ const ROLES = [
 ];
 
 const INITIAL_FORM = {
-  fullName: "",
+  firstName: "",
+  lastName: "",
   username: "",
   email: "",
   phone: "",
-  department: "",
   role: "nurse",
-  employeeId: "",
+  department: "OPD",
   password: "",
-  confirmPassword: "",
-  avatarBase64: "",
-  avatarPreview: "",
 };
 
-export default function StaffRegisterPage() {
-  const [formData, setFormData] = useState(INITIAL_FORM);
+/**
+ * Compact staff-creation form — credentials, role, department and a
+ * temporary password the user changes from their own account later.
+ * Used on /admin/staff and in the Users page modal.
+ */
+export function CreateStaffUserForm({ onSuccess, onCancel }) {
+  const [form, setForm] = useState(INITIAL_FORM);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
-  const profileCompletion = Math.round(
-    ([
-      formData.fullName,
-      formData.username,
-      formData.email,
-      formData.phone,
-      formData.department,
-      formData.employeeId,
-      formData.password,
-      formData.confirmPassword,
-      formData.avatarBase64,
-    ].filter((value) => String(value).trim()).length /
-      9) *
-      100,
-  );
+
+  const set = (key) => (event) => setForm((f) => ({ ...f, [key]: event.target.value }));
 
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
 
-    if (formData.password !== formData.confirmPassword) {
-      setError("Passwords do not match");
+    const fullName = `${form.firstName} ${form.lastName}`.trim();
+    if (!form.firstName.trim() || !form.lastName.trim()) {
+      setError("Enter the staff member's first and last name.");
       return;
     }
-
-    if (formData.password.length < 10) {
-      setError("Password must be at least 10 characters long.");
+    if (!/^[A-Za-z0-9._-]{3,32}$/.test(form.username.trim())) {
+      setError("Username must be 3-32 characters: letters, numbers, dots, dashes or underscores.");
       return;
     }
-
+    if (!form.email.trim()) {
+      setError("Email address is required.");
+      return;
+    }
+    if (form.password.length < 10) {
+      setError("Temporary password must be at least 10 characters long.");
+      return;
+    }
     const charGroups = [
-      /[a-z]/.test(formData.password),
-      /[A-Z]/.test(formData.password),
-      /\d/.test(formData.password),
-      /[^A-Za-z0-9]/.test(formData.password),
+      /[a-z]/.test(form.password),
+      /[A-Z]/.test(form.password),
+      /\d/.test(form.password),
+      /[^A-Za-z0-9]/.test(form.password),
     ].filter(Boolean).length;
-
     if (charGroups < 3) {
       setError("Password must include at least three of: uppercase letters, lowercase letters, numbers, and symbols.");
       return;
     }
 
     setLoading(true);
-
     try {
-      await registerStaffAccount({
-        fullName: formData.fullName,
-        username: formData.username,
-        email: formData.email,
-        phone: formData.phone,
-        department: formData.department,
-        role: formData.role,
-        employeeId: formData.employeeId,
-        password: formData.password,
-        avatarBase64: formData.avatarBase64 || undefined,
+      const result = await registerStaffAccount({
+        fullName,
+        username: form.username.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        department: form.department,
+        role: form.role,
+        password: form.password,
       });
-
-      setSuccess(true);
+      onSuccess?.(result?.user ?? result?.staff ?? result ?? null);
+      setForm(INITIAL_FORM);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
   }
+
+  return (
+    <div className="space-y-4">
+      <AuthError icon={AlertCircle} message={error} />
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <AuthInput icon={User} label="First name" name="firstName" type="text" required placeholder="First name" value={form.firstName} onChange={set("firstName")} />
+        <AuthInput icon={User} label="Last name" name="lastName" type="text" required placeholder="Last name" value={form.lastName} onChange={set("lastName")} />
+        <AuthInput icon={AtSign} label="Username" name="username" type="text" required maxLength={32} autoComplete="off" placeholder="Username" value={form.username} onChange={set("username")} />
+        <AuthInput icon={Mail} label="Email" name="email" type="email" required placeholder="Email address" value={form.email} onChange={set("email")} />
+        <AuthSelect icon={Shield} label="Role" name="role" value={form.role} onChange={set("role")}>
+          {ROLES.map((role) => (
+            <option key={role.value} value={role.value}>
+              {role.label}
+            </option>
+          ))}
+        </AuthSelect>
+        <AuthSelect icon={Building} label="Department" name="department" value={form.department} onChange={set("department")}>
+          {DEPARTMENTS.map((department) => (
+            <option key={department} value={department}>
+              {department}
+            </option>
+          ))}
+        </AuthSelect>
+        <AuthInput icon={Phone} label="Phone number" name="phone" type="tel" placeholder="+263 77 000 0000" value={form.phone} onChange={set("phone")} />
+        <AuthInput icon={Lock} label="Temporary password" name="password" type="password" required minLength={10} maxLength={72} autoComplete="new-password" placeholder="Temporary password" value={form.password} onChange={set("password")} />
+      </div>
+
+      <p className="rounded-lg border border-white/10 bg-white/5 px-4 py-2.5 text-xs leading-relaxed text-slate-300">
+        The staff member signs in with this temporary password once, then sets their own password from their account settings.
+      </p>
+
+      <div className="flex gap-3">
+        <AuthButton type="submit" loading={loading} className="flex-1">
+          Create user
+        </AuthButton>
+        {onCancel ? (
+          <button
+            type="button"
+            onClick={onCancel}
+            className="inline-flex h-12 items-center justify-center rounded-xl border border-white/15 bg-white/5 px-6 text-sm font-semibold text-slate-200 transition hover:bg-white/10"
+          >
+            Cancel
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+export default function StaffRegisterPage() {
+  const [success, setSuccess] = useState(false);
 
   if (success) {
     return (
@@ -131,8 +172,8 @@ export default function StaffRegisterPage() {
         title="Account created"
         subtitle="The staff profile is ready for secure WaitLess access."
         footer={
-          <Link to="/admin/dashboard" className="font-semibold text-cyan-100 hover:text-white">
-            Return to the staff dashboard
+          <Link to="/admin/users" className="font-semibold text-cyan-100 hover:text-white">
+            View all staff accounts
           </Link>
         }
       >
@@ -142,10 +183,7 @@ export default function StaffRegisterPage() {
           </span>
           <button
             type="button"
-            onClick={() => {
-              setSuccess(false);
-              setFormData(INITIAL_FORM);
-            }}
+            onClick={() => setSuccess(false)}
             className="inline-flex h-12 w-full items-center justify-center rounded-xl border border-white/14 bg-white/10 px-4 text-sm font-bold uppercase tracking-[0.08em] text-white transition hover:bg-white/15"
           >
             Register another staff member
@@ -160,181 +198,15 @@ export default function StaffRegisterPage() {
       eyebrow="Staff onboarding"
       title="Create staff access"
       subtitle="Add a secure user profile with department and role permissions for the hospital workflow."
-      wide
       footer="Administrator-only account provisioning."
     >
-      <form className="space-y-5" onSubmit={handleSubmit}>
-        <AuthError icon={AlertCircle} message={error} />
-
-        <div className="grid items-center gap-6 border-b border-white/10 pb-6 sm:grid-cols-[12rem_minmax(0,1fr)]">
-          <ProfilePhotoPicker
-            value={formData.avatarPreview}
-            initials={getStaffInitials(formData.fullName || "New staff")}
-            onImageReady={({ base64, dataUrl }) =>
-              setFormData((current) => ({
-                ...current,
-                avatarBase64: base64,
-                avatarPreview: dataUrl,
-              }))
-            }
-            label="Choose staff profile photo"
-            size="compact"
-          />
-          <div>
-            <div className="text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-100/65">
-              Profile photo
-            </div>
-            <h2 className="mt-2 font-display text-xl font-bold text-white">
-              Give this account a recognisable face
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-slate-300">
-              The photo will appear in the staff header, profile, and account menu.
-            </p>
-            <ProfileCompleteness value={profileCompletion} className="mt-5" />
-          </div>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <AuthInput
-            icon={User}
-            label="Full name"
-            name="fullName"
-            type="text"
-            required
-            placeholder="Dr. Sarah Chenaka"
-            value={formData.fullName}
-            onChange={(event) => setFormData({ ...formData, fullName: event.target.value })}
-          />
-
-          <AuthInput
-            icon={AtSign}
-            label="Username"
-            name="username"
-            type="text"
-            required
-            minLength={3}
-            maxLength={32}
-            pattern="[A-Za-z0-9._-]+"
-            autoComplete="username"
-            placeholder="sarah.chenaka"
-            value={formData.username}
-            onChange={(event) => setFormData({ ...formData, username: event.target.value })}
-          />
-
-          <AuthInput
-            icon={Mail}
-            label="Email address"
-            name="email"
-            type="email"
-            required
-            placeholder="sarah.chenaka@hospital.gov.zw"
-            value={formData.email}
-            onChange={(event) => setFormData({ ...formData, email: event.target.value })}
-          />
-
-          <AuthInput
-            icon={Phone}
-            label="Phone number"
-            name="phone"
-            type="tel"
-            required
-            placeholder="+263 77 123 4567"
-            value={formData.phone}
-            onChange={(event) => setFormData({ ...formData, phone: event.target.value })}
-          />
-
-          <AuthInput
-            icon={Shield}
-            label="Employee ID"
-            name="employeeId"
-            type="text"
-            required
-            placeholder="EMP-2026-001"
-            value={formData.employeeId}
-            onChange={(event) => setFormData({ ...formData, employeeId: event.target.value })}
-          />
-
-          <AuthSelect
-            icon={Building}
-            label="Department"
-            name="department"
-            required
-            value={formData.department}
-            onChange={(event) => setFormData({ ...formData, department: event.target.value })}
-          >
-            <option value="">Select department</option>
-            {DEPARTMENTS.map((department) => (
-              <option key={department} value={department}>
-                {department}
-              </option>
-            ))}
-          </AuthSelect>
-
-          <AuthSelect
-            icon={Shield}
-            label="Role"
-            name="role"
-            required
-            value={formData.role}
-            onChange={(event) => setFormData({ ...formData, role: event.target.value })}
-          >
-            {ROLES.map((role) => (
-              <option key={role.value} value={role.value}>
-                {role.label}
-              </option>
-            ))}
-          </AuthSelect>
-
-          <AuthInput
-            icon={Lock}
-            label="Password"
-            name="password"
-            type="password"
-            required
-            minLength={10}
-            maxLength={72}
-            autoComplete="new-password"
-            placeholder="10+ chars, 3 of: A-Z, a-z, 0-9, !@#"
-            value={formData.password}
-            onChange={(event) => setFormData({ ...formData, password: event.target.value })}
-          />
-
-          <AuthInput
-            icon={Lock}
-            label="Confirm password"
-            name="confirmPassword"
-            type="password"
-            required
-            minLength={10}
-            maxLength={72}
-            autoComplete="new-password"
-            placeholder="Repeat your password"
-            value={formData.confirmPassword}
-            onChange={(event) => setFormData({ ...formData, confirmPassword: event.target.value })}
-          />
-
-          <div className="col-span-full rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-xs leading-relaxed text-slate-300">
-            <p className="font-semibold text-cyan-100/80">Password requirements:</p>
-            <ul className="mt-1.5 space-y-0.5">
-              <li>• At least 10 characters</li>
-              <li>• At least 3 of: uppercase letter, lowercase letter, number, symbol</li>
-              <li>• Not a commonly used password</li>
-            </ul>
-          </div>
-        </div>
-
-        <AuthButton type="submit" loading={loading}>
-          Create staff account
-        </AuthButton>
-      </form>
-
-      <AccessCodePanel />
+      <CreateStaffUserForm onSuccess={() => setSuccess(true)} />
     </AuthShell>
   );
 }
 
-function AccessCodePanel() {
-  const [open, setOpen] = useState(false);
+export function AccessCodePanel({ standalone = false }) {
+  const [open, setOpen] = useState(standalone);
   const [form, setForm] = useState({ role: "nurse", department: "", note: "" });
   const [codes, setCodes] = useState([]);
   const [latest, setLatest] = useState(null);
@@ -377,21 +249,23 @@ function AccessCodePanel() {
   }
 
   return (
-    <div className="mt-8 border-t border-white/10 pt-6">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between text-left"
-      >
-        <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-100/65">
-          <KeyRound className="h-4 w-4" />
-          Or invite via staff access code
-        </span>
-        <span className="text-xs font-semibold text-cyan-100">{open ? "Hide" : "Show"}</span>
-      </button>
+    <div className={standalone ? "" : "mt-8 border-t border-white/10 pt-6"}>
+      {standalone ? null : (
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex w-full items-center justify-between text-left"
+        >
+          <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-cyan-100/65">
+            <KeyRound className="h-4 w-4" />
+            Or invite via staff access code
+          </span>
+          <span className="text-xs font-semibold text-cyan-100">{open ? "Hide" : "Show"}</span>
+        </button>
+      )}
 
       {open ? (
-        <div className="mt-5 space-y-4">
+        <div className={standalone ? "space-y-4" : "mt-5 space-y-4"}>
           <p className="text-sm leading-6 text-slate-300">
             Generate a one-time access code, send it to the staff member, and they
             create their own account at{" "}

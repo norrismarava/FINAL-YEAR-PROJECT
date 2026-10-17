@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-const DEFAULT_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+const DEFAULT_TIMEOUT_MS = 10 * 60 * 1000; // 10 minutes of inactivity
 const DEFAULT_WARNING_MS = 60 * 1000; // 1 minute warning
 const ACTIVITY_EVENTS = ["mousedown", "keydown", "touchstart", "scroll", "mousemove"];
 

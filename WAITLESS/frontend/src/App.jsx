@@ -28,6 +28,9 @@ const ResetPasswordPage = lazy(() => import("@/pages/reset-password"));
 const SettingsPage = lazy(() => import("@/pages/settings"));
 const StaffRegisterPage = lazy(() => import("@/pages/staff-register"));
 const StaffSignupPage = lazy(() => import("@/pages/staff-signup"));
+const UsersPage = lazy(() => import("@/pages/users"));
+const StaffAccessCodesPage = lazy(() => import("@/pages/staff-access-codes"));
+const PatientsPage = lazy(() => import("@/pages/patients"));
 const TrackPage = lazy(() => import("@/pages/track"));
 const TriagePage = lazy(() => import("@/pages/triage"));
 const DepartmentBoardPage = lazy(() => import("@/pages/department-board"));
@@ -234,6 +237,30 @@ export default function App() {
             element={
               <ProtectedRoute roles={["admin"]}>
                 <StaffRegisterPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="users"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <UsersPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="patients"
+            element={
+              <ProtectedRoute>
+                <PatientsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="access-codes"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <StaffAccessCodesPage />
               </ProtectedRoute>
             }
           />

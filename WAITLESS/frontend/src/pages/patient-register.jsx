@@ -68,6 +68,10 @@ export default function PatientRegisterPage() {
       setError(t("register.errorPhone"));
       return;
     }
+    if (!form.nationalId.trim()) {
+      setError(t("register.errorNationalId"));
+      return;
+    }
     if (!form.password || form.password.length < 6) {
       setError(t("register.errorPassword"));
       return;
@@ -121,7 +125,7 @@ export default function PatientRegisterPage() {
         </>
       }
     >
-      <form className="space-y-4" onSubmit={handleSubmit}>
+      <form className="space-y-4" onSubmit={handleSubmit} noValidate>
         {error ? (
           <div className="flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-300">
             <AlertCircle className="h-4 w-4 shrink-0" />
@@ -212,13 +216,16 @@ export default function PatientRegisterPage() {
 
           {/* National ID */}
           <div>
-            <label className="mb-1.5 block text-sm font-semibold text-white">{t("register.nationalId")}</label>
+            <label className="mb-1.5 block text-sm font-semibold text-white">
+              {t("register.nationalId")} <span className="text-red-400">*</span>
+            </label>
             <input
               type="text"
               name="nationalId"
               value={form.nationalId}
               onChange={handleChange}
               placeholder={t("register.nationalIdPlaceholder")}
+              required
               className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
             />
           </div>
