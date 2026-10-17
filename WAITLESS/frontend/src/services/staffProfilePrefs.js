@@ -133,7 +133,7 @@ export function resolveStaffLandingPath(user) {
   }
 
   if (user.role === "reception" || user.role === "receptionist") {
-    return "/admin/register";
+    return "/admin/queue";
   }
 
   if (user.role === "triage") {

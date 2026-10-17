@@ -80,7 +80,7 @@ import {
 const navItems = [
   { to: "/", label: "Home", icon: House },
   { to: "/self-register", label: "Check In", icon: ShieldPlus },
-  { to: "/admin/register", label: "Register", roles: ["reception"], icon: ShieldPlus },
+  { to: "/admin/register", label: "Register", roles: ["reception", "receptionist"], icon: ShieldPlus },
   { to: "/track", label: "Track Ticket", icon: Ticket },
   { to: "/admin/triage", label: "Triage", roles: ["triage"], icon: Stethoscope },
   { to: "/queue", label: "Queue Board", icon: Search },
@@ -88,7 +88,7 @@ const navItems = [
     to: "/admin/settings",
     label: "Settings",
     icon: Settings2,
-    roles: ["admin", "triage", "clinician", "reception"],
+    roles: ["admin", "triage", "clinician", "reception", "receptionist"],
   },
   {
     to: "/admin/dashboard",
@@ -111,7 +111,7 @@ const STAFF_WORKSPACE_ITEMS = [
     to: "/admin/register",
     label: "Register Patient",
     icon: ShieldPlus,
-    roles: ["reception"],
+    roles: ["reception", "receptionist"],
   },
 
   { group: "Main", to: "/admin/queue", label: "Queue Board", icon: Search },

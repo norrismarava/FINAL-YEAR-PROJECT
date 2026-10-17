@@ -98,7 +98,7 @@ export default function App() {
           <Route
             path="register"
             element={
-              <ProtectedRoute roles={["reception"]}>
+              <ProtectedRoute roles={["reception", "receptionist"]}>
                 <RegisterPage />
               </ProtectedRoute>
             }
@@ -275,7 +275,7 @@ export default function App() {
           <Route
             path="settings"
             element={
-              <ProtectedRoute roles={["admin", "triage", "clinician", "reception"]}>
+              <ProtectedRoute roles={["admin", "triage", "clinician", "reception", "receptionist"]}>
                 <SettingsPage />
               </ProtectedRoute>
             }

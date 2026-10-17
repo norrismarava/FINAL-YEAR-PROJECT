@@ -1,10 +1,11 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthProvider";
+import { resolveStaffLandingPath } from "../services/staffProfilePrefs";
 import { LogoLoader } from "@/components/LogoLoader";
 
 export function ProtectedRoute({ children, roles }) {
-  const { isAuthenticated, isReady, hasRole } = useAuth();
+  const { isAuthenticated, isReady, hasRole, user } = useAuth();
   const navigate = useNavigate();
 
   const hasRequiredRole = !roles || hasRole(roles);
@@ -15,9 +16,9 @@ export function ProtectedRoute({ children, roles }) {
       return;
     }
     if (isReady && isAuthenticated && roles && !hasRole(roles)) {
-      navigate("/admin/dashboard");
+      navigate(resolveStaffLandingPath(user));
     }
-  }, [isAuthenticated, isReady, roles, hasRole, navigate]);
+  }, [isAuthenticated, isReady, roles, hasRole, user, navigate]);
 
   if (!isReady) {
     return (
