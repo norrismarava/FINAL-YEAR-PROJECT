@@ -67,6 +67,8 @@ import {
   fetchReassessmentAlerts,
   fetchBottleneckAnalysis,
   recallTicket,
+  callNextPatient,
+  updateTicketStatus,
   retryNotificationDelivery,
   updatePrescriptionState,
   updateTestOrderState,
@@ -84,6 +86,7 @@ import {
   importSyncData,
   createBackup,
 } from "@/services/queueApi";
+import { useAuth } from "@/auth/AuthProvider";
 import { useQueueRealtime } from "@/sockets/QueueRealtimeProvider";
 import { exportCSV, exportPDF, exportXLSX } from "@/utils/reportExport";
 import deptOpdImage from "@/assets/Every service point, one queue/TRY OPD.jpeg";
@@ -175,6 +178,8 @@ function MetricTile({ label, value, detail, icon: Icon, accent = "text-teal-300 
 
 export function StaffQueueBoardPage() {
   const realtime = useQueueRealtime();
+  const auth = useAuth();
+  const { refreshLiveData } = useLiveRefresh();
   const loader = useCallback(() => fetchStaffQueueBoard(), []);
   const query = useApiResource(loader, { enabled: isBrowser });
   const serving = query.data?.nowServing ?? EMPTY_LIST;
@@ -185,6 +190,33 @@ export function StaffQueueBoardPage() {
   const avgServiceTime = query.data?.avgServiceTimeMinutes ?? null;
   const isLive = realtime.status === "connected";
 
+  const staffDept = DEPARTMENTS.includes(auth.user?.department)
+    ? auth.user.department
+    : DEPARTMENTS[0];
+  const [callDept, setCallDept] = useState(staffDept);
+  const callMutation = useApiAction(callNextPatient, {
+    onSuccess: (res) => {
+      refreshLiveData();
+      toast.success(`${res?.ticket?.ticket ?? "Ticket"} called to ${res?.ticket?.department ?? callDept}.`);
+    },
+  });
+  const statusMutation = useApiAction(
+    ({ id, status }) => updateTicketStatus(id, status),
+    {
+      onSuccess: (res) => {
+        refreshLiveData();
+        toast.success(`${res?.ticket?.ticket ?? "Ticket"} → ${res?.ticket?.status}.`);
+      },
+    },
+  );
+
+  const deptWaitingCount = waiting.filter((t) => t.department === callDept).length;
+  const mutationError = callMutation.error?.message ?? statusMutation.error?.message;
+
+  function setTicketStatus(ticket, status) {
+    statusMutation.mutate({ id: ticket.id, status });
+  }
+
   return (
     <ModulePage
       eyebrow="Live operations"
@@ -193,6 +225,40 @@ export function StaffQueueBoardPage() {
       icon={Users}
     >
       <QueryBoundary query={query} title="Loading the queue board">
+        {/* Call controls */}
+        <div className="surface-panel mb-5 flex flex-wrap items-center gap-3 p-3">
+          <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Call next in</span>
+            <select
+              value={callDept}
+              onChange={(e) => setCallDept(e.target.value)}
+              className="input-base h-9 w-auto text-xs"
+            >
+              {DEPARTMENTS.map((dept) => (
+                <option key={dept} value={dept}>{dept}</option>
+              ))}
+            </select>
+          </label>
+          <span className="text-xs text-muted-foreground">
+            {deptWaitingCount} waiting
+          </span>
+          <button
+            type="button"
+            disabled={callMutation.isPending || !deptWaitingCount}
+            onClick={() => callMutation.mutate(callDept)}
+            className="inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-bold uppercase tracking-wider text-primary-foreground transition hover:brightness-110 disabled:opacity-50"
+          >
+            {callMutation.isPending ? (
+              <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <BellRing className="h-3.5 w-3.5" />
+            )}
+            Call next patient
+          </button>
+          {mutationError ? (
+            <span className="text-xs font-semibold text-destructive">{mutationError}</span>
+          ) : null}
+        </div>
         {/* KPI row */}
         <div className="grid gap-4 sm:grid-cols-3">
           <AdminMetricTile
@@ -262,7 +328,12 @@ export function StaffQueueBoardPage() {
             {serving.length ? (
               <div className="grid gap-3 p-5 sm:grid-cols-2">
                 {serving.map((ticket) => (
-                  <ServingTile key={ticket.id} ticket={ticket} />
+                  <ServingTile
+                    key={ticket.id}
+                    ticket={ticket}
+                    pending={statusMutation.isPending}
+                    onStatus={setTicketStatus}
+                  />
                 ))}
               </div>
             ) : (
@@ -355,7 +426,9 @@ const PRIORITY_TOP_BAR = {
   black: "bg-priority-black",
 };
 
-function ServingTile({ ticket }) {
+function ServingTile({ ticket, onStatus, pending }) {
+  const isCalled = ticket.status === "called";
+  const inService = ticket.status === "in-service";
   return (
     <article className="relative overflow-hidden rounded-xl border border-border/70 bg-background/60 p-4">
       <div
@@ -380,6 +453,43 @@ function ServingTile({ ticket }) {
         <Clock3 className="h-3.5 w-3.5" />
         {ticket.waitMinutes}m in service
       </div>
+      {onStatus ? (
+        <div className="mt-3 flex flex-wrap gap-2">
+          {isCalled ? (
+            <>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => onStatus(ticket, "in-service")}
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-primary px-3 text-[11px] font-bold uppercase tracking-wider text-primary-foreground transition hover:brightness-110 disabled:opacity-50"
+              >
+                <Activity className="h-3 w-3" />
+                Start service
+              </button>
+              <button
+                type="button"
+                disabled={pending}
+                onClick={() => onStatus(ticket, "missed")}
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-destructive/40 px-3 text-[11px] font-bold uppercase tracking-wider text-destructive transition hover:bg-destructive/10 disabled:opacity-50"
+              >
+                <XCircle className="h-3 w-3" />
+                Mark missed
+              </button>
+            </>
+          ) : null}
+          {inService ? (
+            <button
+              type="button"
+              disabled={pending}
+              onClick={() => onStatus(ticket, "completed")}
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-[11px] font-bold uppercase tracking-wider text-white transition hover:brightness-110 disabled:opacity-50"
+            >
+              <CheckCircle2 className="h-3 w-3" />
+              Complete visit
+            </button>
+          ) : null}
+        </div>
+      ) : null}
     </article>
   );
 }

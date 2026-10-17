@@ -37,6 +37,22 @@ export async function fetchPatientTickets() {
   return response.tickets;
 }
 
+export async function patientCheckIn(payload) {
+  const response = await apiRequest("/api/patient/check-in", {
+    method: "POST",
+    body: payload,
+  });
+  return response.ticket;
+}
+
+export async function patientPreRegister(payload) {
+  const response = await apiRequest("/api/patient/pre-register", {
+    method: "POST",
+    body: payload,
+  });
+  return response.ticket;
+}
+
 export async function fetchPatientProfileCard() {
   return apiRequest("/api/patient/profile-card");
 }

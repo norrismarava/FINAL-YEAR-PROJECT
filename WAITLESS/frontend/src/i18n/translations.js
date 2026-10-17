@@ -9,6 +9,9 @@ export const translations = {
     "nav.feedback": "Feedback",
     "nav.profile": "My Profile",
     "nav.settings": "Settings",
+    "nav.track": "Track Ticket",
+    "nav.queueBoard": "Queue Board",
+    "nav.updates": "Updates",
     "nav.signout": "Sign out",
 
     // Patient login
@@ -99,7 +102,7 @@ export const translations = {
 
     // Patient dashboard
     "dashboard.title": "My Dashboard",
-    "dashboard.subtitle": "Here's an overview of your hospital visits and queue activity.",
+    "dashboard.subtitle": "We hope you're feeling better today, we're here to take good care of you.",
     "dashboard.myTickets": "My Tickets",
     "dashboard.profileCard": "Profile Card",
     "dashboard.visitHistory": "Visit History",
@@ -374,6 +377,9 @@ export const translations = {
     "nav.feedback": "Mashoko",
     "nav.profile": "Profail Yangu",
     "nav.settings": "Mamiriro",
+    "nav.track": "Tevera Tikiti",
+    "nav.queueBoard": "Bhodhi reMudzimu",
+    "nav.updates": "Zvitsva",
     "nav.signout": "Buda",
 
     // Patient login
@@ -464,7 +470,7 @@ export const translations = {
 
     // Patient dashboard
     "dashboard.title": "Dhasibhodhi Yangu",
-    "dashboard.subtitle": "Tarisisa yokuendera kwako kuchipatara nekuita kwako mumudzimu.",
+    "dashboard.subtitle": "Tinovimba kuti muri kunzwa zviri nani nhasi — tiri pano kuzokuchengetai.",
     "dashboard.myTickets": "Matikiti Angu",
     "dashboard.profileCard": "Kadhi yeProfail",
     "dashboard.visitHistory": "Histori Yekuendera",
@@ -739,6 +745,9 @@ export const translations = {
     "nav.feedback": "Izimpendulo",
     "nav.profile": "Iphrofayela Yami",
     "nav.settings": "Izilungiselelo",
+    "nav.track": "Landelela Itikithi",
+    "nav.queueBoard": "Ibhodi Lomugqa",
+    "nav.updates": "Iindaba",
     "nav.signout": "Phuma",
 
     // Patient login
@@ -829,7 +838,7 @@ export const translations = {
 
     // Patient dashboard
     "dashboard.title": "Idashebho Lami",
-    "dashboard.subtitle": "Ukubukisisa kokuvakasha kwakho esibhedlela nensebenzo yakho esilandelweni.",
+    "dashboard.subtitle": "Sithemba ukuthi uzizwa ngcono namuhla — silapha ukukunakekela kuhle.",
     "dashboard.myTickets": "Amathikithi Ami",
     "dashboard.profileCard": "Ikhadi Lephrofayela",
     "dashboard.visitHistory": "Umlando Wokuvakasha",

@@ -127,8 +127,8 @@ const STAFF_WORKSPACE_ITEMS = [
   { group: "Clinical", to: "/admin/appointments", label: "Appointments", icon: CalendarDays },
   { group: "Clinical", to: "/admin/follow-ups", label: "Follow-ups", icon: CalendarDays },
   { group: "Clinical", to: "/admin/reminders", label: "Reminders", icon: Send },
-  { group: "Clinical", to: "/admin/pharmacy", label: "Pharmacy", icon: Pill, roles: ["clinician", "triage"] },
-  { group: "Clinical", to: "/admin/laboratory", label: "Laboratory", icon: FlaskConical, roles: ["clinician", "triage"] },
+  { group: "Clinical", to: "/admin/pharmacy", label: "Pharmacy", icon: Pill, roles: ["clinician", "triage", "pharmacist"] },
+  { group: "Clinical", to: "/admin/laboratory", label: "Laboratory", icon: FlaskConical, roles: ["clinician", "triage", "lab-tech", "radiologist"] },
   { group: "Clinical", to: "/admin/oi-clinic", label: "OI Clinic", icon: HeartPulse, roles: ["clinician", "triage"] },
   { group: "Insights", to: "/admin/reports", label: "Reports", icon: FileChartColumn },
   {
@@ -644,11 +644,19 @@ function Header({ onOpenMobileNav }) {
                   </Link>
                 ) : null}
                 {!isStaffWorkspaceTheme && patientAuth.isPatientAuthenticated ? (
-                  <PatientAccountMenu
-                    patientAuth={patientAuth}
-                    isPublicGlassRoute={isPublicGlassRoute}
-                    isDark={isDarkHeader}
-                  />
+                  <Link
+                    to="/patient/dashboard"
+                    className={`inline-flex h-11 items-center gap-2 rounded-full px-5 text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5 ${
+                      isPublicGlassRoute
+                        ? "border border-teal-200/50 bg-white/40 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_6px_18px_rgba(15,118,110,0.08)] backdrop-blur-md hover:bg-white/55"
+                        : isDarkHeader
+                          ? "border border-cyan-200/15 bg-white/8 text-cyan-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur hover:border-cyan-200/25 hover:bg-white/12 hover:text-white"
+                          : "border border-primary/20 bg-primary-soft/70 text-primary hover:border-primary/30 hover:bg-primary-soft"
+                    }`}
+                  >
+                    <LayoutDashboard className="h-3.5 w-3.5" />
+                    Patient portal
+                  </Link>
                 ) : null}
                 {!isStaffWorkspaceTheme && !patientAuth.isPatientAuthenticated ? (
                   auth.isAuthenticated ? (

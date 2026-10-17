@@ -26,7 +26,7 @@ import { Html5Qrcode } from "html5-qrcode";
 import authBackground from "@/assets/BACKG.png";
 import waitlessLogoIcon from "@/assets/waitless-logo-icon.png";
 import { DEPARTMENTS } from "@/services/queueMeta";
-import { kioskCheckIn, kioskLookup } from "@/services/queueApi";
+import { kioskActivate, kioskCheckIn, kioskLookup } from "@/services/queueApi";
 import { useLiveRefresh } from "@/context/LiveRefreshContext";
 import {
   printQueueTicket,
@@ -164,6 +164,24 @@ export default function KioskPage() {
 
   function handleProceedToDepartment() {
     setStep(STEPS.DEPARTMENT);
+  }
+
+  async function handleActivatePreRegistered() {
+    setLoading(true);
+    setError("");
+    try {
+      const activated = await kioskActivate({
+        patientId: patient.id,
+        ticketId: patient.preRegisteredTicket.id,
+      });
+      refreshLiveData();
+      setTicket(activated);
+      setStep(STEPS.SUCCESS);
+    } catch (err) {
+      setError(err.message || "Activation failed. Please see the front desk.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleCheckIn(event) {
@@ -503,13 +521,44 @@ export default function KioskPage() {
                 </p>
               )}
 
-              <button
-                onClick={handleProceedToDepartment}
-                className="mt-8 inline-flex h-12 items-center gap-2 rounded-xl bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-8 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(13,148,136,0.5)] transition-transform hover:-translate-y-0.5"
-              >
-                Proceed to check-in
-                <ArrowRight className="h-4 w-4" />
-              </button>
+              {patient.preRegisteredTicket ? (
+                <div className="mt-6 rounded-2xl border border-teal-400/25 bg-teal-400/[0.07] p-4">
+                  <div className="text-[0.65rem] font-bold uppercase tracking-[0.22em] text-teal-300">
+                    Pre-registered ticket found
+                  </div>
+                  <div className="mt-2 font-display text-2xl font-bold tracking-widest text-white">
+                    {patient.preRegisteredTicket.ticket}
+                  </div>
+                  <div className="mt-1 text-xs text-slate-400">
+                    {patient.preRegisteredTicket.department}
+                    {patient.preRegisteredTicket.chiefComplaint
+                      ? ` · ${patient.preRegisteredTicket.chiefComplaint}`
+                      : ""}
+                  </div>
+                  <button
+                    onClick={handleActivatePreRegistered}
+                    disabled={loading}
+                    className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-8 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(13,148,136,0.5)] transition-transform hover:-translate-y-0.5 disabled:opacity-60"
+                  >
+                    {loading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <ScanLine className="h-4 w-4" />}
+                    {loading ? "Activating…" : "Activate & join the queue"}
+                  </button>
+                  <button
+                    onClick={handleProceedToDepartment}
+                    className="mt-3 block w-full text-xs text-slate-400 hover:text-slate-200"
+                  >
+                    Different reason for today's visit? New check-in
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={handleProceedToDepartment}
+                  className="mt-8 inline-flex h-12 items-center gap-2 rounded-xl bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-8 text-sm font-semibold text-white shadow-[0-8px_20px_-10px_rgba(13,148,136,0.5)] transition-transform hover:-translate-y-0.5"
+                >
+                  Proceed to check-in
+                  <ArrowRight className="h-4 w-4" />
+                </button>
+              )}
 
               <button
                 onClick={resetKiosk}

@@ -22,6 +22,8 @@ import {
   patientProfileCardController,
   patientRegisterController,
   patientTicketsController,
+  patientCheckInController,
+  patientPreRegisterController,
   patientAvatarController,
   patientUpdateProfileController,
   patientChangePasswordController,
@@ -60,6 +62,7 @@ import {
   submitFeedbackController,
   ticketFeedbackController,
   confirmArrivalController,
+  kioskActivateController,
   kioskCheckInController,
   kioskLookupController,
   metaController,
@@ -267,6 +270,8 @@ router.register(
   passwordResetRateLimit(patientResetPasswordController),
 );
 router.register("GET", "/api/patient/tickets", patientTicketsController);
+router.register("POST", "/api/patient/check-in", withPatientAuth(patientCheckInController));
+router.register("POST", "/api/patient/pre-register", withPatientAuth(patientPreRegisterController));
 router.register(
   "GET",
   "/api/patient/profile-card",
@@ -302,6 +307,7 @@ router.register("POST", "/api/tickets/self-register", registrationRateLimit(self
 router.register("POST", "/api/tickets/pre-register", publicQueueRateLimit(preRegisterController));
 router.register("POST", "/api/kiosk/lookup", publicQueueRateLimit(kioskLookupController));
 router.register("POST", "/api/kiosk/check-in", publicQueueRateLimit(kioskCheckInController));
+router.register("POST", "/api/kiosk/activate", publicQueueRateLimit(kioskActivateController));
 router.register(
   "POST",
   "/api/tickets/:id/confirm-arrival",
@@ -335,22 +341,22 @@ router.register(
 router.register(
   "PATCH",
   "/api/tickets/:id/status",
-  withStaffAuth(["triage", "clinician"], updateTicketStatusController),
+  withStaffAuth(["triage", "clinician", "lab-tech", "pharmacist", "radiologist"], updateTicketStatusController),
 );
 router.register(
   "POST",
   "/api/tickets/:id/recall",
-  withStaffAuth(["triage", "clinician"], recallTicketController),
+  withStaffAuth(["triage", "clinician", "lab-tech", "pharmacist", "radiologist"], recallTicketController),
 );
 router.register(
   "PATCH",
   "/api/tickets/:id/transfer",
-  withStaffAuth(["triage", "clinician"], transferTicketController),
+  withStaffAuth(["triage", "clinician", "lab-tech", "pharmacist", "radiologist"], transferTicketController),
 );
 router.register(
   "POST",
   "/api/queue/call-next",
-  withStaffAuth(["triage", "clinician"], callNextController),
+  withStaffAuth(["triage", "clinician", "lab-tech", "pharmacist", "radiologist"], callNextController),
 );
 router.register("GET", "/api/queue/board", queueBoardController);
 router.register("GET", "/api/queue/staff-board", withStaffAuth(["reception", "triage", "clinician", "admin"], queueBoardController));

@@ -23,11 +23,23 @@ const ROLE_LABELS = {
   triage: "Triage Officer",
 };
 
+const ALL_STAFF_ROLES = [
+  "triage",
+  "clinician",
+  "reception",
+  "receptionist",
+  "doctor",
+  "nurse",
+  "pharmacist",
+  "lab-tech",
+  "radiologist",
+];
+
 const LANDING_PAGE_META = {
   dashboard: {
     label: "Dashboard",
     path: "/admin/dashboard",
-    roles: ["admin", "triage", "clinician", "doctor", "nurse"],
+    roles: ALL_STAFF_ROLES,
   },
   register: {
     label: "Registration desk",
@@ -37,12 +49,22 @@ const LANDING_PAGE_META = {
   triage: {
     label: "Triage console",
     path: "/admin/triage",
-    roles: ["admin", "triage"],
+    roles: ["admin", "triage", "nurse"],
   },
   queue: {
     label: "Queue board",
     path: "/admin/queue",
-    roles: ["admin", "triage", "clinician", "doctor", "nurse", "reception", "receptionist"],
+    roles: ALL_STAFF_ROLES,
+  },
+  laboratory: {
+    label: "Laboratory & Radiology",
+    path: "/admin/laboratory",
+    roles: ["admin", "clinician", "doctor", "lab-tech", "radiologist"],
+  },
+  pharmacy: {
+    label: "Pharmacy",
+    path: "/admin/pharmacy",
+    roles: ["admin", "clinician", "doctor", "pharmacist"],
   },
 };
 
@@ -136,8 +158,16 @@ export function resolveStaffLandingPath(user) {
     return "/admin/queue";
   }
 
-  if (user.role === "triage") {
+  if (user.role === "triage" || user.role === "nurse") {
     return "/admin/triage";
+  }
+
+  if (user.role === "lab-tech" || user.role === "radiologist") {
+    return "/admin/laboratory";
+  }
+
+  if (user.role === "pharmacist") {
+    return "/admin/pharmacy";
   }
 
   return "/admin/dashboard";

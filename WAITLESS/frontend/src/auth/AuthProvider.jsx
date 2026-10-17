@@ -105,7 +105,21 @@ export function AuthProvider({ children }) {
       return false;
     }
 
-    return user.role === "admin" || roles.includes(user.role);
+    if (user.role === "admin") {
+      return true;
+    }
+
+    // Route guards use the canonical names (triage/clinician/reception)
+    // while accounts store the job titles (nurse/doctor/receptionist).
+    const aliases = {
+      reception: ["receptionist"],
+      triage: ["nurse"],
+      clinician: ["doctor"],
+    };
+
+    return roles.some(
+      (role) => role === user.role || aliases[role]?.includes(user.role),
+    );
   }
 
   function updateProfile(updates) {

@@ -10,7 +10,7 @@ import {
   requestPatientPasswordReset,
   resetPatientPassword,
 } from "../services/patientAuthService.js";
-import { getTickets } from "../services/queueService.js";
+import { getTickets, preRegisterPatient, registerPatient } from "../services/queueService.js";
 import {
   findPatientByPhone,
   findPrescriptionsByTicketId,
@@ -89,6 +89,50 @@ export async function patientTicketsController({ req }) {
     body: {
       tickets: patientTickets,
     },
+  };
+}
+
+export async function patientCheckInController({ req, body }) {
+  const session = requirePatientSession(req);
+  const patient = session.user;
+  const payload = body ?? {};
+
+  const ticket = await registerPatient({
+    fullName: patient.fullName,
+    phone: patient.phone,
+    nationalId: patient.nationalId,
+    dob: patient.dob,
+    gender: patient.gender,
+    department: payload.department ?? payload.dept,
+    chiefComplaint: payload.chiefComplaint,
+    patientCategory: payload.patientCategory ?? "walk-in",
+  });
+
+  return {
+    status: 201,
+    body: { ticket },
+  };
+}
+
+export async function patientPreRegisterController({ req, body }) {
+  const session = requirePatientSession(req);
+  const patient = session.user;
+  const payload = body ?? {};
+
+  const ticket = await preRegisterPatient({
+    fullName: patient.fullName,
+    phone: patient.phone,
+    nationalId: patient.nationalId,
+    dob: patient.dob,
+    gender: patient.gender,
+    department: payload.department ?? payload.dept,
+    chiefComplaint: payload.chiefComplaint,
+    patientCategory: payload.patientCategory ?? "walk-in",
+  });
+
+  return {
+    status: 201,
+    body: { ticket },
   };
 }
 

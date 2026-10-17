@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Copy,
   KeyRound,
+  Link2,
   Lock,
   Mail,
   Phone,
@@ -114,7 +115,7 @@ export function CreateStaffUserForm({ onSuccess, onCancel }) {
   }
 
   return (
-    <div className="space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <AuthError icon={AlertCircle} message={error} />
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -136,7 +137,7 @@ export function CreateStaffUserForm({ onSuccess, onCancel }) {
             </option>
           ))}
         </AuthSelect>
-        <AuthInput icon={Phone} label="Phone number" name="phone" type="tel" placeholder="+263 77 000 0000" value={form.phone} onChange={set("phone")} />
+        <AuthInput icon={Phone} label="Phone number (optional)" name="phone" type="tel" placeholder="+263 77 000 0000" value={form.phone} onChange={set("phone")} />
         <AuthInput icon={Lock} label="Temporary password" name="password" type="password" required minLength={10} maxLength={72} autoComplete="new-password" placeholder="Temporary password" value={form.password} onChange={set("password")} />
       </div>
 
@@ -158,7 +159,7 @@ export function CreateStaffUserForm({ onSuccess, onCancel }) {
           </button>
         ) : null}
       </div>
-    </div>
+    </form>
   );
 }
 
@@ -238,15 +239,22 @@ export function AccessCodePanel({ standalone = false }) {
     }
   }
 
-  async function copyCode(code) {
+  function inviteLink(code) {
+    return `${window.location.origin}/staff-signup?code=${encodeURIComponent(code.code)}`;
+  }
+
+  async function copyText(text, id) {
     try {
-      await navigator.clipboard.writeText(code.code);
+      await navigator.clipboard.writeText(text);
     } catch {
       /* clipboard unavailable */
     }
-    setCopiedId(code.id);
+    setCopiedId(id);
     setTimeout(() => setCopiedId(""), 1600);
   }
+
+  const copyCode = (code) => copyText(code.code, code.id);
+  const copyLink = (code) => copyText(inviteLink(code), `${code.id}-link`);
 
   return (
     <div className={standalone ? "" : "mt-8 border-t border-white/10 pt-6"}>
@@ -267,9 +275,9 @@ export function AccessCodePanel({ standalone = false }) {
       {open ? (
         <div className={standalone ? "space-y-4" : "mt-5 space-y-4"}>
           <p className="text-sm leading-6 text-slate-300">
-            Generate a one-time access code, send it to the staff member, and they
-            create their own account at{" "}
-            <span className="font-semibold text-cyan-100">Staff sign in → Register</span>.
+            Generate a one-time access code, then send the staff member the{" "}
+            <span className="font-semibold text-cyan-100">invite link</span> or the code itself —
+            they create their own account and the role and department are already locked in.
             Codes expire after 72 hours and can only be used once.
           </p>
 
@@ -336,9 +344,17 @@ export function AccessCodePanel({ standalone = false }) {
                   className="inline-flex h-9 items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-3 text-xs font-semibold text-white transition hover:bg-white/15"
                 >
                   {copiedId === latest.id ? <Check className="h-3.5 w-3.5 text-emerald-300" /> : <Copy className="h-3.5 w-3.5" />}
-                  {copiedId === latest.id ? "Copied" : "Copy"}
+                  {copiedId === latest.id ? "Copied" : "Copy code"}
                 </button>
               </div>
+              <button
+                type="button"
+                onClick={() => copyLink(latest)}
+                className="mt-2 inline-flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-cyan-300/25 bg-cyan-400/10 px-3 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-400/15"
+              >
+                {copiedId === `${latest.id}-link` ? <Check className="h-3.5 w-3.5 text-emerald-300" /> : <Link2 className="h-3.5 w-3.5" />}
+                {copiedId === `${latest.id}-link` ? "Link copied" : "Copy invite link"}
+              </button>
               <div className="mt-1 text-xs text-slate-300">
                 {latest.role.replace("-", " ")} · {latest.department} · expires{" "}
                 {new Date(latest.expiresAt).toLocaleDateString()}
@@ -385,8 +401,18 @@ export function AccessCodePanel({ standalone = false }) {
                             onClick={() => copyCode(code)}
                             className="grid h-7 w-7 place-items-center rounded-md text-slate-300 transition hover:bg-white/10 hover:text-white"
                             aria-label="Copy code"
+                            title="Copy code"
                           >
                             {copiedId === code.id ? <Check className="h-3.5 w-3.5 text-emerald-300" /> : <Copy className="h-3.5 w-3.5" />}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => copyLink(code)}
+                            className="grid h-7 w-7 place-items-center rounded-md text-slate-300 transition hover:bg-white/10 hover:text-white"
+                            aria-label="Copy invite link"
+                            title="Copy invite link"
+                          >
+                            {copiedId === `${code.id}-link` ? <Check className="h-3.5 w-3.5 text-emerald-300" /> : <Link2 className="h-3.5 w-3.5" />}
                           </button>
                         </>
                       )}

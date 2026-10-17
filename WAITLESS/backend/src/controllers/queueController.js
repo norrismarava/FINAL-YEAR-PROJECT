@@ -18,6 +18,7 @@ import {
   getTicketETA,
   getTickets,
   confirmArrival,
+  kioskActivateArrival,
   kioskCheckIn,
   kioskLookup,
   preRegisterPatient,
@@ -326,6 +327,22 @@ export async function kioskLookupController({ body }) {
   return {
     status: 200,
     body: { patient },
+  };
+}
+
+export async function kioskActivateController({ body }) {
+  const payload = body ?? {};
+
+  if (!payload.patientId?.trim() || !payload.ticketId?.trim()) {
+    return {
+      status: 400,
+      body: { message: "Patient ID and ticket ID are required." },
+    };
+  }
+
+  return {
+    status: 200,
+    body: { ticket: await kioskActivateArrival(payload.patientId, payload.ticketId) },
   };
 }
 

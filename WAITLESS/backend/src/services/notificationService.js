@@ -23,7 +23,7 @@ function createTrackingUrl(ticketCode) {
   return `${env.publicAppUrl}${trackingPath}`;
 }
 
-function createNotificationPayload({
+async function createNotificationPayload({
   ticket,
   channel,
   type,
@@ -38,7 +38,7 @@ function createNotificationPayload({
 
   return {
     id: crypto.randomUUID(),
-    sequence: getNextNotificationSequence(),
+    sequence: await getNextNotificationSequence(),
     ticketId: ticket.id,
     ticket: ticket.ticket,
     patientName: ticket.patientName,
@@ -282,7 +282,7 @@ async function attemptWhatsAppDelivery(notificationId) {
 
 async function createDisplayBoardNotification(ticket, payload) {
   return createStoredNotification(
-    createNotificationPayload({
+    await createNotificationPayload({
       ticket,
       channel: "display-board",
       status: "delivered",
@@ -293,7 +293,7 @@ async function createDisplayBoardNotification(ticket, payload) {
 
 async function createWhatsAppNotification(ticket, payload) {
   const created = await createStoredNotification(
-    createNotificationPayload({
+    await createNotificationPayload({
       ticket,
       channel: "whatsapp",
       status: "queued",

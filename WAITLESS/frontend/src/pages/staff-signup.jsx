@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   AlertCircle,
   ArrowRight,
@@ -30,7 +30,11 @@ const INITIAL_FORM = {
 
 export default function StaffSignupPage() {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState(INITIAL_FORM);
+  const [searchParams] = useSearchParams();
+  const [formData, setFormData] = useState(() => ({
+    ...INITIAL_FORM,
+    accessCode: (searchParams.get("code") ?? "").toUpperCase(),
+  }));
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
@@ -204,10 +208,9 @@ export default function StaffSignupPage() {
 
           <AuthInput
             icon={Phone}
-            label="Phone number"
+            label="Phone number (optional)"
             name="phone"
             type="tel"
-            required
             placeholder="+263 77 123 4567"
             value={formData.phone}
             onChange={handleChange}

@@ -337,8 +337,8 @@ export default function UsersPage() {
       </div>
 
       {showCreate ? (
-        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-[#040a12]/70 p-4 backdrop-blur-sm">
-          <div className="relative w-full max-w-xl rounded-2xl border border-white/10 bg-[#0d1626] p-6 shadow-2xl">
+        <div className="fixed inset-0 z-[90] flex overflow-y-auto bg-[#040a12]/70 p-4 backdrop-blur-sm">
+          <div className="relative m-auto w-full max-w-xl rounded-2xl border border-white/10 bg-[#0d1626] p-6 shadow-2xl">
             <button
               type="button"
               onClick={() => setShowCreate(false)}

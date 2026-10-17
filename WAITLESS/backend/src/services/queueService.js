@@ -1490,6 +1490,10 @@ export async function kioskLookup(identifier) {
     throw new HttpError(404, "No patient found. Please register at the front desk.");
   }
 
+  const preRegisteredTicket = (await listTickets()).find(
+    (entry) => entry.patientId === patient.id && entry.status === "pre-registered",
+  );
+
   return {
     id: patient.id,
     patientNumber: patient.patientNumber,
@@ -1498,7 +1502,31 @@ export async function kioskLookup(identifier) {
     gender: patient.gender,
     dob: patient.dob,
     lastVisitAt: patient.lastVisitAt,
+    preRegisteredTicket: preRegisteredTicket
+      ? {
+          id: preRegisteredTicket.id,
+          ticket: preRegisteredTicket.ticket,
+          department: preRegisteredTicket.department,
+          chiefComplaint: preRegisteredTicket.chiefComplaint,
+        }
+      : null,
   };
+}
+
+export async function kioskActivateArrival(patientId, ticketId) {
+  const patient = await findPatientById(patientId);
+  if (!patient) {
+    throw new HttpError(404, "Patient not found.");
+  }
+  const ticket = await findTicketById(ticketId);
+  if (!ticket || ticket.patientId !== patient.id) {
+    throw new HttpError(404, "Ticket not found for this patient.");
+  }
+  return confirmArrival(ticketId, {
+    role: "kiosk",
+    fullName: "Self-service kiosk",
+    username: "kiosk",
+  });
 }
 
 export async function kioskCheckIn(payload) {

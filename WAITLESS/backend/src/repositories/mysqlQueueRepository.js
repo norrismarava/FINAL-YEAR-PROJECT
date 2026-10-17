@@ -140,7 +140,12 @@ function fromSqlDateTime(value) {
 }
 
 function toSqlDate(value) {
-  return value?.trim() || null;
+  if (!value) {
+    return null;
+  }
+  const text = value instanceof Date ? value.toISOString() : String(value).trim();
+  const match = text.match(/\d{4}-\d{2}-\d{2}/);
+  return match ? match[0] : null;
 }
 
 function fromSqlDate(value) {

@@ -12,7 +12,7 @@ export function AuthShell({
   wide = false,
 }) {
   return (
-    <section className="relative isolate flex min-h-screen items-center justify-center overflow-hidden bg-[#04141f] px-4 py-6 text-white">
+    <section className="relative isolate flex min-h-screen justify-center overflow-x-hidden overflow-y-auto bg-[#04141f] px-4 py-6 text-white">
       {/* Softened shared auth background */}
       <div className="pointer-events-none absolute inset-0">
         <img
@@ -25,7 +25,7 @@ export function AuthShell({
       </div>
 
       {/* Card + orbiting ring */}
-      <div className={`relative w-full ${wide ? "max-w-[27rem]" : "max-w-[24rem]"}`}>
+      <div className={`relative my-auto w-full ${wide ? "max-w-[27rem]" : "max-w-[24rem]"}`}>
         <div className="pointer-events-none absolute -inset-[3px] overflow-hidden rounded-[1.3rem]">
           <div
             className="absolute -inset-[150%] bg-[conic-gradient(from_0deg,transparent_0deg,rgba(45,212,191,0.85)_45deg,transparent_100deg,transparent_180deg,rgba(59,130,246,0.85)_225deg,transparent_280deg)]"

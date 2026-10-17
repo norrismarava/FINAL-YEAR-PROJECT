@@ -2,6 +2,8 @@ import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { GuestOnly } from "@/components/GuestOnly";
+import { LogoLoader } from "@/components/LogoLoader";
 import { AppLayout, NotFoundPage } from "@/layouts/AppLayout";
 import Home from "@/pages/index";
 import { I18nProvider } from "@/i18n/I18nProvider";
@@ -23,6 +25,9 @@ const PatientProfilePage = lazy(() => import("@/pages/patient-profile"));
 const PatientSettingsPage = lazy(() => import("@/pages/patient-settings"));
 const PatientBookingsPage = lazy(() => import("@/pages/patient-bookings"));
 const PatientFeedbackPage = lazy(() => import("@/pages/patient-feedback"));
+const PatientTrackPage = lazy(() => import("@/pages/patient-track"));
+const PatientQueuePage = lazy(() => import("@/pages/patient-queue"));
+const PatientUpdatesPage = lazy(() => import("@/pages/patient-updates"));
 const PatientPortalLayout = lazy(() => import("@/layouts/PatientPortalLayout"));
 const ResetPasswordPage = lazy(() => import("@/pages/reset-password"));
 const SettingsPage = lazy(() => import("@/pages/settings"));
@@ -61,26 +66,29 @@ const FollowUpsPage = staffModuleExtra("FollowUpsPage");
 export default function App() {
   return (
     <I18nProvider>
-    <Suspense fallback={null}>
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-[#050817]"><LogoLoader size={56} decorative /></div>}>
     <Routes>
       <Route element={<AppLayout />}>
-        {/* Public routes */}
-        <Route index element={<Home />} />
-        <Route path="track" element={<TrackPage />} />
-        <Route path="queue" element={<QueuePage />} />
+        {/* Public routes — guest-only pages bounce signed-in users to their workspace */}
+        <Route index element={<GuestOnly><Home /></GuestOnly>} />
+        <Route path="track" element={<GuestOnly patientTo="/patient/track"><TrackPage /></GuestOnly>} />
+        <Route path="queue" element={<GuestOnly patientTo="/patient/queue" staffTo="/admin/queue"><QueuePage /></GuestOnly>} />
         <Route path="department-board" element={<DepartmentBoardPage />} />
-        <Route path="self-register" element={<SelfRegisterPage />} />
-        <Route path="kiosk" element={<KioskPage />} />
-        <Route path="patient/register" element={<PatientRegisterPage />} />
+        <Route path="self-register" element={<GuestOnly><SelfRegisterPage /></GuestOnly>} />
+        <Route path="kiosk" element={<GuestOnly><KioskPage /></GuestOnly>} />
+        <Route path="patient/register" element={<GuestOnly><PatientRegisterPage /></GuestOnly>} />
         <Route path="patient/login" element={<Navigate to="/login" replace />} />
-        <Route path="patient/forgot-password" element={<PatientForgotPasswordPage />} />
-        <Route path="patient/reset-password" element={<PatientResetPasswordPage />} />
+        <Route path="patient/forgot-password" element={<GuestOnly><PatientForgotPasswordPage /></GuestOnly>} />
+        <Route path="patient/reset-password" element={<GuestOnly><PatientResetPasswordPage /></GuestOnly>} />
         <Route path="patient" element={<PatientPortalLayout />}>
           <Route index element={<PatientDashboardPage />} />
           <Route path="dashboard" element={<PatientDashboardPage />} />
           <Route path="profile" element={<PatientProfilePage />} />
           <Route path="settings" element={<PatientSettingsPage />} />
           <Route path="bookings" element={<PatientBookingsPage />} />
+          <Route path="track" element={<PatientTrackPage />} />
+          <Route path="queue" element={<PatientQueuePage />} />
+          <Route path="updates" element={<PatientUpdatesPage />} />
           <Route path="feedback" element={<PatientFeedbackPage />} />
         </Route>
 
@@ -90,7 +98,7 @@ export default function App() {
           <Route
             path="dashboard"
             element={
-              <ProtectedRoute roles={["triage", "clinician"]}>
+              <ProtectedRoute>
                 <DashboardPage />
               </ProtectedRoute>
             }
@@ -139,7 +147,7 @@ export default function App() {
           <Route
             path="pharmacy"
             element={
-              <ProtectedRoute roles={["clinician", "triage"]}>
+              <ProtectedRoute roles={["clinician", "triage", "pharmacist"]}>
                 <PharmacyPage />
               </ProtectedRoute>
             }
@@ -147,7 +155,7 @@ export default function App() {
           <Route
             path="laboratory"
             element={
-              <ProtectedRoute roles={["clinician", "triage"]}>
+              <ProtectedRoute roles={["clinician", "triage", "lab-tech", "radiologist"]}>
                 <LabPage />
               </ProtectedRoute>
             }
@@ -288,11 +296,11 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="login" element={<LoginChooserPage variant="staff" />} />
-          <Route path="forgot-password" element={<ForgotPasswordPage />} />
-          <Route path="reset-password" element={<ResetPasswordPage />} />
+          <Route path="login" element={<GuestOnly><LoginChooserPage variant="staff" /></GuestOnly>} />
+          <Route path="forgot-password" element={<GuestOnly><ForgotPasswordPage /></GuestOnly>} />
+          <Route path="reset-password" element={<GuestOnly><ResetPasswordPage /></GuestOnly>} />
           <Route path="staff-register" element={<Navigate to="/admin/staff" replace />} />
-          <Route path="staff-signup" element={<StaffSignupPage />} />
+          <Route path="staff-signup" element={<GuestOnly><StaffSignupPage /></GuestOnly>} />
         </Route>
 
         {/* Legacy redirects */}
@@ -301,7 +309,7 @@ export default function App() {
         <Route path="triage" element={<Navigate to="/admin/triage" replace />} />
         <Route path="settings" element={<Navigate to="/admin/settings" replace />} />
         <Route path="profile" element={<Navigate to="/admin/profile" replace />} />
-        <Route path="login" element={<LoginChooserPage />} />
+        <Route path="login" element={<GuestOnly><LoginChooserPage /></GuestOnly>} />
         <Route path="forgot-password" element={<Navigate to="/admin/forgot-password" replace />} />
         <Route path="reset-password" element={<Navigate to="/admin/reset-password" replace />} />
         <Route path="staff-register" element={<Navigate to="/admin/staff" replace />} />

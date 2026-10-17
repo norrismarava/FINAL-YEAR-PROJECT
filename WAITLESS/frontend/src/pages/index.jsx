@@ -279,11 +279,14 @@ function TypewriterGreeting({ text = "Welcome to WaitLess", speed = 85 }) {
 /* ═══════════════════════════════════════════════
    ROOT COMPONENT
    ═══════════════════════════════════════════════ */
+let splashShown = false; // survives in-app navigation; resets on real page load/refresh
+
 export default function Home() {
-  const [splash, setSplash] = useState(true);
+  const [splash, setSplash] = useState(() => !splashShown);
   const [splashFading, setSplashFading] = useState(false);
 
   useEffect(() => {
+    splashShown = true;
     const t1 = setTimeout(() => setSplashFading(true), 2400);
     const t2 = setTimeout(() => setSplash(false), 3200);
     return () => { clearTimeout(t1); clearTimeout(t2); };
@@ -474,7 +477,7 @@ function Hero() {
             {[
               { value: "247", label: "Patients today" },
               { value: "23m", label: "Median wait" },
-              { value: "99.8%", label: "Uptime" },
+              { value: "97%", label: "Uptime" },
             ].map((item) => (
               <div key={item.label} className="flex items-center gap-3">
                 <div>
@@ -998,7 +1001,7 @@ function StatsSection() {
     { value: "12,480", suffix: "+", label: "Patients served", image: statPatientsImage },
     { value: "23", suffix: " min", label: "Avg. wait time", image: statWaitImage },
     { value: "45,600", suffix: "+", label: "WhatsApp alerts", image: statWhatsappImage },
-    { value: "99.8", suffix: "%", label: "System uptime", image: statUptimeImage },
+    { value: "97", suffix: "%", label: "System uptime", image: statUptimeImage },
   ];
 
   return (

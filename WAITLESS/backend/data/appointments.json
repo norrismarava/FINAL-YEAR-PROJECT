@@ -1,1 +1,43 @@
-[]
+[
+  {
+    "id": "7f603d68-652b-401d-b3a3-b14b209c4c13",
+    "patientName": "TESTUSER1",
+    "patientContact": "719268062",
+    "patientAge": null,
+    "patientGender": "",
+    "serviceCategory": "opd",
+    "serviceLabel": "OPD Consultation",
+    "department": "OPD",
+    "date": "2026-10-17",
+    "timeSlot": "12:30",
+    "durationMin": 15,
+    "notes": "",
+    "status": "checked-in",
+    "createdBy": null,
+    "createdAt": "2026-10-17T12:26:13.019Z",
+    "confirmedAt": "2026-10-17T14:30:31.024Z",
+    "confirmedBy": {
+      "id": "f8f78fd2-a7d7-4dad-97c3-c193c3ceb010",
+      "name": "System Administrator"
+    },
+    "checkedInAt": "2026-10-17T15:43:28.571Z",
+    "ticketId": null,
+    "statusHistory": [
+      {
+        "status": "pending",
+        "at": "2026-10-17T12:26:13.019Z",
+        "actor": "system"
+      },
+      {
+        "status": "confirmed",
+        "at": "2026-10-17T14:30:31.024Z",
+        "actor": "System Administrator"
+      },
+      {
+        "status": "checked-in",
+        "at": "2026-10-17T15:43:28.571Z",
+        "actor": "Norris Marava"
+      }
+    ]
+  }
+]
