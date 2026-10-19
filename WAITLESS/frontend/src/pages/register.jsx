@@ -17,7 +17,7 @@ import {
   X,
 } from "lucide-react";
 
-import { DEPARTMENTS, PATIENT_CATEGORIES } from "@/services/queueMeta";
+import { DEPARTMENTS } from "@/services/queueMeta";
 import {
   confirmArrival,
   fetchPatientMatches,
@@ -39,15 +39,8 @@ const INITIAL_FORM = {
   patientId: null,
   fullName: "",
   nationalId: "",
-  dob: "",
-  gender: "female",
   phone: "",
-  address: "",
-  patientCategory: "walk-in",
-  nextOfKinName: "",
-  nextOfKinPhone: "",
-  dept: "OPD",
-  chiefComplaint: "",
+  dept: "",
   notificationConsent: true,
   whatsApp: true,
 };
@@ -72,6 +65,7 @@ export default function RegisterPage() {
   const [appliedPatientId, setAppliedPatientId] = useState(null);
   const [scannerOpen, setScannerOpen] = useState(false);
   const [handoffState, setHandoffState] = useState("");
+  const [formError, setFormError] = useState("");
   const [showPreRegistered, setShowPreRegistered] = useState(false);
 
   const loadPreRegistered = useCallback(
@@ -104,14 +98,26 @@ export default function RegisterPage() {
   });
 
   const departments = metaQuery.data?.departments ?? DEPARTMENTS;
-  const patientCategories =
-    metaQuery.data?.patientCategories?.map((category) => ({
-      value: category,
-      label: PATIENT_CATEGORIES.find((entry) => entry.value === category)?.label ?? category,
-    })) ?? PATIENT_CATEGORIES;
 
   function submit(event) {
     event.preventDefault();
+    if (!form.fullName.trim()) {
+      setFormError("Full name is required.");
+      return;
+    }
+    if (!/^\d{8,9}[A-Z]\d{2}$/.test(form.nationalId.trim())) {
+      setFormError("ID number format: digits, one letter, then 2 digits — e.g. 67143396U56.");
+      return;
+    }
+    if (!form.phone.trim()) {
+      setFormError("Phone number is required for queue notifications.");
+      return;
+    }
+    if (!form.dept) {
+      setFormError("Please select a department to issue the ticket.");
+      return;
+    }
+    setFormError("");
     registerMutation.mutate(form);
   }
 
@@ -129,18 +135,15 @@ export default function RegisterPage() {
       ...current,
       patientId: profile.id,
       fullName: profile.patientName ?? "",
-      nationalId: profile.nationalId ?? "",
-      dob: profile.dob ?? "",
-      gender: profile.gender ?? current.gender,
+      nationalId: (profile.nationalId ?? "")
+        .replace(/[^0-9a-zA-Z]/g, "")
+        .toUpperCase(),
       phone: profile.phone ?? "",
-      address: profile.address ?? "",
-      patientCategory: profile.patientCategory ?? current.patientCategory,
-      nextOfKinName: profile.nextOfKinName ?? "",
-      nextOfKinPhone: profile.nextOfKinPhone ?? "",
       dept: profile.lastDepartment ?? current.dept,
     }));
     setAppliedPatientId(profile.id);
     setLookupTerm(profile.patientNumber ?? profile.patientName ?? "");
+    setFormError("");
   }
 
   function resetRegistrationForm() {
@@ -444,8 +447,25 @@ export default function RegisterPage() {
             ) : null}
           </div>
 
-          {/* Patient details */}
+          {/* Patient details — only what the queue needs */}
           <FormSection title="Patient details">
+            <Field label="National ID" required>
+              <input
+                required
+                maxLength={12}
+                value={form.nationalId}
+                onChange={(event) =>
+                  setForm({
+                    ...form,
+                    nationalId: event.target.value
+                      .replace(/[^0-9a-zA-Z]/g, "")
+                      .toUpperCase(),
+                  })
+                }
+                className="input-base h-9 text-sm"
+                placeholder="e.g. 67143396U56"
+              />
+            </Field>
             <Field label="Full name" required>
               <input
                 required
@@ -455,111 +475,35 @@ export default function RegisterPage() {
                 placeholder="e.g. Tariro Moyo"
               />
             </Field>
-            <Field label="National ID">
+            <Field label="Mobile / WhatsApp" required full>
               <input
-                value={form.nationalId}
-                onChange={(event) => setForm({ ...form, nationalId: event.target.value })}
-                className="input-base h-9 text-sm"
-                placeholder="63-1234567-A-12"
-              />
-            </Field>
-            <Field label="Date of birth">
-              <input
-                type="date"
-                value={form.dob}
-                onChange={(event) => setForm({ ...form, dob: event.target.value })}
-                className="input-base h-9 text-sm"
-              />
-            </Field>
-            <Field label="Gender">
-              <select
-                value={form.gender}
-                onChange={(event) => setForm({ ...form, gender: event.target.value })}
-                className="input-base h-9 text-sm"
-              >
-                <option value="female">Female</option>
-                <option value="male">Male</option>
-              </select>
-            </Field>
-            <Field label="Patient category">
-              <select
-                value={form.patientCategory}
-                onChange={(event) => setForm({ ...form, patientCategory: event.target.value })}
-                className="input-base h-9 text-sm"
-              >
-                {patientCategories.map((category) => (
-                  <option key={category.value} value={category.value}>
-                    {category.label}
-                  </option>
-                ))}
-              </select>
-            </Field>
-          </FormSection>
-
-          {/* Contact & next of kin */}
-          <FormSection title="Contact & next of kin">
-            <Field label="Mobile / WhatsApp">
-              <input
+                required
                 value={form.phone}
                 onChange={(event) => setForm({ ...form, phone: event.target.value })}
                 className="input-base h-9 text-sm"
                 placeholder="+263 77 123 4567"
               />
             </Field>
-            <Field label="Residential area">
-              <input
-                value={form.address}
-                onChange={(event) => setForm({ ...form, address: event.target.value })}
-                className="input-base h-9 text-sm"
-                placeholder="e.g. Chinhoyi, Cold Stream"
-              />
-            </Field>
-            <Field label="Next of kin name">
-              <input
-                value={form.nextOfKinName}
-                onChange={(event) => setForm({ ...form, nextOfKinName: event.target.value })}
-                className="input-base h-9 text-sm"
-                placeholder="Emergency contact full name"
-              />
-            </Field>
-            <Field label="Next of kin phone">
-              <input
-                value={form.nextOfKinPhone}
-                onChange={(event) => setForm({ ...form, nextOfKinPhone: event.target.value })}
-                className="input-base h-9 text-sm"
-                placeholder="+263 77 000 0000"
-              />
-            </Field>
           </FormSection>
 
           {/* Visit routing */}
           <FormSection title="Visit routing">
-            <Field label="Department" full>
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <Field label="Department" required full>
+              <select
+                required
+                value={form.dept}
+                onChange={(event) => setForm({ ...form, dept: event.target.value })}
+                className="input-base h-9 text-sm"
+              >
+                <option value="" disabled>
+                  Select department…
+                </option>
                 {departments.map((department) => (
-                  <button
-                    key={department}
-                    type="button"
-                    onClick={() => setForm({ ...form, dept: department })}
-                    className={`rounded-lg border px-3 py-2.5 text-xs font-semibold transition-all ${
-                      form.dept === department
-                        ? "border-primary bg-primary-soft text-primary shadow-sm"
-                        : "border-border bg-background text-foreground hover:border-primary/50 hover:bg-primary-soft/50"
-                    }`}
-                  >
+                  <option key={department} value={department}>
                     {department}
-                  </button>
+                  </option>
                 ))}
-              </div>
-            </Field>
-            <Field label="Chief complaint" full>
-              <textarea
-                rows={3}
-                value={form.chiefComplaint}
-                onChange={(event) => setForm({ ...form, chiefComplaint: event.target.value })}
-                className="input-base resize-none text-sm"
-                placeholder="Briefly describe the reason for visit"
-              />
+              </select>
             </Field>
           </FormSection>
 
@@ -587,9 +531,9 @@ export default function RegisterPage() {
               />
             </div>
 
-            {registerMutation.isError ? (
+            {formError || registerMutation.isError ? (
               <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                {registerMutation.error.message}
+                {formError || registerMutation.error?.message}
               </div>
             ) : null}
 
@@ -624,8 +568,8 @@ export default function RegisterPage() {
             </div>
             <ol className="mt-4 space-y-3">
               {[
-                "Search for a returning record first to avoid duplicates.",
-                "Capture demographics, route, and visit reason in one pass.",
+                "Search by ticket code, name, ID or phone — details auto-fill.",
+                "Confirm national ID, name and phone, then pick the department.",
                 "The ticket lands on the live board and staff dashboard instantly.",
               ].map((step, i) => (
                 <li key={i} className="flex items-start gap-3">

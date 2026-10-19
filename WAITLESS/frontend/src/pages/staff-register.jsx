@@ -7,6 +7,7 @@ import {
   Check,
   CheckCircle2,
   Copy,
+  DoorOpen,
   KeyRound,
   Link2,
   Lock,
@@ -47,6 +48,7 @@ const INITIAL_FORM = {
   phone: "",
   role: "nurse",
   department: "OPD",
+  roomNumber: "",
   password: "",
 };
 
@@ -103,6 +105,7 @@ export function CreateStaffUserForm({ onSuccess, onCancel }) {
         phone: form.phone.trim(),
         department: form.department,
         role: form.role,
+        roomNumber: form.roomNumber.trim(),
         password: form.password,
       });
       onSuccess?.(result?.user ?? result?.staff ?? result ?? null);
@@ -138,6 +141,7 @@ export function CreateStaffUserForm({ onSuccess, onCancel }) {
           ))}
         </AuthSelect>
         <AuthInput icon={Phone} label="Phone number (optional)" name="phone" type="tel" placeholder="+263 77 000 0000" value={form.phone} onChange={set("phone")} />
+        <AuthInput icon={DoorOpen} label="Consultation room (optional)" name="roomNumber" type="text" placeholder="e.g. 405" value={form.roomNumber} onChange={set("roomNumber")} />
         <AuthInput icon={Lock} label="Temporary password" name="password" type="password" required minLength={10} maxLength={72} autoComplete="new-password" placeholder="Temporary password" value={form.password} onChange={set("password")} />
       </div>
 

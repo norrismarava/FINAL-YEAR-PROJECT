@@ -4,6 +4,7 @@ import {
   ArrowRight,
   Building2,
   Clock3,
+DoorOpen,
   Edit3,
   IdCard,
   LoaderCircle,
@@ -69,6 +70,7 @@ export default function ProfilePage() {
     phone: "",
     email: "",
     department: "",
+    roomNumber: "",
   });
   const [pwForm, setPwForm] = useState({
     currentPassword: "",
@@ -85,6 +87,7 @@ export default function ProfilePage() {
       phone: auth.user?.phone ?? "",
       email: auth.user?.email ?? "",
       department: auth.user?.department ?? "",
+      roomNumber: auth.user?.roomNumber ?? "",
     });
   }, [auth.user]);
 
@@ -154,6 +157,7 @@ export default function ProfilePage() {
       phone: user.phone ?? "",
       email: user.email ?? "",
       department: user.department ?? "",
+      roomNumber: user.roomNumber ?? "",
     });
     setEditingRecord(true);
   }
@@ -359,6 +363,16 @@ export default function ProfilePage() {
                     placeholder="Phone number"
                   />
                 </Field>
+                <Field label="Consultation room (optional)">
+                  <input
+                    value={recordForm.roomNumber}
+                    onChange={(e) =>
+                      setRecordForm((p) => ({ ...p, roomNumber: e.target.value }))
+                    }
+                    className="input-base h-9 text-sm"
+                    placeholder="e.g. 405"
+                  />
+                </Field>
                 <ReadOnlyField label="Role" value={formatStaffRoleLabel(user.role)} />
                 <ReadOnlyField label="Username" value={user.username || "—"} />
               </form>
@@ -370,6 +384,9 @@ export default function ProfilePage() {
                 <DetailRow icon={IdCard} label="Username" value={user.username} />
                 <DetailRow icon={Mail} label="Email" value={user.email} />
                 <DetailRow icon={Phone} label="Phone" value={user.phone} />
+                {user.roomNumber ? (
+                  <DetailRow icon={DoorOpen} label="Room" value={user.roomNumber} />
+                ) : null}
                 <DetailRow
                   icon={Clock3}
                   label="Member since"

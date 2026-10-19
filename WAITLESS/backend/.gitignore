@@ -3,3 +3,4 @@ data/queue-state.json.tmp
 data/queue-state.json.corrupt-*
 data/*.smoke.json
 data/avatars/
+data/sessions.json

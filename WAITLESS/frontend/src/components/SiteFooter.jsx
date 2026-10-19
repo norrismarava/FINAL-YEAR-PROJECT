@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import {
-  Building2,
   Facebook,
   Instagram,
   Mail,
@@ -88,7 +87,6 @@ export default function SiteFooter() {
             >
               <MapPin className="h-3.5 w-3.5 transition-transform group-hover:scale-110" />
               {HOSPITAL.name}
-              <span className="text-teal-300/40 transition-colors group-hover:text-teal-300">↗</span>
             </a>
           </div>
 
@@ -180,18 +178,17 @@ export default function SiteFooter() {
                 </span>
               </li>
               <li className="flex items-start gap-3">
-                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border border-white/10 bg-white/[0.04] text-teal-300">
-                  <Building2 className="h-3.5 w-3.5" />
-                </span>
                 <span>
                   <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-white/30">Location</span>
                   <a
                     href="https://www.google.com/maps/search/?api=1&query=Chinhoyi+Provincial+Hospital%2C+Chinhoyi%2C+Zimbabwe"
                     target="_blank"
                     rel="noreferrer"
-                    className="block text-white/55 transition-colors hover:text-teal-300"
+                    title="Open the hospital location on Google Maps"
+                    className="group mt-1.5 inline-flex items-center gap-2 rounded-full border border-teal-400/15 bg-teal-400/[0.05] px-3.5 py-1.5 text-[11px] font-semibold text-teal-300/80 transition-all hover:-translate-y-0.5 hover:border-teal-400/40 hover:bg-teal-400/10 hover:text-teal-300"
                   >
-                    {HOSPITAL.address} ↗
+                    <MapPin className="h-3.5 w-3.5 transition-transform group-hover:scale-110" />
+                    {HOSPITAL.address}
                   </a>
                 </span>
               </li>

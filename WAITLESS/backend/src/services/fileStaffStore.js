@@ -183,6 +183,7 @@ export async function createStaffUser(data) {
     department: data.department ?? "OPD",
     phone: data.phone ?? "",
     employee_id: data.employeeId ?? "",
+    room_number: data.roomNumber?.trim() || null,
     avatar_url: data.avatarUrl ?? null,
     created_at: new Date().toISOString(),
     last_login_at: null,
@@ -234,6 +235,7 @@ export async function updateStaffProfile(id, patch) {
   if (typeof patch.department === "string") users[idx].department = patch.department;
   if (typeof patch.email === "string") users[idx].email = patch.email;
   if (typeof patch.role === "string") users[idx].role = patch.role;
+  if (typeof patch.roomNumber === "string") users[idx].room_number = patch.roomNumber.trim() || null;
   saveStaff(users);
   return users[idx];
 }

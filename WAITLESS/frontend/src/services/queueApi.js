@@ -51,10 +51,10 @@ export async function assignTicketPriority(id, priority) {
   return response.ticket;
 }
 
-export async function updateTicketStatus(id, status) {
+export async function updateTicketStatus(id, status, room) {
   const response = await apiRequest(`/api/tickets/${id}/status`, {
     method: "PATCH",
-    body: { status },
+    body: room ? { status, room } : { status },
   });
 
   return response.ticket;
@@ -103,10 +103,13 @@ export async function fetchAuditEvents(filters = {}) {
   return apiRequest(`/api/audit-events${suffix}`);
 }
 
-export async function callNextPatient(department) {
+export async function callNextPatient(department, room) {
+  const body = {};
+  if (department) body.department = department;
+  if (room) body.room = room;
   const response = await apiRequest("/api/queue/call-next", {
     method: "POST",
-    body: department ? { department } : {},
+    body,
   });
 
   return response.ticket;

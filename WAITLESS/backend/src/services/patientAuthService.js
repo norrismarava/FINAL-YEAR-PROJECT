@@ -6,10 +6,12 @@ import { env } from "../config/env.js";
 import { getPool } from "../db/db.js";
 import { HttpError } from "../utils/http.js";
 import * as filePatient from "./filePatientStore.js";
+import { createSessionStore } from "./sessionStore.js";
 
 const useFile = env.databaseProvider === "file";
 
-const patientSessions = new Map();
+const patientSessionStore = createSessionStore("patient");
+const patientSessions = patientSessionStore.load();
 const patientPasswordResetTokens = new Map();
 
 function normalizeEmail(email) {
@@ -45,6 +47,7 @@ function createPatientSession(user) {
     user: publicPatientUser(user),
     expiresAt,
   });
+  patientSessionStore.persist();
 
   return {
     token,
@@ -55,10 +58,15 @@ function createPatientSession(user) {
 
 function pruneExpiredPatientSessions() {
   const now = Date.now();
+  let changed = false;
   for (const [token, session] of patientSessions.entries()) {
     if (new Date(session.expiresAt).getTime() <= now) {
       patientSessions.delete(token);
+      changed = true;
     }
+  }
+  if (changed) {
+    patientSessionStore.persist();
   }
 }
 
@@ -307,6 +315,10 @@ export function getPatientSessionFromRequest(req) {
     return null;
   }
 
+  // Sliding expiry — activity renews the session; the TTL only lapses idle.
+  session.expiresAt = new Date(Date.now() + env.authSessionTtlMs).toISOString();
+  patientSessionStore.persist();
+
   return session;
 }
 
@@ -468,6 +480,7 @@ export async function deletePatientAccount(id) {
   for (const [token, session] of patientSessions.entries()) {
     if (session.user?.id === id) {
       patientSessions.delete(token);
+      patientSessionStore.persist();
     }
   }
 

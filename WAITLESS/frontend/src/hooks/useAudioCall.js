@@ -70,21 +70,54 @@ export function useAudioCall() {
     };
   }, [supported, selectedVoiceURI]);
 
+  // Short two-tone chime before the spoken call, like a hospital PA ding —
+  // cuts through waiting-area noise so patients notice the announcement.
+  const playChime = useCallback(() => {
+    try {
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return 0;
+      const ctx = new Ctx();
+      const master = ctx.createGain();
+      master.gain.value = 0.22 * (settingsRef.current.volume ?? 1);
+      master.connect(ctx.destination);
+      [880, 660].forEach((frequency, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.0001, ctx.currentTime + i * 0.18);
+        gain.gain.exponentialRampToValueAtTime(1, ctx.currentTime + i * 0.18 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.18 + 0.17);
+        osc.type = "sine";
+        osc.frequency.value = frequency;
+        osc.connect(gain);
+        gain.connect(master);
+        osc.start(ctx.currentTime + i * 0.18);
+        osc.stop(ctx.currentTime + i * 0.18 + 0.18);
+      });
+      window.setTimeout(() => ctx.close().catch(() => {}), 900);
+      return 480; // ms before speech starts
+    } catch {
+      return 0;
+    }
+  }, []);
+
   const speak = useCallback(
     (text) => {
       if (!supported || !enabled || !text) return;
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
-      const voice = voices.find((v) => v.voiceURI === selectedVoiceURI);
-      if (voice) utterance.voice = voice;
-      utterance.rate = rate;
-      utterance.volume = volume;
-      utterance.onstart = () => setIsSpeaking(true);
-      utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
-      window.speechSynthesis.speak(utterance);
+      const delay = playChime();
+      window.setTimeout(() => {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        const voice = voices.find((v) => v.voiceURI === selectedVoiceURI);
+        if (voice) utterance.voice = voice;
+        utterance.rate = rate;
+        utterance.volume = volume;
+        utterance.onstart = () => setIsSpeaking(true);
+        utterance.onend = () => setIsSpeaking(false);
+        utterance.onerror = () => setIsSpeaking(false);
+        window.speechSynthesis.speak(utterance);
+      }, delay);
     },
-    [supported, enabled, voices, selectedVoiceURI, rate, volume],
+    [supported, enabled, voices, selectedVoiceURI, rate, volume, playChime],
   );
 
   const preview = useCallback(

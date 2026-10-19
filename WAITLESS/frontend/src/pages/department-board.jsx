@@ -64,6 +64,7 @@ export default function DepartmentBoardPage() {
   const realtime = useQueueRealtime();
   const audio = useAudioCall();
   const lastProcessedEventRef = useRef(null);
+  const [justCalledId, setJustCalledId] = useState(null);
 
   const loadBoard = useCallback(() => fetchDepartmentBoard(department), [department]);
   const queueQuery = useApiResource(loadBoard, { enabled: isBrowser });
@@ -82,11 +83,22 @@ export default function DepartmentBoardPage() {
       const payload = realtime.lastEvent.payload ?? {};
       const ticketCode = payload.ticket ?? "";
       const eventDepartment = payload.department ?? "";
+      const room = payload.room ?? "";
+      const attempt = Number(payload.attempt ?? 1);
       if (ticketCode && eventDepartment === department) {
-        audio.speak(`Ticket ${ticketCode}, please proceed to ${department}`);
+        const destination = room ? `Room ${room}, ${department}` : department;
+        const prefix = attempt > 1 ? `Second call. ` : "";
+        audio.speak(`${prefix}Ticket ${ticketCode}, please proceed to ${destination}`);
+        setJustCalledId(payload.id ?? null);
       }
     }
   }, [realtime.lastEvent, audio, department]);
+
+  useEffect(() => {
+    if (!justCalledId) return undefined;
+    const id = window.setTimeout(() => setJustCalledId(null), 9000);
+    return () => window.clearTimeout(id);
+  }, [justCalledId]);
 
   const serving = queueQuery.data?.nowServing ?? [];
   const waiting = queueQuery.data?.waiting ?? [];
@@ -185,7 +197,11 @@ export default function DepartmentBoardPage() {
               ) : serving.length ? (
                 <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   {serving.map((ticket) => (
-                    <DeptServingCard key={ticket.id} ticket={ticket} />
+                    <DeptServingCard
+                            key={ticket.id}
+                            ticket={ticket}
+                            justCalled={ticket.id === justCalledId}
+                          />
                   ))}
                 </div>
               ) : (
@@ -291,11 +307,11 @@ function DeptStat({ icon, label, value }) {
   );
 }
 
-function DeptServingCard({ ticket }) {
+function DeptServingCard({ ticket, justCalled }) {
   const glowClass = PRIORITY_GLOW_CLASS[ticket.priority] ?? "";
   const ribbonClass = PRIORITY_RIBBON_CLASS[ticket.priority] ?? "";
   return (
-    <article className={`queue-serving-shine surface-hover-card relative rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-6 ${glowClass} ${priorityChipClass[ticket.priority]}`}>
+    <article className={`queue-serving-shine surface-hover-card relative rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-6 ${glowClass} ${priorityChipClass[ticket.priority]} ${justCalled ? "queue-called-flash" : ""}`}>
       <div className={`queue-priority-ribbon ${ribbonClass}`} />
       <div className="flex items-start justify-between gap-2">
         <div className="text-[11px] font-bold uppercase tracking-[0.28em] text-slate-300">
@@ -306,6 +322,11 @@ function DeptServingCard({ ticket }) {
       <div className="mt-2 font-display text-6xl font-bold tracking-tight text-white sm:text-7xl">{ticket.ticket}</div>
       <div className="mt-4 text-sm text-slate-300">Token {ticket.ticket}</div>
       <div className="mt-1 text-xs text-slate-400">{ticket.department}</div>
+      {ticket.calledRoom ? (
+        <div className="mt-3 inline-flex items-center gap-2 rounded-xl bg-teal-400/15 px-3.5 py-2 font-display text-xl font-bold tracking-wide text-teal-200">
+          Room {ticket.calledRoom}
+        </div>
+      ) : null}
       <div className="mt-5 flex items-center justify-between gap-3 text-xs font-semibold">
         <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 px-2.5 py-1 uppercase tracking-[0.18em] text-slate-200">
           <span className="queue-status-pulse" />

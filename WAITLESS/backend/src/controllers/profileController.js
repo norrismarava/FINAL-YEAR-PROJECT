@@ -25,6 +25,7 @@ export async function getMeController({ req }) {
         ...(user?.department ? { department: user.department } : {}),
         ...(user?.email ? { email: user.email } : {}),
         ...(user?.role ? { role: user.role } : {}),
+        roomNumber: user?.room_number ?? null,
         avatarUrl: user?.avatar_url ?? null,
       },
     },
@@ -34,7 +35,7 @@ export async function getMeController({ req }) {
 export async function saveProfileController({ req, body }) {
   const session = requireStaffSession(req);
 
-  const { fullName, phone, department, email } = body ?? {};
+  const { fullName, phone, department, email, roomNumber } = body ?? {};
 
   const users = await getStoredStaffUsers();
   const existing = users.find((u) => u.id === session.user.id);
@@ -50,13 +51,25 @@ export async function saveProfileController({ req, body }) {
     phone,
     department,
     email,
+    roomNumber,
   });
+
+  // Keep the live session snapshot in sync so new details (e.g. the
+  // consultation room) are used by calls without needing a re-login.
+  if (typeof fullName === "string") session.user.name = fullName;
+  if (typeof phone === "string") session.user.phone = phone;
+  if (typeof department === "string") session.user.department = department;
+  if (typeof email === "string") session.user.email = email;
+  if (typeof roomNumber === "string") {
+    session.user.roomNumber = roomNumber.trim() || null;
+  }
 
   const changedFields = [
     ["fullName", existing.full_name, fullName],
     ["phone", existing.phone, phone],
     ["department", existing.department, department],
     ["email", existing.email, email],
+    ["roomNumber", existing.room_number, roomNumber],
   ]
     .filter(([, previous, next]) => typeof next === "string" && previous !== next)
     .map(([field]) => field);

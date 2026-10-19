@@ -184,6 +184,8 @@ function mapTicketRow(row) {
     registeredAt: fromSqlDateTime(row.registered_at),
     triagedAt: fromSqlDateTime(row.triaged_at),
     calledAt: fromSqlDateTime(row.called_at),
+    calledBy: row.called_by ?? null,
+    calledRoom: row.called_room ?? null,
     serviceStartedAt: fromSqlDateTime(row.service_started_at),
     missedAt: fromSqlDateTime(row.missed_at),
     recalledAt: fromSqlDateTime(row.recalled_at),
@@ -375,6 +377,24 @@ async function ensureTicketSchema(connection) {
     "recall_count",
     "recall_count INT NOT NULL DEFAULT 0 AFTER previous_department",
   );
+  await ensureColumn(
+    connection,
+    "tickets",
+    "called_by",
+    "called_by VARCHAR(160) NULL AFTER called_at",
+  );
+  await ensureColumn(
+    connection,
+    "tickets",
+    "called_room",
+    "called_room VARCHAR(40) NULL AFTER called_by",
+  );
+  await ensureColumn(
+    connection,
+    "staff_users",
+    "room_number",
+    "room_number VARCHAR(20) NULL AFTER employee_id",
+  );
 }
 
 async function insertTicket(connection, ticket) {
@@ -401,6 +421,8 @@ async function insertTicket(connection, ticket) {
       registered_at,
       triaged_at,
       called_at,
+      called_by,
+      called_room,
       service_started_at,
       missed_at,
       recalled_at,
@@ -409,7 +431,7 @@ async function insertTicket(connection, ticket) {
       recall_count,
       completed_at,
       whatsapp_enabled
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       ticket.id,
       ticket.ticket,
@@ -432,6 +454,8 @@ async function insertTicket(connection, ticket) {
       toSqlDateTime(ticket.registeredAt),
       toSqlDateTime(ticket.triagedAt),
       toSqlDateTime(ticket.calledAt),
+      ticket.calledBy ?? null,
+      ticket.calledRoom ?? null,
       toSqlDateTime(ticket.serviceStartedAt),
       toSqlDateTime(ticket.missedAt),
       toSqlDateTime(ticket.recalledAt),
@@ -467,6 +491,8 @@ async function replaceTicket(connection, ticket) {
       registered_at = ?,
       triaged_at = ?,
       called_at = ?,
+      called_by = ?,
+      called_room = ?,
       service_started_at = ?,
       missed_at = ?,
       recalled_at = ?,
@@ -497,6 +523,8 @@ async function replaceTicket(connection, ticket) {
       toSqlDateTime(ticket.registeredAt),
       toSqlDateTime(ticket.triagedAt),
       toSqlDateTime(ticket.calledAt),
+      ticket.calledBy ?? null,
+      ticket.calledRoom ?? null,
       toSqlDateTime(ticket.serviceStartedAt),
       toSqlDateTime(ticket.missedAt),
       toSqlDateTime(ticket.recalledAt),

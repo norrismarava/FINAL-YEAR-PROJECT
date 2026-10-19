@@ -10,6 +10,18 @@ import authBackground from "@/assets/BACKG.png";
 import waitlessLogoIcon from "@/assets/waitless-logo-icon.png";
 
 const REMEMBER_KEY = "waitless.rememberedIdentifier";
+const RETURN_TO_KEY = "waitless:returnTo";
+
+// After a forced sign-out (idle/session expiry) send the user back to the
+// page they were on — only for the workspace matching their account type.
+function consumeReturnTo(prefix) {
+  const returnTo = window.sessionStorage.getItem(RETURN_TO_KEY);
+  if (returnTo?.startsWith(prefix) && !returnTo.startsWith(`${prefix}//`)) {
+    window.sessionStorage.removeItem(RETURN_TO_KEY);
+    return returnTo;
+  }
+  return null;
+}
 
 export default function UnifiedLoginPage({ variant = "unified" }) {
   const isStaff = variant === "staff";
@@ -60,7 +72,7 @@ export default function UnifiedLoginPage({ variant = "unified" }) {
         username: identifier.toLowerCase(),
         password: form.password,
       });
-      navigate(resolveStaffLandingPath(session.user));
+      navigate(consumeReturnTo("/admin") ?? resolveStaffLandingPath(session.user));
       return;
     } catch (staffErr) {
       if (isStaff) {
@@ -79,7 +91,7 @@ export default function UnifiedLoginPage({ variant = "unified" }) {
         identifier,
         password: form.password,
       });
-      navigate("/patient/dashboard");
+      navigate(consumeReturnTo("/patient") ?? "/patient/dashboard");
     } catch (err) {
       setError(
         err?.message ||

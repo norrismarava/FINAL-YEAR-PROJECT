@@ -313,13 +313,28 @@ function IdleLogoutManager() {
 
   useEffect(() => {
     if (!auth.isAuthenticated) return;
+
+    // Remember where the user was so a forced sign-out can bring them back.
+    function saveReturnTo() {
+      const path = location.pathname + location.search;
+      if (path.startsWith("/admin") || path.startsWith("/patient")) {
+        window.sessionStorage.setItem("waitless:returnTo", path);
+      }
+    }
+
     function handleIdleTimeout() {
+      saveReturnTo();
       auth.logout();
       navigate("/login", { replace: true });
     }
+
     window.addEventListener("waitless:idle-timeout", handleIdleTimeout);
-    return () => window.removeEventListener("waitless:idle-timeout", handleIdleTimeout);
-  }, [auth, navigate]);
+    window.addEventListener("waitless:auth-expired", saveReturnTo);
+    return () => {
+      window.removeEventListener("waitless:idle-timeout", handleIdleTimeout);
+      window.removeEventListener("waitless:auth-expired", saveReturnTo);
+    };
+  }, [auth, navigate, location]);
 
   if (!auth.isAuthenticated || !isStaffRoute) return null;
 

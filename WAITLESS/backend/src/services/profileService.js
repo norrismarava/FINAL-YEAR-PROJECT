@@ -65,6 +65,10 @@ export async function upsertStaffUserProfile(userId, patch) {
     fields.push("role = ?");
     values.push(patch.role);
   }
+  if (typeof patch.roomNumber === "string") {
+    fields.push("room_number = ?");
+    values.push(patch.roomNumber.trim() || null);
+  }
 
   if (fields.length === 0) {
     return;

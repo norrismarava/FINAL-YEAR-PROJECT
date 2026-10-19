@@ -380,9 +380,9 @@ export default function KioskPage() {
                     <PhoneCall className="h-5 w-5" />
                   </span>
                   <div>
-                    <div className="text-[0.7rem] font-bold uppercase tracking-[0.24em] text-teal-300">Phone lookup</div>
+                    <div className="text-[0.7rem] font-bold uppercase tracking-[0.24em] text-teal-300">Find my record</div>
                     <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-white">
-                      Enter your phone number
+                      Enter your ID or phone number
                     </h1>
                   </div>
                 </div>
@@ -391,21 +391,21 @@ export default function KioskPage() {
               <form noValidate className="space-y-5 px-6 py-7 sm:px-8" onSubmit={handlePhoneSubmit}>
                 <div>
                   <label className="mb-1.5 block text-sm font-semibold text-white">
-                    Phone number <span className="text-red-400">*</span>
+                    National ID or phone number <span className="text-red-400">*</span>
                   </label>
                   <div className="relative">
                     <PhoneCall className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <input
-                      type="tel"
+                      type="text"
                       value={phoneInput}
                       onChange={(e) => setPhoneInput(e.target.value)}
-                      placeholder="e.g. 077 123 4567"
+                      placeholder="e.g. 67143396U56 or 0771234567"
                       className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
                       autoFocus
                     />
                   </div>
                   <p className="mt-1.5 text-xs text-slate-500">
-                    Enter the phone number you used when you first registered.
+                    Enter the national ID or phone number you registered with.
                   </p>
                 </div>
 

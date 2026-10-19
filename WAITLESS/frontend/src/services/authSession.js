@@ -45,6 +45,13 @@ export function storeAuthSession(session) {
   window.localStorage.setItem(EXPIRES_STORAGE_KEY, session.expiresAt);
 }
 
+export function updateStoredSessionExpiry(expiresAt) {
+  if (typeof window === "undefined" || !expiresAt) {
+    return;
+  }
+  window.localStorage.setItem(EXPIRES_STORAGE_KEY, expiresAt);
+}
+
 export function clearAuthSession() {
   if (typeof window === "undefined") {
     return;

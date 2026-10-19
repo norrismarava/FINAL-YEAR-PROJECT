@@ -8,6 +8,7 @@ import {
   Clock3,
   Copy,
   House,
+  IdCard,
   LoaderCircle,
   MessageCircle,
   PhoneCall,
@@ -25,7 +26,7 @@ import authBackground from "@/assets/BACKG.png";
 import waitlessLogoIcon from "@/assets/waitless-logo-icon.png";
 import { DEPARTMENTS } from "@/services/queueMeta";
 import GlowToggle from "@/components/GlowToggle";
-import { selfRegisterPatient, preRegisterPatient } from "@/services/queueApi";
+import { preRegisterPatient, kioskLookup } from "@/services/queueApi";
 import { useLiveRefresh } from "@/context/LiveRefreshContext";
 import {
   printQueueTicket,
@@ -33,10 +34,11 @@ import {
 } from "@/services/queueTicketHandoff";
 
 const INITIAL_FORM = {
-  fullName: "",
+  firstName: "",
+  lastName: "",
   phone: "",
+  nationalId: "",
   dept: "OPD",
-  chiefComplaint: "",
   notificationConsent: true,
   whatsApp: true,
 };
@@ -69,58 +71,61 @@ export default function SelfRegisterPage() {
   const [success, setSuccess] = useState(null);
   const [handoffState, setHandoffState] = useState("");
   const [copied, setCopied] = useState(false);
+  const [welcomeBack, setWelcomeBack] = useState(false);
 
   function updateField(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  async function lookupByNationalId() {
+    const identifier = form.nationalId.trim();
+    if (!identifier) return;
+    try {
+      const patient = await kioskLookup(identifier);
+      if (patient?.patientName) {
+        const [first, ...rest] = patient.patientName.trim().split(/\s+/);
+        setForm((prev) => ({
+          ...prev,
+          firstName: first ?? prev.firstName,
+          lastName: rest.join(" ") || prev.lastName,
+          phone: patient.phone ?? prev.phone,
+        }));
+        setWelcomeBack(true);
+      }
+    } catch {
+      // No record yet — they'll type their details below.
+    }
   }
 
   async function handleSubmit(event) {
     event.preventDefault();
     setError("");
 
-    if (!form.fullName.trim()) {
-      setError("Please enter your full name.");
+    if (!form.firstName.trim() || !form.lastName.trim()) {
+      setError("Please enter your first name and surname.");
       return;
     }
 
-    if (!form.phone.trim()) {
-      setError("Please enter your phone number for queue notifications.");
+    if (!/^\d{10}$/.test(form.phone)) {
+      setError("Phone number must be exactly 10 digits, e.g. 0771234567.");
+      return;
+    }
+
+    if (!/^\d{8,9}[A-Z]\d{2}$/.test(form.nationalId)) {
+      setError("ID number format: digits, one letter, then 2 digits — e.g. 67143396U56.");
       return;
     }
 
     setSubmitting(true);
     try {
-      const ticket = await selfRegisterPatient(form);
+      const ticket = await preRegisterPatient({
+        ...form,
+        fullName: `${form.firstName.trim()} ${form.lastName.trim()}`,
+      });
       refreshLiveData();
       setSuccess(ticket);
     } catch (err) {
       setError(err.message || "Registration failed. Please try again.");
-    } finally {
-      setSubmitting(false);
-    }
-  }
-
-  async function handlePreRegister(event) {
-    event.preventDefault();
-    setError("");
-
-    if (!form.fullName.trim()) {
-      setError("Please enter your full name.");
-      return;
-    }
-
-    if (!form.phone.trim()) {
-      setError("Please enter your phone number for queue notifications.");
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const ticket = await preRegisterPatient(form);
-      refreshLiveData();
-      setSuccess(ticket);
-    } catch (err) {
-      setError(err.message || "Pre-registration failed. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -325,8 +330,8 @@ export default function SelfRegisterPage() {
                 Book your spot in the queue
               </h1>
               <p className="mt-2.5 text-[13px] leading-5 text-slate-400">
-                Fill in your details to get a ticket number. You'll see your live
-                queue position and receive updates on your phone.
+                Just your ID, name and phone — you'll get a ticket number to give the
+                receptionist on arrival. Returning? Enter your ID and we'll fill in the rest.
               </p>
               <div className="mt-3.5 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-white/35">
                 <span className="inline-flex items-center gap-1.5"><span className="grid h-4 w-4 place-items-center rounded-full bg-teal-400/15 text-[9px] font-bold text-teal-300">1</span>Your details</span>
@@ -346,24 +351,44 @@ export default function SelfRegisterPage() {
                 </div>
               ) : null}
 
-              {/* Full name + phone */}
+              {/* First name + surname */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-sm font-semibold text-white">
-                    Full name <span className="text-red-400">*</span>
+                    First name <span className="text-red-400">*</span>
                   </label>
                   <div className="relative">
                     <UserRound className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <input
                       type="text"
-                      value={form.fullName}
-                      onChange={(e) => updateField("fullName", e.target.value)}
-                      placeholder="e.g. Tendai Mukamuri"
+                      value={form.firstName}
+                      onChange={(e) => updateField("firstName", e.target.value)}
+                      placeholder="e.g. Tendai"
                       className="h-12 w-full rounded-full border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),0_0_0_3px_rgba(45,212,191,0.15)]"
                       required
                     />
                   </div>
                 </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-white">
+                    Surname <span className="text-red-400">*</span>
+                  </label>
+                  <div className="relative">
+                    <UserRound className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      value={form.lastName}
+                      onChange={(e) => updateField("lastName", e.target.value)}
+                      placeholder="e.g. Mukamuri"
+                      className="h-12 w-full rounded-full border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),0_0_0_3px_rgba(45,212,191,0.15)]"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Phone + national ID */}
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-sm font-semibold text-white">
                     Phone number <span className="text-red-400">*</span>
@@ -372,18 +397,51 @@ export default function SelfRegisterPage() {
                     <PhoneCall className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <input
                       type="tel"
+                      inputMode="numeric"
+                      maxLength={10}
                       value={form.phone}
-                      onChange={(e) => updateField("phone", e.target.value)}
-                      placeholder="e.g. 077 123 4567"
+                      onChange={(e) =>
+                        updateField("phone", e.target.value.replace(/\D/g, ""))
+                      }
+                      placeholder="e.g. 0771234567"
                       className="h-12 w-full rounded-full border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),0_0_0_3px_rgba(45,212,191,0.15)]"
                       required
                     />
                   </div>
+                  <p className="mt-1.5 text-xs text-slate-500">
+                    10 digits, numbers only — used for WhatsApp queue updates.
+                  </p>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-sm font-semibold text-white">
+                    ID number <span className="text-red-400">*</span>
+                  </label>
+                  <div className="relative">
+                    <IdCard className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      maxLength={12}
+                      value={form.nationalId}
+                      onChange={(e) => {
+                        updateField(
+                          "nationalId",
+                          e.target.value.replace(/[^0-9a-zA-Z]/g, "").toUpperCase(),
+                        );
+                        setWelcomeBack(false);
+                      }}
+                      onBlur={lookupByNationalId}
+                      placeholder="e.g. 67143396U56"
+                      className="h-12 w-full rounded-full border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),0_0_0_3px_rgba(45,212,191,0.15)]"
+                      required
+                    />
+                  </div>
+                  <p className={`mt-1.5 text-xs ${welcomeBack ? "font-semibold text-teal-300" : "text-slate-500"}`}>
+                    {welcomeBack
+                      ? "Welcome back — details filled in for you."
+                      : "Been here before? We'll fill in your details."}
+                  </p>
                 </div>
               </div>
-              <p className="-mt-1 text-xs text-slate-500">
-                Phone number is used for WhatsApp queue notifications.
-              </p>
 
               {/* Department */}
               <div>
@@ -401,20 +459,6 @@ export default function SelfRegisterPage() {
                     </option>
                   ))}
                 </select>
-              </div>
-
-              {/* Chief complaint */}
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-white">
-                  Reason for visit
-                </label>
-                <textarea
-                  value={form.chiefComplaint}
-                  onChange={(e) => updateField("chiefComplaint", e.target.value)}
-                  placeholder="Briefly describe your symptoms or reason for visiting"
-                  rows={2}
-                  className="w-full rounded-2xl border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),0_0_0_3px_rgba(45,212,191,0.15)]"
-                />
               </div>
 
               {/* Notification consent */}
@@ -440,45 +484,28 @@ export default function SelfRegisterPage() {
               </div>
 
               {/* Actions */}
-              <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="relative inline-flex h-12 w-full items-center justify-center rounded-full bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-6 text-sm font-semibold text-white shadow-[0_14px_30px_-10px_rgba(13,148,136,0.55),inset_0_1px_0_rgba(255,255,255,0.3),inset_0_-2px_6px_rgba(4,60,54,0.4)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_36px_-10px_rgba(13,148,136,0.65),inset_0_1px_0_rgba(255,255,255,0.35)] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {submitting ? (
-                    <>
-                      <LoaderCircle className="h-4 w-4 animate-spin" />
-                      Issuing your ticket...
-                    </>
-                  ) : (
-                    <>
-                      Get my ticket
-                      <span className="absolute right-1.5 grid h-9 w-9 place-items-center rounded-full bg-white/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]">
-                        <ArrowRight className="h-4 w-4" />
-                      </span>
-                    </>
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={handlePreRegister}
-                  disabled={submitting}
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-full border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] px-5 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {submitting ? (
+              <button
+                type="submit"
+                disabled={submitting}
+                className="relative inline-flex h-12 w-full items-center justify-center rounded-full bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-6 text-sm font-semibold text-white shadow-[0_14px_30px_-10px_rgba(13,148,136,0.55),inset_0_1px_0_rgba(255,255,255,0.3),inset_0_-2px_6px_rgba(4,60,54,0.4)] transition-all hover:-translate-y-0.5 hover:shadow-[0_18px_36px_-10px_rgba(13,148,136,0.65),inset_0_1px_0_rgba(255,255,255,0.35)] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {submitting ? (
+                  <>
                     <LoaderCircle className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <>
-                      Pre-register
-                      <Clock3 className="h-3.5 w-3.5" />
-                    </>
-                  )}
-                </button>
-              </div>
+                    Issuing your ticket...
+                  </>
+                ) : (
+                  <>
+                    Get my ticket
+                    <span className="absolute right-1.5 grid h-9 w-9 place-items-center rounded-full bg-white/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.25)]">
+                      <ArrowRight className="h-4 w-4" />
+                    </span>
+                  </>
+                )}
+              </button>
 
               <p className="text-center text-xs text-slate-500">
-                Pre-register online and confirm your arrival at the reception desk to enter the queue.
+                Give your ticket number to the receptionist on arrival — they'll book you into the queue.
               </p>
 
               <div className="flex flex-nowrap items-center justify-center gap-2 pt-2">

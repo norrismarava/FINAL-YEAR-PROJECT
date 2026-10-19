@@ -263,6 +263,8 @@ function createTicketEventPayload(ticket) {
     department: ticket.department,
     priority: ticket.priority,
     status: ticket.status,
+    room: ticket.calledRoom ?? null,
+    calledBy: ticket.calledBy ?? null,
   };
 }
 
@@ -539,6 +541,8 @@ function applyStatusTransition(ticket, status) {
         ...ticket,
         status,
         calledAt: null,
+        calledBy: null,
+        calledRoom: null,
         serviceStartedAt: null,
         missedAt: null,
         completedAt: null,
@@ -869,6 +873,28 @@ export async function registerPatient(payload) {
 
   const registeredAt = new Date().toISOString();
   const patient = await resolvePatientProfile(payload, registeredAt);
+
+  if (!patient.nationalId?.trim()) {
+    throw new HttpError(400, "National ID is required.");
+  }
+
+  // If the patient self-registered already, they hold a pre-registered
+  // ticket with a code — confirm THAT ticket into the queue instead of
+  // minting a second code they'd have to keep track of.
+  const pendingPreRegistered = (await getLiveTickets())
+    .filter(
+      (entry) =>
+        entry.patientId === patient.id && entry.status === "pre-registered",
+    )
+    .sort((a, b) => new Date(b.registeredAt) - new Date(a.registeredAt))[0];
+  if (pendingPreRegistered) {
+    const confirmed = await confirmArrival(
+      pendingPreRegistered.id,
+      actor ?? { role: "reception", fullName: "Front desk" },
+    );
+    return { ...confirmed, reusedPreRegisteredTicket: true };
+  }
+
   const sequence = await getNextSequence();
   const notificationConsent = Boolean(payload.notificationConsent);
   const ticket = {
@@ -877,7 +903,7 @@ export async function registerPatient(payload) {
     patientId: patient.id,
     patientNumber: patient.patientNumber,
     patientName,
-    nationalId: payload.nationalId?.trim() ?? "",
+    nationalId: payload.nationalId?.trim() || patient.nationalId,
     dob: payload.dob ?? "",
     gender: payload.gender ?? "unknown",
     phone: payload.phone?.trim() ?? "",
@@ -974,6 +1000,24 @@ export async function recallMissedPatient(id, options = {}, staff) {
     newRegisteredAt = new Date(Date.now() - 86400000).toISOString();
   } else if (reinsertion === "original" && existing.registeredAt) {
     newRegisteredAt = existing.registeredAt;
+  } else if (reinsertion === "places") {
+    // "N places back" — land the ticket just after the Nth waiting patient in
+    // the same department + priority band, so N patients are called first.
+    const places = Math.max(1, Number(options.places) || 3);
+    const bandWaiting = sortWaitingTickets(
+      (await getLiveTickets()).filter(
+        (ticket) =>
+          ticket.status === "waiting" &&
+          ticket.department === existing.department &&
+          ticket.priority === existing.priority,
+      ),
+    );
+    const anchor = bandWaiting[Math.min(places, bandWaiting.length) - 1];
+    if (anchor?.registeredAt) {
+      newRegisteredAt = new Date(
+        new Date(anchor.registeredAt).getTime() + 1000,
+      ).toISOString();
+    }
   } else if (reinsertion === "offset" && options.offsetMinutes) {
     newRegisteredAt = new Date(Date.now() - options.offsetMinutes * 60000).toISOString();
   }
@@ -990,6 +1034,7 @@ export async function recallMissedPatient(id, options = {}, staff) {
 
   await recordTicketAudit("ticket.recalled", existing, updatedTicket, staff, {
     reinsertion,
+    places: options.places ?? null,
   });
 
   broadcastQueueEvent("ticket.recalled", createTicketEventPayload(updatedTicket));
@@ -1024,6 +1069,8 @@ export async function transferPatient(id, department, staff) {
       transferredAt,
       status: "waiting",
       calledAt: null,
+      calledBy: null,
+      calledRoom: null,
       serviceStartedAt: null,
       missedAt: null,
       completedAt: null,
@@ -1039,12 +1086,40 @@ export async function transferPatient(id, department, staff) {
   return updatedTicket;
 }
 
-export async function callNextPatient(department, staff) {
+export async function callNextPatient(department, staff, room) {
   if (department) {
     ensureDepartment(department);
   }
 
+  const calledRoom = room?.trim() || staff?.roomNumber || null;
+  const callerName = staff?.username ?? staff?.name ?? null;
   const liveTickets = await getLiveTickets();
+
+  // Close this staff member's open tickets in the department before calling
+  // the next patient, so the board never accumulates stale "serving" tiles.
+  const ownOpenTickets = liveTickets.filter(
+    (ticket) =>
+      ticket.calledBy === callerName &&
+      callerName != null &&
+      (ticket.status === "called" || ticket.status === "in-service") &&
+      (!department || ticket.department === department),
+  );
+
+  for (const openTicket of ownOpenTickets) {
+    const completed = enrichTicket(
+      await updateTicket(openTicket.id, (ticket) =>
+        applyStatusTransition(ticket, "completed"),
+      ),
+    );
+    await recordTicketAudit("ticket.completed", openTicket, completed, staff, {
+      reason: "auto-completed on call-next",
+    });
+    broadcastQueueEvent(
+      "ticket.status-updated",
+      createTicketEventPayload(completed),
+    );
+  }
+
   const waitingTickets = sortWaitingTickets(
     liveTickets.filter(
       (ticket) =>
@@ -1065,9 +1140,11 @@ export async function callNextPatient(department, staff) {
   }
 
   const updatedTicket = enrichTicket(
-    await updateTicket(nextTicket.id, (ticket) =>
-      applyStatusTransition(ticket, "called"),
-    ),
+    await updateTicket(nextTicket.id, (ticket) => ({
+      ...applyStatusTransition(ticket, "called"),
+      calledBy: callerName,
+      calledRoom,
+    })),
   );
 
   await recordTicketAudit("ticket.called", nextTicket, updatedTicket, staff);
@@ -1079,7 +1156,55 @@ export async function callNextPatient(department, staff) {
   return updatedTicket;
 }
 
-export async function updatePatientStatus(id, status, staff) {
+const secondCallAnnounced = new Set();
+
+// Periodic sweep: re-announce unanswered calls once ("second call"), then
+// park them as missed so the board keeps flowing without manual cleanup.
+export async function sweepUnansweredCalls({
+  secondCallAfterMs = 45_000,
+  autoMissAfterMs = 90_000,
+} = {}) {
+  const now = Date.now();
+  const live = await getLiveTickets();
+
+  for (const ticket of live) {
+    if (ticket.status !== "called" || !ticket.calledAt) {
+      secondCallAnnounced.delete(ticket.id);
+      continue;
+    }
+
+    const elapsed = now - new Date(ticket.calledAt).getTime();
+
+    if (elapsed >= autoMissAfterMs) {
+      const missed = enrichTicket(
+        await updateTicket(ticket.id, (current) =>
+          applyStatusTransition(current, "missed"),
+        ),
+      );
+      secondCallAnnounced.delete(ticket.id);
+      await recordTicketAudit("ticket.auto-missed", ticket, missed, null, {
+        unansweredMs: autoMissAfterMs,
+      });
+      broadcastQueueEvent(
+        "ticket.status-updated",
+        createTicketEventPayload(missed),
+      );
+      broadcastQueueEvent("ticket.missed", createTicketEventPayload(missed));
+      await dispatchMissedTurnNotification(missed);
+      continue;
+    }
+
+    if (elapsed >= secondCallAfterMs && !secondCallAnnounced.has(ticket.id)) {
+      secondCallAnnounced.add(ticket.id);
+      broadcastQueueEvent("ticket.called", {
+        ...createTicketEventPayload(ticket),
+        attempt: 2,
+      });
+    }
+  }
+}
+
+export async function updatePatientStatus(id, status, staff, room) {
   ensureStatus(status);
 
   const existing = await findTicketById(id);
@@ -1090,7 +1215,17 @@ export async function updatePatientStatus(id, status, staff) {
   ensureStatusTransition(existing.status, status);
 
   const updatedTicket = enrichTicket(
-    await updateTicket(id, (ticket) => applyStatusTransition(ticket, status)),
+    await updateTicket(id, (ticket) => {
+      const next = applyStatusTransition(ticket, status);
+      if (status === "called") {
+        return {
+          ...next,
+          calledBy: staff?.username ?? staff?.name ?? null,
+          calledRoom: room?.trim() || staff?.roomNumber || null,
+        };
+      }
+      return next;
+    }),
   );
 
   await recordTicketAudit("ticket.status-changed", existing, updatedTicket, staff);
@@ -1487,6 +1622,15 @@ export async function kioskLookup(identifier) {
   }
 
   if (!patient) {
+    const needle = normalizeIdentity(value);
+    patient =
+      (await listPatients()).find(
+        (entry) =>
+          entry.nationalId && normalizeIdentity(entry.nationalId) === needle,
+      ) ?? null;
+  }
+
+  if (!patient) {
     throw new HttpError(404, "No patient found. Please register at the front desk.");
   }
 
@@ -1615,6 +1759,11 @@ export async function preRegisterPatient(payload) {
 
   const registeredAt = new Date().toISOString();
   const patient = await resolvePatientProfile(payload, registeredAt);
+
+  if (!patient.nationalId?.trim()) {
+    throw new HttpError(400, "National ID is required.");
+  }
+
   const sequence = await getNextSequence();
   const notificationConsent = Boolean(payload.notificationConsent);
   const ticket = {
@@ -1623,7 +1772,7 @@ export async function preRegisterPatient(payload) {
     patientId: patient.id,
     patientNumber: patient.patientNumber,
     patientName,
-    nationalId: payload.nationalId?.trim() ?? "",
+    nationalId: payload.nationalId?.trim() || patient.nationalId,
     dob: payload.dob ?? "",
     gender: payload.gender ?? "unknown",
     phone: payload.phone?.trim() ?? "",

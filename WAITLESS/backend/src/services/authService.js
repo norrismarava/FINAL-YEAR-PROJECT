@@ -14,6 +14,7 @@ import {
   markAccessCodeUsed,
   validateStaffAccessCode,
 } from "./staffAccessCodeService.js";
+import { createSessionStore } from "./sessionStore.js";
 
 const useFileStaff = env.databaseProvider === "file";
 const useDatabase = env.databaseProvider === "mysql";
@@ -28,13 +29,15 @@ function publicStaffUserFromRow(user) {
     role: user.role,
     department: user.department,
     employeeId: user.employee_id,
+    roomNumber: user.room_number ?? null,
     avatarUrl: user.avatar_url ?? null,
     createdAt: user.created_at,
     lastLoginAt: user.last_login_at ?? null,
   };
 }
 
-const sessions = new Map();
+const staffSessionStore = createSessionStore("staff");
+const sessions = staffSessionStore.load();
 const passwordResetTokens = new Map();
 
 function normalizeUsername(username) {
@@ -55,6 +58,7 @@ function publicStaffUser(user) {
     role: user.role,
     department: user.department,
     employeeId: user.employee_id,
+    roomNumber: user.room_number ?? null,
     avatarUrl: user.avatar_url ?? null,
     createdAt: user.created_at,
     lastLoginAt: user.last_login_at,
@@ -70,6 +74,7 @@ function createSession(user) {
     user: publicStaffUser(user),
     expiresAt,
   });
+  staffSessionStore.persist();
 
   return {
     token,
@@ -80,11 +85,17 @@ function createSession(user) {
 
 function pruneExpiredSessions() {
   const now = Date.now();
+  let changed = false;
 
   for (const [token, session] of sessions.entries()) {
     if (new Date(session.expiresAt).getTime() <= now) {
       sessions.delete(token);
+      changed = true;
     }
+  }
+
+  if (changed) {
+    staffSessionStore.persist();
   }
 }
 
@@ -132,6 +143,7 @@ export async function registerStaff({
   department,
   role,
   employeeId,
+  roomNumber,
   password,
   avatarBase64,
 }) {
@@ -144,6 +156,7 @@ export async function registerStaff({
       department,
       role,
       employeeId,
+      roomNumber,
       password,
       avatarUrl: avatarBase64 ? saveAvatarImage(crypto.randomUUID(), avatarBase64) : null,
     });
@@ -238,8 +251,8 @@ export async function registerStaff({
   await pool.execute(
     `INSERT INTO staff_users (
       id, username, email, password_hash, full_name, role, department,
-      phone, employee_id, avatar_url, created_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+      phone, employee_id, room_number, avatar_url, created_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
     [
       id,
       normalizedUsername,
@@ -250,6 +263,7 @@ export async function registerStaff({
       department,
       phone || null,
       employeeId || null,
+      roomNumber?.trim() || null,
       avatarUrl,
     ],
   );
@@ -321,6 +335,7 @@ export async function changeStaffPassword(userId, { currentPassword, newPassword
   for (const [token, session] of sessions.entries()) {
     if (session.user?.id === userId) {
       sessions.delete(token);
+      staffSessionStore.persist();
     }
   }
 
@@ -374,6 +389,7 @@ export async function deleteStaffUser(id, actorId) {
   for (const [token, session] of sessions.entries()) {
     if (session.user?.id === id) {
       sessions.delete(token);
+      staffSessionStore.persist();
     }
   }
 
@@ -505,6 +521,11 @@ export function getSessionFromRequest(req) {
   if (!session) {
     return null;
   }
+
+  // Sliding expiry — every authenticated request renews the session so
+  // active users are never kicked out; the TTL only lapses on inactivity.
+  session.expiresAt = new Date(Date.now() + env.authSessionTtlMs).toISOString();
+  staffSessionStore.persist();
 
   return {
     token,

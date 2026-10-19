@@ -75,6 +75,9 @@ export const env = {
     process.env.AUTH_SESSION_TTL_MS,
     8 * 60 * 60 * 1000,
   ),
+  autoMissAfterMs: parseInteger(process.env.AUTO_MISS_AFTER_MS, 90 * 1000),
+  autoSecondCallMs: parseInteger(process.env.AUTO_SECOND_CALL_MS, 45 * 1000),
+  autoMissSweepMs: parseInteger(process.env.AUTO_MISS_SWEEP_MS, 15 * 1000),
   initialAdminUsername: process.env.INITIAL_ADMIN_USERNAME?.trim() || "admin",
   initialAdminEmail:
     process.env.INITIAL_ADMIN_EMAIL?.trim().toLowerCase() ||

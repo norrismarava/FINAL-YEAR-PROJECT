@@ -40,6 +40,13 @@ export function storePatientSession(session) {
   window.localStorage.setItem(EXPIRES_STORAGE_KEY, session.expiresAt);
 }
 
+export function updateStoredPatientExpiry(expiresAt) {
+  if (typeof window === "undefined" || !expiresAt) {
+    return;
+  }
+  window.localStorage.setItem(EXPIRES_STORAGE_KEY, expiresAt);
+}
+
 export function clearPatientSession() {
   if (typeof window === "undefined") {
     return;

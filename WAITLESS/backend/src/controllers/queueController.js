@@ -187,7 +187,7 @@ export async function updateTicketStatusController({ params, body, staff }) {
   return {
     status: 200,
     body: {
-      ticket: await updatePatientStatus(params.id, body?.status, staff),
+      ticket: await updatePatientStatus(params.id, body?.status, staff, body?.room),
     },
   };
 }
@@ -199,6 +199,9 @@ export async function recallTicketController({ params, body, staff }) {
   }
   if (body?.offsetMinutes) {
     options.offsetMinutes = Number(body.offsetMinutes);
+  }
+  if (body?.places) {
+    options.places = Number(body.places);
   }
   return {
     status: 200,
@@ -230,7 +233,7 @@ export async function callNextController({ body, staff }) {
   return {
     status: 200,
     body: {
-      ticket: await callNextPatient(body?.department, staff),
+      ticket: await callNextPatient(body?.department, staff, body?.room),
     },
   };
 }

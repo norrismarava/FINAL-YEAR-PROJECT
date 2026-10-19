@@ -1,7 +1,7 @@
 import axios from "axios";
 
-import { getStoredAuthToken } from "./authSession";
-import { getStoredPatientToken } from "./patientAuthSession";
+import { getStoredAuthToken, updateStoredSessionExpiry } from "./authSession";
+import { getStoredPatientToken, updateStoredPatientExpiry } from "./patientAuthSession";
 
 // Prefer same-origin + Vite proxy (`/api` -> http://localhost:4242) to avoid browser Network/CORS issues.
 // If you explicitly set VITE_API_BASE_URL, we’ll use it.
@@ -27,10 +27,27 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
+// The backend slides session expiry on every authenticated request and
+// returns the new deadline in `x-session-expires` — keep the stored expiry
+// in sync so active users never hit a stale client-side cutoff.
+function refreshStoredExpiry(response) {
+  const expiresAt = response?.headers?.["x-session-expires"];
+  if (!expiresAt) return;
+  const sentToken = (response.config?.headers?.Authorization ?? "").replace(/^Bearer\s+/i, "");
+  if (sentToken && sentToken === getStoredPatientToken()) {
+    updateStoredPatientExpiry(expiresAt);
+  } else {
+    updateStoredSessionExpiry(expiresAt);
+  }
+}
+
 // Any 401 on an authenticated endpoint means the stored session is dead —
 // broadcast it so auth providers can log out and send the user to /login.
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    refreshStoredExpiry(response);
+    return response;
+  },
   (error) => {
     if (error.response?.status === 401) {
       window.dispatchEvent(new Event("waitless:auth-expired"));

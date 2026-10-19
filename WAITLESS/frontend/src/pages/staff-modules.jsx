@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   Clock3,
   Database,
+  DoorOpen,
   Download,
   FileChartColumn,
   FileText,
@@ -69,6 +70,7 @@ import {
   recallTicket,
   callNextPatient,
   updateTicketStatus,
+  transferTicket,
   retryNotificationDelivery,
   updatePrescriptionState,
   updateTestOrderState,
@@ -194,14 +196,19 @@ export function StaffQueueBoardPage() {
     ? auth.user.department
     : DEPARTMENTS[0];
   const [callDept, setCallDept] = useState(staffDept);
-  const callMutation = useApiAction(callNextPatient, {
-    onSuccess: (res) => {
-      refreshLiveData();
-      toast.success(`${res?.ticket?.ticket ?? "Ticket"} called to ${res?.ticket?.department ?? callDept}.`);
+  const [callRoom, setCallRoom] = useState(auth.user?.roomNumber ?? "");
+  const callMutation = useApiAction(
+    ({ department, room }) => callNextPatient(department, room),
+    {
+      onSuccess: (res) => {
+        refreshLiveData();
+        const roomSuffix = res?.ticket?.calledRoom ? ` — Room ${res.ticket.calledRoom}` : "";
+        toast.success(`${res?.ticket?.ticket ?? "Ticket"} called to ${res?.ticket?.department ?? callDept}${roomSuffix}.`);
+      },
     },
-  });
+  );
   const statusMutation = useApiAction(
-    ({ id, status }) => updateTicketStatus(id, status),
+    ({ id, status, room }) => updateTicketStatus(id, status, room),
     {
       onSuccess: (res) => {
         refreshLiveData();
@@ -209,12 +216,32 @@ export function StaffQueueBoardPage() {
       },
     },
   );
+  const transferMutation = useApiAction(
+    ({ id, department }) => transferTicket(id, department),
+    {
+      onSuccess: (res) => {
+        refreshLiveData();
+        toast.success(`${res?.ticket?.ticket ?? "Ticket"} transferred to ${res?.ticket?.department}.`);
+      },
+    },
+  );
 
   const deptWaitingCount = waiting.filter((t) => t.department === callDept).length;
-  const mutationError = callMutation.error?.message ?? statusMutation.error?.message;
+  const mutationError =
+    callMutation.error?.message ??
+    statusMutation.error?.message ??
+    transferMutation.error?.message;
 
   function setTicketStatus(ticket, status) {
-    statusMutation.mutate({ id: ticket.id, status });
+    statusMutation.mutate({
+      id: ticket.id,
+      status,
+      room: status === "called" ? callRoom : undefined,
+    });
+  }
+
+  function transferTicketTo(ticket, department) {
+    transferMutation.mutate({ id: ticket.id, department });
   }
 
   return (
@@ -242,10 +269,20 @@ export function StaffQueueBoardPage() {
           <span className="text-xs text-muted-foreground">
             {deptWaitingCount} waiting
           </span>
+          <label className="flex items-center gap-2 text-sm font-semibold text-foreground">
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Room</span>
+            <input
+              type="text"
+              value={callRoom}
+              onChange={(e) => setCallRoom(e.target.value)}
+              placeholder="e.g. 405"
+              className="input-base h-9 w-20 text-xs"
+            />
+          </label>
           <button
             type="button"
             disabled={callMutation.isPending || !deptWaitingCount}
-            onClick={() => callMutation.mutate(callDept)}
+            onClick={() => callMutation.mutate({ department: callDept, room: callRoom || undefined })}
             className="inline-flex h-9 items-center gap-2 rounded-lg bg-primary px-4 text-xs font-bold uppercase tracking-wider text-primary-foreground transition hover:brightness-110 disabled:opacity-50"
           >
             {callMutation.isPending ? (
@@ -331,8 +368,9 @@ export function StaffQueueBoardPage() {
                   <ServingTile
                     key={ticket.id}
                     ticket={ticket}
-                    pending={statusMutation.isPending}
+                    pending={statusMutation.isPending || transferMutation.isPending}
                     onStatus={setTicketStatus}
+                    onTransfer={transferTicketTo}
                   />
                 ))}
               </div>
@@ -351,7 +389,13 @@ export function StaffQueueBoardPage() {
             {waiting.length ? (
               <div className="divide-y divide-border/50">
                 {waiting.map((ticket, index) => (
-                  <WaitingQueueRow key={ticket.id} ticket={ticket} position={index + 1} />
+                  <WaitingQueueRow
+                    key={ticket.id}
+                    ticket={ticket}
+                    position={index + 1}
+                    pending={statusMutation.isPending}
+                    onCall={(t) => setTicketStatus(t, "called")}
+                  />
                 ))}
               </div>
             ) : (
@@ -426,9 +470,10 @@ const PRIORITY_TOP_BAR = {
   black: "bg-priority-black",
 };
 
-function ServingTile({ ticket, onStatus, pending }) {
+function ServingTile({ ticket, onStatus, onTransfer, pending }) {
   const isCalled = ticket.status === "called";
   const inService = ticket.status === "in-service";
+  const isUrgent = ticket.priority === "red";
   return (
     <article className="relative overflow-hidden rounded-xl border border-border/70 bg-background/60 p-4">
       <div
@@ -445,6 +490,12 @@ function ServingTile({ ticket, onStatus, pending }) {
           {STATUS_META[ticket.status]?.label ?? ticket.status}
         </span>
       </div>
+      {isUrgent ? (
+        <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-priority-red/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-priority-red">
+          <AlertTriangle className="h-3 w-3 animate-pulse" />
+          Urgent attention
+        </span>
+      ) : null}
       <div className="mt-3 text-sm font-semibold text-foreground">{ticket.department}</div>
       <div className="mt-0.5 text-xs text-muted-foreground">
         {PRIORITY_META[ticket.priority]?.label ?? ticket.priority}
@@ -452,6 +503,12 @@ function ServingTile({ ticket, onStatus, pending }) {
       <div className="mt-3 flex items-center gap-1.5 border-t border-border/50 pt-3 text-xs text-muted-foreground">
         <Clock3 className="h-3.5 w-3.5" />
         {ticket.waitMinutes}m in service
+        {ticket.calledRoom ? (
+          <span className="ml-auto inline-flex items-center gap-1 rounded-md bg-muted px-1.5 py-0.5 font-semibold text-foreground">
+            <DoorOpen className="h-3 w-3" />
+            Room {ticket.calledRoom}
+          </span>
+        ) : null}
       </div>
       {onStatus ? (
         <div className="mt-3 flex flex-wrap gap-2">
@@ -488,15 +545,41 @@ function ServingTile({ ticket, onStatus, pending }) {
               Complete visit
             </button>
           ) : null}
+          {onTransfer ? (
+            <select
+              disabled={pending}
+              defaultValue=""
+              onChange={(e) => {
+                if (e.target.value) onTransfer(ticket, e.target.value);
+                e.target.value = "";
+              }}
+              className="input-base h-8 w-auto cursor-pointer text-[11px] font-semibold text-muted-foreground"
+            >
+              <option value="" disabled>
+                Transfer to…
+              </option>
+              {DEPARTMENTS.filter((dept) => dept !== ticket.department).map((dept) => (
+                <option key={dept} value={dept}>
+                  {dept}
+                </option>
+              ))}
+            </select>
+          ) : null}
         </div>
       ) : null}
     </article>
   );
 }
 
-function WaitingQueueRow({ ticket, position }) {
+function WaitingQueueRow({ ticket, position, onCall, pending }) {
+  const isUrgent = ticket.priority === "red";
+  const isSerious = ticket.priority === "yellow";
   return (
-    <div className="flex items-center justify-between gap-4 px-5 py-3 transition-colors hover:bg-muted/40">
+    <div
+      className={`flex items-center justify-between gap-4 px-5 py-3 transition-colors hover:bg-muted/40 ${
+        isUrgent ? "bg-priority-red/5" : ""
+      }`}
+    >
       <div className="flex min-w-0 items-center gap-3">
         <span className="grid h-7 w-7 shrink-0 place-items-center rounded-md bg-muted font-display text-[11px] font-bold text-muted-foreground">
           {position}
@@ -510,18 +593,44 @@ function WaitingQueueRow({ ticket, position }) {
           <div className="truncate text-sm font-semibold text-foreground">
             {ticket.department}
           </div>
-          <div className="mt-0.5 truncate text-xs text-muted-foreground">
-            {PRIORITY_META[ticket.priority]?.label ?? ticket.priority}
+          <div className="mt-0.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+            <span className="truncate">
+              {PRIORITY_META[ticket.priority]?.label ?? ticket.priority}
+            </span>
+            {isUrgent ? (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-priority-red/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-priority-red">
+                <AlertTriangle className="h-2.5 w-2.5 animate-pulse" />
+                Urgent
+              </span>
+            ) : null}
+            {isSerious ? (
+              <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-priority-yellow/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-priority-yellow">
+                Priority
+              </span>
+            ) : null}
           </div>
         </div>
       </div>
-      <div className="shrink-0 text-right">
-        <div className="font-display text-sm font-bold text-foreground">
-          {ticket.waitMinutes}m
+      <div className="flex shrink-0 items-center gap-3">
+        <div className="text-right">
+          <div className="font-display text-sm font-bold text-foreground">
+            {ticket.waitMinutes}m
+          </div>
+          <div className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
+            {STATUS_META[ticket.status]?.label ?? ticket.status}
+          </div>
         </div>
-        <div className="mt-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-          {STATUS_META[ticket.status]?.label ?? ticket.status}
-        </div>
+        {onCall ? (
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => onCall(ticket)}
+            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-primary/40 px-3 text-[11px] font-bold uppercase tracking-wider text-primary transition hover:bg-primary/10 disabled:opacity-50"
+          >
+            <BellRing className="h-3 w-3" />
+            Call
+          </button>
+        ) : null}
       </div>
     </div>
   );
@@ -529,7 +638,7 @@ function WaitingQueueRow({ ticket, position }) {
 
 function MissedRecallRow({ ticket }) {
   const { refreshLiveData } = useLiveRefresh();
-  const [position, setPosition] = useState("back");
+  const [position, setPosition] = useState("places");
   const [offsetMinutes, setOffsetMinutes] = useState("");
   const recallMutation = useApiAction(
     (opts) => recallTicket(ticket.id, opts),
@@ -538,6 +647,9 @@ function MissedRecallRow({ ticket }) {
 
   function handleRecall() {
     const opts = { reinsertionPosition: position };
+    if (position === "places") {
+      opts.places = 3;
+    }
     if (position === "offset" && offsetMinutes) {
       opts.offsetMinutes = Number(offsetMinutes);
     }
@@ -545,6 +657,7 @@ function MissedRecallRow({ ticket }) {
   }
 
   const options = [
+    { value: "places", label: "3 places back" },
     { value: "back", label: "Back of queue" },
     { value: "front", label: "Front of queue" },
     { value: "original", label: "Original position" },
