@@ -221,14 +221,20 @@ const SEEDED_TICKETS = [
   },
 ];
 
-export function createTicketCode(department, sequence) {
-  const fallbackPrefix =
-    String(department ?? "")
-      .replace(/[^a-z0-9]/gi, "")
-      .slice(0, 3)
-      .toUpperCase() || "QUE";
-  const prefix = DEPARTMENT_TOKEN_PREFIX[department] ?? fallbackPrefix;
-  return `${prefix}-${String(sequence).padStart(3, "0")}`;
+// Tickets are dept-neutral now: A001..A999, B001..B999, ... Z999, then the
+// cycle repeats. The department is assigned at reception when the ticket is
+// issued onto a queue — not baked into the code the patient holds.
+const TICKET_CODES_PER_LETTER = 999;
+const TICKET_CODE_CYCLE = 26 * TICKET_CODES_PER_LETTER;
+
+export function createTicketCode(sequence) {
+  const zeroBased =
+    (Math.max(1, Number(sequence) || 1) - 1) % TICKET_CODE_CYCLE;
+  const letter = String.fromCharCode(
+    65 + Math.floor(zeroBased / TICKET_CODES_PER_LETTER),
+  );
+  const number = (zeroBased % TICKET_CODES_PER_LETTER) + 1;
+  return `${letter}${String(number).padStart(3, "0")}`;
 }
 
 export function priorityRank(priority) {
@@ -253,7 +259,7 @@ export function createSeedTickets() {
 
     return {
       id: crypto.randomUUID(),
-      ticket: createTicketCode(row.department, row.sequence),
+      ticket: createTicketCode(row.sequence),
       patientName: row.patientName,
       nationalId: "",
       dob: "",

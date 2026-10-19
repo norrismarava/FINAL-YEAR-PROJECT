@@ -62,7 +62,6 @@ import {
   submitFeedbackController,
   ticketFeedbackController,
   confirmArrivalController,
-  kioskActivateController,
   kioskCheckInController,
   kioskLookupController,
   metaController,
@@ -308,7 +307,7 @@ router.register("POST", "/api/tickets/self-register", registrationRateLimit(self
 router.register("POST", "/api/tickets/pre-register", publicQueueRateLimit(preRegisterController));
 router.register("POST", "/api/kiosk/lookup", publicQueueRateLimit(kioskLookupController));
 router.register("POST", "/api/kiosk/check-in", publicQueueRateLimit(kioskCheckInController));
-router.register("POST", "/api/kiosk/activate", publicQueueRateLimit(kioskActivateController));
+
 router.register(
   "POST",
   "/api/tickets/:id/confirm-arrival",

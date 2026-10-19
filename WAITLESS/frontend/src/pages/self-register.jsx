@@ -7,15 +7,14 @@ import {
   CheckCircle2,
   Clock3,
   Copy,
+  Download,
   House,
   IdCard,
   LoaderCircle,
   MessageCircle,
   PhoneCall,
-  Printer,
   QrCode,
   Search,
-  Share2,
   ShieldCheck,
   Ticket,
   UserRound,
@@ -24,21 +23,17 @@ import QRCode from "qrcode";
 
 import authBackground from "@/assets/BACKG.png";
 import waitlessLogoIcon from "@/assets/waitless-logo-icon.png";
-import { DEPARTMENTS } from "@/services/queueMeta";
 import GlowToggle from "@/components/GlowToggle";
 import { preRegisterPatient, kioskLookup } from "@/services/queueApi";
 import { useLiveRefresh } from "@/context/LiveRefreshContext";
-import {
-  printQueueTicket,
-  shareQueueTicket,
-} from "@/services/queueTicketHandoff";
 
+// The ticket carries no department — it just says "I'm here". The
+// receptionist books it into the right department queue on arrival.
 const INITIAL_FORM = {
   firstName: "",
   lastName: "",
   phone: "",
   nationalId: "",
-  dept: "OPD",
   notificationConsent: true,
   whatsApp: true,
 };
@@ -72,6 +67,8 @@ export default function SelfRegisterPage() {
   const [handoffState, setHandoffState] = useState("");
   const [copied, setCopied] = useState(false);
   const [welcomeBack, setWelcomeBack] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const [foundPatientNumber, setFoundPatientNumber] = useState("");
 
   function updateField(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -80,6 +77,7 @@ export default function SelfRegisterPage() {
   async function lookupByNationalId() {
     const identifier = form.nationalId.trim();
     if (!identifier) return;
+    setSearching(true);
     try {
       const patient = await kioskLookup(identifier);
       if (patient?.patientName) {
@@ -90,10 +88,15 @@ export default function SelfRegisterPage() {
           lastName: rest.join(" ") || prev.lastName,
           phone: patient.phone ?? prev.phone,
         }));
+        setFoundPatientNumber(patient.patientNumber ?? "");
         setWelcomeBack(true);
       }
     } catch {
       // No record yet — they'll type their details below.
+      setFoundPatientNumber("");
+      setWelcomeBack(false);
+    } finally {
+      setSearching(false);
     }
   }
 
@@ -144,21 +147,83 @@ export default function SelfRegisterPage() {
     }
   }
 
-  async function handlePrintTicket() {
+  // Renders the ticket card to a PNG the patient can save on their phone —
+  // replaces printing on a self-service flow where paper may not exist.
+  async function handleDownloadTicket() {
     try {
-      setHandoffState("Preparing printable ticket...");
-      await printQueueTicket(success);
-      setHandoffState("Print dialog opened.");
-    } catch (err) {
-      setHandoffState(err.message || "The ticket could not be printed.");
-    }
-  }
+      const W = 720;
+      const H = 1000;
+      const canvas = document.createElement("canvas");
+      canvas.width = W;
+      canvas.height = H;
+      const ctx = canvas.getContext("2d");
 
-  async function handleShareTicket() {
-    try {
-      setHandoffState(await shareQueueTicket(success));
+      const roundRect = (x, y, w, h, r) => {
+        ctx.beginPath();
+        ctx.roundRect(x, y, w, h, r);
+        ctx.fill();
+      };
+
+      // Card background + border
+      ctx.fillStyle = "#04141f";
+      roundRect(0, 0, W, H, 36);
+      ctx.fillStyle = "rgba(45,212,191,0.10)";
+      roundRect(16, 16, W - 32, H - 32, 28);
+
+      // Header
+      ctx.fillStyle = "#2dd4bf";
+      ctx.font = "bold 34px system-ui, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("WaitLess", W / 2, 96);
+      ctx.fillStyle = "rgba(255,255,255,0.45)";
+      ctx.font = "600 17px system-ui, sans-serif";
+      ctx.fillText("SMARTER QUEUES, BETTER CARE", W / 2, 130);
+
+      // Ticket code
+      ctx.fillStyle = "rgba(255,255,255,0.55)";
+      ctx.font = "700 20px system-ui, sans-serif";
+      ctx.fillText("YOUR TICKET", W / 2, 220);
+      ctx.fillStyle = "#5eead4";
+      ctx.font = "bold 96px system-ui, sans-serif";
+      ctx.fillText(success.ticket, W / 2, 330);
+
+      ctx.fillStyle = "rgba(255,255,255,0.7)";
+      ctx.font = "600 26px system-ui, sans-serif";
+      ctx.fillText("Show this ticket at reception", W / 2, 390);
+      ctx.fillStyle = "rgba(255,255,255,0.4)";
+      ctx.font = "500 20px system-ui, sans-serif";
+      ctx.fillText(`Issued ${new Date().toLocaleString()}`, W / 2, 430);
+
+      // QR (patient number — reusable identity)
+      if (qrCanvasRef.current) {
+        const qrSize = 260;
+        ctx.fillStyle = "#ffffff";
+        roundRect(W / 2 - qrSize / 2 - 14, 480 - 14, qrSize + 28, qrSize + 28, 18);
+        ctx.drawImage(qrCanvasRef.current, W / 2 - qrSize / 2, 480, qrSize, qrSize);
+      }
+
+      // Instructions
+      ctx.fillStyle = "rgba(255,255,255,0.65)";
+      ctx.font = "500 21px system-ui, sans-serif";
+      ctx.fillText("Show this ticket at reception to join the queue.", W / 2, 820);
+      ctx.fillStyle = "rgba(45,212,191,0.7)";
+      ctx.font = "600 18px system-ui, sans-serif";
+      ctx.fillText("Scan the QR at the kiosk next visit for instant check-in.", W / 2, 860);
+      ctx.fillStyle = "rgba(255,255,255,0.3)";
+      ctx.font = "500 16px system-ui, sans-serif";
+      ctx.fillText("Keep this ticket until your visit is complete.", W / 2, 930);
+
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+      if (!blob) throw new Error("Could not render the ticket image.");
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `waitless-ticket-${success.ticket}.png`;
+      link.click();
+      URL.revokeObjectURL(url);
+      setHandoffState("Ticket image saved to your device.");
     } catch (err) {
-      setHandoffState(err.message || "The ticket could not be shared.");
+      setHandoffState(err.message || "The ticket image could not be saved.");
     }
   }
 
@@ -252,30 +317,11 @@ export default function SelfRegisterPage() {
                 </Link>
                 <button
                   type="button"
-                  onClick={handlePrintTicket}
+                  onClick={handleDownloadTicket}
                   className="inline-flex h-12 items-center gap-2 rounded-full border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] px-4 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08]"
                 >
-                  <Printer className="h-4 w-4" />
-                  Print
-                </button>
-                <button
-                  type="button"
-                  onClick={handleShareTicket}
-                  className="inline-flex h-12 items-center gap-2 rounded-full border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] px-4 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08]"
-                >
-                  <Share2 className="h-4 w-4" />
-                  Send to phone
-                </button>
-                <button
-                  onClick={() => {
-                    setSuccess(null);
-                    setForm(INITIAL_FORM);
-                    setHandoffState("");
-                    setCopied(false);
-                  }}
-                  className="inline-flex h-12 items-center gap-2 rounded-full border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] px-5 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08]"
-                >
-                  Register another patient
+                  <Download className="h-4 w-4" />
+                  Save ticket
                 </button>
               </div>
 
@@ -351,6 +397,51 @@ export default function SelfRegisterPage() {
                 </div>
               ) : null}
 
+              {/* ID number first — returning patients get found by it */}
+              <div>
+                <label className="mb-1.5 block text-sm font-semibold text-white">
+                  ID number <span className="text-red-400">*</span>
+                </label>
+                <div className="relative">
+                  <IdCard className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <input
+                    type="text"
+                    maxLength={12}
+                    value={form.nationalId}
+                    onChange={(e) => {
+                      updateField(
+                        "nationalId",
+                        e.target.value.replace(/[^0-9a-zA-Z]/g, "").toUpperCase(),
+                      );
+                      setWelcomeBack(false);
+                      setFoundPatientNumber("");
+                    }}
+                    onBlur={lookupByNationalId}
+                    placeholder="e.g. 67143396U56"
+                    className="h-12 w-full rounded-full border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] pl-11 pr-24 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),0_0_0_3px_rgba(45,212,191,0.15)]"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={lookupByNationalId}
+                    disabled={searching || !form.nationalId.trim()}
+                    className="absolute right-1.5 top-1/2 inline-flex h-9 -translate-y-1/2 items-center gap-1.5 rounded-full bg-teal-500/15 px-4 text-xs font-semibold text-teal-200 transition-colors hover:bg-teal-500/25 disabled:opacity-50"
+                  >
+                    {searching ? (
+                      <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Search className="h-3.5 w-3.5" />
+                    )}
+                    Find me
+                  </button>
+                </div>
+                <p className={`mt-1.5 text-xs ${welcomeBack ? "font-semibold text-teal-300" : "text-slate-500"}`}>
+                  {welcomeBack
+                    ? `Welcome back — ${foundPatientNumber || "record found"}, your details are filled in.`
+                    : "Been here before? Enter your ID and tap Find me — we'll fill in your details."}
+                </p>
+              </div>
+
               {/* First name + surname */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
@@ -387,7 +478,7 @@ export default function SelfRegisterPage() {
                 </div>
               </div>
 
-              {/* Phone + national ID */}
+              {/* Phone */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-1.5 block text-sm font-semibold text-white">
@@ -412,53 +503,15 @@ export default function SelfRegisterPage() {
                     10 digits, numbers only — used for WhatsApp queue updates.
                   </p>
                 </div>
-                <div>
-                  <label className="mb-1.5 block text-sm font-semibold text-white">
-                    ID number <span className="text-red-400">*</span>
-                  </label>
-                  <div className="relative">
-                    <IdCard className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="text"
-                      maxLength={12}
-                      value={form.nationalId}
-                      onChange={(e) => {
-                        updateField(
-                          "nationalId",
-                          e.target.value.replace(/[^0-9a-zA-Z]/g, "").toUpperCase(),
-                        );
-                        setWelcomeBack(false);
-                      }}
-                      onBlur={lookupByNationalId}
-                      placeholder="e.g. 67143396U56"
-                      className="h-12 w-full rounded-full border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] pl-11 pr-4 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),0_0_0_3px_rgba(45,212,191,0.15)]"
-                      required
-                    />
-                  </div>
-                  <p className={`mt-1.5 text-xs ${welcomeBack ? "font-semibold text-teal-300" : "text-slate-500"}`}>
-                    {welcomeBack
-                      ? "Welcome back — details filled in for you."
-                      : "Been here before? We'll fill in your details."}
-                  </p>
-                </div>
               </div>
 
-              {/* Department */}
-              <div>
-                <label className="mb-1.5 block text-sm font-semibold text-white">
-                  Department <span className="text-red-400">*</span>
-                </label>
-                <select
-                  value={form.dept}
-                  onChange={(e) => updateField("dept", e.target.value)}
-                  className="h-12 w-full rounded-full border border-white/8 bg-[#04101f]/80 shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),inset_0_-1px_0_rgba(255,255,255,0.04)] px-4 text-sm text-white focus:border-teal-400/50 focus:outline-none focus:shadow-[inset_0_2px_8px_rgba(0,0,0,0.5),0_0_0_3px_rgba(45,212,191,0.15)]"
-                >
-                  {DEPARTMENTS.map((dept) => (
-                    <option key={dept} value={dept} className="bg-[#04141f] text-white">
-                      {dept}
-                    </option>
-                  ))}
-                </select>
+              {/* Where they're headed */}
+              <div className="flex items-center gap-3 rounded-2xl border border-teal-200/12 bg-teal-100/[0.06] px-4 py-3.5">
+                <Ticket className="h-4 w-4 shrink-0 text-teal-300" />
+                <p className="text-xs leading-5 text-slate-300">
+                  You'll get a <span className="font-semibold text-teal-200">ticket code</span> — show it
+                  at reception and they'll book you into the right department queue.
+                </p>
               </div>
 
               {/* Notification consent */}

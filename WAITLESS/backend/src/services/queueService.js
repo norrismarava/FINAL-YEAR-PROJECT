@@ -891,6 +891,7 @@ export async function registerPatient(payload) {
     const confirmed = await confirmArrival(
       pendingPreRegistered.id,
       actor ?? { role: "reception", fullName: "Front desk" },
+      department,
     );
     return { ...confirmed, reusedPreRegisteredTicket: true };
   }
@@ -899,7 +900,7 @@ export async function registerPatient(payload) {
   const notificationConsent = Boolean(payload.notificationConsent);
   const ticket = {
     id: crypto.randomUUID(),
-    ticket: createTicketCode(department, sequence),
+    ticket: createTicketCode(sequence),
     patientId: patient.id,
     patientNumber: patient.patientNumber,
     patientName,
@@ -1545,9 +1546,15 @@ export async function getTicketTracking(ticketCode) {
   }
 
   const tickets = await getLiveTickets();
-  const ticket = tickets.find(
-    (entry) => normalizeTicketCode(entry.ticket) === normalizedTicketCode,
-  );
+  // Ticket codes wrap (A001..Z999, then reuse) — prefer a live ticket, and
+  // otherwise the most recently issued one sharing this code.
+  const matches = tickets
+    .filter(
+      (entry) => normalizeTicketCode(entry.ticket) === normalizedTicketCode,
+    )
+    .sort((a, b) => new Date(b.registeredAt) - new Date(a.registeredAt));
+  const ticket =
+    matches.find((entry) => entry.status !== "completed") ?? matches[0];
 
   if (!ticket) {
     throw new HttpError(404, `Ticket ${normalizedTicketCode} was not found.`);
@@ -1657,31 +1664,12 @@ export async function kioskLookup(identifier) {
   };
 }
 
-export async function kioskActivateArrival(patientId, ticketId) {
-  const patient = await findPatientById(patientId);
-  if (!patient) {
-    throw new HttpError(404, "Patient not found.");
-  }
-  const ticket = await findTicketById(ticketId);
-  if (!ticket || ticket.patientId !== patient.id) {
-    throw new HttpError(404, "Ticket not found for this patient.");
-  }
-  return confirmArrival(ticketId, {
-    role: "kiosk",
-    fullName: "Self-service kiosk",
-    username: "kiosk",
-  });
-}
-
 export async function kioskCheckIn(payload) {
   const patientId = payload.patientId?.trim();
-  const department = payload.dept ?? payload.department ?? "OPD";
 
   if (!patientId) {
     throw new HttpError(400, "Patient ID is required.");
   }
-
-  ensureDepartment(department);
 
   const patient = await findPatientById(patientId);
   if (!patient) {
@@ -1693,7 +1681,7 @@ export async function kioskCheckIn(payload) {
   const notificationConsent = Boolean(payload.notificationConsent);
   const ticket = {
     id: crypto.randomUUID(),
-    ticket: createTicketCode(department, sequence),
+    ticket: createTicketCode(sequence),
     patientId: patient.id,
     patientNumber: patient.patientNumber,
     patientName: patient.patientName,
@@ -1706,10 +1694,10 @@ export async function kioskCheckIn(payload) {
     nextOfKinName: patient.nextOfKinName ?? "",
     nextOfKinPhone: patient.nextOfKinPhone ?? "",
     notificationConsent,
-    department,
+    department: "Reception",
     chiefComplaint: payload.chiefComplaint?.trim() ?? "",
     priority: "green",
-    status: "waiting",
+    status: "pre-registered",
     registeredAt,
     triagedAt: null,
     calledAt: null,
@@ -1747,14 +1735,12 @@ export async function kioskCheckIn(payload) {
 
 export async function preRegisterPatient(payload) {
   const patientName = payload.fullName?.trim();
-  const department = payload.dept ?? payload.department ?? "OPD";
   const patientCategory = payload.patientCategory ?? "walk-in";
 
   if (!patientName) {
     throw new HttpError(400, "Full name is required.");
   }
 
-  ensureDepartment(department);
   ensurePatientCategory(patientCategory);
 
   const registeredAt = new Date().toISOString();
@@ -1768,7 +1754,7 @@ export async function preRegisterPatient(payload) {
   const notificationConsent = Boolean(payload.notificationConsent);
   const ticket = {
     id: crypto.randomUUID(),
-    ticket: createTicketCode(department, sequence),
+    ticket: createTicketCode(sequence),
     patientId: patient.id,
     patientNumber: patient.patientNumber,
     patientName,
@@ -1781,7 +1767,7 @@ export async function preRegisterPatient(payload) {
     nextOfKinName: payload.nextOfKinName?.trim() ?? "",
     nextOfKinPhone: payload.nextOfKinPhone?.trim() ?? "",
     notificationConsent,
-    department,
+    department: "Reception",
     chiefComplaint: payload.chiefComplaint?.trim() ?? "",
     priority: "green",
     status: "pre-registered",
@@ -1811,7 +1797,12 @@ export async function preRegisterPatient(payload) {
   return createdTicket;
 }
 
-export async function confirmArrival(ticketId, staff) {
+export async function confirmArrival(ticketId, staff, department) {
+  if (!department) {
+    throw new HttpError(400, "Select the department this patient is going to.");
+  }
+  ensureDepartment(department);
+
   const existing = await findTicketById(ticketId);
   if (!existing) {
     throw new HttpError(404, "Ticket not found.");
@@ -1824,6 +1815,7 @@ export async function confirmArrival(ticketId, staff) {
   const updatedTicket = enrichTicket(
     await updateTicket(ticketId, (ticket) => ({
       ...applyStatusTransition(ticket, "waiting"),
+      department,
       registeredAt: new Date().toISOString(),
     })),
   );

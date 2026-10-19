@@ -18,7 +18,6 @@ import {
   getTicketETA,
   getTickets,
   confirmArrival,
-  kioskActivateArrival,
   kioskCheckIn,
   kioskLookup,
   preRegisterPatient,
@@ -333,22 +332,6 @@ export async function kioskLookupController({ body }) {
   };
 }
 
-export async function kioskActivateController({ body }) {
-  const payload = body ?? {};
-
-  if (!payload.patientId?.trim() || !payload.ticketId?.trim()) {
-    return {
-      status: 400,
-      body: { message: "Patient ID and ticket ID are required." },
-    };
-  }
-
-  return {
-    status: 200,
-    body: { ticket: await kioskActivateArrival(payload.patientId, payload.ticketId) },
-  };
-}
-
 export async function kioskCheckInController({ body }) {
   const payload = body ?? {};
 
@@ -373,7 +356,7 @@ export async function preRegisterController({ body }) {
   };
 }
 
-export async function confirmArrivalController({ params, staff }) {
+export async function confirmArrivalController({ params, staff, body }) {
   const ticketId = params?.id;
   if (!ticketId) {
     return {
@@ -381,7 +364,7 @@ export async function confirmArrivalController({ params, staff }) {
       body: { message: "Ticket ID is required." },
     };
   }
-  const ticket = await confirmArrival(ticketId, staff);
+  const ticket = await confirmArrival(ticketId, staff, body?.department);
   return {
     status: 200,
     body: { ticket },

@@ -75,12 +75,15 @@ export default function RegisterPage() {
   const preRegisteredQuery = useApiResource(loadPreRegistered, {
     enabled: false,
   });
-  const confirmArrivalMutation = useApiAction(confirmArrival, {
-    onSuccess: () => {
-      refreshLiveData();
-      preRegisteredQuery.refetch();
+    const confirmArrivalMutation = useApiAction(
+    ({ id, department }) => confirmArrival(id, department),
+    {
+      onSuccess: () => {
+        refreshLiveData();
+        preRegisteredQuery.refetch();
+      },
     },
-  });
+  );
 
   const loadMeta = useCallback(() => fetchQueueMeta(), []);
   const metaQuery = useApiResource(loadMeta, { enabled: isBrowser });
@@ -347,9 +350,12 @@ export default function RegisterPage() {
             if (!showPreRegistered) preRegisteredQuery.refetch();
           }}
           tickets={preRegisteredQuery.data ?? []}
+          departments={departments}
           loading={preRegisteredQuery.loading}
-          onConfirm={(id) => confirmArrivalMutation.mutate(id)}
-          confirmingId={confirmArrivalMutation.variables}
+          onConfirm={(id, department) =>
+            confirmArrivalMutation.mutate({ id, department })
+          }
+          confirmingId={confirmArrivalMutation.variables?.id}
           error={confirmArrivalMutation.error?.message}
         />
       </div>
@@ -875,7 +881,69 @@ async function copyTextToClipboard(value) {
   }
 }
 
-function PreRegisteredArrivals({ show, onToggle, tickets, loading, onConfirm, confirmingId, error }) {
+function PreRegisteredRow({ ticket, departments, onConfirm, confirmingId }) {
+  const [dept, setDept] = useState("");
+  const [rowError, setRowError] = useState("");
+
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-background/60 px-4 py-3">
+      <div className="flex items-center gap-3">
+        <span className="grid h-9 w-14 place-items-center rounded-lg bg-amber-500/12 font-display text-xs font-bold text-amber-600 dark:text-amber-300">
+          {ticket.ticket}
+        </span>
+        <div>
+          <div className="text-sm font-semibold">{ticket.patientName}</div>
+          <div className="mt-0.5 text-xs text-muted-foreground">
+            Reported at reception &middot; {ticket.phone || "No phone recorded"}
+          </div>
+        </div>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <select
+          value={dept}
+          onChange={(e) => {
+            setDept(e.target.value);
+            setRowError("");
+          }}
+          className="h-9 min-w-44 rounded-lg border border-border/60 bg-background px-3 text-xs font-medium focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+        >
+          <option value="">Select department…</option>
+          {departments.map((deptOption) => (
+            <option key={deptOption} value={deptOption}>
+              {deptOption}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={() => {
+            if (!dept) {
+              setRowError("Pick the department first.");
+              return;
+            }
+            onConfirm(ticket.id, dept);
+          }}
+          disabled={confirmingId === ticket.id}
+          className="rounded-lg gradient-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground shadow-elegant disabled:opacity-60"
+        >
+          {confirmingId === ticket.id ? (
+            <span className="flex items-center gap-1.5">
+              <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
+              Booking…
+            </span>
+          ) : (
+            "Book into queue"
+          )}
+        </button>
+      </div>
+      {rowError ? (
+        <p className="w-full text-xs font-semibold text-destructive">{rowError}</p>
+      ) : null}
+    </div>
+  );
+}
+
+function PreRegisteredArrivals({ show, onToggle, tickets, departments = [], loading, onConfirm, confirmingId, error }) {
   return (
     <div className="surface-panel overflow-hidden">
       <button
@@ -917,37 +985,13 @@ function PreRegisteredArrivals({ show, onToggle, tickets, loading, onConfirm, co
           ) : (
             <div className="space-y-2.5">
               {tickets.map((ticket) => (
-                <div
+                <PreRegisteredRow
                   key={ticket.id}
-                  className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-background/60 px-4 py-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="grid h-9 w-14 place-items-center rounded-lg bg-amber-500/12 font-display text-xs font-bold text-amber-600 dark:text-amber-300">
-                      {ticket.ticket}
-                    </span>
-                    <div>
-                      <div className="text-sm font-semibold">{ticket.patientName}</div>
-                      <div className="mt-0.5 text-xs text-muted-foreground">
-                        {ticket.department} &middot; {ticket.chiefComplaint || "No complaint recorded"}
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => onConfirm(ticket.id)}
-                    disabled={confirmingId === ticket.id}
-                    className="rounded-lg gradient-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground shadow-elegant disabled:opacity-60"
-                  >
-                    {confirmingId === ticket.id ? (
-                      <span className="flex items-center gap-1.5">
-                        <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
-                        Confirming…
-                      </span>
-                    ) : (
-                      "Confirm arrival"
-                    )}
-                  </button>
-                </div>
+                  ticket={ticket}
+                  departments={departments}
+                  onConfirm={onConfirm}
+                  confirmingId={confirmingId}
+                />
               ))}
             </div>
           )}

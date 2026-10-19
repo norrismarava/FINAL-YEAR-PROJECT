@@ -142,14 +142,6 @@ export async function kioskLookup(identifier) {
   return response.patient;
 }
 
-export async function kioskActivate(payload) {
-  const response = await apiRequest("/api/kiosk/activate", {
-    method: "POST",
-    body: payload,
-  });
-  return response.ticket;
-}
-
 export async function kioskCheckIn(payload) {
   const response = await apiRequest("/api/kiosk/check-in", {
     method: "POST",
@@ -166,9 +158,10 @@ export async function preRegisterPatient(payload) {
   return response.ticket;
 }
 
-export async function confirmArrival(ticketId) {
+export async function confirmArrival(ticketId, department) {
   const response = await apiRequest(`/api/tickets/${ticketId}/confirm-arrival`, {
     method: "POST",
+    body: { department },
   });
   return response.ticket;
 }

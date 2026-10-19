@@ -25,8 +25,7 @@ import { Html5Qrcode } from "html5-qrcode";
 
 import authBackground from "@/assets/BACKG.png";
 import waitlessLogoIcon from "@/assets/waitless-logo-icon.png";
-import { DEPARTMENTS } from "@/services/queueMeta";
-import { kioskActivate, kioskCheckIn, kioskLookup } from "@/services/queueApi";
+import { kioskCheckIn, kioskLookup } from "@/services/queueApi";
 import { useLiveRefresh } from "@/context/LiveRefreshContext";
 import {
   printQueueTicket,
@@ -38,22 +37,20 @@ const STEPS = {
   PHONE: "phone",
   SCAN: "scan",
   FOUND: "found",
-  DEPARTMENT: "department",
   SUCCESS: "success",
   NOT_FOUND: "not_found",
 };
 
 const AUTO_RESET_SECONDS = 45;
 
-const STEP_FLOW = ["Identify", "Department", "Ticket"];
+const STEP_FLOW = ["Identify", "Ticket", "Done"];
 
 const STEP_INDEX = {
   [STEPS.WELCOME]: 0,
   [STEPS.PHONE]: 0,
   [STEPS.SCAN]: 0,
-  [STEPS.FOUND]: 0,
+  [STEPS.FOUND]: 1,
   [STEPS.NOT_FOUND]: 0,
-  [STEPS.DEPARTMENT]: 1,
   [STEPS.SUCCESS]: 2,
 };
 
@@ -77,8 +74,6 @@ export default function KioskPage() {
   const [step, setStep] = useState(STEPS.WELCOME);
   const [patient, setPatient] = useState(null);
   const [phoneInput, setPhoneInput] = useState("");
-  const [department, setDepartment] = useState("OPD");
-  const [chiefComplaint, setChiefComplaint] = useState("");
   const [notificationConsent, setNotificationConsent] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -162,38 +157,15 @@ export default function KioskPage() {
     }, 100);
   }
 
-  function handleProceedToDepartment() {
-    setStep(STEPS.DEPARTMENT);
-  }
-
-  async function handleActivatePreRegistered() {
-    setLoading(true);
-    setError("");
-    try {
-      const activated = await kioskActivate({
-        patientId: patient.id,
-        ticketId: patient.preRegisteredTicket.id,
-      });
-      refreshLiveData();
-      setTicket(activated);
-      setStep(STEPS.SUCCESS);
-    } catch (err) {
-      setError(err.message || "Activation failed. Please see the front desk.");
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function handleCheckIn(event) {
-    event.preventDefault();
+  // The kiosk issues a pre-registered ticket with a neutral code — the
+  // receptionist books it into the right department when the patient reports.
+  async function handleGetTicket() {
     setLoading(true);
     setError("");
 
     try {
       const result = await kioskCheckIn({
         patientId: patient.id,
-        dept: department,
-        chiefComplaint,
         notificationConsent,
         whatsApp: notificationConsent,
       });
@@ -201,7 +173,7 @@ export default function KioskPage() {
       setTicket(result);
       setStep(STEPS.SUCCESS);
     } catch (err) {
-      setError(err.message || "Check-in failed. Please try again.");
+      setError(err.message || "Ticket could not be issued. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -240,8 +212,6 @@ export default function KioskPage() {
     stopScanner();
     setPatient(null);
     setPhoneInput("");
-    setDepartment("OPD");
-    setChiefComplaint("");
     setNotificationConsent(true);
     setError("");
     setTicket(null);
@@ -524,40 +494,68 @@ export default function KioskPage() {
               {patient.preRegisteredTicket ? (
                 <div className="mt-6 rounded-2xl border border-teal-400/25 bg-teal-400/[0.07] p-4">
                   <div className="text-[0.65rem] font-bold uppercase tracking-[0.22em] text-teal-300">
-                    Pre-registered ticket found
+                    Your ticket is ready
                   </div>
                   <div className="mt-2 font-display text-2xl font-bold tracking-widest text-white">
                     {patient.preRegisteredTicket.ticket}
                   </div>
-                  <div className="mt-1 text-xs text-slate-400">
-                    {patient.preRegisteredTicket.department}
-                    {patient.preRegisteredTicket.chiefComplaint
-                      ? ` · ${patient.preRegisteredTicket.chiefComplaint}`
-                      : ""}
-                  </div>
+                  <p className="mt-2 text-xs leading-5 text-slate-400">
+                    Show this code at the reception desk — they'll book you into
+                    the right department queue.
+                  </p>
                   <button
-                    onClick={handleActivatePreRegistered}
-                    disabled={loading}
-                    className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-8 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(13,148,136,0.5)] transition-transform hover:-translate-y-0.5 disabled:opacity-60"
+                    onClick={resetKiosk}
+                    className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-8 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(13,148,136,0.5)] transition-transform hover:-translate-y-0.5"
                   >
-                    {loading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <ScanLine className="h-4 w-4" />}
-                    {loading ? "Activating…" : "Activate & join the queue"}
+                    Done — off to reception
                   </button>
                   <button
-                    onClick={handleProceedToDepartment}
-                    className="mt-3 block w-full text-xs text-slate-400 hover:text-slate-200"
+                    onClick={handleGetTicket}
+                    disabled={loading}
+                    className="mt-3 block w-full text-xs text-slate-400 hover:text-slate-200 disabled:opacity-60"
                   >
-                    Different reason for today's visit? New check-in
+                    {loading ? "Issuing…" : "Need a new ticket instead?"}
                   </button>
                 </div>
               ) : (
-                <button
-                  onClick={handleProceedToDepartment}
-                  className="mt-8 inline-flex h-12 items-center gap-2 rounded-xl bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-8 text-sm font-semibold text-white shadow-[0-8px_20px_-10px_rgba(13,148,136,0.5)] transition-transform hover:-translate-y-0.5"
-                >
-                  Proceed to check-in
-                  <ArrowRight className="h-4 w-4" />
-                </button>
+                <div className="mt-8 space-y-5">
+                  <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3.5 text-left">
+                    <input
+                      type="checkbox"
+                      id="kioskNotificationConsent"
+                      checked={notificationConsent}
+                      onChange={(e) => setNotificationConsent(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded border-white/20 text-teal-500 focus:ring-teal-400/20"
+                    />
+                    <label htmlFor="kioskNotificationConsent" className="text-sm leading-5 text-slate-200">
+                      <span className="flex items-center gap-1.5 font-semibold">
+                        <MessageCircle className="h-3.5 w-3.5 text-teal-300" />
+                        Send me WhatsApp updates
+                      </span>
+                      <span className="mt-0.5 block text-xs text-slate-500">
+                        Get notified when it's almost your turn.
+                      </span>
+                    </label>
+                  </div>
+
+                  <button
+                    onClick={handleGetTicket}
+                    disabled={loading}
+                    className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-8 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(13,148,136,0.5)] transition-transform hover:-translate-y-0.5 disabled:opacity-60"
+                  >
+                    {loading ? (
+                      <>
+                        <LoaderCircle className="h-4 w-4 animate-spin" />
+                        Issuing your ticket…
+                      </>
+                    ) : (
+                      <>
+                        Get my ticket
+                        <ArrowRight className="h-4 w-4" />
+                      </>
+                    )}
+                  </button>
+                </div>
               )}
 
               <button
@@ -566,107 +564,6 @@ export default function KioskPage() {
               >
                 Not you? Start over
               </button>
-            </div>
-          </div>
-        )}
-
-        {/* DEPARTMENT STEP */}
-        {step === STEPS.DEPARTMENT && patient && (
-          <div className="relative overflow-hidden rounded-2xl bg-[#04141f]/60 shadow-[0_32px_80px_-28px_rgba(2,8,20,0.45)] backdrop-blur-2xl">
-            <div className="relative z-10">
-              <div className="border-b border-white/10 bg-[linear-gradient(135deg,rgba(4,20,31,0.82)_0%,rgba(6,42,53,0.72)_48%,rgba(10,31,46,0.78)_100%)] px-6 py-6 sm:px-8">
-                <div className="flex items-center gap-3">
-                  <span className="grid h-11 w-11 place-items-center rounded-xl bg-teal-500/12 text-teal-300">
-                    <Ticket className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <div className="text-[0.7rem] font-bold uppercase tracking-[0.24em] text-teal-300">Check-in</div>
-                    <h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-white">
-                      Select your department
-                    </h1>
-                  </div>
-                </div>
-                <p className="mt-3 text-sm text-slate-400">
-                  Welcome back, {patient.patientName}. Choose where you need to go today.
-                </p>
-              </div>
-
-              <form noValidate className="space-y-5 px-6 py-7 sm:px-8" onSubmit={handleCheckIn}>
-                <div>
-                  <label className="mb-1.5 block text-sm font-semibold text-white">
-                    Department <span className="text-red-400">*</span>
-                  </label>
-                  <select
-                    value={department}
-                    onChange={(e) => setDepartment(e.target.value)}
-                    className="h-12 w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 text-sm text-white focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
-                  >
-                    {DEPARTMENTS.map((dept) => (
-                      <option key={dept} value={dept} className="bg-[#04141f] text-white">
-                        {dept}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="mb-1.5 block text-sm font-semibold text-white">
-                    Reason for visit (optional)
-                  </label>
-                  <textarea
-                    value={chiefComplaint}
-                    onChange={(e) => setChiefComplaint(e.target.value)}
-                    placeholder="Briefly describe your symptoms or reason for visiting"
-                    rows={3}
-                    className="w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-teal-400/50 focus:outline-none focus:ring-2 focus:ring-teal-400/20"
-                  />
-                </div>
-
-                <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-4 py-3.5">
-                  <input
-                    type="checkbox"
-                    id="kioskNotificationConsent"
-                    checked={notificationConsent}
-                    onChange={(e) => setNotificationConsent(e.target.checked)}
-                    className="mt-0.5 h-4 w-4 rounded border-white/20 text-teal-500 focus:ring-teal-400/20"
-                  />
-                  <label htmlFor="kioskNotificationConsent" className="text-sm leading-5 text-slate-200">
-                    <span className="flex items-center gap-1.5 font-semibold">
-                      <MessageCircle className="h-3.5 w-3.5 text-teal-300" />
-                      Send me WhatsApp updates
-                    </span>
-                    <span className="mt-0.5 block text-xs text-slate-500">
-                      Get notified when it's almost your turn.
-                    </span>
-                  </label>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-6 text-sm font-semibold text-white shadow-[0_8px_20px_-10px_rgba(13,148,136,0.5)] transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {loading ? (
-                    <>
-                      <LoaderCircle className="h-4 w-4 animate-spin" />
-                      Issuing your ticket...
-                    </>
-                  ) : (
-                    <>
-                      Get my ticket
-                      <ArrowRight className="h-4 w-4" />
-                    </>
-                  )}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setStep(STEPS.FOUND)}
-                  className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-6 text-sm font-semibold text-slate-200 transition-colors hover:bg-white/[0.08]"
-                >
-                  Back
-                </button>
-              </form>
             </div>
           </div>
         )}
@@ -680,10 +577,10 @@ export default function KioskPage() {
               </div>
 
               <div className="mt-6 text-[0.7rem] font-bold uppercase tracking-[0.24em] text-teal-300">
-                You're in the queue
+                Your ticket is ready
               </div>
               <h1 className="mt-3 font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">
-                Your ticket has been issued
+                Report to reception with this code
               </h1>
 
               <button
@@ -706,12 +603,12 @@ export default function KioskPage() {
 
               <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.04] px-6 py-4">
                 <div className="text-xs font-medium text-slate-400">Please proceed to</div>
-                <div className="mt-1 text-lg font-bold text-white">{ticket.department}</div>
+                <div className="mt-1 text-lg font-bold text-white">The reception desk</div>
               </div>
 
               <p className="mt-5 max-w-md mx-auto text-sm leading-6 text-slate-400">
-                Save your ticket code. You'll receive WhatsApp updates as your
-                position changes. Present this code at the service desk when called.
+                Save your ticket code. Show it at reception — they'll book you
+                into the right department queue.
               </p>
 
               <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
