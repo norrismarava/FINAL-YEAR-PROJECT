@@ -1574,9 +1574,12 @@ function StaffWorkspaceShell({
             <div className="surface-panel overflow-hidden p-5">
               <div className="eyebrow">Staff workspace</div>
               <div className="mt-4 flex items-start gap-3">
-                <span className="grid h-14 w-14 shrink-0 place-items-center rounded-[1.2rem] bg-[linear-gradient(135deg,rgba(101,163,13,0.96),rgba(132,204,22,0.88))] text-sm font-bold uppercase tracking-[0.16em] text-[#08110a] shadow-[0_22px_40px_-22px_rgba(132,204,22,0.55)]">
-                  {getStaffInitials(displayName)}
-                </span>
+                <StaffAvatar
+                  user={user}
+                  displayName={displayName}
+                  className="h-14 w-14 rounded-[1.2rem] shadow-[0_22px_40px_-22px_rgba(132,204,22,0.55)]"
+                  fallbackClassName="bg-[linear-gradient(135deg,rgba(101,163,13,0.96),rgba(132,204,22,0.88))] text-sm font-bold uppercase tracking-[0.16em] text-[#08110a]"
+                />
                 <div className="min-w-0">
                   <div className="truncate font-display text-xl font-bold tracking-tight text-foreground">
                     {displayName}
