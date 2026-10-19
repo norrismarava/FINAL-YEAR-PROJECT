@@ -861,11 +861,15 @@ export async function registerPatient(payload) {
   const actor = payload?._actor ?? null;
 
   const patientName = payload.fullName?.trim();
-  const department = payload.dept ?? payload.department ?? "OPD";
+  const department = payload.dept ?? payload.department;
   const patientCategory = payload.patientCategory ?? "walk-in";
 
   if (!patientName) {
     throw new HttpError(400, "Full name is required.");
+  }
+
+  if (!department) {
+    throw new HttpError(400, "Select the department this patient is going to.");
   }
 
   ensureDepartment(department);
@@ -2195,7 +2199,7 @@ export async function suggestNextDepartment(ticketId) {
     const allResultsReady = testOrders.some((o) => o.state === "result-ready");
     if (allResultsReady) {
       suggestions.push({
-        department: ticket.previousDepartment || "OPD",
+        department: ticket.previousDepartment || "Casualty / Triage",
         reason: "Lab results ready — return to referring department",
         priority: "high",
       });
@@ -2213,7 +2217,7 @@ export async function suggestNextDepartment(ticketId) {
 
   if (suggestions.length === 0 && ticket.status === "completed") {
     suggestions.push({
-      department: "OPD",
+      department: "Casualty / Triage",
       reason: "No pending prescriptions or test orders — patient may be discharged",
       priority: "low",
     });

@@ -142,7 +142,9 @@ export default function RegisterPage() {
         .replace(/[^0-9a-zA-Z]/g, "")
         .toUpperCase(),
       phone: profile.phone ?? "",
-      dept: profile.lastDepartment ?? current.dept,
+      // Department is never autofilled — the receptionist chooses where this
+      // visit is going, every time.
+      dept: "",
     }));
     setAppliedPatientId(profile.id);
     setLookupTerm(profile.patientNumber ?? profile.patientName ?? "");

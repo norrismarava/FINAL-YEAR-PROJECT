@@ -26,7 +26,6 @@ export const PRIORITY_META = {
 };
 
 export const DEPARTMENTS = [
-  "OPD",
   "Casualty / Triage",
   "Pharmacy",
   "Laboratory",

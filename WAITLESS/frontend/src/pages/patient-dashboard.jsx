@@ -142,7 +142,7 @@ export default function PatientDashboardPage() {
 
   const [checkInOpen, setCheckInOpen] = useState(false);
   const [checkInMode, setCheckInMode] = useState("now");
-  const [checkInDept, setCheckInDept] = useState(DEPARTMENTS[0] ?? "OPD");
+  const [checkInDept, setCheckInDept] = useState(DEPARTMENTS[0] ?? "Casualty / Triage");
   const [checkInComplaint, setCheckInComplaint] = useState("");
   const [checkInBusy, setCheckInBusy] = useState(false);
   const [checkInError, setCheckInError] = useState(null);

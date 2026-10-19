@@ -59,7 +59,7 @@ function ordinal(n) {
 
 export default function DepartmentBoardPage() {
   const [searchParams] = useSearchParams();
-  const department = searchParams.get("dept") || "OPD";
+  const department = searchParams.get("dept") || "Casualty / Triage";
   const [now, setNow] = useState(new Date());
   const realtime = useQueueRealtime();
   const audio = useAudioCall();

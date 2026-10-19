@@ -15,7 +15,7 @@ export const APPOINTMENT_STATUS = {
 };
 
 export const SERVICE_CATEGORIES = [
-  { id: "opd", label: "OPD Consultation", department: "OPD", defaultDurationMin: 15 },
+  { id: "opd", label: "Outpatient Consultation", department: "Casualty / Triage", defaultDurationMin: 15 },
   { id: "triage", label: "Triage Assessment", department: "Casualty / Triage", defaultDurationMin: 10 },
   { id: "pharmacy", label: "Pharmacy Refill", department: "Pharmacy", defaultDurationMin: 10 },
   { id: "lab", label: "Laboratory Test", department: "Laboratory", defaultDurationMin: 20 },

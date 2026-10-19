@@ -193,7 +193,7 @@ export default function DashboardPage() {
     if (realtime.lastEvent.type === "test-result.ready") {
       const payload = realtime.lastEvent.payload ?? {};
       toast.success(`Lab results ready for ${payload.ticketCode ?? "ticket"}`, {
-        description: `Please return to ${payload.department ?? "OPD"} for clinician review.`,
+        description: `Please return to ${payload.department ?? "Casualty / Triage"} for clinician review.`,
       });
     }
   }, [realtime.lastEvent]);

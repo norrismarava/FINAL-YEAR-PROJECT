@@ -20,7 +20,6 @@ const HOSPITAL = {
 };
 
 const DEPT_LINKS = [
-  { label: "OPD, Outpatients", dept: "OPD" },
   { label: "Casualty / Triage", dept: "Casualty / Triage" },
   { label: "Pharmacy", dept: "Pharmacy" },
   { label: "Laboratory", dept: "Laboratory" },

@@ -36,7 +36,7 @@ async function initializeDatabase() {
     
     // Seed departments if they don't exist
     const departments = [
-      "OPD",
+      "Reception",
       "Pharmacy",
       "Laboratory",
       "Radiology",

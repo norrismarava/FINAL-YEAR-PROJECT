@@ -28,7 +28,6 @@ export const PRIORITY_META = {
 };
 
 export const DEPARTMENTS = [
-  "OPD",
   "Casualty / Triage",
   "Pharmacy",
   "Laboratory",
@@ -58,7 +57,6 @@ export const TICKET_STATUSES = [
 ];
 
 export const DEPARTMENT_TOKEN_PREFIX = {
-  OPD: "OPD",
   "Casualty / Triage": "TRI",
   Pharmacy: "PHA",
   Laboratory: "LAB",
@@ -113,7 +111,7 @@ const SEEDED_TICKETS = [
     sequence: 102,
     patientName: "Brian Chuma",
     priority: "yellow",
-    department: "OPD",
+    department: "Casualty / Triage",
     status: "in-service",
     minutesAgo: 12,
     chiefComplaint: "Shortness of breath",
@@ -143,7 +141,7 @@ const SEEDED_TICKETS = [
     sequence: 105,
     patientName: "Chipo Mlambo",
     priority: "green",
-    department: "OPD",
+    department: "Casualty / Triage",
     status: "waiting",
     minutesAgo: 31,
     chiefComplaint: "Headache",

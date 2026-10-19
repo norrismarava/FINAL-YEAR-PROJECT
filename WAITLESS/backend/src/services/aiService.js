@@ -225,7 +225,6 @@ const CHATBOT_RESPONSES = [
 const MAX_CHATBOT_MESSAGE_LENGTH = 500;
 const MAX_CHATBOT_CONTEXT_LENGTH = 80;
 const DEPARTMENT_ALIASES = [
-  ["OPD", ["opd", "outpatient"]],
   ["Casualty / Triage", ["casualty", "triage", "emergency"]],
   ["Pharmacy", ["pharmacy", "medicine", "medication"]],
   ["Laboratory", ["laboratory", "lab"]],

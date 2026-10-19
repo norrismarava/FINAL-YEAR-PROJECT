@@ -2778,7 +2778,7 @@ function TestOrderCard({ order, canAdvance, onAdvance, advancing, tint = "#a78bf
             Results ready
           </div>
           <p className="mt-0.5 text-white/45">
-            Patient notified. Return to {order.orderingDepartment ?? "OPD"} for clinician review.
+            Patient notified. Return to {order.orderingDepartment ?? "Casualty / Triage"} for clinician review.
           </p>
         </div>
       )}
@@ -2913,7 +2913,7 @@ export function OIClinicPage() {
   async function handleRefer(visit) {
     setAdvancing(visit.id);
     try {
-      await advanceState.mutate(visit.id, "referred", { referredTo: "OPD" });
+      await advanceState.mutate(visit.id, "referred", { referredTo: "Casualty / Triage" });
       visitsQuery.refetch();
       summaryQuery.refetch();
     } finally {

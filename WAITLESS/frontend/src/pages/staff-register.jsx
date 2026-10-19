@@ -22,7 +22,7 @@ import { createStaffAccessCode, listStaffAccessCodes, registerStaffAccount } fro
 
 
 const DEPARTMENTS = [
-  "OPD",
+  "Reception",
   "Pharmacy",
   "Laboratory",
   "Radiology",
@@ -47,7 +47,7 @@ const INITIAL_FORM = {
   email: "",
   phone: "",
   role: "nurse",
-  department: "OPD",
+  department: "Reception",
   roomNumber: "",
   password: "",
 };

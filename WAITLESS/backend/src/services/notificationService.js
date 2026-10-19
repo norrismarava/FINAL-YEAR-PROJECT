@@ -443,7 +443,7 @@ export async function dispatchTestResultReadyNotification(ticket, testOrder) {
   const notifications = [];
 
   const testLabel = testOrder.testType?.replace(/-/g, " ") ?? "test";
-  const routeBackDept = testOrder.orderingDepartment ?? "OPD";
+  const routeBackDept = testOrder.orderingDepartment ?? "Casualty / Triage";
 
   notifications.push(
     await createDisplayBoardNotification(ticket, {
