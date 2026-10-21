@@ -101,6 +101,7 @@ function sanitizePublicTicket(ticket) {
     triagedAt: ticket.triagedAt,
     calledAt: ticket.calledAt,
     calledRoom: ticket.calledRoom ?? null,
+    calledBy: ticket.calledBy ?? null,
     serviceStartedAt: ticket.serviceStartedAt,
     missedAt: ticket.missedAt,
     recalledAt: ticket.recalledAt,
