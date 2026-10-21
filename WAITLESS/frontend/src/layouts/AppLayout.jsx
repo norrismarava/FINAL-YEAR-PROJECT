@@ -37,7 +37,6 @@ import {
 } from "lucide-react";
 
 import { AuthProvider, useAuth } from "@/auth/AuthProvider";
-import { PatientAuthProvider, usePatientAuth } from "@/auth/PatientAuthProvider";
 import ChatbotWidget from "@/components/ChatbotWidget";
 import OfflineIndicator from "@/components/OfflineIndicator";
 import { LoadingPanel } from "@/components/ui/system-loader";
@@ -198,9 +197,6 @@ const AUTH_ROUTE_PREFIXES = [
   "/admin/forgot-password",
   "/admin/reset-password",
   "/admin/staff-signup",
-  "/patient/register",
-  "/patient/forgot-password",
-  "/patient/reset-password",
   "/self-register",
 ];
 
@@ -226,16 +222,7 @@ function isPatientPortalPath(pathname) {
     pathname.startsWith("/queue") ||
     pathname.startsWith("/department-board") ||
     pathname.startsWith("/self-register") ||
-    pathname.startsWith("/kiosk") ||
-    pathname.startsWith("/patient/register") ||
-    pathname.startsWith("/patient/dashboard")
-  );
-}
-
-function isPatientShellPath(pathname) {
-  return (
-    (pathname === "/patient" || pathname.startsWith("/patient/")) &&
-    !isAuthPath(pathname)
+    pathname.startsWith("/kiosk")
   );
 }
 
@@ -293,13 +280,11 @@ export function AppErrorPage({ error, reset }) {
 export function AppLayout() {
   return (
     <AuthProvider>
-      <PatientAuthProvider>
-        <LiveRefreshProvider>
-          <QueueRealtimeProvider>
-            <AppScaffold />
-          </QueueRealtimeProvider>
-        </LiveRefreshProvider>
-      </PatientAuthProvider>
+      <LiveRefreshProvider>
+        <QueueRealtimeProvider>
+          <AppScaffold />
+        </QueueRealtimeProvider>
+      </LiveRefreshProvider>
     </AuthProvider>
   );
 }
@@ -317,7 +302,7 @@ function IdleLogoutManager() {
     // Remember where the user was so a forced sign-out can bring them back.
     function saveReturnTo() {
       const path = location.pathname + location.search;
-      if (path.startsWith("/admin") || path.startsWith("/patient")) {
+      if (path.startsWith("/admin")) {
         window.sessionStorage.setItem("waitless:returnTo", path);
       }
     }
@@ -369,12 +354,10 @@ function IdleLogoutManager() {
 
 function AppScaffold() {
   const auth = useAuth();
-  const patientAuth = usePatientAuth();
   const location = useLocation();
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const isAuthRoute = isAuthPath(location.pathname);
   const isPatientPortalRoute = isPatientPortalPath(location.pathname);
-  const isPatientShellRoute = isPatientShellPath(location.pathname);
   const isWorkspaceRoute = isStaffWorkspacePath(location.pathname);
   const isDashboardRoute = location.pathname.startsWith("/admin/dashboard");
   const isStaffWorkspaceTheme = isWorkspaceRoute && auth.isAuthenticated;
@@ -396,16 +379,6 @@ function AppScaffold() {
 
   if (isWorkspaceRoute && auth.isReady && !auth.isAuthenticated) {
     return <Navigate to="/admin/login" replace />;
-  }
-
-  if (isPatientShellRoute) {
-    return (
-      <div className="relative min-h-screen bg-[#04141f]">
-        <div key={`${location.pathname}${location.search}`} className="page-route-shell">
-          <Outlet />
-        </div>
-      </div>
-    );
   }
 
   if (isPatientPortalRoute) {
@@ -491,7 +464,6 @@ function AppScaffold() {
 
 function Header({ onOpenMobileNav }) {
   const auth = useAuth();
-  const patientAuth = usePatientAuth();
   const location = useLocation();
   const isPublicDarkRoute = PUBLIC_DARK_HEADER_ROUTES.has(location.pathname);
   const isAuthRoute = isAuthPath(location.pathname);
@@ -511,9 +483,7 @@ function Header({ onOpenMobileNav }) {
     ? canRegisterPatient
       ? { to: "/admin/register", label: "New patient" }
       : { to: resolveStaffLandingPath(auth.user), label: "My workspace" }
-    : patientAuth.isPatientAuthenticated
-      ? { to: "/patient/dashboard", label: "My dashboard" }
-      : { to: "/patient/register", label: "Get started" };
+    : { to: "/self-register", label: "Get started" };
   const visibleNavItems = navItems.filter((item) => !item.roles || auth.hasRole(item.roles));
 
   return (
@@ -658,22 +628,7 @@ function Header({ onOpenMobileNav }) {
                     Back to workspace
                   </Link>
                 ) : null}
-                {!isStaffWorkspaceTheme && patientAuth.isPatientAuthenticated ? (
-                  <Link
-                    to="/patient/dashboard"
-                    className={`inline-flex h-11 items-center gap-2 rounded-full px-5 text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5 ${
-                      isPublicGlassRoute
-                        ? "border border-teal-200/50 bg-white/40 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_6px_18px_rgba(15,118,110,0.08)] backdrop-blur-md hover:bg-white/55"
-                        : isDarkHeader
-                          ? "border border-cyan-200/15 bg-white/8 text-cyan-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] backdrop-blur hover:border-cyan-200/25 hover:bg-white/12 hover:text-white"
-                          : "border border-primary/20 bg-primary-soft/70 text-primary hover:border-primary/30 hover:bg-primary-soft"
-                    }`}
-                  >
-                    <LayoutDashboard className="h-3.5 w-3.5" />
-                    Patient portal
-                  </Link>
-                ) : null}
-                {!isStaffWorkspaceTheme && !patientAuth.isPatientAuthenticated ? (
+                {!isStaffWorkspaceTheme ? (
                   auth.isAuthenticated ? (
                     <Link
                       to={headerPrimaryAction.to}
@@ -696,17 +651,17 @@ function Header({ onOpenMobileNav }) {
                               : "inline-flex h-10 items-center gap-1.5 rounded-full px-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted/70 hover:text-foreground"
                         }
                       >
-                        Sign in
+                        Staff sign in
                       </NavLink>
                       <Link
-                        to="/patient/register"
+                        to="/self-register"
                         className={`inline-flex h-10 items-center gap-2 rounded-full px-5 text-sm font-semibold transition-transform hover:-translate-y-0.5 ${
                           isDarkHeader
                             ? "bg-[linear-gradient(135deg,#34d399,#14b8a6)] text-[#052e22] shadow-[0_14px_32px_-14px_rgba(52,211,153,0.55)]"
                             : "gradient-primary text-primary-foreground shadow-elegant"
                         }`}
                       >
-                        Get started
+                        Get a ticket
                       </Link>
                     </>
                   )
@@ -785,111 +740,6 @@ function Header({ onOpenMobileNav }) {
         </div>
       </div>
     </header>
-  );
-}
-
-function PatientAccountMenu({ patientAuth, isPublicGlassRoute, isDark = false }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef(null);
-  const navigate = useNavigate();
-
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const patient = patientAuth.patientUser;
-  const initials = patient?.fullName
-    ? patient.fullName
-        .split(" ")
-        .map((n) => n[0])
-        .slice(0, 2)
-        .join("")
-        .toUpperCase()
-    : "P";
-
-  function handleLogout() {
-    patientAuth.patientLogout();
-    setIsOpen(false);
-    navigate("/");
-  }
-
-  return (
-    <div className="relative" ref={menuRef}>
-      <button
-        onClick={() => setIsOpen((v) => !v)}
-        className={`inline-flex h-11 items-center gap-2 rounded-full px-3 text-xs font-semibold transition-all duration-200 hover:-translate-y-0.5 ${
-          isDark
-            ? "border border-cyan-200/15 bg-white/8 text-cyan-100 backdrop-blur hover:border-cyan-200/25 hover:bg-white/12 hover:text-white"
-            : isPublicGlassRoute
-              ? "border border-white/40 bg-white/30 text-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] backdrop-blur-md hover:bg-white/45"
-              : "border border-primary/20 bg-primary-soft/70 text-primary hover:border-primary/30 hover:bg-primary-soft"
-        }`}
-      >
-        <span
-          className={`grid h-7 w-7 place-items-center rounded-full text-[10px] font-bold ${
-            isDark
-              ? "bg-cyan-300/15 text-cyan-100"
-              : "bg-primary/15 text-primary"
-          }`}
-        >
-          {initials}
-        </span>
-        <span className="hidden sm:inline">{patient?.fullName?.split(" ")[0] || "Patient"}</span>
-        <ChevronDown className="h-3.5 w-3.5" />
-      </button>
-
-      {isOpen ? (
-        <div
-          className={`absolute right-0 top-full mt-2 w-56 overflow-hidden rounded-2xl border ${
-            isDark
-              ? "border-cyan-200/12 bg-[linear-gradient(180deg,rgba(8,22,38,0.98),rgba(5,17,30,0.98))] text-white shadow-[0_28px_80px_-28px_rgba(2,6,23,0.8)]"
-              : "border-border bg-card shadow-[0_24px_60px_rgba(15,23,42,0.16)]"
-          }`}
-        >
-          <div className={`border-b px-4 py-3 ${isDark ? "border-white/10" : "border-border"}`}>
-            <div className={`text-sm font-semibold ${isDark ? "text-white" : "text-foreground"}`}>{patient?.fullName}</div>
-            <div className={`text-xs ${isDark ? "text-slate-400" : "text-muted-foreground"}`}>{patient?.email}</div>
-          </div>
-          <div className="p-1.5">
-            {[
-              ["/patient/dashboard", LayoutDashboard, "My dashboard"],
-              ["/self-register", Ticket, "Book a queue spot"],
-              ["/track", Search, "Track a ticket"],
-            ].map(([to, Icon, label]) => (
-              <button
-                key={to}
-                onClick={() => {
-                  setIsOpen(false);
-                  navigate(to);
-                }}
-                className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                  isDark ? "text-slate-100 hover:bg-white/8" : "text-foreground hover:bg-muted"
-                }`}
-              >
-                <Icon className={`h-4 w-4 ${isDark ? "text-cyan-100/70" : "text-muted-foreground"}`} />
-                {label}
-              </button>
-            ))}
-            <div className={`my-1.5 h-px ${isDark ? "bg-white/10" : "bg-border"}`} />
-            <button
-              onClick={handleLogout}
-              className={`flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                isDark ? "text-red-300 hover:bg-red-400/10" : "text-red-600 hover:bg-red-50"
-              }`}
-            >
-              <LogOut className="h-4 w-4" />
-              Sign out
-            </button>
-          </div>
-        </div>
-      ) : null}
-    </div>
   );
 }
 

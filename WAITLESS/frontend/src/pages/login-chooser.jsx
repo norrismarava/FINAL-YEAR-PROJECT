@@ -3,7 +3,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { AlertCircle, ArrowLeft, ArrowRight, Eye, EyeOff, Lock, ShieldCheck, UserRound } from "lucide-react";
 
 import { useAuth } from "@/auth/AuthProvider";
-import { usePatientAuth } from "@/auth/PatientAuthProvider";
 import { resolveStaffLandingPath } from "@/services/staffProfilePrefs";
 import { LogoLoader } from "@/components/LogoLoader";
 import authBackground from "@/assets/BACKG.png";
@@ -23,11 +22,9 @@ function consumeReturnTo(prefix) {
   return null;
 }
 
-export default function UnifiedLoginPage({ variant = "unified" }) {
-  const isStaff = variant === "staff";
+export default function UnifiedLoginPage() {
   const navigate = useNavigate();
   const { login: staffLogin } = useAuth();
-  const { patientLogin } = usePatientAuth();
 
   const [rememberMe, setRememberMe] = useState(
     () => !!localStorage.getItem(REMEMBER_KEY),
@@ -73,29 +70,10 @@ export default function UnifiedLoginPage({ variant = "unified" }) {
         password: form.password,
       });
       navigate(consumeReturnTo("/admin") ?? resolveStaffLandingPath(session.user));
-      return;
     } catch (staffErr) {
-      if (isStaff) {
-        setError(
-          staffErr?.message ||
-            "Invalid staff credentials. Please check your details and try again.",
-        );
-        setLoading(false);
-        return;
-      }
-      // Not a staff account, fall through to patient.
-    }
-
-    try {
-      await patientLogin({
-        identifier,
-        password: form.password,
-      });
-      navigate(consumeReturnTo("/patient") ?? "/patient/dashboard");
-    } catch (err) {
       setError(
-        err?.message ||
-          "Unable to sign in. Please confirm your details and try again.",
+        staffErr?.message ||
+          "Invalid staff credentials. Please check your details and try again.",
       );
     } finally {
       setLoading(false);
@@ -136,18 +114,16 @@ export default function UnifiedLoginPage({ variant = "unified" }) {
               />
               <div className="mt-1.5">
                 <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-teal-400">
-                  {isStaff ? "WaitLess staff portal" : "Sign in"}
+                  WaitLess staff portal
                 </div>
                 <h1 className="mt-0.5 inline-flex items-center gap-3 font-display text-xl font-bold tracking-tight text-white">
                   <span className="h-px w-8 bg-gradient-to-r from-transparent to-teal-300/60" />
-                  {isStaff ? "Staff access" : "Welcome back"}
+                  Staff access
                   <span className="h-px w-8 bg-gradient-to-l from-transparent to-teal-300/60" />
                 </h1>
               </div>
               <p className="mt-2 text-[13px] leading-5 text-slate-400">
-                {isStaff
-                  ? "Sign in with your staff credentials to open the operations console."
-                  : "Secure access to your WaitLess workspace."}
+                Sign in with your staff credentials to open the operations console.
               </p>
             </div>
 
@@ -217,7 +193,7 @@ export default function UnifiedLoginPage({ variant = "unified" }) {
               Remember me
             </label>
             <Link
-              to={isStaff ? "/admin/forgot-password" : "/patient/forgot-password"}
+              to="/admin/forgot-password"
               className="font-medium text-teal-300 hover:text-teal-200"
             >
               Forgot password?
@@ -244,21 +220,10 @@ export default function UnifiedLoginPage({ variant = "unified" }) {
 
         {/* Footer links */}
         <div className="mt-5 flex items-center justify-center gap-3 pt-1 text-xs text-slate-500">
-          {isStaff ? (
-            <>
-              New staff member?{" "}
-              <Link to="/admin/staff-signup" className="font-semibold text-teal-300 hover:text-teal-200">
-                Use your access code
-              </Link>
-            </>
-          ) : (
-            <>
-              Don&apos;t have an account?{" "}
-              <Link to="/patient/register" className="font-semibold text-teal-300 hover:text-teal-200">
-                Request access
-              </Link>
-            </>
-          )}
+          New staff member?{" "}
+          <Link to="/admin/staff-signup" className="font-semibold text-teal-300 hover:text-teal-200">
+            Use your access code
+          </Link>
         </div>
         <div className="mt-3 text-center">
           <Link

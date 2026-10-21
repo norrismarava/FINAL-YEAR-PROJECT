@@ -57,9 +57,10 @@ function showDesktopNotification(event) {
       "ticket.auto-classified": "Emergency escalation",
     };
     const title = titleMap[event.type] ?? "Queue update";
-    const body = [ticket.ticket, ticket.patientName, ticket.department]
-      .filter(Boolean)
-      .join(" · ") || "A queue event just arrived.";
+    const body =
+      [ticket.ticket, ticket.department, ticket.room ? `Room ${ticket.room}` : null]
+        .filter(Boolean)
+        .join(" · ") || "A queue event just arrived.";
     new Notification(title, { body, tag: `waitless-${event.type}` });
   } catch {
     // Notifications unavailable — ignore

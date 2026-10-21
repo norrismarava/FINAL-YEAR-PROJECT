@@ -16,7 +16,18 @@ function sleep(delayMs) {
 }
 
 function sanitizePhoneNumber(value) {
-  return String(value ?? "").replace(/[^\d]/g, "");
+  // Normalise to E.164 digits for Meta — local "0788686453" becomes
+  // "263788686453" using the configured country code.
+  let digits = String(value ?? "").replace(/[^\d]/g, "");
+  if (!digits) return "";
+  if (digits.startsWith("00")) digits = digits.slice(2);
+  const countryCode = env.whatsAppDefaultCountryCode;
+  if (digits.startsWith("0") && countryCode) {
+    digits = `${countryCode}${digits.slice(1)}`;
+  } else if (countryCode && !digits.startsWith(countryCode) && digits.length <= 10) {
+    digits = `${countryCode}${digits}`;
+  }
+  return digits;
 }
 
 function resolveTemplateName(notification) {

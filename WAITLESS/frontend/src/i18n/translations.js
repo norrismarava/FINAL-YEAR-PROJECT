@@ -242,7 +242,7 @@ export const translations = {
     // Track page
     "track.title": "Track Your Ticket",
     "track.subtitle": "Enter your ticket code to see your real-time queue position.",
-    "track.placeholder": "e.g. OPD-001",
+    "track.placeholder": "e.g. A205",
     "track.search": "Track",
     "track.searching": "Searching...",
     "track.notFound": "Ticket not found. Please check your code and try again.",
@@ -610,7 +610,7 @@ export const translations = {
     // Track page
     "track.title": "Tevera Tikiti Rako",
     "track.subtitle": "Nyora kodhi yatikiti rako kuti uone nzvimbo yako pamudzimu.",
-    "track.placeholder": "sokuti OPD-001",
+    "track.placeholder": "sokuti A205",
     "track.search": "Tevera",
     "track.searching": "Tiri kutsvaga...",
     "track.notFound": "Tikiti harina kuwanikwa. Tapota ongorora kodhi yako uye edza zvakare.",
@@ -978,7 +978,7 @@ export const translations = {
     // Track page
     "track.title": "Landa Ithikithi Lakho",
     "track.subtitle": "Faka ikhodi yethikithi lakho ukubona isikhundla sakho esilandelweni ngokusheshayo.",
-    "track.placeholder": "isb. OPD-001",
+    "track.placeholder": "isb. A205",
     "track.search": "Landa",
     "track.searching": "Sisesha...",
     "track.notFound": "Ithikithi alitholakali. Sicela uhloole ikhodi yakho futhi uzame futhi.",

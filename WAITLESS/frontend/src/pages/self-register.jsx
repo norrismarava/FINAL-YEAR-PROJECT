@@ -4,7 +4,6 @@ import {
   AlertCircle,
   ArrowRight,
   Check,
-  CheckCircle2,
   Clock3,
   Copy,
   Download,
@@ -52,8 +51,14 @@ const SUCCESS_STYLES = `
     from { opacity: 0; transform: translateY(18px); }
     to   { opacity: 1; transform: translateY(0); }
   }
+  @keyframes self-reg-ring-pulse {
+    0%   { transform: scale(0.85); opacity: 0; }
+    55%  { opacity: 1; }
+    100% { transform: scale(1.25); opacity: 0; }
+  }
   .self-reg-success-card { animation: self-reg-pop 0.55s cubic-bezier(0.16, 1, 0.3, 1) both; }
   .self-reg-check-badge { animation: self-reg-check 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both; }
+  .self-reg-ring-pulse { animation: self-reg-ring-pulse 1.6s ease-out 0.7s infinite; }
   .self-reg-enter { animation: self-reg-enter 0.65s cubic-bezier(0.16, 1, 0.3, 1) both; }
 `;
 
@@ -257,8 +262,15 @@ export default function SelfRegisterPage() {
             <div className="relative z-10 p-6 text-center sm:p-8">
               <img src={waitlessLogoIcon} alt="WaitLess" className="mx-auto h-12 w-12 rounded-xl object-contain drop-shadow-[0_0_14px_rgba(45,212,191,0.4)]" />
               <div className="mt-2 text-[0.65rem] font-bold uppercase tracking-[0.22em] text-teal-300">Patient self-service</div>
-              <div className="self-reg-check-badge mx-auto mt-4 grid h-16 w-16 place-items-center rounded-full bg-emerald-500/12 text-emerald-400">
-                <CheckCircle2 className="h-8 w-8" />
+              <div className="self-reg-check-badge relative mx-auto mt-4 h-24 w-24">
+                <span className="self-reg-ring-pulse absolute inset-0 rounded-full border-2 border-emerald-400/30" />
+                <span className="absolute inset-2 rounded-full border border-emerald-400/25 bg-emerald-500/[0.06]" />
+                <span className="absolute inset-4 grid place-items-center rounded-full bg-[linear-gradient(135deg,#10b981,#0d9488)] text-white shadow-[0_10px_28px_-8px_rgba(16,185,129,0.65)]">
+                  <Check className="h-7 w-7" strokeWidth={3} />
+                </span>
+                <span className="absolute -bottom-1 -right-1 grid h-8 w-8 place-items-center rounded-full border border-teal-200/30 bg-[#04141f] text-teal-300 shadow-[0_6px_16px_rgba(0,0,0,0.5)]">
+                  <Ticket className="h-4 w-4" />
+                </span>
               </div>
 
               <div className="mt-6 text-[0.7rem] font-bold uppercase tracking-[0.24em] text-teal-300">

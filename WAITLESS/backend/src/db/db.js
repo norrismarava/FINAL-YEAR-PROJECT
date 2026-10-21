@@ -13,6 +13,7 @@ export function getPool() {
       database: env.databaseName,
       waitForConnections: true,
       connectionLimit: env.databaseConnectionLimit,
+      connectTimeout: env.databaseConnectTimeoutMs,
       enableKeepAlive: true,
       keepAliveInitialDelay: 0,
       ...(env.databaseSsl ? { ssl: { minVersion: "TLSv1.2" } } : {}),

@@ -47,7 +47,6 @@ import ctaAccountImage from "@/assets/OTHER 3/craete accont.jpeg";
 import ctaTrackImage from "@/assets/OTHER 3/QUESTION.jpeg";
 import ctaQueueImage from "@/assets/OTHER 3/WAIT4.jpeg";
 import { useAuth } from "@/auth/AuthProvider";
-import { usePatientAuth } from "@/auth/PatientAuthProvider";
 import { resolveStaffLandingPath } from "@/services/staffProfilePrefs";
 import { DEPARTMENTS, PRIORITY_META } from "@/services/queueMeta";
 
@@ -354,9 +353,7 @@ function SplashScreen({ fading }) {
    ═══════════════════════════════════════════════ */
 function Hero() {
   const auth = useAuth();
-  const patientAuth = usePatientAuth();
   const isStaff = auth.isAuthenticated;
-  const isPatient = patientAuth.isPatientAuthenticated;
   const canRegisterPatient = auth.hasRole(["reception", "receptionist"]);
 
   return (
@@ -446,15 +443,6 @@ function Hero() {
                     New patient <ClipboardList className="h-4 w-4" />
                   </Link>
                 ) : null}
-              </>
-            ) : isPatient ? (
-              <>
-                <Link to="/patient/dashboard" className="group inline-flex min-h-[3.25rem] items-center gap-2.5 rounded-2xl bg-gradient-to-r from-teal-600 to-cyan-600 px-7 py-3.5 text-sm font-bold text-white shadow-[0_12px_36px_-12px_rgba(20,184,166,0.5)] transition-all hover:-translate-y-1 hover:shadow-[0_18px_44px_-14px_rgba(20,184,166,0.6)]">
-                  My dashboard <LayoutDashboard className="h-4 w-4 transition-transform group-hover:rotate-6" />
-                </Link>
-                <Link to="/self-register" className="inline-flex min-h-[3.25rem] items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-6 py-3.5 text-sm font-semibold text-white backdrop-blur transition-all hover:bg-white/[0.1]">
-                  Book queue spot <ClipboardList className="h-4 w-4" />
-                </Link>
               </>
             ) : (
               <>
@@ -636,7 +624,7 @@ function PatientJourney() {
     { num: "03", title: "Consultation", time: "10 min", body: "See your doctor. Orders for lab, pharmacy, or imaging generated instantly.", icon: Stethoscope, color: "from-blue-500 to-indigo-500", image: stepConsultImage },
     { num: "04", title: "Investigations", time: "20-30m", body: "Lab or Radiology, tracked live. Get WhatsApp updates on results.", icon: FlaskConical, color: "from-purple-500 to-violet-500", image: stepLabImage },
     { num: "05", title: "Pharmacy", time: "10 min", body: "Prescription ready? You'll get a WhatsApp call-up when it's your window.", icon: Pill, color: "from-emerald-500 to-green-600", image: deptPharmacyPhoto },
-    { num: "06", title: "Done", time: "Instant", body: "Rate your experience and head home. Visit history saved to your account.", icon: CheckCircle2, color: "from-cyan-500 to-teal-500", image: stepDoneImage },
+    { num: "06", title: "Done", time: "Instant", body: "Rate your experience and head home. Visit history saved to your patient record.", icon: CheckCircle2, color: "from-cyan-500 to-teal-500", image: stepDoneImage },
   ];
 
   return (
@@ -1110,9 +1098,7 @@ function TestimonialsSection() {
    ═══════════════════════════════════════════════ */
 function CTASection() {
   const auth = useAuth();
-  const patientAuth = usePatientAuth();
   const isStaff = auth.isAuthenticated;
-  const isPatient = patientAuth.isPatientAuthenticated;
 
   const ctaCards = isStaff
     ? [
@@ -1120,17 +1106,11 @@ function CTASection() {
         ["Waiting area", "Show the live board without exposing patient names.", "/queue", MonitorSmartphone],
         ["Operations", "Monitor bottlenecks and call the next patient.", "/admin/dashboard", Activity],
       ]
-    : isPatient
-      ? [
-          ["My dashboard", "View your active tickets and visit history.", "/patient/dashboard", LayoutDashboard],
-          ["Book a spot", "Get a ticket instantly and track your position.", "/self-register", ClipboardList],
-          ["Track ticket", "Enter your ticket code to see your live position.", "/track", Search],
-        ]
-      : [
-          ["Create account", "Sign up for free, book queue spots, track tickets, and get WhatsApp updates.", "/patient/register", ClipboardList],
-          ["Track a ticket", "Enter your code and see your live queue position.", "/track", Search],
-          ["Queue board", "Show the live board in the waiting area.", "/queue", MonitorSmartphone],
-        ];
+    : [
+        ["Get a ticket", "Check in from your phone in seconds, no account needed.", "/self-register", ClipboardList],
+        ["Track a ticket", "Enter your code and see your live queue position.", "/track", Search],
+        ["Queue board", "Show the live board in the waiting area.", "/queue", MonitorSmartphone],
+      ];
 
   const ctaImages = [ctaAccountImage, ctaTrackImage, ctaQueueImage];
 

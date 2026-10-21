@@ -27,7 +27,6 @@ import {
   X,
 } from "lucide-react";
 
-import authBackground from "@/assets/BACKG.png";
 import waitlessLogoIcon from "@/assets/waitless-logo-icon.png";
 import { LoadingPanel } from "@/components/ui/system-loader";
 import { useLiveRefresh } from "@/context/LiveRefreshContext";
@@ -166,19 +165,11 @@ export default function TrackPage() {
 
   return (
     <section className="relative isolate min-h-screen overflow-hidden px-4 py-6 text-white sm:px-6 lg:px-8">
-      {/* Background image */}
-      <div className="pointer-events-none absolute inset-0 -z-20 hidden lg:block">
-        <img
-          src={authBackground}
-          alt=""
-          className="h-full w-full object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-br from-[#04141f]/82 via-[#062a35]/72 to-[#0a1f2e]/78" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#04141f]/60 via-transparent to-[#04141f]/30" />
+      {/* Ambient background — deep teal gradient with soft glow spots that
+          blend into the card instead of fighting it */}
+      <div className="pointer-events-none absolute inset-0 -z-20 bg-[#04141f]">
+        <div className="absolute inset-0 bg-[radial-gradient(60%_50%_at_15%_0%,rgba(13,148,136,0.14),transparent_60%),radial-gradient(50%_45%_at_85%_20%,rgba(34,211,238,0.10),transparent_60%),radial-gradient(70%_60%_at_50%_100%,rgba(15,118,110,0.12),transparent_65%)]" />
       </div>
-
-      {/* Mobile solid background */}
-      <div className="absolute inset-0 -z-10 bg-[#04141f] lg:hidden" />
 
       {isRefreshing ? (
         <div className="track-loading-bar absolute inset-x-0 top-0 z-50 h-1 overflow-hidden">
@@ -351,7 +342,7 @@ function PortalHero({
           </div>
 
           <div className="mt-7 grid gap-4 sm:grid-cols-3">
-            <HeroInfoCard label="Example ticket" value={ticketCode || "G-105"} />
+            <HeroInfoCard label="Example ticket" value={ticketCode || "A205"} />
             <HeroInfoCard label="Estimated wait" value={isLoading ? "..." : "18m"} />
             <HeroInfoCard label="Queue position" value={isLoading ? "..." : "#4"} />
           </div>
@@ -392,7 +383,7 @@ function PortalHero({
 
           <div className="min-w-0">
             <h1 className="text-balance font-serif text-[2.85rem] italic leading-none text-white sm:text-[3.45rem]">
-              {ticket.patientName}
+              Ticket {ticket.ticket}
             </h1>
 
             <div className="mt-5 flex flex-wrap gap-2">
@@ -458,7 +449,7 @@ function LookupCard({ ticketInput, setTicketInput, onSubmit, snapshot, selectedD
             <input
               value={ticketInput}
               onChange={(event) => setTicketInput(event.target.value.toUpperCase())}
-              placeholder="G-105"
+              placeholder="A205"
               className="w-full rounded-[1.05rem] border border-white/10 bg-white/[0.08] px-11 py-3.5 text-base font-semibold text-white outline-none transition-colors placeholder:text-slate-400 focus:border-teal-300/35"
             />
             {ticketInput ? (
@@ -1015,7 +1006,7 @@ function PatientPassCard({ latestStatusTimestamp, queue, statusLabel, ticket }) 
         </div>
 
         <div className="mt-5 font-serif text-[2rem] italic leading-none text-white">
-          {ticket.patientName}
+          Ticket {ticket.ticket}
         </div>
         <div className="mt-3 text-[1.1rem] text-slate-400">{ticket.department}</div>
 
@@ -1130,7 +1121,7 @@ function ActiveNowCard({ activeEntries, queue, ticket }) {
                 </span>
                 <div className="min-w-0">
                   <div className="truncate text-[1.05rem] font-medium text-white">
-                    {entry.patientName}
+                    {entry.status === "called" ? "Called — please proceed" : "In service"}
                   </div>
                 </div>
               </div>

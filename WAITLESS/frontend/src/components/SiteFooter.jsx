@@ -88,9 +88,7 @@ export default function SiteFooter() {
                 ["Track your ticket", "/track"],
                 ["Live queue board", "/queue"],
                 ["Kiosk check-in", "/kiosk"],
-                ["Sign in", "/login"],
-                ["Create an account", "/patient/register"],
-                ["Share feedback", "/patient/feedback"],
+                ["Staff sign in", "/login"],
               ].map(([label, to]) => (
                 <li key={to}>
                   <Link

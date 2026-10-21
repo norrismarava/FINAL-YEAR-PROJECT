@@ -1,7 +1,6 @@
 import axios from "axios";
 
 import { getStoredAuthToken, updateStoredSessionExpiry } from "./authSession";
-import { getStoredPatientToken, updateStoredPatientExpiry } from "./patientAuthSession";
 
 // Prefer same-origin + Vite proxy (`/api` -> http://localhost:4242) to avoid browser Network/CORS issues.
 // If you explicitly set VITE_API_BASE_URL, we’ll use it.
@@ -12,13 +11,7 @@ export const apiClient = axios.create({
 });
 
 apiClient.interceptors.request.use((config) => {
-  // Patient endpoints need the patient token; everything else uses staff.
-  // Match "/api/patient/" exactly so staff routes like /api/patients/* don't
-  // accidentally carry the patient token.
-  const isPatientEndpoint = (config.url ?? "").startsWith("/api/patient/");
-  const authToken = isPatientEndpoint
-    ? (getStoredPatientToken() ?? getStoredAuthToken())
-    : (getStoredAuthToken() ?? getStoredPatientToken());
+  const authToken = getStoredAuthToken();
 
   if (authToken && !config.headers.Authorization) {
     config.headers.Authorization = `Bearer ${authToken}`;
@@ -33,12 +26,7 @@ apiClient.interceptors.request.use((config) => {
 function refreshStoredExpiry(response) {
   const expiresAt = response?.headers?.["x-session-expires"];
   if (!expiresAt) return;
-  const sentToken = (response.config?.headers?.Authorization ?? "").replace(/^Bearer\s+/i, "");
-  if (sentToken && sentToken === getStoredPatientToken()) {
-    updateStoredPatientExpiry(expiresAt);
-  } else {
-    updateStoredSessionExpiry(expiresAt);
-  }
+  updateStoredSessionExpiry(expiresAt);
 }
 
 // Any 401 on an authenticated endpoint means the stored session is dead —

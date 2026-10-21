@@ -335,7 +335,10 @@ export async function dispatchRegistrationNotification(ticket) {
   return createWhatsAppNotification(ticket, {
     type: "queue-registered",
     title: `WhatsApp updates enabled for ${ticket.ticket}`,
-    message: `Hello ${ticket.patientName}, your WaitLess queue token is ${ticket.ticket} for ${ticket.department}. Track your position at ${createTrackingUrl(ticket.ticket)}. We will alert you again when your turn gets closer.`,
+    message:
+      ticket.status === "pre-registered" || ticket.department === "Reception"
+        ? `Hello ${ticket.patientName}, your WaitLess ticket is ${ticket.ticket}. Show this code at the reception desk and we'll book you into the right department queue. Track your status at ${createTrackingUrl(ticket.ticket)}.`
+        : `Hello ${ticket.patientName}, your WaitLess queue token is ${ticket.ticket} for ${ticket.department}. Track your position at ${createTrackingUrl(ticket.ticket)}. We will alert you again when your turn gets closer.`,
   });
 }
 
@@ -356,7 +359,7 @@ export async function dispatchCallNotifications(ticket) {
       await createWhatsAppNotification(ticket, {
         type: "queue-called",
         title: `WhatsApp alert queued for ${ticket.ticket}`,
-        message: `Hello ${ticket.patientName}, please proceed to ${ticket.department}. Your ticket ${ticket.ticket} is now being called.`,
+        message: `Hello ${ticket.patientName}, please proceed to ${ticket.department}${ticket.calledRoom ? `, Room ${ticket.calledRoom}` : ""}. Your ticket ${ticket.ticket} is now being called.`,
       }),
     );
   }

@@ -86,6 +86,30 @@ function maskOITickets(tickets) {
   return tickets.map(maskOITicket);
 }
 
+// Public surfaces (tracking, boards) must never expose patient identity.
+// Only operational fields leave the server — no names, IDs, contacts,
+// complaints or next-of-kin data.
+function sanitizePublicTicket(ticket) {
+  return {
+    id: ticket.id,
+    ticket: ticket.ticket,
+    department: ticket.department,
+    previousDepartment: ticket.previousDepartment ?? "",
+    priority: ticket.priority,
+    status: ticket.status,
+    registeredAt: ticket.registeredAt,
+    triagedAt: ticket.triagedAt,
+    calledAt: ticket.calledAt,
+    calledRoom: ticket.calledRoom ?? null,
+    serviceStartedAt: ticket.serviceStartedAt,
+    missedAt: ticket.missedAt,
+    recalledAt: ticket.recalledAt,
+    completedAt: ticket.completedAt,
+    waitMinutes: ticket.waitMinutes ?? null,
+    whatsApp: Boolean(ticket.whatsApp),
+  };
+}
+
 function maskOITrackingResponse(response) {
   const ticket = response.ticket;
   if (!ticket || ticket.department !== OI_CLINIC_DEPARTMENT) return response;
@@ -857,6 +881,16 @@ async function resolvePatientProfile(payload, now) {
   });
 }
 
+// A patient may only hold one open ticket at a time — anything not
+// completed is still "live" and must not be double-booked.
+async function findOpenTicketForPatient(patientId) {
+  return (await getLiveTickets())
+    .filter(
+      (entry) => entry.patientId === patientId && entry.status !== "completed",
+    )
+    .sort((a, b) => new Date(b.registeredAt) - new Date(a.registeredAt))[0];
+}
+
 export async function registerPatient(payload) {
   const actor = payload?._actor ?? null;
 
@@ -898,6 +932,14 @@ export async function registerPatient(payload) {
       department,
     );
     return { ...confirmed, reusedPreRegisteredTicket: true };
+  }
+
+  const openTicket = await findOpenTicketForPatient(patient.id);
+  if (openTicket) {
+    throw new HttpError(
+      409,
+      `${patient.patientName} already holds ticket ${openTicket.ticket} (${openTicket.status}) in ${openTicket.department}. Complete or recall that ticket first.`,
+    );
   }
 
   const sequence = await getNextSequence();
@@ -1426,11 +1468,6 @@ export async function getQueueBoard(department) {
     };
   }
 
-  const oiPrivacy = await getOIPrivacyMode();
-  const maskedNowServing = oiPrivacy ? maskOITickets(nowServing) : nowServing;
-  const maskedWaiting = oiPrivacy ? maskOITickets(waiting) : waiting;
-  const maskedMissed = oiPrivacy ? maskOITickets(missed) : missed;
-
   return {
     nowServing: maskedNowServing,
     waiting: maskedWaiting,
@@ -1602,7 +1639,6 @@ export async function getTicketTracking(ticketCode) {
       activeInDepartment: activeInDepartment.map((entry) => ({
         id: entry.id,
         ticket: entry.ticket,
-        patientName: entry.patientName,
         priority: entry.priority,
         status: entry.status,
       })),
@@ -1610,6 +1646,25 @@ export async function getTicketTracking(ticketCode) {
     notifications: await getNotificationsForTicket(ticket.id),
     lastUpdatedAt: new Date().toISOString(),
   };
+
+  result.ticket = sanitizePublicTicket(ticket);
+
+  // Notification bodies embed the patient's name ("Hello Tendai…") —
+  // redact it and drop the recipient/contact fields for the public view.
+  const privateName = ticket.patientName?.trim();
+  result.notifications = (result.notifications ?? []).map((notification) => {
+    const redact = (text) =>
+      typeof text === "string" && privateName
+        ? text.split(privateName).join("the patient")
+        : text;
+    return {
+      ...notification,
+      title: redact(notification.title),
+      message: redact(notification.message),
+      recipient: undefined,
+      patientName: undefined,
+    };
+  });
 
   const oiPrivacy = await getOIPrivacyMode();
   return oiPrivacy ? maskOITrackingResponse(result) : result;
@@ -1678,6 +1733,19 @@ export async function kioskCheckIn(payload) {
   const patient = await findPatientById(patientId);
   if (!patient) {
     throw new HttpError(404, "Patient not found. Please register at the front desk.");
+  }
+
+  const openTicket = await findOpenTicketForPatient(patient.id);
+  if (openTicket) {
+    if (openTicket.status === "pre-registered") {
+      // Idempotent check-in — hand back the same code instead of
+      // minting a duplicate the patient would have to track.
+      return enrichTicket(openTicket);
+    }
+    throw new HttpError(
+      409,
+      `You already have an active ticket ${openTicket.ticket} in ${openTicket.department}. Please proceed to the waiting area.`,
+    );
   }
 
   const registeredAt = new Date().toISOString();
@@ -1752,6 +1820,18 @@ export async function preRegisterPatient(payload) {
 
   if (!patient.nationalId?.trim()) {
     throw new HttpError(400, "National ID is required.");
+  }
+
+  const openTicket = await findOpenTicketForPatient(patient.id);
+  if (openTicket) {
+    if (openTicket.status === "pre-registered") {
+      // Idempotent — return the same code rather than a duplicate.
+      return enrichTicket(openTicket);
+    }
+    throw new HttpError(
+      409,
+      `You already have an active ticket ${openTicket.ticket} in ${openTicket.department}.`,
+    );
   }
 
   const sequence = await getNextSequence();
@@ -2241,6 +2321,9 @@ export async function submitFeedback(ticketId, { rating, categories, comment }) 
   if (rating == null || rating < 1 || rating > 5) {
     throw new HttpError(400, "Rating must be between 1 and 5.");
   }
+  if ((await findFeedbackByTicketId(ticket.id)).length > 0) {
+    throw new HttpError(409, "Feedback was already submitted for this ticket.");
+  }
   const feedback = await createFeedback({
     ticketId: ticket.id,
     ticketCode: ticket.ticket,
@@ -2261,7 +2344,10 @@ export async function submitFeedback(ticketId, { rating, categories, comment }) 
 }
 
 export async function getFeedbackForTicket(ticketId) {
-  return findFeedbackByTicketId(ticketId);
+  // Public endpoint — drop the patient's name from stored feedback rows.
+  return (await findFeedbackByTicketId(ticketId)).map(
+    ({ patientName: _patientName, ...safe }) => safe,
+  );
 }
 
 export async function getReassessmentAlerts() {

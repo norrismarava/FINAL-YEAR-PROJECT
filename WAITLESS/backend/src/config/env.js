@@ -69,7 +69,10 @@ export const env = {
   databasePassword: process.env.DB_PASSWORD ?? "",
   databaseSsl: parseBoolean(process.env.DB_SSL, false),
   databaseConnectionLimit: parseInteger(process.env.DB_CONNECTION_LIMIT, 10),
-  databaseSsl: parseBoolean(process.env.DB_SSL, false),
+  databaseConnectTimeoutMs: parseInteger(
+    process.env.DB_CONNECT_TIMEOUT_MS,
+    30000,
+  ),
   databaseSeedDemoData: parseBoolean(process.env.DB_SEED_DEMO_DATA, true),
   authSessionTtlMs: parseInteger(
     process.env.AUTH_SESSION_TTL_MS,
@@ -107,6 +110,8 @@ export const env = {
     process.env.WHATSAPP_MOCK_FAILURE_RATE,
     0,
   ),
+  whatsAppDefaultCountryCode:
+    process.env.WHATSAPP_DEFAULT_COUNTRY_CODE?.trim() || "263",
   whatsAppTemplateLanguage:
     process.env.WHATSAPP_TEMPLATE_LANGUAGE?.trim() || "en_US",
   whatsAppTemplateQueueRegistered:

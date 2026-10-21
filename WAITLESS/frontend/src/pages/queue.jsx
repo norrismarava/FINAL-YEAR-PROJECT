@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   Activity,
   AlertTriangle,
@@ -6,7 +7,10 @@ import {
   CheckCircle2,
   Clock3,
   Inbox,
+  MapPin,
+  Maximize2,
   MessageCircle,
+  Minimize2,
   ShieldCheck,
   UserCheck,
   Users,
@@ -16,11 +20,12 @@ import {
 
 import { LoadingPanel } from "@/components/ui/system-loader";
 import {
+  DEPARTMENTS,
   PRIORITY_META,
   STATUS_META,
   priorityChipClass,
 } from "@/services/queueMeta";
-import { fetchQueueBoard } from "@/services/queueApi";
+import { fetchDepartmentBoard, fetchQueueBoard } from "@/services/queueApi";
 import { useQueueRealtime } from "@/sockets/QueueRealtimeProvider";
 import { useApiResource } from "@/hooks/useApiResource";
 import { useAudioCall } from "@/hooks/useAudioCall";
@@ -104,8 +109,34 @@ export default function QueuePage() {
   const audio = useAudioCall();
   const lastProcessedEventRef = useRef(null);
   const [justCalledId, setJustCalledId] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const department = searchParams.get("dept") ?? "";
+  const boardMode = searchParams.get("display") === "tv";
 
-  const loadQueueBoard = useCallback(() => fetchQueueBoard(), []);
+  const updateParams = useCallback(
+    (patch) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          for (const [key, value] of Object.entries(patch)) {
+            if (value) next.set(key, value);
+            else next.delete(key);
+          }
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
+
+  const enterBoard = useCallback(() => updateParams({ display: "tv" }), [updateParams]);
+  const exitBoard = useCallback(() => updateParams({ display: null }), [updateParams]);
+
+  const loadQueueBoard = useCallback(
+    () => (department ? fetchDepartmentBoard(department) : fetchQueueBoard()),
+    [department],
+  );
   const queueQuery = useApiResource(loadQueueBoard, { enabled: isBrowser });
 
   useEffect(() => {
@@ -148,6 +179,16 @@ export default function QueuePage() {
     return () => window.clearTimeout(id);
   }, [justCalledId]);
 
+  // Esc exits TV board mode
+  useEffect(() => {
+    if (!boardMode) return undefined;
+    function onKey(e) {
+      if (e.key === "Escape") exitBoard();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [boardMode, exitBoard]);
+
   const serving = queueQuery.data?.nowServing ?? [];
   const waiting = queueQuery.data?.waiting ?? [];
   const missed = queueQuery.data?.missed ?? [];
@@ -188,6 +229,14 @@ export default function QueuePage() {
               className="mx-auto h-12 w-12 rounded-xl object-contain drop-shadow-[0_0_14px_rgba(45,212,191,0.4)]"
             />
             <div className="mt-2 text-[10px] font-bold uppercase tracking-[0.22em] text-teal-400">Queue board</div>
+            <button
+              type="button"
+              onClick={enterBoard}
+              className="absolute right-0 top-0 inline-flex items-center gap-2 rounded-full border border-teal-300/25 bg-teal-400/10 px-4 py-2 text-xs font-semibold text-teal-200 transition hover:border-teal-300/50 hover:bg-teal-400/20"
+            >
+              <Maximize2 className="h-3.5 w-3.5" />
+              TV display
+            </button>
           </div>
           <div className="relative grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
             {/* Left column — title & badges */}
@@ -210,7 +259,7 @@ export default function QueuePage() {
                   Chinhoyi Provincial Hospital
                 </span>
                 <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-slate-300">
-                  Waiting area display
+                  {department ? `${department} waiting area` : "Waiting area display"}
                 </span>
                 <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-slate-300">
                   Sorted by priority and wait time
@@ -560,7 +609,233 @@ export default function QueuePage() {
           </div>
         </div>
       </div>
+
+      {boardMode ? (
+        <QueueBoardDisplay
+          serving={serving}
+          waiting={waiting}
+          missed={missed}
+          justCalledId={justCalledId}
+          now={now}
+          department={department}
+          onDepartmentChange={(dept) => updateParams({ dept: dept || null })}
+          onExit={exitBoard}
+        />
+      ) : null}
     </section>
+  );
+}
+
+/* ================================================================
+   TV BOARD DISPLAY — fullscreen waiting-area signage (Qmatic-style).
+   Giant "now calling" panel + serving/next lists + missed ticker.
+   ================================================================ */
+function QueueBoardDisplay({ serving, waiting, missed, justCalledId, now, department, onDepartmentChange, onExit }) {
+  const [tipIndex, setTipIndex] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => setTipIndex((i) => (i + 1) % HEALTH_TIPS.length), 9000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Most recently called ticket wins the hero panel
+  const nowCalling =
+    serving.find((t) => t.id === justCalledId) ??
+    [...serving].sort((a, b) => new Date(b.calledAt ?? 0) - new Date(a.calledAt ?? 0))[0] ??
+    null;
+  const otherServing = serving.filter((t) => t.id !== nowCalling?.id);
+  const upNext = waiting.slice(0, 5);
+  const tip = HEALTH_TIPS[tipIndex];
+
+  return (
+    <div className="fixed inset-0 z-[100] flex flex-col overflow-hidden bg-[#030f18] text-white">
+      <style>{`
+        @keyframes boardFlash { 0%,100% { box-shadow: 0 0 0 rgba(45,212,191,0); } 50% { box-shadow: 0 0 90px rgba(45,212,191,0.45); } }
+        @keyframes boardDot { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
+        @keyframes boardTipIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes boardCursor { 0%,45% { opacity: 1; } 50%,95% { opacity: 0; } }
+      `}</style>
+
+      {/* ── Top bar ── */}
+      <header className="flex items-center justify-between gap-6 border-b border-white/10 bg-[#051a28] px-8 py-4">
+        <div className="flex items-center gap-4">
+          <img src={waitlessLogoIcon} alt="WaitLess" className="h-11 w-11 rounded-xl object-contain" />
+          <div>
+            <div className="text-xl font-bold tracking-tight">Chinhoyi Provincial Hospital</div>
+            <div className="text-[11px] font-bold uppercase tracking-[0.3em] text-teal-400">
+              {department ? `${department} · waiting area` : "Live queue board · all departments"}
+            </div>
+          </div>
+        </div>
+        {department ? (
+          <div className="ml-6 flex items-center gap-4 overflow-hidden rounded-2xl border border-teal-300/20 bg-[#061e2c] px-6 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.05),0_14px_40px_-18px_rgba(45,212,191,0.4)]">
+            <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-teal-400/10 ring-1 ring-teal-300/30">
+              <MapPin className="h-6 w-6 text-teal-300" strokeWidth={2.2} />
+            </span>
+            <div>
+              <div className="font-display text-xl font-bold leading-tight tracking-tight text-white">
+                {department} <span className="font-semibold text-teal-300/90">· Waiting area</span>
+              </div>
+              <div className="mt-0.5 text-xs font-medium tracking-wide text-slate-400">
+                You're in the right place — take a seat and listen for your ticket
+              </div>
+            </div>
+          </div>
+        ) : null}
+        <div className="ml-auto flex items-center gap-5">
+          <select
+            value={department}
+            onChange={(e) => onDepartmentChange(e.target.value)}
+            className="rounded-full border border-white/15 bg-[#051a28] px-4 py-2 text-xs font-semibold text-slate-300 outline-none transition hover:border-white/30"
+            title="Department this screen shows"
+          >
+            <option value="">All departments</option>
+            {DEPARTMENTS.map((dept) => (
+              <option key={dept} value={dept}>{dept}</option>
+            ))}
+          </select>
+          <div className="text-right">
+            <div className="font-display text-3xl font-bold tabular-nums leading-none">
+              {now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            </div>
+            <div className="mt-1 text-[11px] uppercase tracking-[0.2em] text-slate-400">
+              {now.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" })}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onExit}
+            className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.06] px-4 py-2 text-xs font-semibold text-slate-300 transition hover:bg-white/[0.12]"
+            title="Exit display mode (Esc)"
+          >
+            <Minimize2 className="h-3.5 w-3.5" /> Exit
+          </button>
+        </div>
+      </header>
+
+      {/* ── Main grid ── */}
+      <div className="grid flex-1 gap-0 lg:grid-cols-[1.6fr_1fr]">
+        {/* NOW CALLING hero + health tip */}
+        <div className="flex flex-col border-b border-white/10 lg:border-b-0 lg:border-r">
+          <div className="flex flex-1 flex-col items-center justify-center p-10 pb-4">
+            <div className="flex items-center gap-3 text-sm font-bold uppercase tracking-[0.35em] text-teal-300">
+              <span className="h-2.5 w-2.5 rounded-full bg-teal-400" style={{ animation: "boardDot 1.6s ease-in-out infinite" }} />
+              Now calling
+            </div>
+          {nowCalling ? (
+            <>
+              <div
+                className={`mt-8 rounded-[2rem] border px-16 py-10 text-center ${
+                  justCalledId === nowCalling.id
+                    ? "border-teal-300/50 bg-teal-400/10"
+                    : "border-white/10 bg-white/[0.04]"
+                }`}
+                style={justCalledId === nowCalling.id ? { animation: "boardFlash 1.8s ease-in-out infinite" } : undefined}
+              >
+                <div className="font-display font-bold leading-none tracking-tight text-teal-100" style={{ fontSize: "clamp(6rem, 14vw, 13rem)" }}>
+                  {nowCalling.ticket}
+                </div>
+                <div className="mt-6 text-2xl font-semibold text-slate-200 sm:text-3xl">
+                  Go to <span className="text-teal-300">{nowCalling.department}</span>
+                  {nowCalling.calledRoom ? (
+                    <> · <span className="text-amber-300">Room {nowCalling.calledRoom}</span></>
+                  ) : null}
+                </div>
+              </div>
+              <div className="mt-8 max-w-xl text-center text-lg text-slate-400">
+                Please proceed to the service point now
+              </div>
+            </>
+          ) : (
+            <div className="mt-10 max-w-lg text-center">
+              <div className="font-display text-5xl font-bold tracking-tight text-slate-300 sm:text-6xl">
+                Please take a seat
+              </div>
+              <p className="mt-6 text-xl leading-8 text-slate-400">
+                Your ticket number will appear here when it is called.
+                {department ? ` This screen shows the ${department} queue.` : ""}
+              </p>
+            </div>
+          )}
+          </div>
+
+          {/* Health tip — pinned bottom-left, always visible */}
+          <div className="px-8 pb-8">
+            <div
+              key={tipIndex}
+              className="relative overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.03] px-6 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+              style={{ animation: "boardTipIn 0.7s ease-out" }}
+            >
+              {/* soft accent bar on the left edge */}
+              <span className="absolute inset-y-0 left-0 w-1 bg-gradient-to-b from-teal-300/70 via-teal-400/40 to-transparent" />
+              <div className="flex items-center gap-2.5 pl-2 text-[10px] font-bold uppercase tracking-[0.34em] text-teal-300/90">
+                <span className="text-xl leading-none">{tip.icon}</span>
+                Health tip · <TypewriterText text={tip.title} speed={70} />
+              </div>
+              <p className="mt-2 pl-2 font-mono text-[13.5px] leading-6 text-slate-200/90">
+                <TypewriterText text={tip.content} speed={55} cursor />
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Right column — now serving + up next */}
+        <div className="flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-hidden border-b border-white/10 p-6">
+            <div className="text-xs font-bold uppercase tracking-[0.3em] text-teal-300">Now serving</div>
+            <div className="mt-4 space-y-3 overflow-y-auto" style={{ maxHeight: "42vh" }}>
+              {otherServing.length ? (
+                otherServing.map((t) => (
+                  <div key={t.id} className="flex items-center justify-between rounded-2xl border border-white/10 bg-white/[0.04] px-5 py-4">
+                    <span className="font-display text-4xl font-bold tracking-tight">{t.ticket}</span>
+                    <div className="text-right">
+                      <div className="text-sm font-semibold text-slate-300">{t.department}</div>
+                      {t.calledRoom ? <div className="text-xs text-amber-300">Room {t.calledRoom}</div> : null}
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-2xl border border-dashed border-white/10 px-5 py-6 text-center text-sm text-slate-500">
+                  No other patients in service
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="p-6">
+            <div className="text-xs font-bold uppercase tracking-[0.3em] text-slate-400">Up next</div>
+            <div className="mt-3 flex flex-wrap gap-3">
+              {upNext.length ? (
+                upNext.map((t) => (
+                  <span key={t.id} className={`rounded-xl px-4 py-2 font-display text-2xl font-bold ${priorityChipClass[t.priority]}`}>
+                    {t.ticket}
+                  </span>
+                ))
+              ) : (
+                <span className="text-sm text-slate-500">Queue is clear</span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Bottom strip: missed + health tip ── */}
+      <footer className="border-t border-white/10 bg-[#051a28] px-8 py-3.5">
+        <div className="flex items-center gap-8 overflow-hidden">
+          {missed.length ? (
+            <div className="flex shrink-0 items-center gap-3 text-amber-300">
+              <AlertTriangle className="h-4 w-4" />
+              <span className="text-xs font-bold uppercase tracking-[0.2em]">Missed — report to reception:</span>
+              <span className="text-sm font-bold tracking-wide">
+                {missed.map((t) => t.ticket).join("  ·  ")}
+              </span>
+            </div>
+          ) : null}
+          <div className="ml-auto text-sm text-slate-400">
+            Please take a seat and wait for your ticket to be called
+          </div>
+        </div>
+      </footer>
+    </div>
   );
 }
 
@@ -778,5 +1053,40 @@ function AudioCallPanel({ audio }) {
         </div>
       </div>
     </div>
+  );
+}
+
+
+/* ================================================================
+   TYPEWRITER � types text out character by character with a
+   blinking block cursor (used by the board health tip).
+   ================================================================ */
+function TypewriterText({ text, speed = 20, cursor = false }) {
+  const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    setCount(0);
+    const id = setInterval(() => {
+      setCount((current) => {
+        if (current >= text.length) {
+          clearInterval(id);
+          return current;
+        }
+        return current + 1;
+      });
+    }, speed);
+    return () => clearInterval(id);
+  }, [text, speed]);
+
+  return (
+    <>
+      {text.slice(0, count)}
+      <span
+        className="inline-block w-[0.5em] text-teal-300"
+        style={{ animation: count < text.length ? "none" : "boardCursor 1.1s step-end infinite" }}
+      >
+        {cursor || count < text.length ? "?" : ""}
+      </span>
+    </>
   );
 }

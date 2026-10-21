@@ -1,7 +1,12 @@
 import fs from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const SESSIONS_FILE = path.resolve("data/sessions.json");
+// Anchor to the repo — cwd-relative paths break when the process is
+// started from a different directory.
+const SESSIONS_FILE = fileURLToPath(
+  new URL("../../data/sessions.json", import.meta.url),
+);
 const WRITE_DEBOUNCE_MS = 500;
 
 // File-backed session persistence — sessions survive backend restarts

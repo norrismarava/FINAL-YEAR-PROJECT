@@ -259,7 +259,10 @@ function mapAttemptRow(row) {
 }
 
 async function insertDepartments(connection) {
-  for (const department of [...DEPARTMENTS, "Reception"]) {
+  // "Reception" holds dept-neutral pre-registered tickets until staff book
+  // them into a real department queue. "OPD" stays so legacy tickets keep
+  // a valid FK target even though it's no longer routable.
+  for (const department of [...DEPARTMENTS, "Reception", "OPD"]) {
     await connection.execute("INSERT IGNORE INTO departments (name) VALUES (?)", [
       department,
     ]);
@@ -1132,4 +1135,138 @@ export async function updateNotification(id, updater) {
 
 export async function getNextNotificationSequence() {
   return getNextCounter("notification_sequence");
+}
+
+
+/* -- JSON-document records (prescriptions / test orders / feedback) --
+   These records are nested documents (items, stateHistory, actors).
+   Keeping the full payload as JSON matches the file repository
+   semantics exactly, while ticket columns stay indexable. */
+
+function parsePayload(value) {
+  if (value == null) {
+    return null;
+  }
+  return typeof value === "string" ? JSON.parse(value) : value;
+}
+
+async function listJsonRecords(table) {
+  return withConnection(async (connection) => {
+    const [rows] = await connection.execute(
+      `SELECT payload FROM ${quoteIdentifier(table)} ORDER BY seq ASC`,
+    );
+    return rows.map((row) => parsePayload(row.payload));
+  });
+}
+
+async function findJsonRecordById(table, id) {
+  return withConnection(async (connection) => {
+    const [rows] = await connection.execute(
+      `SELECT payload FROM ${quoteIdentifier(table)} WHERE id = ? LIMIT 1`,
+      [id],
+    );
+    return rows.length ? parsePayload(rows[0].payload) : null;
+  });
+}
+
+async function findJsonRecordsByTicketId(table, ticketId) {
+  return withConnection(async (connection) => {
+    const [rows] = await connection.execute(
+      `SELECT payload FROM ${quoteIdentifier(table)} WHERE ticket_id = ? ORDER BY seq ASC`,
+      [ticketId],
+    );
+    return rows.map((row) => parsePayload(row.payload));
+  });
+}
+
+async function createJsonRecord(table, record) {
+  const created = { ...record, id: record.id ?? crypto.randomUUID() };
+  return withConnection(async (connection) => {
+    await connection.execute(
+      `INSERT INTO ${quoteIdentifier(table)} (id, ticket_id, ticket_code, payload)
+       VALUES (?, ?, ?, ?)`,
+      [
+        created.id,
+        created.ticketId ?? "",
+        created.ticketCode ?? "",
+        JSON.stringify(created),
+      ],
+    );
+    return { ...created };
+  });
+}
+
+async function updateJsonRecord(table, id, updater) {
+  return withTransaction(async (connection) => {
+    const [rows] = await connection.execute(
+      `SELECT payload FROM ${quoteIdentifier(table)} WHERE id = ? LIMIT 1 FOR UPDATE`,
+      [id],
+    );
+    if (!rows.length) {
+      return null;
+    }
+    const current = parsePayload(rows[0].payload);
+    const nextValue =
+      typeof updater === "function"
+        ? await updater({ ...current })
+        : { ...current, ...updater };
+
+    await connection.execute(
+      `UPDATE ${quoteIdentifier(table)} SET payload = ? WHERE id = ?`,
+      [JSON.stringify(nextValue), id],
+    );
+    return { ...nextValue };
+  });
+}
+
+export function listPrescriptions() {
+  return listJsonRecords("prescriptions");
+}
+
+export function findPrescriptionById(id) {
+  return findJsonRecordById("prescriptions", id);
+}
+
+export function findPrescriptionsByTicketId(ticketId) {
+  return findJsonRecordsByTicketId("prescriptions", ticketId);
+}
+
+export function createPrescription(prescription) {
+  return createJsonRecord("prescriptions", prescription);
+}
+
+export function updatePrescription(id, updater) {
+  return updateJsonRecord("prescriptions", id, updater);
+}
+
+export function listTestOrders() {
+  return listJsonRecords("test_orders");
+}
+
+export function findTestOrderById(id) {
+  return findJsonRecordById("test_orders", id);
+}
+
+export function findTestOrdersByTicketId(ticketId) {
+  return findJsonRecordsByTicketId("test_orders", ticketId);
+}
+
+export function createTestOrder(testOrder) {
+  return createJsonRecord("test_orders", testOrder);
+}
+
+export function updateTestOrder(id, updater) {
+  return updateJsonRecord("test_orders", id, updater);
+}
+
+export function listFeedback() {
+  return listJsonRecords("feedback");
+}
+
+export function findFeedbackByTicketId(ticketId) {
+  return findJsonRecordsByTicketId("feedback", ticketId);
+}
+
+export function createFeedback(feedback) {
+  return createJsonRecord("feedback", feedback);
 }

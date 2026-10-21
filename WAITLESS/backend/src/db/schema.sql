@@ -175,3 +175,42 @@ CREATE TABLE IF NOT EXISTS audit_events (
   INDEX idx_audit_events_action (action),
   INDEX idx_audit_events_entity (entity_type, entity_id)
 );
+
+
+-- Prescriptions, lab/radiology test orders, and patient feedback.
+-- Records keep their full document shape in `payload` (matches the
+-- file repository) while id/ticket columns stay queryable.
+CREATE TABLE IF NOT EXISTS prescriptions (
+  seq BIGINT NOT NULL AUTO_INCREMENT UNIQUE,
+  id CHAR(36) PRIMARY KEY,
+  ticket_id CHAR(36) NOT NULL,
+  ticket_code VARCHAR(16) NOT NULL,
+  payload JSON NOT NULL,
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  INDEX idx_prescriptions_ticket_id (ticket_id),
+  INDEX idx_prescriptions_ticket_code (ticket_code)
+);
+
+CREATE TABLE IF NOT EXISTS test_orders (
+  seq BIGINT NOT NULL AUTO_INCREMENT UNIQUE,
+  id CHAR(36) PRIMARY KEY,
+  ticket_id CHAR(36) NOT NULL,
+  ticket_code VARCHAR(16) NOT NULL,
+  payload JSON NOT NULL,
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  updated_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3) ON UPDATE CURRENT_TIMESTAMP(3),
+  INDEX idx_test_orders_ticket_id (ticket_id),
+  INDEX idx_test_orders_ticket_code (ticket_code)
+);
+
+CREATE TABLE IF NOT EXISTS feedback (
+  seq BIGINT NOT NULL AUTO_INCREMENT UNIQUE,
+  id CHAR(36) PRIMARY KEY,
+  ticket_id CHAR(36) NOT NULL,
+  ticket_code VARCHAR(16) NOT NULL,
+  payload JSON NOT NULL,
+  created_at DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+  INDEX idx_feedback_ticket_id (ticket_id),
+  INDEX idx_feedback_ticket_code (ticket_code)
+);

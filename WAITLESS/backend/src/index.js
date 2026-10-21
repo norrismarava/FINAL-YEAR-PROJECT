@@ -17,18 +17,6 @@ import {
 } from "./controllers/authController.js";
 import { auditEventsController } from "./controllers/auditController.js";
 import {
-  patientLoginController,
-  patientMeController,
-  patientProfileCardController,
-  patientRegisterController,
-  patientTicketsController,
-  patientCheckInController,
-  patientPreRegisterController,
-  patientAvatarController,
-  patientUpdateProfileController,
-  patientChangePasswordController,
-  patientForgotPasswordController,
-  patientResetPasswordController,
   patientUsersListController,
   patientUserDeleteController,
   patientDirectoryController,
@@ -150,11 +138,8 @@ import {
   followUpsForTicketController,
   appointmentRemindersController,
   markReminderSentController,
-  patientAppointmentListController,
-  patientAppointmentCreateController,
-  patientAppointmentCancelController,
 } from "./controllers/appointmentController.js";
-import { withStaffAuth, withPatientAuth } from "./middleware/auth.js";
+import { withStaffAuth } from "./middleware/auth.js";
 import { applyCors } from "./middleware/cors.js";
 import { withChatbotRateLimit } from "./middleware/chatbotRateLimit.js";
 import { withRateLimit } from "./middleware/requestRateLimit.js";
@@ -252,46 +237,9 @@ router.register(
   withStaffAuth(["admin"], auditEventsController),
 );
 
-router.register(
-  "POST",
-  "/api/patient/auth/register",
-  registrationRateLimit(patientRegisterController),
-);
-router.register("POST", "/api/patient/auth/login", loginRateLimit(patientLoginController));
-router.register("GET", "/api/patient/auth/me", patientMeController);
-router.register(
-  "POST",
-  "/api/patient/auth/forgot-password",
-  passwordResetRateLimit(patientForgotPasswordController),
-);
-router.register(
-  "POST",
-  "/api/patient/auth/reset-password",
-  passwordResetRateLimit(patientResetPasswordController),
-);
-router.register("GET", "/api/patient/tickets", patientTicketsController);
-router.register("POST", "/api/patient/check-in", withPatientAuth(patientCheckInController));
-router.register("POST", "/api/patient/pre-register", withPatientAuth(patientPreRegisterController));
-router.register(
-  "GET",
-  "/api/patient/profile-card",
-  patientProfileCardController,
-);
-router.register(
-  "PATCH",
-  "/api/patient/profile",
-  patientUpdateProfileController,
-);
-router.register(
-  "POST",
-  "/api/patient/profile/avatar",
-  patientAvatarController,
-);
-router.register(
-  "PATCH",
-  "/api/patient/password",
-  patientChangePasswordController,
-);
+// Patients no longer hold accounts — all public flows are account-free
+// (self-register, kiosk, tracking). The /api/patient/* account endpoints
+// are intentionally unmounted.
 router.register("GET", "/api/meta", metaController);
 router.register(
   "GET",
@@ -395,19 +343,14 @@ router.register("PATCH", "/api/appointments/:id/status", withStaffAuth(["recepti
 router.register("PATCH", "/api/appointments/:id/reminder-sent", withStaffAuth(["reception", "triage", "clinician", "admin"], markReminderSentController));
 router.register("GET", "/api/tickets/:ticketId/follow-ups", withStaffAuth(["reception", "triage", "clinician", "admin"], followUpsForTicketController));
 
-router.register("GET", "/api/patient/appointments", withPatientAuth(patientAppointmentListController));
-router.register("POST", "/api/patient/appointments", withPatientAuth(patientAppointmentCreateController));
-router.register("PATCH", "/api/patient/appointments/:id/cancel", withPatientAuth(patientAppointmentCancelController));
-router.register("GET", "/api/patient/appointments/meta", withPatientAuth(appointmentMetaController));
-router.register("GET", "/api/patient/appointments/available-slots", withPatientAuth(appointmentAvailableSlotsController));
 router.register("GET", "/api/test-orders", withStaffAuth(["clinician", "triage"], testOrdersListController));
 router.register("GET", "/api/test-orders/summary", withStaffAuth(["clinician", "triage"], testOrderSummaryController));
 router.register("GET", "/api/tickets/:id/test-orders", withStaffAuth(["clinician", "triage"], ticketTestOrdersController));
 router.register("POST", "/api/tickets/:id/test-orders", withStaffAuth(["clinician"], createTestOrderController));
 router.register("PATCH", "/api/test-orders/:id/state", withStaffAuth(["clinician", "triage"], updateTestOrderStateController));
 router.register("GET", "/api/tickets/:id/next-route", withStaffAuth(["clinician", "triage"], suggestNextDepartmentController));
-router.register("POST", "/api/tickets/:id/feedback", submitFeedbackController);
-router.register("GET", "/api/tickets/:id/feedback", ticketFeedbackController);
+router.register("POST", "/api/tickets/:id/feedback", publicQueueRateLimit(submitFeedbackController));
+router.register("GET", "/api/tickets/:id/feedback", publicQueueRateLimit(ticketFeedbackController));
 router.register(
   "GET",
   "/api/dashboard/summary",
@@ -431,7 +374,7 @@ router.register(
 router.register(
   "GET",
   "/api/tickets/:ticketCode/track",
-  ticketTrackingController,
+  publicQueueRateLimit(ticketTrackingController),
 );
 router.register(
   "GET",
@@ -628,9 +571,30 @@ async function verifyPortAvailable(port) {
   });
 }
 
+// TiDB Serverless clusters sleep when idle — the first connection can hang
+// for 10-30s while the cluster wakes, which previously crashed nodemon.
+async function initializeWithRetry(attempts = 5) {
+  let lastError;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      await initializeQueueRepository();
+      return;
+    } catch (error) {
+      lastError = error;
+      if (attempt === attempts) break;
+      const delayMs = 3000 * attempt;
+      console.warn(
+        `Database init attempt ${attempt}/${attempts} failed (${error.code ?? error.message}) — retrying in ${delayMs / 1000}s...`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
+  }
+  throw lastError;
+}
+
 async function startServer() {
   await verifyPortAvailable(env.port);
-  await initializeQueueRepository();
+  await initializeWithRetry();
   await initializeNotificationDeliveryService();
   startAutoMissSweeper();
   if (env.databaseProvider === "mysql") {

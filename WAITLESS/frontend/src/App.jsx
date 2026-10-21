@@ -17,18 +17,6 @@ const QueuePage = lazy(() => import("@/pages/queue"));
 const RegisterPage = lazy(() => import("@/pages/register"));
 const SelfRegisterPage = lazy(() => import("@/pages/self-register"));
 const KioskPage = lazy(() => import("@/pages/kiosk"));
-const PatientRegisterPage = lazy(() => import("@/pages/patient-register"));
-const PatientForgotPasswordPage = lazy(() => import("@/pages/patient-forgot-password"));
-const PatientResetPasswordPage = lazy(() => import("@/pages/patient-reset-password"));
-const PatientDashboardPage = lazy(() => import("@/pages/patient-dashboard"));
-const PatientProfilePage = lazy(() => import("@/pages/patient-profile"));
-const PatientSettingsPage = lazy(() => import("@/pages/patient-settings"));
-const PatientBookingsPage = lazy(() => import("@/pages/patient-bookings"));
-const PatientFeedbackPage = lazy(() => import("@/pages/patient-feedback"));
-const PatientTrackPage = lazy(() => import("@/pages/patient-track"));
-const PatientQueuePage = lazy(() => import("@/pages/patient-queue"));
-const PatientUpdatesPage = lazy(() => import("@/pages/patient-updates"));
-const PatientPortalLayout = lazy(() => import("@/layouts/PatientPortalLayout"));
 const ResetPasswordPage = lazy(() => import("@/pages/reset-password"));
 const SettingsPage = lazy(() => import("@/pages/settings"));
 const StaffRegisterPage = lazy(() => import("@/pages/staff-register"));
@@ -71,26 +59,13 @@ export default function App() {
       <Route element={<AppLayout />}>
         {/* Public routes — guest-only pages bounce signed-in users to their workspace */}
         <Route index element={<GuestOnly><Home /></GuestOnly>} />
-        <Route path="track" element={<GuestOnly patientTo="/patient/track"><TrackPage /></GuestOnly>} />
-        <Route path="queue" element={<GuestOnly patientTo="/patient/queue" staffTo="/admin/queue"><QueuePage /></GuestOnly>} />
+        <Route path="track" element={<GuestOnly><TrackPage /></GuestOnly>} />
+        <Route path="queue" element={<GuestOnly staffTo="/admin/queue"><QueuePage /></GuestOnly>} />
         <Route path="department-board" element={<DepartmentBoardPage />} />
         <Route path="self-register" element={<GuestOnly><SelfRegisterPage /></GuestOnly>} />
         <Route path="kiosk" element={<GuestOnly><KioskPage /></GuestOnly>} />
-        <Route path="patient/register" element={<GuestOnly><PatientRegisterPage /></GuestOnly>} />
-        <Route path="patient/login" element={<Navigate to="/login" replace />} />
-        <Route path="patient/forgot-password" element={<GuestOnly><PatientForgotPasswordPage /></GuestOnly>} />
-        <Route path="patient/reset-password" element={<GuestOnly><PatientResetPasswordPage /></GuestOnly>} />
-        <Route path="patient" element={<PatientPortalLayout />}>
-          <Route index element={<PatientDashboardPage />} />
-          <Route path="dashboard" element={<PatientDashboardPage />} />
-          <Route path="profile" element={<PatientProfilePage />} />
-          <Route path="settings" element={<PatientSettingsPage />} />
-          <Route path="bookings" element={<PatientBookingsPage />} />
-          <Route path="track" element={<PatientTrackPage />} />
-          <Route path="queue" element={<PatientQueuePage />} />
-          <Route path="updates" element={<PatientUpdatesPage />} />
-          <Route path="feedback" element={<PatientFeedbackPage />} />
-        </Route>
+        {/* Patients no longer have accounts — legacy portal URLs go home */}
+        <Route path="patient/*" element={<Navigate to="/" replace />} />
 
         {/* Staff routes under /admin */}
         <Route path="admin">
@@ -309,7 +284,7 @@ export default function App() {
         <Route path="triage" element={<Navigate to="/admin/triage" replace />} />
         <Route path="settings" element={<Navigate to="/admin/settings" replace />} />
         <Route path="profile" element={<Navigate to="/admin/profile" replace />} />
-        <Route path="login" element={<GuestOnly><LoginChooserPage /></GuestOnly>} />
+        <Route path="login" element={<GuestOnly><LoginChooserPage variant="staff" /></GuestOnly>} />
         <Route path="forgot-password" element={<Navigate to="/admin/forgot-password" replace />} />
         <Route path="reset-password" element={<Navigate to="/admin/reset-password" replace />} />
         <Route path="staff-register" element={<Navigate to="/admin/staff" replace />} />
