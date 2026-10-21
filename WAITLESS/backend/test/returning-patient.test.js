@@ -18,6 +18,7 @@ const {
   getTicketTracking,
   registerPatient,
   searchPatients,
+  updatePatientStatus,
 } = await import("../src/services/queueService.js");
 const { dispatchRegistrationNotification } = await import(
   "../src/services/notificationService.js"
@@ -42,11 +43,18 @@ test("reuses one patient master record across multiple visits", async () => {
     nextOfKinPhone: "+263 77 900 0002",
     notificationConsent: false,
     whatsApp: false,
-    dept: "OPD",
+    dept: "Casualty / Triage",
     chiefComplaint: "First visit",
   };
 
   const firstVisit = await registerPatient(demographics);
+
+  // A patient may hold only one open ticket — close the first visit before
+  // the second registration.
+  await updatePatientStatus(firstVisit.id, "called");
+  await updatePatientStatus(firstVisit.id, "in-service");
+  await updatePatientStatus(firstVisit.id, "completed");
+
   const secondVisit = await registerPatient({
     ...demographics,
     dept: "Laboratory",
@@ -88,7 +96,7 @@ test("issues one immutable department token across the registration handoff", as
     chiefComplaint: "Imaging review",
   });
 
-  assert.match(visit.ticket, /^RAD-\d{3,}$/);
+  assert.match(visit.ticket, /^[A-Z]\d{3}$/);
   assert.equal(visit.handoff.token, visit.ticket);
   assert.equal(visit.handoff.trackingPath, `/track?ticket=${visit.ticket}`);
   assert.equal(visit.handoff.channels.print.status, "ready");

@@ -1441,7 +1441,7 @@ export async function getTicketETA(ticketId) {
     activeStaff: deptActive,
   };
 }
-export async function getQueueBoard(department) {
+export async function getQueueBoard(department, { publicView = false } = {}) {
   const allTickets = await getLiveTickets();
   const tickets = department ? allTickets.filter((t) => t.department === department) : allTickets;
   const nowServing = sortAllTickets(
@@ -1467,6 +1467,15 @@ export async function getQueueBoard(department) {
       etaMinutes: calculateDepartmentETA(deptWaiting, deptActive, avgServiceTime),
     };
   }
+
+  const oiPrivacy = await getOIPrivacyMode();
+  const mask = (list) => {
+    const masked = oiPrivacy ? maskOITickets(list) : list;
+    return publicView ? masked.map(sanitizePublicTicket) : masked;
+  };
+  const maskedNowServing = mask(nowServing);
+  const maskedWaiting = mask(waiting);
+  const maskedMissed = mask(missed);
 
   return {
     nowServing: maskedNowServing,
@@ -1876,7 +1885,7 @@ export async function preRegisterPatient(payload) {
     updatedAt: registeredAt,
   }));
 
-  broadcastQueueEvent("ticket.pre-registered", createTicketEventPayload(createdTicket));
+  broadcastQueueEvent("ticket.registered", createTicketEventPayload(createdTicket));
 
   return createdTicket;
 }
@@ -2320,6 +2329,10 @@ export async function submitFeedback(ticketId, { rating, categories, comment }) 
   if (!ticket) throw new HttpError(404, "Ticket not found.");
   if (rating == null || rating < 1 || rating > 5) {
     throw new HttpError(400, "Rating must be between 1 and 5.");
+  }
+  const existing = await findFeedbackByTicketId(ticket.id);
+  if (existing) {
+    throw new HttpError(409, "Feedback was already submitted for this ticket.");
   }
   if ((await findFeedbackByTicketId(ticket.id)).length > 0) {
     throw new HttpError(409, "Feedback was already submitted for this ticket.");

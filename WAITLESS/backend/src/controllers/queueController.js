@@ -224,7 +224,7 @@ export async function queueBoardController({ staff, query }) {
   const dept = deptParam || (staff && staff.role !== "admin" ? staff.department : undefined);
   return {
     status: 200,
-    body: await getQueueBoard(dept),
+    body: await getQueueBoard(dept, { publicView: !staff }),
   };
 }
 
