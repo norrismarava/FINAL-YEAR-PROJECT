@@ -820,6 +820,7 @@ function MobileAppSection() {
   const perks = [
     { icon: Smartphone, title: "Check in from anywhere", body: "Get a ticket without visiting reception." },
     { icon: BellRing, title: "WhatsApp notifications", body: "Know when it's your turn, in real time." },
+    { icon: MessageCircle, title: "SMS notifications", body: "Get ticket updates by text, no internet needed." },
     { icon: Clock3, title: "Live wait times", body: "See exactly how long until you're called." },
     { icon: Star, title: "Rate your visit", body: "Help the hospital improve its services." },
   ];
