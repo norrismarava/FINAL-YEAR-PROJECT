@@ -79,13 +79,13 @@ export default function DepartmentBoardPage() {
     if (lastProcessedEventRef.current === realtime.lastEvent.timestamp) return;
     lastProcessedEventRef.current = realtime.lastEvent.timestamp;
 
-    if (realtime.lastEvent.type === "ticket.called") {
+    if (realtime.lastEvent.type === "ticket.called" || realtime.lastEvent.type === "ticket.recalled") {
       const payload = realtime.lastEvent.payload ?? {};
       const ticketCode = payload.ticket ?? "";
       const eventDepartment = payload.department ?? "";
       const room = payload.room ?? "";
       const attempt = Number(payload.attempt ?? 1);
-      if (ticketCode && eventDepartment === department) {
+      if (ticketCode && eventDepartment.toLowerCase() === department.toLowerCase()) {
         const destination = room ? `Room ${room}, ${department}` : department;
         const prefix = attempt > 1 ? `Second call. ` : "";
         audio.speak(`${prefix}Ticket ${ticketCode}, please proceed to ${destination}`);

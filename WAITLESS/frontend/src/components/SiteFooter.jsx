@@ -77,16 +77,6 @@ export default function SiteFooter() {
                 </a>
               ))}
             </div>
-            <a
-              href="https://www.google.com/maps/search/?api=1&query=Chinhoyi+Provincial+Hospital%2C+Chinhoyi%2C+Zimbabwe"
-              target="_blank"
-              rel="noreferrer"
-              title="Open Chinhoyi Provincial Hospital on Google Maps"
-              className="group mt-5 inline-flex items-center gap-2 rounded-full border border-teal-400/15 bg-teal-400/[0.05] px-3.5 py-1.5 text-[11px] font-semibold text-teal-300/80 transition-all hover:-translate-y-0.5 hover:border-teal-400/40 hover:bg-teal-400/10 hover:text-teal-300"
-            >
-              <MapPin className="h-3.5 w-3.5 transition-transform group-hover:scale-110" />
-              {HOSPITAL.name}
-            </a>
           </div>
 
           {/* Patient services */}
@@ -180,14 +170,14 @@ export default function SiteFooter() {
                 <span>
                   <span className="block text-[10px] font-bold uppercase tracking-[0.16em] text-white/30">Location</span>
                   <a
-                    href="https://www.google.com/maps/search/?api=1&query=Chinhoyi+Provincial+Hospital%2C+Chinhoyi%2C+Zimbabwe"
+                    href="https://www.google.com/maps/search/?api=1&query=-17.3608,30.2087"
                     target="_blank"
                     rel="noreferrer"
-                    title="Open the hospital location on Google Maps"
+                    title="Open Chinhoyi Provincial Hospital on Google Maps"
                     className="group mt-1.5 inline-flex items-center gap-2 rounded-full border border-teal-400/15 bg-teal-400/[0.05] px-3.5 py-1.5 text-[11px] font-semibold text-teal-300/80 transition-all hover:-translate-y-0.5 hover:border-teal-400/40 hover:bg-teal-400/10 hover:text-teal-300"
                   >
                     <MapPin className="h-3.5 w-3.5 transition-transform group-hover:scale-110" />
-                    {HOSPITAL.address}
+                    {HOSPITAL.name}
                   </a>
                 </span>
               </li>

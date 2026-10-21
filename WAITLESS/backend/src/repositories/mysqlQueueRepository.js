@@ -259,7 +259,7 @@ function mapAttemptRow(row) {
 }
 
 async function insertDepartments(connection) {
-  for (const department of DEPARTMENTS) {
+  for (const department of [...DEPARTMENTS, "Reception"]) {
     await connection.execute("INSERT IGNORE INTO departments (name) VALUES (?)", [
       department,
     ]);

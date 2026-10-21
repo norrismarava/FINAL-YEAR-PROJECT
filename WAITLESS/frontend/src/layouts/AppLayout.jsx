@@ -482,7 +482,7 @@ function AppScaffold() {
         </main>
         {isStaffWorkspaceTheme || isAuthRoute ? null : <SiteFooter />}
         <IdleLogoutManager />
-        <ChatbotWidget />
+        {location.pathname === "/" ? <ChatbotWidget /> : null}
         <OfflineIndicator />
       </div>
     </div>

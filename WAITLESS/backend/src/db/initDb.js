@@ -41,7 +41,7 @@ async function initializeDatabase() {
       "Laboratory",
       "Radiology",
       "OI Clinic",
-      "Casualty",
+      "Casualty / Triage",
     ];
     
     for (const dept of departments) {

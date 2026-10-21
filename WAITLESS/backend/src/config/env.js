@@ -84,7 +84,7 @@ export const env = {
     "admin@waitless.local",
   initialAdminName:
     process.env.INITIAL_ADMIN_NAME?.trim() || "System Administrator",
-  initialAdminPassword: process.env.INITIAL_ADMIN_PASSWORD ?? "",
+  initialAdminPassword: process.env.INITIAL_ADMIN_PASSWORD ?? "Waitless@2026",
   whatsAppProvider: process.env.WHATSAPP_PROVIDER?.trim() || "mock",
   whatsAppApiBaseUrl:
     process.env.WHATSAPP_API_BASE_URL?.trim() || "https://graph.facebook.com",

@@ -125,7 +125,7 @@ export default function QueuePage() {
     if (lastProcessedEventRef.current === realtime.lastEvent.timestamp) return;
     lastProcessedEventRef.current = realtime.lastEvent.timestamp;
 
-    if (realtime.lastEvent.type === "ticket.called") {
+    if (realtime.lastEvent.type === "ticket.called" || realtime.lastEvent.type === "ticket.recalled") {
       const payload = realtime.lastEvent.payload ?? {};
       const ticketCode = payload.ticket ?? "";
       const department = payload.department ?? "";

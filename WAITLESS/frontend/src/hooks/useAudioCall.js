@@ -100,30 +100,8 @@ export function useAudioCall() {
     }
   }, []);
 
-  const speak = useCallback(
+  const buildUtterance = useCallback(
     (text) => {
-      if (!supported || !enabled || !text) return;
-      const delay = playChime();
-      window.setTimeout(() => {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(text);
-        const voice = voices.find((v) => v.voiceURI === selectedVoiceURI);
-        if (voice) utterance.voice = voice;
-        utterance.rate = rate;
-        utterance.volume = volume;
-        utterance.onstart = () => setIsSpeaking(true);
-        utterance.onend = () => setIsSpeaking(false);
-        utterance.onerror = () => setIsSpeaking(false);
-        window.speechSynthesis.speak(utterance);
-      }, delay);
-    },
-    [supported, enabled, voices, selectedVoiceURI, rate, volume, playChime],
-  );
-
-  const preview = useCallback(
-    (text) => {
-      if (!supported || !text) return;
-      window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
       const voice = voices.find((v) => v.voiceURI === selectedVoiceURI);
       if (voice) utterance.voice = voice;
@@ -132,9 +110,37 @@ export function useAudioCall() {
       utterance.onstart = () => setIsSpeaking(true);
       utterance.onend = () => setIsSpeaking(false);
       utterance.onerror = () => setIsSpeaking(false);
-      window.speechSynthesis.speak(utterance);
+      return utterance;
     },
-    [supported, voices, selectedVoiceURI, rate, volume],
+    [voices, selectedVoiceURI, rate, volume],
+  );
+
+  const speak = useCallback(
+    (text) => {
+      if (!supported || !enabled || !text) return;
+      window.speechSynthesis.cancel();
+      const delay = playChime();
+      const utterance = buildUtterance(text);
+      // Chrome silently drops utterances queued synchronously after cancel().
+      window.setTimeout(() => {
+        window.speechSynthesis.resume();
+        window.speechSynthesis.speak(utterance);
+      }, Math.max(delay, 60));
+    },
+    [supported, enabled, buildUtterance, playChime],
+  );
+
+  const preview = useCallback(
+    (text) => {
+      if (!supported || !text) return;
+      window.speechSynthesis.cancel();
+      const utterance = buildUtterance(text);
+      window.setTimeout(() => {
+        window.speechSynthesis.resume();
+        window.speechSynthesis.speak(utterance);
+      }, 60);
+    },
+    [supported, buildUtterance],
   );
 
   const stop = useCallback(() => {
