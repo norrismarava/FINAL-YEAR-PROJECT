@@ -1947,10 +1947,12 @@ export async function saveTriageAssessment(id, payload, staff) {
       respiratoryRate: payload.vitals?.respiratoryRate ?? null,
       oxygenSaturation: payload.vitals?.oxygenSaturation ?? null,
     },
-    symptoms: payload.symptoms?.trim() ?? "",
+    symptoms: Array.isArray(payload.symptoms)
+      ? payload.symptoms.map((s) => String(s).trim()).filter(Boolean).join(", ")
+      : String(payload.symptoms ?? "").trim(),
     painScore: payload.painScore != null ? Number(payload.painScore) : null,
-    severity: payload.severity?.trim() ?? "",
-    notes: payload.notes?.trim() ?? "",
+    severity: String(payload.severity ?? "").trim(),
+    notes: String(payload.notes ?? "").trim(),
     assessedAt: new Date().toISOString(),
   };
 
@@ -2030,18 +2032,24 @@ export async function createPrescriptionRecord({ ticketId, items, notes }, staff
     throw new HttpError(400, "At least one prescription item is required.");
   }
 
+  const normalizedItems = items.map((item) => ({
+    id: crypto.randomUUID(),
+    drugName: String(item?.drugName ?? "").trim(),
+    dosage: String(item?.dosage ?? "").trim(),
+    quantity: String(item?.quantity ?? "1").trim() || "1",
+    instructions: String(item?.instructions ?? "").trim(),
+  }));
+
+  if (normalizedItems.some((item) => !item.drugName)) {
+    throw new HttpError(400, "Each prescription item requires a drug name.");
+  }
+
   const prescription = await createPrescription({
     ticketId,
     ticketCode: existing.ticket,
     patientName: existing.patientName,
     department: existing.department,
-    items: items.map((item) => ({
-      id: crypto.randomUUID(),
-      drugName: item.drugName?.trim(),
-      dosage: item.dosage?.trim(),
-      quantity: item.quantity?.trim() ?? "1",
-      instructions: item.instructions?.trim() ?? "",
-    })),
+    items: normalizedItems,
     state: "prescribed",
     notes: notes?.trim() ?? "",
     prescribedBy: actorInfo(staff),
@@ -2332,10 +2340,7 @@ export async function submitFeedback(ticketId, { rating, categories, comment }) 
     throw new HttpError(400, "Rating must be between 1 and 5.");
   }
   const existing = await findFeedbackByTicketId(ticket.id);
-  if (existing) {
-    throw new HttpError(409, "Feedback was already submitted for this ticket.");
-  }
-  if ((await findFeedbackByTicketId(ticket.id)).length > 0) {
+  if (existing.length > 0) {
     throw new HttpError(409, "Feedback was already submitted for this ticket.");
   }
   const feedback = await createFeedback({

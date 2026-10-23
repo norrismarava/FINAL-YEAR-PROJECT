@@ -52,6 +52,7 @@ export const env = {
   hospitalName: process.env.HOSPITAL_NAME?.trim() || "Chinhoyi Provincial Hospital",
   hospitalLocation: process.env.HOSPITAL_LOCATION?.trim() || "Chinhoyi, Zimbabwe",
   multiTenant: parseBoolean(process.env.MULTI_TENANT, false),
+  trustProxy: parseBoolean(process.env.TRUST_PROXY, false),
   publicAppUrl:
     process.env.PUBLIC_APP_URL?.trim().replace(/\/+$/, "") ||
     "http://localhost:5173",

@@ -310,19 +310,19 @@ router.register("GET", "/api/queue/board", queueBoardController);
 router.register("GET", "/api/queue/staff-board", withStaffAuth(["reception", "triage", "clinician", "admin"], queueBoardController));
 router.register("GET", "/api/eta/estimates", etaEstimatesController);
 router.register("GET", "/api/tickets/:id/eta", ticketETAController);
-router.register("GET", "/api/prescriptions", withStaffAuth(["clinician", "triage"], prescriptionsListController));
-router.register("GET", "/api/prescriptions/summary", withStaffAuth(["clinician", "triage"], prescriptionSummaryController));
-router.register("GET", "/api/tickets/:id/prescriptions", withStaffAuth(["clinician", "triage"], ticketPrescriptionsController));
+router.register("GET", "/api/prescriptions", withStaffAuth(["clinician", "triage", "pharmacist"], prescriptionsListController));
+router.register("GET", "/api/prescriptions/summary", withStaffAuth(["clinician", "triage", "pharmacist"], prescriptionSummaryController));
+router.register("GET", "/api/tickets/:id/prescriptions", withStaffAuth(["clinician", "triage", "pharmacist"], ticketPrescriptionsController));
 router.register("POST", "/api/tickets/:id/prescriptions", withStaffAuth(["clinician"], createPrescriptionController));
-router.register("PATCH", "/api/prescriptions/:id/state", withStaffAuth(["clinician", "triage"], updatePrescriptionStateController));
+router.register("PATCH", "/api/prescriptions/:id/state", withStaffAuth(["clinician", "triage", "pharmacist"], updatePrescriptionStateController));
 
-router.register("GET", "/api/pharmacy/stock", withStaffAuth(["clinician", "triage", "admin"], stockListController));
-router.register("GET", "/api/pharmacy/stock/summary", withStaffAuth(["clinician", "triage", "admin"], stockSummaryController));
-router.register("PATCH", "/api/pharmacy/stock/flag", withStaffAuth(["clinician", "triage", "admin"], stockFlagController));
-router.register("POST", "/api/pharmacy/stock", withStaffAuth(["admin"], stockAddController));
-router.register("DELETE", "/api/pharmacy/stock/:id", withStaffAuth(["admin"], stockRemoveController));
-router.register("GET", "/api/pharmacy/prescriptions", withStaffAuth(["clinician", "triage", "admin"], prescriptionsWithStockController));
-router.register("PATCH", "/api/prescriptions/:id/stock-flag", withStaffAuth(["clinician", "triage", "admin"], flagPrescriptionItemController));
+router.register("GET", "/api/pharmacy/stock", withStaffAuth(["clinician", "triage", "admin", "pharmacist"], stockListController));
+router.register("GET", "/api/pharmacy/stock/summary", withStaffAuth(["clinician", "triage", "admin", "pharmacist"], stockSummaryController));
+router.register("PATCH", "/api/pharmacy/stock/flag", withStaffAuth(["clinician", "triage", "admin", "pharmacist"], stockFlagController));
+router.register("POST", "/api/pharmacy/stock", withStaffAuth(["admin", "pharmacist"], stockAddController));
+router.register("DELETE", "/api/pharmacy/stock/:id", withStaffAuth(["admin", "pharmacist"], stockRemoveController));
+router.register("GET", "/api/pharmacy/prescriptions", withStaffAuth(["clinician", "triage", "admin", "pharmacist"], prescriptionsWithStockController));
+router.register("PATCH", "/api/prescriptions/:id/stock-flag", withStaffAuth(["clinician", "triage", "admin", "pharmacist"], flagPrescriptionItemController));
 
 router.register("GET", "/api/oi-clinic/streams", withStaffAuth(["clinician", "triage", "admin"], oiStreamsController));
 router.register("GET", "/api/oi-clinic/visits", withStaffAuth(["clinician", "triage", "admin"], oiVisitsController));
@@ -343,11 +343,11 @@ router.register("PATCH", "/api/appointments/:id/status", withStaffAuth(["recepti
 router.register("PATCH", "/api/appointments/:id/reminder-sent", withStaffAuth(["reception", "triage", "clinician", "admin"], markReminderSentController));
 router.register("GET", "/api/tickets/:ticketId/follow-ups", withStaffAuth(["reception", "triage", "clinician", "admin"], followUpsForTicketController));
 
-router.register("GET", "/api/test-orders", withStaffAuth(["clinician", "triage"], testOrdersListController));
-router.register("GET", "/api/test-orders/summary", withStaffAuth(["clinician", "triage"], testOrderSummaryController));
-router.register("GET", "/api/tickets/:id/test-orders", withStaffAuth(["clinician", "triage"], ticketTestOrdersController));
+router.register("GET", "/api/test-orders", withStaffAuth(["clinician", "triage", "lab-tech", "radiologist"], testOrdersListController));
+router.register("GET", "/api/test-orders/summary", withStaffAuth(["clinician", "triage", "lab-tech", "radiologist"], testOrderSummaryController));
+router.register("GET", "/api/tickets/:id/test-orders", withStaffAuth(["clinician", "triage", "lab-tech", "radiologist"], ticketTestOrdersController));
 router.register("POST", "/api/tickets/:id/test-orders", withStaffAuth(["clinician"], createTestOrderController));
-router.register("PATCH", "/api/test-orders/:id/state", withStaffAuth(["clinician", "triage"], updateTestOrderStateController));
+router.register("PATCH", "/api/test-orders/:id/state", withStaffAuth(["clinician", "triage", "lab-tech", "radiologist"], updateTestOrderStateController));
 router.register("GET", "/api/tickets/:id/next-route", withStaffAuth(["clinician", "triage"], suggestNextDepartmentController));
 router.register("POST", "/api/tickets/:id/feedback", publicQueueRateLimit(submitFeedbackController));
 router.register("GET", "/api/tickets/:id/feedback", publicQueueRateLimit(ticketFeedbackController));
@@ -441,7 +441,7 @@ router.register(
 router.register(
   "PATCH",
   "/api/prescriptions/:prescriptionId/stock",
-  withStaffAuth(["clinician", "triage", "admin"], markOutOfStockController),
+  withStaffAuth(["clinician", "triage", "admin", "pharmacist"], markOutOfStockController),
 );
 router.register(
   "GET",

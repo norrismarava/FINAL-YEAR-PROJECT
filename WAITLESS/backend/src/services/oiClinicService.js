@@ -103,7 +103,7 @@ export async function createOIClinicVisit({ ticketId, streamId, notes }, staff) 
     streamId,
     streamLabel: stream.label,
     state: "waiting",
-    notes: notes?.trim() ?? "",
+    notes: String(notes ?? "").trim(),
     createdBy: staff ? { id: staff.id, name: staff.name, role: staff.role } : null,
     createdAt: new Date().toISOString(),
     stateHistory: [{ state: "waiting", at: new Date().toISOString(), actor: staff ? staff.name : "system" }],

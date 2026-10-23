@@ -1,12 +1,23 @@
+import { env } from "../config/env.js";
 import { HttpError } from "../utils/http.js";
 
+// X-Forwarded-For / X-Real-IP are client-controlled unless a trusted proxy
+// strips them. Only honour them when TRUST_PROXY=true; otherwise rate limits
+// could be bypassed by spoofing the header.
 function getClientKey(req) {
-  const forwardedFor = req?.headers?.["x-forwarded-for"];
-  if (typeof forwardedFor === "string" && forwardedFor.trim()) {
-    return forwardedFor.split(",")[0].trim();
+  if (env.trustProxy) {
+    const forwardedFor = req?.headers?.["x-forwarded-for"];
+    if (typeof forwardedFor === "string" && forwardedFor.trim()) {
+      return forwardedFor.split(",")[0].trim();
+    }
+
+    const realIp = req?.headers?.["x-real-ip"];
+    if (typeof realIp === "string" && realIp.trim()) {
+      return realIp.trim();
+    }
   }
 
-  return req?.headers?.["x-real-ip"] || req?.socket?.remoteAddress || "unknown";
+  return req?.socket?.remoteAddress || "unknown";
 }
 
 export function withRateLimit(
