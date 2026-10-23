@@ -1,0 +1,93 @@
+[
+  {
+    "id": "paracetamol-500mg",
+    "drugName": "Paracetamol 500mg",
+    "inStock": true,
+    "lastUpdated": null,
+    "notes": ""
+  },
+  {
+    "id": "amoxicillin-250mg",
+    "drugName": "Amoxicillin 250mg",
+    "inStock": true,
+    "lastUpdated": null,
+    "notes": ""
+  },
+  {
+    "id": "amoxicillin-500mg",
+    "drugName": "Amoxicillin 500mg",
+    "inStock": true,
+    "lastUpdated": null,
+    "notes": ""
+  },
+  {
+    "id": "metformin-500mg",
+    "drugName": "Metformin 500mg",
+    "inStock": true,
+    "lastUpdated": null,
+    "notes": ""
+  },
+  {
+    "id": "atenolol-50mg",
+    "drugName": "Atenolol 50mg",
+    "inStock": true,
+    "lastUpdated": null,
+    "notes": ""
+  },
+  {
+    "id": "ibuprofen-400mg",
+    "drugName": "Ibuprofen 400mg",
+    "inStock": true,
+    "lastUpdated": null,
+    "notes": ""
+  },
+  {
+    "id": "co-trimoxazole-480mg",
+    "drugName": "Co-trimoxazole 480mg",
+    "inStock": true,
+    "lastUpdated": null,
+    "notes": ""
+  },
+  {
+    "id": "art-combination-tld",
+    "drugName": "ART Combination (TLD)",
+    "inStock": true,
+    "lastUpdated": null,
+    "notes": ""
+  },
+  {
+    "id": "rifampicin-450mg",
+    "drugName": "Rifampicin 450mg",
+    "inStock": true,
+    "lastUpdated": null,
+    "notes": ""
+  },
+  {
+    "id": "isoniazid-300mg",
+    "drugName": "Isoniazid 300mg",
+    "inStock": true,
+    "lastUpdated": null,
+    "notes": ""
+  },
+  {
+    "id": "salbutamol-inhaler",
+    "drugName": "Salbutamol Inhaler",
+    "inStock": true,
+    "lastUpdated": null,
+    "notes": ""
+  },
+  {
+    "id": "oral-rehydration-salts",
+    "drugName": "Oral Rehydration Salts",
+    "inStock": true,
+    "lastUpdated": null,
+    "notes": ""
+  },
+  {
+    "id": "8d3b81c5-7e36-4cd4-a209-9b2e770ec2df",
+    "drugName": "Aspirin 75mg",
+    "inStock": true,
+    "lastUpdated": "2026-10-23T11:31:47.814Z",
+    "notes": "test"
+  }
+]

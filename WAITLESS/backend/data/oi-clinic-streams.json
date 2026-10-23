@@ -1,0 +1,56 @@
+[
+  {
+    "id": "efcda72e-cfaf-413f-8679-f5f8a0e94aab",
+    "ticketId": "61093eed-13ef-4bf4-8708-7349879c2a28",
+    "ticketCode": "A212",
+    "patientName": "Tendai Moyo",
+    "department": "Laboratory",
+    "streamId": "art",
+    "streamLabel": "ART Review",
+    "state": "waiting",
+    "notes": "Routine refill",
+    "createdBy": {
+      "id": "ddb10943-c702-4e78-8af9-78bad7b1ce9e",
+      "name": "Test Clinician",
+      "role": "doctor"
+    },
+    "createdAt": "2026-10-23T11:35:24.525Z",
+    "stateHistory": [
+      {
+        "state": "waiting",
+        "at": "2026-10-23T11:35:24.525Z",
+        "actor": "Test Clinician"
+      }
+    ],
+    "startedAt": null,
+    "completedAt": null,
+    "referredTo": null
+  },
+  {
+    "id": "cca46279-18d4-4d66-92c6-45653aa634e8",
+    "ticketId": "53f49fef-7378-44f3-a19c-6f1ea5bcad22",
+    "ticketCode": "A215",
+    "patientName": "Tendai Moyo",
+    "department": "Laboratory",
+    "streamId": "art",
+    "streamLabel": "ART Review",
+    "state": "waiting",
+    "notes": "Routine refill",
+    "createdBy": {
+      "id": "641f00cf-db16-4c05-b1fe-8f99405e74e7",
+      "name": "Test Clinician",
+      "role": "doctor"
+    },
+    "createdAt": "2026-10-23T11:47:24.842Z",
+    "stateHistory": [
+      {
+        "state": "waiting",
+        "at": "2026-10-23T11:47:24.842Z",
+        "actor": "Test Clinician"
+      }
+    ],
+    "startedAt": null,
+    "completedAt": null,
+    "referredTo": null
+  }
+]

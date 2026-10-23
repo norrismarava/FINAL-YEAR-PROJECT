@@ -39,5 +39,81 @@
         "actor": "Norris Marava"
       }
     ]
+  },
+  {
+    "id": "5a3d2ef6-337e-4d36-b2fd-351e9b8b6ca3",
+    "patientName": "Appt Patient",
+    "patientContact": "0774w5vf7",
+    "patientAge": null,
+    "patientGender": "",
+    "serviceCategory": "opd",
+    "serviceLabel": "Outpatient Consultation",
+    "department": "Casualty / Triage",
+    "date": "2026-10-30",
+    "timeSlot": "09:00",
+    "durationMin": 15,
+    "notes": "Review",
+    "status": "confirmed",
+    "createdBy": {
+      "id": "f2044952-4d9c-4d1d-8036-0d01f1bb4c7c",
+      "name": "Test Receptionist",
+      "role": "receptionist"
+    },
+    "createdAt": "2026-10-23T11:33:46.711Z",
+    "confirmedAt": "2026-10-23T11:33:46.725Z",
+    "confirmedBy": {
+      "id": "f2044952-4d9c-4d1d-8036-0d01f1bb4c7c",
+      "name": "Test Receptionist"
+    },
+    "checkedInAt": null,
+    "ticketId": null,
+    "statusHistory": [
+      {
+        "status": "pending",
+        "at": "2026-10-23T11:33:46.711Z",
+        "actor": "Test Receptionist"
+      },
+      {
+        "status": "confirmed",
+        "at": "2026-10-23T11:33:46.725Z",
+        "actor": "Test Receptionist"
+      }
+    ]
+  },
+  {
+    "id": "92159a2f-07e7-4f81-a51d-0ac52a373b00",
+    "patientName": "Tendai Moyo",
+    "patientContact": "0772123456",
+    "patientAge": null,
+    "patientGender": "",
+    "serviceCategory": "opd",
+    "serviceLabel": "Outpatient Consultation",
+    "department": "Casualty / Triage",
+    "date": "2026-11-06",
+    "timeSlot": "10:00",
+    "durationMin": 15,
+    "notes": "",
+    "status": "pending",
+    "isFollowUp": true,
+    "originalTicketId": "da06576d-29cc-4f11-9108-045cdcdbbfad",
+    "originalDepartment": null,
+    "followUpReason": "Post-ECG review",
+    "createdBy": {
+      "id": "b0ac8f4d-f7fc-4e59-b2f0-3543c0ae5c79",
+      "name": "Test Clinician",
+      "role": "doctor"
+    },
+    "createdAt": "2026-10-23T11:33:46.730Z",
+    "confirmedAt": null,
+    "confirmedBy": null,
+    "checkedInAt": null,
+    "ticketId": null,
+    "statusHistory": [
+      {
+        "status": "pending",
+        "at": "2026-10-23T11:33:46.730Z",
+        "actor": "Test Clinician"
+      }
+    ]
   }
 ]
