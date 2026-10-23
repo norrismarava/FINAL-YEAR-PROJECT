@@ -577,7 +577,7 @@ function DepartmentsSection() {
               <span className="bg-gradient-to-r from-teal-300 to-cyan-300 bg-clip-text text-transparent">one queue</span>
             </h2>
             <p className="mt-4 text-lg text-white/50">
-              {HOSPITAL.name} runs six service points on WaitLess.
+              {HOSPITAL.name} runs five service points on WaitLess.
               Your ticket follows you, no re-joining, no lost place.
             </p>
           </div>
