@@ -402,13 +402,6 @@ export default function SelfRegisterPage() {
 
             {/* Form */}
             <form noValidate className="space-y-4 px-5 py-4 sm:px-6" onSubmit={handleSubmit}>
-              {error ? (
-                <div className="flex items-center gap-2.5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-300">
-                  <AlertCircle className="h-4 w-4 shrink-0" />
-                  {error}
-                </div>
-              ) : null}
-
               {/* ID number first — returning patients get found by it */}
               <div>
                 <label className="mb-1.5 block text-sm font-semibold text-white">
@@ -547,6 +540,13 @@ export default function SelfRegisterPage() {
                   }}
                 />
               </div>
+
+              {error ? (
+                <div className="flex items-center gap-2.5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-medium text-red-300">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  {error}
+                </div>
+              ) : null}
 
               {/* Actions */}
               <button

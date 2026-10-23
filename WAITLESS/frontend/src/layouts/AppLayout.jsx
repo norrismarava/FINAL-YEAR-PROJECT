@@ -78,7 +78,6 @@ import {
 
 const navItems = [
   { to: "/", label: "Home", icon: House },
-  { to: "/self-register", label: "Check In", icon: ShieldPlus },
   { to: "/admin/register", label: "Register", roles: ["reception", "receptionist"], icon: ShieldPlus },
   { to: "/track", label: "Track Ticket", icon: Ticket },
   { to: "/admin/triage", label: "Triage", roles: ["triage"], icon: Stethoscope },
