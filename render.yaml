@@ -21,9 +21,10 @@ services:
       # Render sits behind a proxy — required for correct client IPs/rate limits
       - key: TRUST_PROXY
         value: "true"
-      # Allow the static frontend origin (update if the frontend name differs)
+      # Allow all origins — auth uses Bearer tokens, not cookies, so a
+      # wildcard is safe and avoids breakage if the frontend hostname differs.
       - key: CORS_ORIGIN
-        value: https://waitless.onrender.com
+        value: "*"
       - key: PUBLIC_APP_URL
         value: https://waitless.onrender.com
       # Database (TiDB Cloud / MySQL) — values come from backend/.env
@@ -64,8 +65,9 @@ services:
     pullRequestPreviewsEnabled: false
     envVars:
       # Build-time var: browser calls the API at this absolute URL
+      # (actual Render hostname — the plain name was already taken)
       - key: VITE_API_BASE_URL
-        value: https://waitless-api.onrender.com
+        value: https://waitless-api-vgbm.onrender.com
     routes:
       # SPA fallback — React Router owns every path
       - type: rewrite
