@@ -58,8 +58,9 @@ services:
         sync: false
 
   # --- Frontend (Vite build -> static site) ---
-  - type: static
+  - type: web
     name: waitless
+    env: static
     rootDir: WAITLESS/frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist
