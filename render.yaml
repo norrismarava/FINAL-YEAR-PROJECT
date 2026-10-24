@@ -26,7 +26,7 @@ services:
       - key: CORS_ORIGIN
         value: "*"
       - key: PUBLIC_APP_URL
-        value: https://waitless.onrender.com
+        value: https://waitless-2n8b.onrender.com
       # Database (TiDB Cloud / MySQL) — values come from backend/.env
       - key: DB_PROVIDER
         value: mysql
