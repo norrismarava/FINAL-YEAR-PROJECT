@@ -4,6 +4,7 @@ import { useLiveRefresh } from "@/context/LiveRefreshContext";
 
 export function useApiResource(loader, { enabled = true } = {}) {
   const { refreshToken } = useLiveRefresh();
+  const [refreshNonce, setRefreshNonce] = useState(0);
   const [state, setState] = useState({
     data: null,
     error: null,
@@ -11,8 +12,14 @@ export function useApiResource(loader, { enabled = true } = {}) {
     isLoading: Boolean(enabled),
   });
 
+  // Explicit refetch — also forces a load on `enabled: false` resources
+  // (e.g. collapsed sections that fetch on first expand).
+  const refetch = useCallback(() => {
+    setRefreshNonce((nonce) => nonce + 1);
+  }, []);
+
   useEffect(() => {
-    if (!enabled) {
+    if (!enabled && refreshNonce === 0) {
       setState((current) => ({
         ...current,
         error: null,
@@ -48,9 +55,10 @@ export function useApiResource(loader, { enabled = true } = {}) {
     return () => {
       cancelled = true;
     };
-  }, [enabled, loader, refreshToken]);
+  }, [enabled, loader, refreshToken, refreshNonce]);
 
-  return state;
+  // `loading` alias kept for callers written before `isLoading` existed.
+  return { ...state, loading: state.isLoading, refetch };
 }
 
 export function useApiAction(action, { onSuccess } = {}) {
