@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
+import { buildApiUrl } from "@/services/api";
+
 const SW_PATH = "/sw.js";
 const SUBSCRIPTION_KEY = "waitless_push_subscription";
 
@@ -105,7 +107,7 @@ export function useWebPush({ vapidPublicKey = "", onSubscription } = {}) {
       try {
         const sub = await registration.pushManager.getSubscription();
         if (!sub) return;
-        await fetch("/api/push/send", {
+        await fetch(buildApiUrl("/api/push/send"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ subscription: sub, payload }),
