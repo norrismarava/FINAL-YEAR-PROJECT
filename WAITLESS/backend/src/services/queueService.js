@@ -1665,7 +1665,11 @@ export async function getTicketTracking(ticketCode) {
   result.notifications = (result.notifications ?? []).map((notification) => {
     const redact = (text) =>
       typeof text === "string" && privateName
-        ? text.split(privateName).join("the patient")
+        ? text
+            .split(`Hello ${privateName}`)
+            .join("Hello there")
+            .split(privateName)
+            .join("the patient")
         : text;
     return {
       ...notification,
