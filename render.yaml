@@ -50,9 +50,6 @@ services:
         sync: false
       - key: WHATSAPP_WEBHOOK_VERIFY_TOKEN
         sync: false
-      # Seed the staff users list at first boot (JSON, same as .env value)
-      - key: STAFF_USERS_JSON
-        sync: false
       # Rotate on first login in production
       - key: INITIAL_ADMIN_PASSWORD
         sync: false

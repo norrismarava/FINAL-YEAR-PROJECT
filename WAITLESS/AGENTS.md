@@ -18,7 +18,7 @@
 
 ## Deploy (Render)
 - `render.yaml` (repo root) is a Blueprint: `waitless-api` (Node web service, `WAITLESS/backend`) + `waitless` (static site, `WAITLESS/frontend` → `dist`)
-- Render: **New > Blueprint** > pick this repo; fill `sync: false` env vars from `backend/.env` (DB creds, `STAFF_USERS_JSON`, `INITIAL_ADMIN_PASSWORD`)
+- Render: **New > Blueprint** > pick this repo; fill `sync: false` env vars from `backend/.env` (DB creds, `INITIAL_ADMIN_PASSWORD` — bootstrap-only, used only if the DB has no admin)
 - Frontend build var: `VITE_API_BASE_URL` must be the backend's public URL — it replaces the same-origin `/api` proxy in production
 - Backend env: `CORS_ORIGIN` = the frontend's URL, `TRUST_PROXY=true`, `PUBLIC_APP_URL` = frontend URL
 - If the Render service names are taken, hostnames differ — update `CORS_ORIGIN`, `PUBLIC_APP_URL`, `VITE_API_BASE_URL` to match
