@@ -31,6 +31,7 @@ export const DEPARTMENTS = [
   "Laboratory",
   "Radiology",
   "OI Clinic",
+  "Dental Clinic",
 ];
 
 export const PATIENT_CATEGORIES = [

@@ -28,6 +28,7 @@ const DEPARTMENTS = [
   "Radiology",
   "OI Clinic",
   "Casualty / Triage",
+  "Dental Clinic",
 ];
 
 const ROLES = [

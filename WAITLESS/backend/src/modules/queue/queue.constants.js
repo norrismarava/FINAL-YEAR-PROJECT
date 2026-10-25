@@ -33,6 +33,7 @@ export const DEPARTMENTS = [
   "Laboratory",
   "Radiology",
   "OI Clinic",
+  "Dental Clinic",
 ];
 
 export const PATIENT_CATEGORIES = [
@@ -62,6 +63,7 @@ export const DEPARTMENT_TOKEN_PREFIX = {
   Laboratory: "LAB",
   Radiology: "RAD",
   "OI Clinic": "OIC",
+  "Dental Clinic": "DEN",
 };
 
 export const EMERGENCY_VITAL_THRESHOLDS = {
@@ -93,6 +95,10 @@ export const DEPARTMENT_ROUTING_RULES = [
   {
     department: "OI Clinic",
     keywords: ["oi clinic", "art review", "hiv", "arv", "opportunistic infection", "cd4", "viral load"],
+  },
+  {
+    department: "Dental Clinic",
+    keywords: ["dental", "tooth", "teeth", "toothache", "gum", "molar", "cavity", "filling", "extraction", "denture", "braces", "oral", "mouth", "jaw pain", "bleeding gums"],
   },
 ];
 

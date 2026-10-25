@@ -18,6 +18,7 @@ import {
   Search,
   ShieldAlert,
   Siren,
+  SmilePlus,
   Smartphone,
   Star,
   Stethoscope,
@@ -34,6 +35,7 @@ import deptPharmacyImage from "@/assets/Every service point, one queue/PHAMARCY.
 import deptLabImage from "@/assets/Every service point, one queue/LABORATORY.jpeg";
 import deptRadiologyImage from "@/assets/Every service point, one queue/RADIOLOGY.jpg";
 import deptOiImage from "@/assets/Every service point, one queue/OI CLINIC.jpg";
+import deptDentalImage from "@/assets/Every service point, one queue/DENTAL.jpg";
 import deptPharmacyPhoto from "@/assets/Every service point, one queue/PHAMARCY.jpeg";
 import stepTriageImage from "@/assets/OTHER/Triage Tape Kit Crime Scene.jpeg";
 import stepConsultImage from "@/assets/OTHER/consultation.jpeg";
@@ -560,6 +562,7 @@ const DEPT_DETAILS = {
   Laboratory: { icon: FlaskConical, image: deptLabImage, body: "Blood work and diagnostic testing, tracked live from order to result.", color: "from-purple-500/20 to-purple-600/5" },
   Radiology: { icon: ScanLine, image: deptRadiologyImage, body: "Imaging orders linked to your visit, with live status updates.", color: "from-amber-500/20 to-amber-600/5" },
   "OI Clinic": { icon: HeartPulse, image: deptOiImage, body: "Opportunistic infection care with discreet follow-up queues.", color: "from-rose-500/20 to-rose-600/5" },
+  "Dental Clinic": { icon: SmilePlus, image: deptDentalImage, body: "Extractions, fillings, and oral care.", color: "from-cyan-500/20 to-cyan-600/5" },
 };
 
 function DepartmentsSection() {
@@ -577,7 +580,7 @@ function DepartmentsSection() {
               <span className="bg-gradient-to-r from-teal-300 to-cyan-300 bg-clip-text text-transparent">one queue</span>
             </h2>
             <p className="mt-4 text-lg text-white/50">
-              {HOSPITAL.name} runs five service points on WaitLess.
+              {HOSPITAL.name} runs six service points on WaitLess.
               Your ticket follows you, no re-joining, no lost place.
             </p>
           </div>
