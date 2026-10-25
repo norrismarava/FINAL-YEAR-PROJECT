@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
 import QRCode from "qrcode";
 import {
@@ -702,12 +703,13 @@ function QueueBoardDisplay({ audio, serving, waiting, missed, justCalledId, now,
   const upNext = waiting.slice(0, 6);
   const tip = HEALTH_TIPS[tipIndex];
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[100] flex flex-col overflow-hidden bg-[#030f18] text-white">
       <style>{`
         @keyframes boardFlash { 0%,100% { box-shadow: 0 0 0 rgba(45,212,191,0); } 50% { box-shadow: 0 0 90px rgba(45,212,191,0.45); } }
         @keyframes boardDot { 0%,100% { opacity: 1; } 50% { opacity: .25; } }
         @keyframes boardTipIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes boardHeroIn { from { opacity: 0; transform: translateY(18px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
         @keyframes boardCursor { 0%,45% { opacity: 1; } 50%,95% { opacity: 0; } }
         @keyframes waveBar { 0%,100% { transform: scaleY(0.3); } 50% { transform: scaleY(1); } }
       `}</style>
@@ -789,12 +791,13 @@ function QueueBoardDisplay({ audio, serving, waiting, missed, justCalledId, now,
           {nowCalling ? (
             <>
               <div
-                className={`mt-6 rounded-[2rem] border-2 px-14 py-7 text-center ${
+                key={nowCalling.id}
+                className={`mt-6 rounded-[2rem] border-2 px-14 py-7 text-center transition-[border-color,background-color,box-shadow] duration-700 ${
                   justCalledId === nowCalling.id
                     ? "border-teal-300/70 bg-teal-400/10 shadow-[0_0_60px_-10px_rgba(45,212,191,0.5),inset_0_0_40px_-20px_rgba(45,212,191,0.4)]"
                     : "border-white/10 bg-white/[0.04]"
                 }`}
-                style={justCalledId === nowCalling.id ? { animation: "boardFlash 1.8s ease-in-out infinite" } : undefined}
+                style={justCalledId === nowCalling.id ? { animation: "boardFlash 1.8s ease-in-out infinite" } : { animation: "boardHeroIn .55s cubic-bezier(.22,1,.36,1) both" }}
               >
                 <div className="font-display font-bold leading-none tracking-tight text-teal-100" style={{ fontSize: "clamp(5rem, 12vw, 11rem)" }}>
                   {nowCalling.ticket}
@@ -877,8 +880,12 @@ function QueueBoardDisplay({ audio, serving, waiting, missed, justCalledId, now,
             </div>
             <div className="mt-4 grid grid-cols-2 gap-3 overflow-y-auto" style={{ maxHeight: "42vh" }}>
               {otherServing.length ? (
-                otherServing.map((t) => (
-                  <div key={t.id} className="rounded-2xl border border-teal-300/15 bg-[#061e2c] px-4 py-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                otherServing.map((t, index) => (
+                  <div
+                    key={t.id}
+                    className="rounded-2xl border border-teal-300/15 bg-[#061e2c] px-4 py-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+                    style={{ animation: "boardTipIn .45s cubic-bezier(.22,1,.36,1) both", animationDelay: `${index * 80}ms` }}
+                  >
                     <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-400">
                       {t.calledRoom ? `Room ${t.calledRoom}` : "Service point"} · {t.department}
                     </div>
@@ -904,7 +911,11 @@ function QueueBoardDisplay({ audio, serving, waiting, missed, justCalledId, now,
             <div className="mt-3 flex flex-wrap gap-3">
               {upNext.length ? (
                 upNext.map((t, index) => (
-                  <span key={t.id} className={`flex flex-col items-center rounded-xl px-4 py-2 ${priorityChipClass[t.priority]}`}>
+                  <span
+                    key={t.id}
+                    className={`flex flex-col items-center rounded-xl px-4 py-2 ${priorityChipClass[t.priority]}`}
+                    style={{ animation: "boardTipIn .5s cubic-bezier(.22,1,.36,1) both", animationDelay: `${index * 60}ms` }}
+                  >
                     <span className="font-display text-2xl font-bold leading-none">{t.ticket}</span>
                     {avgServiceTimeMinutes ? (
                       <span className="mt-1 text-[10px] font-bold uppercase tracking-wider opacity-80">
@@ -983,7 +994,8 @@ function QueueBoardDisplay({ audio, serving, waiting, missed, justCalledId, now,
           </div>
         </div>
       </footer>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
