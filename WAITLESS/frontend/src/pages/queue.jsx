@@ -20,7 +20,6 @@ import {
   UserCheck,
   Users,
   Volume2,
-  VolumeX,
 } from "lucide-react";
 
 import { LoadingPanel } from "@/components/ui/system-loader";
@@ -943,37 +942,6 @@ function QueueBoardDisplay({ audio, serving, waiting, missed, justCalledId, now,
                 {missed.slice(0, 5).map((t) => t.ticket).join("  ·  ")}
                 {missed.length > 5 ? `   +${missed.length - 5} more` : ""}
               </span>
-            </div>
-          ) : null}
-          {audio?.supported ? (
-            <div className="flex shrink-0 items-center gap-2">
-              <button
-                type="button"
-                onClick={audio.enabled ? audio.disableAudio : audio.enableAudio}
-                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider transition ${
-                  audio.enabled
-                    ? "border-teal-300/30 bg-teal-500/[0.12] text-teal-200 hover:border-teal-300/60"
-                    : "border-white/15 bg-white/[0.06] text-slate-400 hover:border-white/40 hover:text-white"
-                }`}
-                title={audio.enabled ? "Mute spoken announcements" : "Enable spoken announcements"}
-              >
-                {audio.enabled ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
-                {audio.enabled ? "Audio on" : "Audio off"}
-              </button>
-              {audio.enabled ? (
-                <select
-                  value={audio.selectedVoiceURI ?? ""}
-                  onChange={(e) => audio.setSelectedVoiceURI(e.target.value)}
-                  className="max-w-[13rem] cursor-pointer rounded-full border border-white/15 bg-white/[0.06] px-2.5 py-1.5 text-[10px] font-semibold text-slate-300 outline-none transition hover:border-white/40 [&>option]:bg-[#051a28] [&>option]:text-white"
-                  title="Announcement voice"
-                >
-                  {audio.voices.map((voice) => (
-                    <option key={voice.voiceURI} value={voice.voiceURI}>
-                      {voice.name} ({voice.lang})
-                    </option>
-                  ))}
-                </select>
-              ) : null}
             </div>
           ) : null}
           <div className="ml-auto flex items-center gap-6">

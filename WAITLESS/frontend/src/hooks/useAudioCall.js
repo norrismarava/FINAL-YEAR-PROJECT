@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 const STORAGE_KEY = "waitless_audio_call_settings_v1";
 
 const DEFAULT_SETTINGS = {
-  enabled: false,
+  enabled: true,
   voiceURI: null,
   rate: 0.9,
   volume: 1,
@@ -39,7 +39,7 @@ export function useAudioCall() {
     typeof window !== "undefined" && typeof window.speechSynthesis !== "undefined";
 
   const initial = loadSettings();
-  const [enabled, setEnabled] = useState(initial.enabled);
+  const [enabled, setEnabled] = useState(true);
   const [voices, setVoices] = useState([]);
   const [selectedVoiceURI, setSelectedVoiceURI] = useState(initial.voiceURI);
   const [rate, setRate] = useState(initial.rate);
@@ -56,15 +56,22 @@ export function useAudioCall() {
     if (!supported) return;
     const updateVoices = () => {
       const v = getAvailableVoices();
-      setVoices(v);
-      if (!selectedVoiceURI && v.length > 0) {
-        const defaultVoice =
-          v.find((voice) => /google us english/i.test(voice.name)) ??
-          v.find((voice) => voice.lang === "en-US") ??
-          v.find((voice) => voice.lang?.toLowerCase().startsWith("en")) ??
-          v.find((voice) => voice.default) ??
-          v[0];
-        setSelectedVoiceURI(defaultVoice.voiceURI);
+      const english = v.filter((voice) =>
+        voice.lang?.toLowerCase().startsWith("en"),
+      );
+      const list = english.length > 0 ? english : v;
+      setVoices(list);
+      const selectionValid = list.some(
+        (voice) => voice.voiceURI === selectedVoiceURI,
+      );
+      if (!selectionValid && list.length > 0) {
+        const preferred =
+          list.find((voice) => /google us english/i.test(voice.name)) ??
+          list.find((voice) => voice.lang === "en-US") ??
+          list.find((voice) => voice.lang?.toLowerCase().startsWith("en")) ??
+          list.find((voice) => voice.default) ??
+          list[0];
+        setSelectedVoiceURI(preferred.voiceURI);
       }
     };
     updateVoices();
@@ -165,6 +172,23 @@ export function useAudioCall() {
     setEnabled(false);
     stop();
   }, [stop]);
+
+  // Browsers gate speech/AudioContext playback behind a user gesture, so the
+  // engine warms up on the first real interaction with the board page.
+  useEffect(() => {
+    if (!supported) return undefined;
+    const events = ["pointerdown", "keydown", "touchstart"];
+    const unlock = () => {
+      enableAudio();
+      events.forEach((type) => window.removeEventListener(type, unlock));
+    };
+    events.forEach((type) =>
+      window.addEventListener(type, unlock, { once: true }),
+    );
+    return () => {
+      events.forEach((type) => window.removeEventListener(type, unlock));
+    };
+  }, [supported, enableAudio]);
 
   return {
     supported,

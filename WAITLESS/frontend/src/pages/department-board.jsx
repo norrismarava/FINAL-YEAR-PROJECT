@@ -8,8 +8,6 @@ import {
   ShieldCheck,
   UserCheck,
   Users,
-  Volume2,
-  VolumeX,
   Wifi,
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
@@ -169,8 +167,6 @@ export default function DepartmentBoardPage() {
                     <DeptStat icon={<Users className="h-3.5 w-3.5" />} label="Waiting" value={waiting.length} />
                     <DeptStat icon={<AlertTriangle className="h-3.5 w-3.5" />} label="Missed" value={missed.length} />
                   </div>
-
-                  <DeptAudioCallPanel audio={audio} department={department} />
                 </div>
               </div>
             </header>
@@ -372,94 +368,5 @@ function DeptWaitingCard({ ticket, position }) {
         </span>
       </div>
     </article>
-  );
-}
-
-function DeptAudioCallPanel({ audio, department }) {
-  if (!audio.supported) {
-    return (
-      <div className="relative mt-5 rounded-2xl border border-white/12 bg-white/10 p-4">
-        <div className="flex items-start gap-3">
-          <VolumeX className="mt-0.5 h-5 w-5 shrink-0 text-white/60" />
-          <div>
-            <div className="font-semibold text-white/80">Audio calls unavailable</div>
-            <p className="mt-1 text-sm leading-6 text-slate-400">
-              This browser does not support text-to-speech announcements.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative mt-5 rounded-2xl border border-white/12 bg-white/10 p-4">
-      <div className="flex items-start gap-3">
-        <Volume2 className={`mt-0.5 h-5 w-5 shrink-0 ${audio.enabled ? "text-teal-400" : "text-white/60"} ${audio.isSpeaking ? "animate-pulse" : ""}`} />
-        <div className="flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <div className="font-semibold text-white">Audio announcements</div>
-            <button
-              type="button"
-              onClick={audio.enabled ? audio.disableAudio : audio.enableAudio}
-              className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
-                audio.enabled
-                  ? "bg-teal-500/20 text-teal-200 border border-teal-400/30"
-                  : "bg-white/10 text-slate-300 border border-white/15"
-              }`}
-            >
-              {audio.enabled ? "Enabled" : "Enable audio"}
-            </button>
-          </div>
-          <p className="mt-1 text-sm leading-6 text-slate-300">
-            {audio.enabled
-              ? `Spoken announcements for ${department} will play when a ticket is called.`
-              : `Click "Enable audio" to hear spoken ticket calls for ${department}.`}
-          </p>
-          <button
-            type="button"
-            onClick={() =>
-              audio.preview(`Ticket Q-047, please proceed to ${department}.`)
-            }
-            disabled={audio.isSpeaking}
-            className="mt-3 inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/15 px-3.5 py-1.5 text-xs font-semibold text-teal-200 transition-colors hover:bg-teal-500/25 disabled:opacity-50"
-          >
-            <Volume2 className="h-3.5 w-3.5" />
-            {audio.isSpeaking ? "Playing…" : "Hear sample call"}
-          </button>
-          {audio.enabled && (
-            <div className="mt-3 space-y-2">
-              <label className="flex items-center gap-2 text-xs text-slate-400">
-                <span className="shrink-0 w-14">Voice</span>
-                <select
-                  value={audio.selectedVoiceURI ?? ""}
-                  onChange={(e) => audio.setSelectedVoiceURI(e.target.value)}
-                  className="flex-1 rounded-lg border border-white/15 bg-white/10 px-2 py-1 text-xs text-white outline-none focus:border-teal-400/40"
-                >
-                  {audio.voices.map((voice) => (
-                    <option key={voice.voiceURI} value={voice.voiceURI} className="bg-slate-800">
-                      {voice.name} ({voice.lang})
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex items-center gap-2 text-xs text-slate-400">
-                <span className="shrink-0 w-14">Speed</span>
-                <input
-                  type="range"
-                  min="0.5"
-                  max="1.5"
-                  step="0.1"
-                  value={audio.rate}
-                  onChange={(e) => audio.setRate(Number(e.target.value))}
-                  className="flex-1 accent-teal-400"
-                />
-                <span className="shrink-0 w-8 text-right tabular-nums text-slate-300">{audio.rate.toFixed(1)}</span>
-              </label>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
   );
 }
