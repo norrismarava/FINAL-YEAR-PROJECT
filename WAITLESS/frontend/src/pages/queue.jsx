@@ -30,9 +30,9 @@ import {
   priorityChipClass,
 } from "@/services/queueMeta";
 import { fetchDepartmentBoard, fetchQueueBoard } from "@/services/queueApi";
+import { useAudioCall } from "@/hooks/useAudioCall";
 import { useQueueRealtime } from "@/sockets/QueueRealtimeProvider";
 import { useApiResource } from "@/hooks/useApiResource";
-import { useAudioCall } from "@/hooks/useAudioCall";
 import authBackground from "@/assets/BACKG.png";
 import waitlessLogoIcon from "@/assets/waitless-logo-icon.png";
 
@@ -353,7 +353,8 @@ export default function QueuePage() {
                 />
               </div>
 
-              <AudioCallPanel audio={audio} />
+              {boardMode && <AudioCallPanel audio={audio} />}
+
             </div>
           </div>
         </header>
@@ -1162,6 +1163,29 @@ function AudioCallPanel({ audio }) {
 }
 
 
+/* -- Animated audio waveform � flanks the "AUDIO ANNOUNCED" label -- */
+function AudioWaveformBars({ mirrored = false }) {
+  const bars = [0.5, 0.9, 1.35, 0.7, 1.1, 0.6, 1.25, 0.8];
+  return (
+    <span
+      className="flex items-center gap-[3px]"
+      style={mirrored ? { transform: "scaleX(-1)" } : undefined}
+    >
+      {bars.map((dur, i) => (
+        <span
+          key={i}
+          className="inline-block w-[3px] rounded-full bg-teal-300/90"
+          style={{
+            height: `${8 + (i % 3) * 6}px`,
+            animation: `waveBar ${dur}s ease-in-out ${i * 0.12}s infinite`,
+          }}
+        />
+      ))}
+    </span>
+  );
+}
+
+
 /* ================================================================
    TYPEWRITER � types text out character by character with a
    blinking block cursor (used by the board health tip).
@@ -1197,24 +1221,3 @@ function TypewriterText({ text, speed = 20, cursor = false }) {
 }
 
 
-/* -- Animated audio waveform � flanks the "AUDIO ANNOUNCED" label -- */
-function AudioWaveformBars({ mirrored = false }) {
-  const bars = [0.5, 0.9, 1.35, 0.7, 1.1, 0.6, 1.25, 0.8];
-  return (
-    <span
-      className="flex items-center gap-[3px]"
-      style={mirrored ? { transform: "scaleX(-1)" } : undefined}
-    >
-      {bars.map((dur, i) => (
-        <span
-          key={i}
-          className="inline-block w-[3px] rounded-full bg-teal-300/90"
-          style={{
-            height: `${8 + (i % 3) * 6}px`,
-            animation: `waveBar ${dur}s ease-in-out ${i * 0.12}s infinite`,
-          }}
-        />
-      ))}
-    </span>
-  );
-}
