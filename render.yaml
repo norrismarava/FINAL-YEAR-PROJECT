@@ -1,0 +1,75 @@
+# WaitLess — Render Blueprint
+# Creates both services from this repo. In Render: New > Blueprint > pick this repo.
+# Secrets marked `sync: false` are prompted for during blueprint setup — copy
+# those values from backend/.env (never commit them here).
+#
+# NOTE: if the service names below are taken by other Render users, the final
+# URLs will differ — update CORS_ORIGIN / PUBLIC_APP_URL / VITE_API_BASE_URL
+# to match the deployed hostnames.
+
+services:
+  # --- Backend API (Node, long-running) ---
+  - type: web
+    name: waitless-api
+    runtime: node
+    plan: free
+    rootDir: WAITLESS/backend
+    buildCommand: npm install
+    startCommand: node src/index.js
+    healthCheckPath: /api/health
+    envVars:
+      # Render sits behind a proxy — required for correct client IPs/rate limits
+      - key: TRUST_PROXY
+        value: "true"
+      # Allow all origins — auth uses Bearer tokens, not cookies, so a
+      # wildcard is safe and avoids breakage if the frontend hostname differs.
+      - key: CORS_ORIGIN
+        value: "*"
+      - key: PUBLIC_APP_URL
+        value: https://waitless-2n8b.onrender.com
+      # Database (TiDB Cloud / MySQL) — values come from backend/.env
+      - key: DB_PROVIDER
+        value: mysql
+      - key: DB_SSL
+        value: "true"
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_NAME
+        sync: false
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      # WhatsApp runs in mock mode unless real creds are supplied
+      - key: WHATSAPP_PROVIDER
+        value: mock
+      - key: WHATSAPP_ACCESS_TOKEN
+        sync: false
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        sync: false
+      - key: WHATSAPP_WEBHOOK_VERIFY_TOKEN
+        sync: false
+      # Rotate on first login in production
+      - key: INITIAL_ADMIN_PASSWORD
+        sync: false
+
+  # --- Frontend (Vite build -> static site) ---
+  - type: web
+    name: waitless
+    env: static
+    rootDir: WAITLESS/frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    pullRequestPreviewsEnabled: false
+    envVars:
+      # Build-time var: browser calls the API at this absolute URL
+      # (actual Render hostname — the plain name was already taken)
+      - key: VITE_API_BASE_URL
+        value: https://waitless-api-vgbm.onrender.com
+    routes:
+      # SPA fallback — React Router owns every path
+      - type: rewrite
+        source: /*
+        destination: /index.html

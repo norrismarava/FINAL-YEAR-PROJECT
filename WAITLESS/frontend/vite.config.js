@@ -1,6 +1,20 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { readFileSync } from 'node:fs';
+
+// Proxy target: explicit env override > sibling backend/.env PORT > 4242.
+// Reading backend/.env keeps the proxy correct on machines whose backend
+// port differs from the committed default.
+function resolveProxyTarget() {
+  if (process.env.VITE_PROXY_TARGET) return process.env.VITE_PROXY_TARGET;
+  try {
+    const envFile = readFileSync(path.resolve(__dirname, '../backend/.env'), 'utf8');
+    const match = envFile.match(/^PORT=(\d+)/m);
+    if (match) return `http://localhost:${match[1]}`;
+  } catch {}
+  return 'http://localhost:4242';
+}
 
 export default defineConfig({
   plugins: [react()],
@@ -41,7 +55,7 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': {
-        target: process.env.VITE_PROXY_TARGET ?? 'http://localhost:4242',
+        target: resolveProxyTarget(),
         changeOrigin: true,
       },
     },
