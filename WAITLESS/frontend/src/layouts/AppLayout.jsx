@@ -599,7 +599,7 @@ function Header({ onOpenMobileNav }) {
               )}
 
               <div
-                className={`flex items-center gap-3 ${
+                className={`ml-auto flex items-center gap-2.5 sm:gap-3 ${
                   isStaffWorkspaceTheme ? "lg:w-full" : "lg:justify-self-end"
                 }`}
               >
@@ -744,11 +744,21 @@ function Header({ onOpenMobileNav }) {
 
 function StaffAvatar({ user, displayName, className = "", fallbackClassName = "" }) {
   const avatarUrl = resolveProfileImageUrl(user?.avatarUrl);
+  const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [avatarUrl]);
 
   return (
     <span className={`shrink-0 overflow-hidden ${className}`}>
-      {avatarUrl ? (
-        <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+      {avatarUrl && !imageFailed ? (
+        <img
+          src={avatarUrl}
+          alt=""
+          onError={() => setImageFailed(true)}
+          className="h-full w-full object-cover"
+        />
       ) : (
         <span className={`grid h-full w-full place-items-center ${fallbackClassName}`}>
           {getStaffInitials(displayName)}
@@ -1029,12 +1039,9 @@ function StaffAccountMenu({ auth, displayName }) {
         aria-haspopup="menu"
         className="inline-flex h-11 items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.05] py-1.5 pl-1.5 pr-3 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-xl transition-all hover:border-teal-300/30 hover:bg-white/[0.08] hover:shadow-[0_0_0_3px_rgba(45,212,191,0.08)]"
       >
-        <StaffAvatar
-          user={auth.user}
-          displayName={accountName}
-          className="h-8 w-8 rounded-full bg-[linear-gradient(135deg,rgba(13,148,136,0.55),rgba(34,211,238,0.35))]"
-          fallbackClassName="text-[11px] font-bold text-white"
-        />
+        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[linear-gradient(135deg,rgba(13,148,136,0.55),rgba(34,211,238,0.35))]">
+          <UserRound className="h-4 w-4 text-white" />
+        </span>
         <span className="hidden min-w-0 text-left sm:flex sm:flex-col sm:justify-center">
           <span className="truncate text-sm font-semibold leading-none text-white">
             {accountName}
