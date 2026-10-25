@@ -59,7 +59,11 @@ export function useAudioCall() {
       setVoices(v);
       if (!selectedVoiceURI && v.length > 0) {
         const defaultVoice =
-          v.find((voice) => voice.default) ?? v[0];
+          v.find((voice) => /google us english/i.test(voice.name)) ??
+          v.find((voice) => voice.lang === "en-US") ??
+          v.find((voice) => voice.lang?.toLowerCase().startsWith("en")) ??
+          v.find((voice) => voice.default) ??
+          v[0];
         setSelectedVoiceURI(defaultVoice.voiceURI);
       }
     };

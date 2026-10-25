@@ -199,6 +199,17 @@ export default function QueuePage() {
     }
   }, [realtime.lastEvent, audio]);
 
+  // TV board: auto-enable spoken announcements (Google US English) so
+  // the display works without any manual setup
+  useEffect(() => {
+    if (!boardMode || !audio.supported) return;
+    if (!audio.enabled) audio.enableAudio();
+    const preferred = audio.voices.find((v) => /google us english/i.test(v.name));
+    if (preferred && audio.selectedVoiceURI !== preferred.voiceURI) {
+      audio.setSelectedVoiceURI(preferred.voiceURI);
+    }
+  }, [boardMode, audio]);
+
   useEffect(() => {
     if (!justCalledId) return undefined;
     const id = window.setTimeout(() => setJustCalledId(null), 9000);
@@ -353,7 +364,6 @@ export default function QueuePage() {
                 />
               </div>
 
-              {boardMode && <AudioCallPanel audio={audio} />}
 
             </div>
           </div>
@@ -642,6 +652,7 @@ export default function QueuePage() {
 
       {boardMode ? (
         <QueueBoardDisplay
+          audio={audio}
           serving={serving}
           waiting={waiting}
           missed={missed}
@@ -662,7 +673,7 @@ export default function QueuePage() {
    TV BOARD DISPLAY — fullscreen waiting-area signage (Qmatic-style).
    Giant "now calling" panel + serving/next lists + missed ticker.
    ================================================================ */
-function QueueBoardDisplay({ serving, waiting, missed, justCalledId, now, totalWaiting, avgServiceTimeMinutes, department, onDepartmentChange, onExit }) {
+function QueueBoardDisplay({ audio, serving, waiting, missed, justCalledId, now, totalWaiting, avgServiceTimeMinutes, department, onDepartmentChange, onExit }) {
   const [tipIndex, setTipIndex] = useState(0);
   const [qrDataUrl, setQrDataUrl] = useState(null);
 
@@ -923,6 +934,37 @@ function QueueBoardDisplay({ serving, waiting, missed, justCalledId, now, totalW
               </span>
             </div>
           ) : null}
+          {audio?.supported ? (
+            <div className="flex shrink-0 items-center gap-2">
+              <button
+                type="button"
+                onClick={audio.enabled ? audio.disableAudio : audio.enableAudio}
+                className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider transition ${
+                  audio.enabled
+                    ? "border-teal-300/30 bg-teal-500/[0.12] text-teal-200 hover:border-teal-300/60"
+                    : "border-white/15 bg-white/[0.06] text-slate-400 hover:border-white/40 hover:text-white"
+                }`}
+                title={audio.enabled ? "Mute spoken announcements" : "Enable spoken announcements"}
+              >
+                {audio.enabled ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
+                {audio.enabled ? "Audio on" : "Audio off"}
+              </button>
+              {audio.enabled ? (
+                <select
+                  value={audio.selectedVoiceURI ?? ""}
+                  onChange={(e) => audio.setSelectedVoiceURI(e.target.value)}
+                  className="max-w-[13rem] cursor-pointer rounded-full border border-white/15 bg-white/[0.06] px-2.5 py-1.5 text-[10px] font-semibold text-slate-300 outline-none transition hover:border-white/40 [&>option]:bg-[#051a28] [&>option]:text-white"
+                  title="Announcement voice"
+                >
+                  {audio.voices.map((voice) => (
+                    <option key={voice.voiceURI} value={voice.voiceURI}>
+                      {voice.name} ({voice.lang})
+                    </option>
+                  ))}
+                </select>
+              ) : null}
+            </div>
+          ) : null}
           <div className="ml-auto flex items-center gap-6">
             <div className="text-sm text-slate-400">
               Total waiting: <span className="font-bold text-white">{totalWaiting}</span>
@@ -1069,99 +1111,6 @@ function QueueStat({ label, value, icon, liveDot, enterClass = "" }) {
     </div>
   );
 }
-
-/* ================================================================
-   AUDIO CALL PANEL — text-to-speech announcement controls
-   ================================================================ */
-function AudioCallPanel({ audio }) {
-  if (!audio.supported) {
-    return (
-      <div className="relative mt-5 rounded-2xl border border-white/12 bg-white/10 p-4">
-        <div className="flex items-start gap-3">
-          <VolumeX className="mt-0.5 h-5 w-5 shrink-0 text-white/60" />
-          <div>
-            <div className="font-semibold text-white/80">Audio calls unavailable</div>
-            <p className="mt-1 text-sm leading-6 text-slate-400">
-              This browser does not support text-to-speech announcements.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="relative mt-5 rounded-2xl border border-white/12 bg-white/10 p-4">
-      <div className="flex items-start gap-3">
-        <Volume2 className={`mt-0.5 h-5 w-5 shrink-0 ${audio.enabled ? "text-teal-400" : "text-white/60"} ${audio.isSpeaking ? "animate-pulse" : ""}`} />
-        <div className="flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <div className="font-semibold text-white">Audio announcements</div>
-            <button
-              type="button"
-              onClick={audio.enabled ? audio.disableAudio : audio.enableAudio}
-              className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
-                audio.enabled
-                  ? "bg-teal-500/20 text-teal-200 border border-teal-400/30"
-                  : "bg-white/10 text-slate-300 border border-white/15"
-              }`}
-            >
-              {audio.enabled ? "Enabled" : "Enable audio"}
-            </button>
-          </div>
-          <p className="mt-1 text-sm leading-6 text-slate-300">
-            {audio.enabled
-              ? "Spoken announcements will play when a ticket is called."
-              : "Click \"Enable audio\" to hear spoken ticket calls in the waiting area."}
-          </p>
-          <button
-            type="button"
-            onClick={() =>
-              audio.preview("Ticket Q-047, please proceed to OPD Room 2.")
-            }
-            disabled={audio.isSpeaking}
-            className="mt-3 inline-flex items-center gap-2 rounded-full border border-teal-400/30 bg-teal-500/15 px-3.5 py-1.5 text-xs font-semibold text-teal-200 transition-colors hover:bg-teal-500/25 disabled:opacity-50"
-          >
-            <Volume2 className="h-3.5 w-3.5" />
-            {audio.isSpeaking ? "Playing…" : "Hear sample call"}
-          </button>
-          {audio.enabled && (
-            <div className="mt-3 space-y-2">
-              <label className="flex items-center gap-2 text-xs text-slate-400">
-                <span className="shrink-0 w-14">Voice</span>
-                <select
-                  value={audio.selectedVoiceURI ?? ""}
-                  onChange={(e) => audio.setSelectedVoiceURI(e.target.value)}
-                  className="flex-1 rounded-lg border border-white/15 bg-white/10 px-2 py-1 text-xs text-white outline-none focus:border-teal-400/40"
-                >
-                  {audio.voices.map((voice) => (
-                    <option key={voice.voiceURI} value={voice.voiceURI} className="bg-slate-800">
-                      {voice.name} ({voice.lang})
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="flex items-center gap-2 text-xs text-slate-400">
-                <span className="shrink-0 w-14">Speed</span>
-                <input
-                  type="range"
-                  min="0.5"
-                  max="1.5"
-                  step="0.1"
-                  value={audio.rate}
-                  onChange={(e) => audio.setRate(Number(e.target.value))}
-                  className="flex-1 accent-teal-400"
-                />
-                <span className="shrink-0 w-8 text-right tabular-nums text-slate-300">{audio.rate.toFixed(1)}</span>
-              </label>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 
 /* -- Animated audio waveform � flanks the "AUDIO ANNOUNCED" label -- */
 function AudioWaveformBars({ mirrored = false }) {
