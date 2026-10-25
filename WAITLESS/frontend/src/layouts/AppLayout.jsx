@@ -599,7 +599,7 @@ function Header({ onOpenMobileNav }) {
               )}
 
               <div
-                className={`ml-auto flex items-center gap-2.5 sm:gap-3 ${
+                className={`relative ml-auto flex items-center gap-2.5 sm:gap-3 ${
                   isStaffWorkspaceTheme ? "lg:w-full" : "lg:justify-self-end"
                 }`}
               >
@@ -1031,7 +1031,7 @@ function StaffAccountMenu({ auth, displayName }) {
   }, [isOpen]);
 
   return (
-    <div ref={menuRef} className="relative">
+    <div ref={menuRef}>
       <button
         type="button"
         onClick={() => setIsOpen((current) => !current)}
@@ -1140,7 +1140,7 @@ function NotificationsBell() {
   }, [isOpen]);
 
   return (
-    <div ref={menuRef} className="relative">
+    <div ref={menuRef}>
       <button
         type="button"
         onClick={() => setIsOpen((v) => !v)}
