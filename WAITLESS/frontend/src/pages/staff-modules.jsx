@@ -212,7 +212,17 @@ export function StaffQueueBoardPage() {
     {
       onSuccess: (res) => {
         refreshLiveData();
-        toast.success(`${res?.ticket?.ticket ?? "Ticket"} → ${res?.ticket?.status}.`);
+        const ticketCode = res?.ticket?.ticket ?? "Ticket";
+        const nextStatus = res?.ticket?.status;
+        const message =
+          nextStatus === "completed"
+            ? `Visit completed for ${ticketCode}.`
+            : nextStatus === "in-service"
+              ? `${ticketCode} is now being served.`
+              : nextStatus === "missed"
+                ? `${ticketCode} marked as missed.`
+                : `${ticketCode} updated to ${nextStatus}.`;
+        toast.success(message);
       },
     },
   );
@@ -221,7 +231,7 @@ export function StaffQueueBoardPage() {
     {
       onSuccess: (res) => {
         refreshLiveData();
-        toast.success(`${res?.ticket?.ticket ?? "Ticket"} transferred to ${res?.ticket?.department}.`);
+        toast.success(`${res?.ticket?.ticket ?? "Ticket"} successfully transferred to ${res?.ticket?.department}.`);
       },
     },
   );
@@ -297,7 +307,7 @@ export function StaffQueueBoardPage() {
             />
             <button
               type="button"
-              onClick={() => { window.localStorage.setItem("waitless_call_room", callRoom); toast.success(callRoom ? `Calls will announce Room ${callRoom}.` : "Room cleared — calls will announce the department."); }}
+              onClick={() => { window.localStorage.setItem("waitless_call_room", callRoom); toast.success(callRoom ? `Room updated successfully, calls will announce Room ${callRoom}.` : "Room cleared, calls will announce the department."); }}
               className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-teal-400/40 px-3 text-xs font-bold uppercase tracking-wider text-teal-300 transition hover:bg-teal-400/10"
             >
               Update
@@ -692,7 +702,12 @@ function MissedRecallRow({ ticket }) {
   const [offsetMinutes, setOffsetMinutes] = useState("");
   const recallMutation = useApiAction(
     (opts) => recallTicket(ticket.id, opts),
-    { onSuccess: refreshLiveData },
+    {
+      onSuccess: (res) => {
+        refreshLiveData();
+        toast.success(`${res?.ticket?.ticket ?? ticket.ticket ?? "Ticket"} successfully recalled into the queue.`);
+      },
+    },
   );
 
   function handleRecall() {
@@ -2315,6 +2330,12 @@ const NEXT_STATE_MAP = {
   ready: "collected",
 };
 
+const NEXT_STATE_LABEL = {
+  prescribed: "Start dispensing",
+  dispensing: "Mark ready",
+  ready: "Mark collected",
+};
+
 export function PharmacyPage() {
   const { refreshToken } = useLiveRefresh();
   const [search, setSearch] = useState("");
@@ -2333,7 +2354,14 @@ export function PharmacyPage() {
     refreshToken,
   });
 
-  const advanceState = useApiAction(updatePrescriptionState);
+  const advanceState = useApiAction(updatePrescriptionState, {
+    onSuccess: (prescription) => {
+      prescriptionsQuery.refetch();
+      summaryQuery.refetch();
+      toast.success(`Prescription ${prescription?.ticketCode ?? ""} advanced to ${prescription?.state}.`);
+    },
+    onError: (error) => toast.error(error.message),
+  });
 
   const prescriptions = prescriptionsQuery.data ?? [];
   const summary = summaryQuery.data;
@@ -2363,8 +2391,6 @@ export function PharmacyPage() {
     setAdvancing(prescription.id);
     try {
       await advanceState.mutate(prescription.id, next);
-      prescriptionsQuery.refetch();
-      summaryQuery.refetch();
     } finally {
       setAdvancing(null);
     }
@@ -2584,14 +2610,14 @@ function PrescriptionCard({ prescription, canAdvance, onAdvance, advancing, onSt
         <button
           onClick={onAdvance}
           disabled={advancing}
-          className="mt-2 inline-flex h-7 w-full items-center justify-center gap-1.5 rounded-md bg-[linear-gradient(135deg,#0f766e,#14b8a6)] px-3 text-xs font-medium text-white shadow-[0_6px_16px_-6px_rgba(20,184,166,0.5)] transition-transform hover:-translate-y-px disabled:opacity-50"
+          className="mt-2 inline-flex h-9 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-[linear-gradient(135deg,#0f766e,#14b8a6)] px-3 text-xs font-semibold text-white shadow-[0_6px_16px_-6px_rgba(20,184,166,0.5)] transition-transform hover:-translate-y-px disabled:opacity-50"
         >
           {advancing ? (
             <LoaderCircle className="h-3 w-3 animate-spin" />
           ) : (
             <>
               <CheckCircle2 className="h-3 w-3" />
-              Advance to {NEXT_STATE_MAP[prescription.state]}
+              {NEXT_STATE_LABEL[prescription.state] ?? `Advance to ${NEXT_STATE_MAP[prescription.state]}`}
             </>
           )}
         </button>
@@ -2613,6 +2639,13 @@ const TEST_NEXT_STATE = {
   "sample-collected": "in-progress",
   "in-progress": "completed",
   completed: "result-ready",
+};
+
+const TEST_NEXT_LABEL = {
+  ordered: "Collect sample",
+  "sample-collected": "Start processing",
+  "in-progress": "Complete test",
+  completed: "Release results",
 };
 
 const TEST_TYPE_LABELS = {
@@ -2639,7 +2672,14 @@ export function LabPage() {
   const ordersLoader = useCallback(() => fetchTestOrders(), []);
   const ordersQuery = useApiResource(ordersLoader, { enabled: isBrowser, refreshToken });
 
-  const advanceState = useApiAction(updateTestOrderState);
+  const advanceState = useApiAction(updateTestOrderState, {
+    onSuccess: (order) => {
+      ordersQuery.refetch();
+      summaryQuery.refetch();
+      toast.success(`Test order ${order?.ticketCode ?? ""} advanced to ${order?.state}.`);
+    },
+    onError: (error) => toast.error(error.message),
+  });
 
   const orders = ordersQuery.data ?? [];
   const summary = summaryQuery.data;
@@ -2669,8 +2709,6 @@ export function LabPage() {
     setAdvancing(order.id);
     try {
       await advanceState.mutate(order.id, next);
-      ordersQuery.refetch();
-      summaryQuery.refetch();
     } finally {
       setAdvancing(null);
     }
@@ -2836,14 +2874,14 @@ function TestOrderCard({ order, canAdvance, onAdvance, advancing, tint = "#a78bf
         <button
           onClick={onAdvance}
           disabled={advancing}
-          className="mt-2 inline-flex h-7 w-full items-center justify-center gap-1.5 rounded-md bg-[linear-gradient(135deg,#0f766e,#14b8a6)] px-3 text-xs font-medium text-white shadow-[0_6px_16px_-6px_rgba(20,184,166,0.5)] transition-transform hover:-translate-y-px disabled:opacity-50"
+          className="mt-2 inline-flex h-9 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-[linear-gradient(135deg,#0f766e,#14b8a6)] px-3 text-xs font-semibold text-white shadow-[0_6px_16px_-6px_rgba(20,184,166,0.5)] transition-transform hover:-translate-y-px disabled:opacity-50"
         >
           {advancing ? (
             <LoaderCircle className="h-3 w-3 animate-spin" />
           ) : (
             <>
               <CheckCircle2 className="h-3 w-3" />
-              Advance to {TEST_NEXT_STATE[order.state]}
+              {TEST_NEXT_LABEL[order.state] ?? `Advance to ${TEST_NEXT_STATE[order.state]}`}
             </>
           )}
         </button>
@@ -2869,6 +2907,11 @@ const OI_STREAM_BADGE = {
 const OI_NEXT_STATE = {
   waiting: "in-session",
   "in-session": "completed",
+};
+
+const OI_NEXT_LABEL = {
+  waiting: "Start session",
+  "in-session": "Complete visit",
 };
 
 const OI_STATE_META = {
@@ -2903,14 +2946,27 @@ export function OIClinicPage() {
   const visitsLoader = useCallback(() => fetchOIClinicVisits(), []);
   const visitsQuery = useApiResource(visitsLoader, { enabled: isBrowser, refreshToken });
 
-  const advanceState = useApiAction(updateOIClinicVisitState);
+  const advanceState = useApiAction(updateOIClinicVisitState, {
+    onSuccess: (visit) => {
+      visitsQuery.refetch();
+      summaryQuery.refetch();
+      toast.success(
+        visit?.state === "referred"
+          ? `${visit.ticketCode ?? "Visit"} referred to ${visit.referredTo}.`
+          : `${visit?.ticketCode ?? "Visit"} advanced to ${visit?.state}.`,
+      );
+    },
+    onError: (error) => toast.error(error.message),
+  });
   const createVisitMut = useApiAction(createOIClinicVisit, {
-    onSuccess: () => {
+    onSuccess: (visit) => {
       visitsQuery.refetch();
       summaryQuery.refetch();
       setShowVisitForm(false);
       setVisitForm({ ticketCode: "", streamId: "", notes: "" });
+      toast.success(`OI clinic visit created for ${visit?.ticketCode ?? "patient"}.`);
     },
+    onError: (error) => toast.error(error.message),
   });
 
   const streams = streamsQuery.data?.streams ?? [];
@@ -2953,8 +3009,6 @@ export function OIClinicPage() {
     setAdvancing(visit.id);
     try {
       await advanceState.mutate(visit.id, next);
-      visitsQuery.refetch();
-      summaryQuery.refetch();
     } finally {
       setAdvancing(null);
     }
@@ -2963,9 +3017,7 @@ export function OIClinicPage() {
   async function handleRefer(visit) {
     setAdvancing(visit.id);
     try {
-      await advanceState.mutate(visit.id, "referred", { referredTo: "Casualty / Triage" });
-      visitsQuery.refetch();
-      summaryQuery.refetch();
+      await advanceState.mutate(visit.id, "referred", "Casualty / Triage");
     } finally {
       setAdvancing(null);
     }
@@ -3232,14 +3284,14 @@ function OIClinicVisitCard({ visit, streamLabel, canAdvance, canRefer, onAdvance
           <button
             onClick={onAdvance}
             disabled={advancing}
-            className="inline-flex h-7 flex-1 items-center justify-center gap-1.5 rounded-md bg-[linear-gradient(135deg,#0f766e,#14b8a6)] px-3 text-xs font-medium text-white shadow-[0_6px_16px_-6px_rgba(20,184,166,0.5)] transition-transform hover:-translate-y-px disabled:opacity-50"
+            className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-[linear-gradient(135deg,#0f766e,#14b8a6)] px-3 text-xs font-semibold text-white shadow-[0_6px_16px_-6px_rgba(20,184,166,0.5)] transition-transform hover:-translate-y-px disabled:opacity-50"
           >
             {advancing ? (
               <LoaderCircle className="h-3 w-3 animate-spin" />
             ) : (
               <>
                 <CheckCircle2 className="h-3 w-3" />
-                Advance to {OI_NEXT_STATE[visit.state]}
+                {OI_NEXT_LABEL[visit.state] ?? `Advance to ${OI_NEXT_STATE[visit.state]}`}
               </>
             )}
           </button>
@@ -3248,7 +3300,7 @@ function OIClinicVisitCard({ visit, streamLabel, canAdvance, canRefer, onAdvance
           <button
             onClick={onRefer}
             disabled={advancing}
-            className="inline-flex h-7 items-center justify-center gap-1.5 rounded-md border border-violet-400/30 bg-violet-400/10 px-3 text-xs font-medium text-violet-300 transition-colors hover:bg-violet-400/20 disabled:opacity-50"
+            className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-violet-400/30 bg-violet-400/10 px-3 text-xs font-semibold text-violet-300 transition-colors hover:bg-violet-400/20 disabled:opacity-50"
           >
             Refer
           </button>

@@ -195,6 +195,7 @@ export async function registerStaff({
 
   const allowedRoles = [
     "admin",
+    "dentist",
     "doctor",
     "lab-tech",
     "nurse",

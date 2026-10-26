@@ -2,16 +2,16 @@ import { requireStaffSession } from "../services/authService.js";
 import { requirePatientSession } from "../services/patientAuthService.js";
 
 const roleMapping = {
-  reception: "receptionist",
-  triage: "nurse",
-  clinician: "doctor",
+  reception: ["receptionist"],
+  triage: ["nurse"],
+  clinician: ["doctor", "dentist"],
 };
 
 export function withStaffAuth(allowedRoles, handler) {
   return (context) => {
     const expandedRoles = [
       ...allowedRoles,
-      ...allowedRoles.map((role) => roleMapping[role]).filter(Boolean),
+      ...allowedRoles.flatMap((role) => roleMapping[role] ?? []),
     ];
     const session = requireStaffSession(context.req, expandedRoles);
     try {

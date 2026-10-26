@@ -13,6 +13,7 @@ export const DEFAULT_STAFF_WORKSPACE_PROFILE = {
 const ROLE_LABELS = {
   admin: "Administrator",
   clinician: "Clinician",
+  dentist: "Dentist",
   doctor: "Doctor",
   nurse: "Nurse",
   pharmacist: "Pharmacist",
@@ -29,6 +30,7 @@ const ALL_STAFF_ROLES = [
   "reception",
   "receptionist",
   "doctor",
+  "dentist",
   "nurse",
   "pharmacist",
   "lab-tech",
@@ -59,12 +61,12 @@ const LANDING_PAGE_META = {
   laboratory: {
     label: "Laboratory & Radiology",
     path: "/admin/laboratory",
-    roles: ["admin", "clinician", "doctor", "lab-tech", "radiologist"],
+    roles: ["admin", "clinician", "doctor", "dentist", "lab-tech", "radiologist"],
   },
   pharmacy: {
     label: "Pharmacy",
     path: "/admin/pharmacy",
-    roles: ["admin", "clinician", "doctor", "pharmacist"],
+    roles: ["admin", "clinician", "doctor", "dentist", "pharmacist"],
   },
 };
 

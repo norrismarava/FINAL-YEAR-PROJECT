@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Eye, LoaderCircle, Plus, Search, ShieldCheck, Trash2, UserRound, Users, X } from "lucide-react";
+import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { useApiResource } from "@/hooks/useApiResource";
@@ -18,6 +19,7 @@ const EMPTY_LIST = [];
 
 const ROLE_COLORS = {
   admin: "bg-rose-400/15 text-rose-300 ring-rose-300/25",
+  dentist: "bg-emerald-400/15 text-emerald-300 ring-emerald-300/25",
   doctor: "bg-teal-400/15 text-teal-300 ring-teal-300/25",
   nurse: "bg-sky-400/15 text-sky-300 ring-sky-300/25",
   pharmacist: "bg-blue-400/15 text-blue-300 ring-blue-300/25",
@@ -70,10 +72,14 @@ export default function UsersPage() {
   const staffQuery = useApiResource(staffLoader, { enabled: isBrowser });
   const patientsQuery = useApiResource(patientsLoader, { enabled: isBrowser });
 
-  const staff = useMemo(
-    () => [...addedStaff, ...(staffQuery.data?.users ?? EMPTY_LIST)],
-    [addedStaff, staffQuery.data],
-  );
+  const staff = useMemo(() => {
+    const seen = new Set();
+    return [...addedStaff, ...(staffQuery.data?.users ?? EMPTY_LIST)].filter((user) => {
+      if (seen.has(user.id)) return false;
+      seen.add(user.id);
+      return true;
+    });
+  }, [addedStaff, staffQuery.data]);
   const patients = patientsQuery.data?.users ?? EMPTY_LIST;
 
   const activeQuery = tab === "staff" ? staffQuery : patientsQuery;
@@ -88,7 +94,9 @@ export default function UsersPage() {
         await deletePatientUser(user.id);
       }
       setDeletedIds((prev) => new Set(prev).add(user.id));
+      setAddedStaff((prev) => prev.filter((entry) => entry.id !== user.id));
       setConfirmId(null);
+      toast.success(`${user.name ?? user.fullName ?? "User"} deleted successfully.`);
     } catch (err) {
       setDeleteError(err.message);
     } finally {
@@ -360,6 +368,8 @@ export default function UsersPage() {
               onSuccess={(user) => {
                 if (user) setAddedStaff((prev) => [user, ...prev]);
                 setShowCreate(false);
+                staffQuery.refetch();
+                toast.success(`${user?.name ?? "Staff member"} created successfully.`);
               }}
               onCancel={() => setShowCreate(false)}
             />

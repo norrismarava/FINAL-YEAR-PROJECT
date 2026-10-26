@@ -694,9 +694,10 @@ function QueueBoardDisplay({ audio, serving, waiting, missed, justCalledId, last
   useEffect(() => {
     const trackBase = (import.meta.env.VITE_PUBLIC_APP_URL ?? window.location.origin).replace(/\/$/, "");
     QRCode.toDataURL(`${trackBase}/track`, {
-      width: 160,
-      margin: 1,
-      color: { dark: "#5eead4", light: "#00000000" },
+      errorCorrectionLevel: "M",
+      width: 240,
+      margin: 2,
+      color: { dark: "#07202e", light: "#ffffff" },
     })
       .then(setQrDataUrl)
       .catch(() => setQrDataUrl(null));
@@ -843,9 +844,11 @@ function QueueBoardDisplay({ audio, serving, waiting, missed, justCalledId, last
                   </div>
                 ) : null}
               </div>
-              <div className="mt-6 max-w-xl text-center text-lg text-slate-400">
-                {nowServing ? "Patient is being served — next tickets coming up" : "Please proceed to the service point now"}
-              </div>
+              {nowServing ? (
+                <div className="mt-6 max-w-xl text-center text-lg text-slate-400">
+                  Patient is being served — next tickets coming up
+                </div>
+              ) : null}
             </>
           ) : (
             <div className="mt-10 max-w-lg text-center">
@@ -969,7 +972,7 @@ function QueueBoardDisplay({ audio, serving, waiting, missed, justCalledId, last
                 <div className="text-right text-[10px] font-semibold uppercase tracking-wider text-slate-400">
                   Scan for live queue<br />on your smartphone
                 </div>
-                <img src={qrDataUrl} alt="Scan to track your queue on your phone" className="h-12 w-12 rounded-md ring-1 ring-white/15" />
+                <img src={qrDataUrl} alt="Scan to track your queue on your phone" className="h-20 w-20 rounded-lg bg-white p-1.5 ring-1 ring-white/15" />
               </div>
             ) : null}
           </div>

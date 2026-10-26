@@ -91,7 +91,7 @@ const navItems = [
   {
     to: "/admin/dashboard",
     label: "Dashboard",
-    roles: ["triage", "clinician"],
+    staffOnly: true,
     icon: LayoutDashboard,
   },
 ];
@@ -102,7 +102,6 @@ const STAFF_WORKSPACE_ITEMS = [
     to: "/admin/dashboard",
     label: "Dashboard",
     icon: LayoutDashboard,
-    roles: ["triage", "clinician"],
   },
   {
     group: "Main",
@@ -483,7 +482,11 @@ function Header({ onOpenMobileNav }) {
       ? { to: "/admin/register", label: "New patient" }
       : { to: resolveStaffLandingPath(auth.user), label: "My workspace" }
     : { to: "/self-register", label: "Get started" };
-  const visibleNavItems = navItems.filter((item) => !item.roles || auth.hasRole(item.roles));
+  const visibleNavItems = navItems.filter(
+    (item) =>
+      (!item.roles || auth.hasRole(item.roles)) &&
+      (!item.staffOnly || auth.isAuthenticated),
+  );
 
   return (
     <header

@@ -61,9 +61,10 @@ export function useApiResource(loader, { enabled = true } = {}) {
   return { ...state, loading: state.isLoading, refetch };
 }
 
-export function useApiAction(action, { onSuccess } = {}) {
+export function useApiAction(action, { onSuccess, onError } = {}) {
   const actionRef = useRef(action);
   const onSuccessRef = useRef(onSuccess);
+  const onErrorRef = useRef(onError);
   const [state, setState] = useState({
     data: null,
     error: null,
@@ -74,8 +75,10 @@ export function useApiAction(action, { onSuccess } = {}) {
 
   actionRef.current = action;
   onSuccessRef.current = onSuccess;
+  onErrorRef.current = onError;
 
-  const mutate = useCallback((variables) => {
+  const mutate = useCallback((...args) => {
+    const variables = args.length > 1 ? args : args[0];
     setState((current) => ({
       ...current,
       error: null,
@@ -84,8 +87,8 @@ export function useApiAction(action, { onSuccess } = {}) {
       variables,
     }));
 
-    actionRef
-      .current(variables)
+    return actionRef
+      .current(...args)
       .then((data) => {
         setState({
           data,
@@ -95,6 +98,7 @@ export function useApiAction(action, { onSuccess } = {}) {
           variables,
         });
         onSuccessRef.current?.(data, variables);
+        return data;
       })
       .catch((error) => {
         setState({
@@ -104,6 +108,7 @@ export function useApiAction(action, { onSuccess } = {}) {
           isPending: false,
           variables,
         });
+        onErrorRef.current?.(error, variables);
       });
   }, []);
 

@@ -80,7 +80,7 @@ export function AuthProvider({ children }) {
     setToken(session.token);
     setUser(nextUser);
     setExpiresAt(session.expiresAt);
-    toast.success(`Signed in — welcome back, ${nextUser.name ?? "staff"}.`);
+    toast.success(`Signed in, welcome back ${nextUser.name ?? "staff"}.`);
     return {
       ...session,
       user: nextUser,
@@ -116,7 +116,7 @@ export function AuthProvider({ children }) {
     const aliases = {
       reception: ["receptionist"],
       triage: ["nurse"],
-      clinician: ["doctor"],
+      clinician: ["doctor", "dentist"],
     };
 
     return roles.some(

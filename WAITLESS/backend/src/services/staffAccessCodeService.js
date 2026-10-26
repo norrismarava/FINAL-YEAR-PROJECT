@@ -16,6 +16,7 @@ const CODE_TTL_MS = 72 * 60 * 60 * 1000; // 72 hours
 
 const ALLOWED_ROLES = [
   "admin",
+  "dentist",
   "doctor",
   "lab-tech",
   "nurse",

@@ -34,6 +34,7 @@ const DEPARTMENTS = [
 const ROLES = [
   { value: "nurse", label: "Nurse" },
   { value: "doctor", label: "Doctor" },
+  { value: "dentist", label: "Dentist" },
   { value: "pharmacist", label: "Pharmacist" },
   { value: "lab-tech", label: "Lab Technician" },
   { value: "radiologist", label: "Radiologist" },

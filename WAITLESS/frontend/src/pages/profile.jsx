@@ -197,7 +197,7 @@ export default function ProfilePage() {
         currentPassword: pwForm.currentPassword,
         newPassword: pwForm.newPassword,
       });
-      toast.success("Password changed — sign in again with the new password");
+      toast.success("Password changed, sign in again with the new password");
       setTimeout(() => auth.logout(), 1200);
     } catch (error) {
       toast.error(error.message || "Failed to change password");
