@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
+import { toast } from "sonner";
 import { fetchCurrentStaff, loginStaff, saveStaffProfile } from "@/services/authApi";
 import { useIdleTimeout } from "@/hooks/useIdleTimeout";
 import { IdleTimeoutModal } from "@/components/ui/IdleTimeoutModal";
@@ -79,6 +80,7 @@ export function AuthProvider({ children }) {
     setToken(session.token);
     setUser(nextUser);
     setExpiresAt(session.expiresAt);
+    toast.success(`Signed in — welcome back, ${nextUser.name ?? "staff"}.`);
     return {
       ...session,
       user: nextUser,
