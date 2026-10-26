@@ -1,17 +1,11 @@
 import { useCallback, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
-import { Eye, LoaderCircle, Plus, Search, ShieldCheck, Trash2, UserRound, Users, X } from "lucide-react";
+import { LoaderCircle, Plus, Search, Trash2, Users, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { useAuth } from "@/auth/AuthProvider";
 import { useApiResource } from "@/hooks/useApiResource";
 import { CreateStaffUserForm } from "@/pages/staff-register";
-import {
-  deletePatientUser,
-  deleteStaffUser,
-  listPatientUsers,
-  listStaffUsers,
-} from "@/services/authApi";
+import { deleteStaffUser, listStaffUsers } from "@/services/authApi";
 import { LoadingPanel } from "@/components/ui/system-loader";
 
 const isBrowser = typeof window !== "undefined";
@@ -57,7 +51,6 @@ function initials(name) {
 
 export default function UsersPage() {
   const { staff: currentStaff } = useAuth();
-  const [tab, setTab] = useState("staff");
   const [search, setSearch] = useState("");
   const [confirmId, setConfirmId] = useState(null);
   const [deleting, setDeleting] = useState(null);
@@ -67,10 +60,8 @@ export default function UsersPage() {
   const [addedStaff, setAddedStaff] = useState([]);
 
   const staffLoader = useCallback(() => listStaffUsers(), []);
-  const patientsLoader = useCallback(() => listPatientUsers(), []);
 
   const staffQuery = useApiResource(staffLoader, { enabled: isBrowser });
-  const patientsQuery = useApiResource(patientsLoader, { enabled: isBrowser });
 
   const staff = useMemo(() => {
     const seen = new Set();
@@ -80,19 +71,12 @@ export default function UsersPage() {
       return true;
     });
   }, [addedStaff, staffQuery.data]);
-  const patients = patientsQuery.data?.users ?? EMPTY_LIST;
-
-  const activeQuery = tab === "staff" ? staffQuery : patientsQuery;
 
   async function handleDelete(user) {
     setDeleteError("");
     setDeleting(user.id);
     try {
-      if (tab === "staff") {
-        await deleteStaffUser(user.id);
-      } else {
-        await deletePatientUser(user.id);
-      }
+      await deleteStaffUser(user.id);
       setDeletedIds((prev) => new Set(prev).add(user.id));
       setAddedStaff((prev) => prev.filter((entry) => entry.id !== user.id));
       setConfirmId(null);
@@ -105,17 +89,15 @@ export default function UsersPage() {
   }
 
   const rows = useMemo(() => {
-    const source = (tab === "staff" ? staff : patients).filter(
-      (user) => !deletedIds.has(user.id),
-    );
+    const source = staff.filter((user) => !deletedIds.has(user.id));
     const q = search.trim().toLowerCase();
     if (!q) return source;
     return source.filter((user) =>
-      [user.name ?? user.fullName, user.username, user.email, user.role, user.department, user.nationalId]
+      [user.name ?? user.fullName, user.username, user.email, user.role, user.department]
         .filter(Boolean)
         .some((field) => String(field).toLowerCase().includes(q)),
     );
-  }, [tab, staff, patients, search, deletedIds]);
+  }, [staff, search, deletedIds]);
 
   return (
     <section className="staff-module-page mx-auto min-h-[calc(100vh-7rem)] w-full max-w-[96rem] px-1 py-6 sm:py-8">
@@ -134,7 +116,7 @@ export default function UsersPage() {
               <span className="mt-1 h-px w-10 bg-gradient-to-l from-transparent to-teal-300/50" />
             </h1>
             <p className="mt-3 text-sm leading-6 text-white/45 sm:text-base">
-              Every registered account in the system — staff members and patient portal users.
+              Every registered staff account in the system.
             </p>
           </div>
           <span className="grid h-12 w-12 place-items-center rounded-xl border border-teal-300/20 bg-teal-400/10 text-teal-300">
@@ -142,58 +124,40 @@ export default function UsersPage() {
           </span>
         </div>
 
-        {/* Tabs + search */}
+        {/* Count + search + create */}
         <div className="mt-6 flex flex-wrap items-center gap-3">
-          <div className="inline-flex rounded-full border border-white/10 bg-white/[0.04] p-1">
-            {[
-              { id: "staff", label: `Staff (${staff.length})`, icon: ShieldCheck },
-              { id: "patients", label: `Patients (${patients.length})`, icon: UserRound },
-            ].map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setTab(item.id)}
-                className={`inline-flex h-9 items-center gap-2 rounded-full px-4 text-xs font-semibold transition-all ${
-                  tab === item.id
-                    ? "bg-[linear-gradient(135deg,#0f766e,#14b8a6)] text-white shadow-[0_8px_20px_-8px_rgba(20,184,166,0.6)]"
-                    : "text-white/55 hover:text-white"
-                }`}
-              >
-                <item.icon className="h-3.5 w-3.5" />
-                {item.label}
-              </button>
-            ))}
-          </div>
+          <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-xs font-semibold text-white/70">
+            <Users className="h-3.5 w-3.5 text-teal-300" />
+            {staff.length} staff member{staff.length === 1 ? "" : "s"}
+          </span>
 
           <label className="relative min-w-56 flex-1 sm:max-w-sm">
             <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />
             <input
               type="text"
-              placeholder={`Search ${tab}…`}
+              placeholder="Search staff…"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="h-10 w-full rounded-full border border-white/10 bg-white/[0.05] pl-10 pr-4 text-sm text-white outline-none placeholder:text-white/35 focus:border-teal-300/40"
             />
           </label>
 
-          {tab === "staff" ? (
-            <button
-              type="button"
-              onClick={() => setShowCreate(true)}
-              className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-4 text-xs font-bold uppercase tracking-[0.08em] text-white transition hover:brightness-110"
-            >
-              <Plus className="h-3.5 w-3.5" /> Add staff
-            </button>
-          ) : null}
+          <button
+            type="button"
+            onClick={() => setShowCreate(true)}
+            className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full bg-[linear-gradient(135deg,rgba(15,118,110,0.92),rgba(13,148,136,0.88))] px-4 text-xs font-bold uppercase tracking-[0.08em] text-white transition hover:brightness-110"
+          >
+            <Plus className="h-3.5 w-3.5" /> Add staff
+          </button>
         </div>
       </header>
 
       <div className="mt-5">
-        {activeQuery.isLoading ? (
+        {staffQuery.isLoading ? (
           <LoadingPanel title="Loading users" message="Fetching registered accounts." />
-        ) : activeQuery.isError ? (
+        ) : staffQuery.isError ? (
           <div className="rounded-2xl border border-rose-500/25 bg-rose-500/10 p-6 text-sm text-rose-300">
-            {activeQuery.error.message}
+            {staffQuery.error.message}
           </div>
         ) : (
           <div className="overflow-hidden rounded-2xl border border-white/[0.08] bg-[#111827] shadow-[0_12px_40px_rgba(0,0,0,0.18)]">
@@ -202,14 +166,8 @@ export default function UsersPage() {
                 <tr className="border-b border-white/[0.07] text-[10px] font-bold uppercase tracking-[0.18em] text-white/35">
                   <th className="px-5 py-3.5">User</th>
                   <th className="hidden px-5 py-3.5 md:table-cell">Contact</th>
-                  {tab === "staff" ? (
-                    <>
-                      <th className="px-5 py-3.5">Role</th>
-                      <th className="hidden px-5 py-3.5 lg:table-cell">Department</th>
-                    </>
-                  ) : (
-                    <th className="hidden px-5 py-3.5 sm:table-cell">National ID</th>
-                  )}
+                  <th className="px-5 py-3.5">Role</th>
+                  <th className="hidden px-5 py-3.5 lg:table-cell">Department</th>
                   <th className="hidden px-5 py-3.5 sm:table-cell">Joined</th>
                   <th className="hidden px-5 py-3.5 xl:table-cell">Last login</th>
                   <th className="px-5 py-3.5 text-right">Actions</th>
@@ -251,26 +209,18 @@ export default function UsersPage() {
                           ) : null}
                         </div>
                       </td>
-                      {tab === "staff" ? (
-                        <>
-                          <td className="px-5 py-3.5">
-                            <span
-                              className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ring-1 ring-inset ${
-                                ROLE_COLORS[user.role] ?? "bg-white/[0.06] text-white/60 ring-white/15"
-                              }`}
-                            >
-                              {roleLabel(user.role)}
-                            </span>
-                          </td>
-                          <td className="hidden px-5 py-3.5 text-white/60 lg:table-cell">
-                            {user.department || "—"}
-                          </td>
-                        </>
-                      ) : (
-                        <td className="hidden px-5 py-3.5 font-mono text-xs text-white/60 sm:table-cell">
-                          {user.nationalId || "—"}
-                        </td>
-                      )}
+                      <td className="px-5 py-3.5">
+                        <span
+                          className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] ring-1 ring-inset ${
+                            ROLE_COLORS[user.role] ?? "bg-white/[0.06] text-white/60 ring-white/15"
+                          }`}
+                        >
+                          {roleLabel(user.role)}
+                        </span>
+                      </td>
+                      <td className="hidden px-5 py-3.5 text-white/60 lg:table-cell">
+                        {user.department || "—"}
+                      </td>
                       <td className="hidden px-5 py-3.5 text-white/50 sm:table-cell">
                         {formatDate(user.createdAt)}
                       </td>
@@ -278,18 +228,7 @@ export default function UsersPage() {
                         {formatDate(user.lastLoginAt)}
                       </td>
                       <td className="px-5 py-3.5 text-right">
-                        {tab === "patients" ? (
-                          <span className="mr-1.5 inline-flex align-middle">
-                            <Link
-                              to={`/admin/patients?key=${encodeURIComponent(user.nationalId || user.phone || user.id)}`}
-                              title="View patient history"
-                              className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/[0.04] text-white/40 transition hover:border-teal-300/40 hover:bg-teal-400/10 hover:text-teal-300"
-                            >
-                              <Eye className="h-3.5 w-3.5" />
-                            </Link>
-                          </span>
-                        ) : null}
-                        {tab === "staff" && user.id === currentStaff?.id ? (
+                        {user.id === currentStaff?.id ? (
                           <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-white/25">
                             You
                           </span>

@@ -218,3 +218,31 @@ export function useAudioCall() {
     disableAudio,
   };
 }
+
+// FIFO queue for call announcements — each called ticket holds the screen and
+// the speaker for `holdMs` before the next one takes over, so back-to-back
+// calls never cut each other off.
+export function useAnnouncementQueue({ holdMs = 9000 } = {}) {
+  const [pending, setPending] = useState([]);
+  const [active, setActive] = useState(null);
+
+  const enqueue = useCallback((item) => {
+    setPending((list) => [...list, item]);
+  }, []);
+
+  const clear = useCallback(() => {
+    setPending([]);
+    setActive(null);
+  }, []);
+
+  useEffect(() => {
+    if (active || pending.length === 0) return undefined;
+    const [next, ...rest] = pending;
+    setPending(rest);
+    setActive(next);
+    const id = setTimeout(() => setActive(null), holdMs);
+    return () => clearTimeout(id);
+  }, [active, pending, holdMs]);
+
+  return { active, pending, enqueue, clear };
+}

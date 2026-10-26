@@ -19,7 +19,6 @@ const SelfRegisterPage = lazy(() => import("@/pages/self-register"));
 const KioskPage = lazy(() => import("@/pages/kiosk"));
 const ResetPasswordPage = lazy(() => import("@/pages/reset-password"));
 const SettingsPage = lazy(() => import("@/pages/settings"));
-const StaffRegisterPage = lazy(() => import("@/pages/staff-register"));
 const StaffSignupPage = lazy(() => import("@/pages/staff-signup"));
 const UsersPage = lazy(() => import("@/pages/users"));
 const StaffAccessCodesPage = lazy(() => import("@/pages/staff-access-codes"));
@@ -215,14 +214,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          <Route
-            path="staff"
-            element={
-              <ProtectedRoute roles={["admin"]}>
-                <StaffRegisterPage />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="staff" element={<Navigate to="/admin/users" replace />} />
           <Route
             path="users"
             element={
