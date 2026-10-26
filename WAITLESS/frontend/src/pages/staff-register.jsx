@@ -23,12 +23,18 @@ import { createStaffAccessCode, listStaffAccessCodes, registerStaffAccount } fro
 
 const DEPARTMENTS = [
   "Reception",
-  "Pharmacy",
+  "Casualty / Triage",
+  "OPD - Observation",
+  "OPD - Nurse Consultation",
+  "OPD - Doctor Consultation",
   "Laboratory",
   "Radiology",
+  "Pharmacy",
   "OI Clinic",
-  "Casualty / Triage",
   "Dental Clinic",
+  "Mother & Child Health",
+  "Treatment Room",
+  "Cash Office",
 ];
 
 const ROLES = [

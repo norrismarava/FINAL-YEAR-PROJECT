@@ -29,11 +29,17 @@ export const PRIORITY_META = {
 
 export const DEPARTMENTS = [
   "Casualty / Triage",
-  "Pharmacy",
+  "OPD - Observation",
+  "OPD - Nurse Consultation",
+  "OPD - Doctor Consultation",
   "Laboratory",
   "Radiology",
+  "Pharmacy",
   "OI Clinic",
   "Dental Clinic",
+  "Mother & Child Health",
+  "Treatment Room",
+  "Cash Office",
 ];
 
 export const PATIENT_CATEGORIES = [
@@ -59,11 +65,17 @@ export const TICKET_STATUSES = [
 
 export const DEPARTMENT_TOKEN_PREFIX = {
   "Casualty / Triage": "TRI",
+  "OPD - Observation": "OBS",
+  "OPD - Nurse Consultation": "NRS",
+  "OPD - Doctor Consultation": "DOC",
   Pharmacy: "PHA",
   Laboratory: "LAB",
   Radiology: "RAD",
   "OI Clinic": "OIC",
   "Dental Clinic": "DEN",
+  "Mother & Child Health": "MCH",
+  "Treatment Room": "TRM",
+  "Cash Office": "CSH",
 };
 
 export const EMERGENCY_VITAL_THRESHOLDS = {
@@ -97,8 +109,32 @@ export const DEPARTMENT_ROUTING_RULES = [
     keywords: ["oi clinic", "art review", "hiv", "arv", "opportunistic infection", "cd4", "viral load"],
   },
   {
+    department: "Mother & Child Health",
+    keywords: ["antenatal", "anc visit", "pregnan", "postnatal", "immunization", "immunisation", "vaccin", "well baby", "child health", "growth monitoring", "family planning", "mother and child", "maternity"],
+  },
+  {
     department: "Dental Clinic",
     keywords: ["dental", "tooth", "teeth", "toothache", "gum", "molar", "cavity", "filling", "extraction", "denture", "braces", "oral", "mouth", "jaw pain", "bleeding gums"],
+  },
+  {
+    department: "Treatment Room",
+    keywords: ["treatment room", "wound dressing", "dressing", "suture", "stitch", "injection", "drip", "nebul", "plaster", "immobilization"],
+  },
+  {
+    department: "Cash Office",
+    keywords: ["payment", "cash office", "cashier", "receipt", "bill", "invoice", "consultation fee", "accounts office", "refund"],
+  },
+  {
+    department: "OPD - Observation",
+    keywords: ["observation", "vitals", "vital signs", "blood pressure check", "bp check", "weight check", "outpatient", "opd"],
+  },
+  {
+    department: "OPD - Nurse Consultation",
+    keywords: ["nurse consultation", "nurse consult", "see a nurse", "nurse review", "bp follow up", "chronic review"],
+  },
+  {
+    department: "OPD - Doctor Consultation",
+    keywords: ["doctor", "consultation", "see a doctor", "medical review", "results review", "follow up", "follow-up", "gp"],
   },
 ];
 

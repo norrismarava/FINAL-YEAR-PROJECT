@@ -27,11 +27,17 @@ export const PRIORITY_META = {
 
 export const DEPARTMENTS = [
   "Casualty / Triage",
-  "Pharmacy",
+  "OPD - Observation",
+  "OPD - Nurse Consultation",
+  "OPD - Doctor Consultation",
   "Laboratory",
   "Radiology",
+  "Pharmacy",
   "OI Clinic",
   "Dental Clinic",
+  "Mother & Child Health",
+  "Treatment Room",
+  "Cash Office",
 ];
 
 export const PATIENT_CATEGORIES = [

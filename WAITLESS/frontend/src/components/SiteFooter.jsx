@@ -21,9 +21,11 @@ const HOSPITAL = {
 
 const DEPT_LINKS = [
   { label: "Casualty / Triage", dept: "Casualty / Triage" },
+  { label: "OPD - Doctor Consultation", dept: "OPD - Doctor Consultation" },
   { label: "Pharmacy", dept: "Pharmacy" },
   { label: "Laboratory", dept: "Laboratory" },
   { label: "OI Clinic", dept: "OI Clinic" },
+  { label: "Mother & Child Health", dept: "Mother & Child Health" },
 ];
 
 const SOCIALS = [

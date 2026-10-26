@@ -7,6 +7,9 @@ import {
   CheckCircle2,
   ChevronDown,
   ClipboardList,
+  Baby,
+  Bandage,
+  Banknote,
   Clock3,
   FlaskConical,
   HeartPulse,
@@ -30,12 +33,16 @@ import {
 import hospitalHeroImage from "@/assets/cover/Heroes' Essentials_ A Minimal Tribute.jpg";
 import hospitalHeroBackground from "@/assets/bgfinal.png";
 import deptOpdImage from "@/assets/Every service point, one queue/TRY OPD.jpeg";
+import deptObservationImage from "@/assets/Every service point, one queue/OPD.jpeg";
+import deptNurseImage from "@/assets/Every service point, one queue/TRIAGE1.jpg";
 import deptTriageImage from "@/assets/Every service point, one queue/TRIAGE.jpg";
 import deptPharmacyImage from "@/assets/Every service point, one queue/PHAMARCY.jpeg";
 import deptLabImage from "@/assets/Every service point, one queue/LABORATORY.jpeg";
 import deptRadiologyImage from "@/assets/Every service point, one queue/RADIOLOGY.jpg";
 import deptOiImage from "@/assets/Every service point, one queue/OI CLINIC.jpg";
 import deptDentalImage from "@/assets/Every service point, one queue/DENTAL.jpg";
+import deptTreatmentImage from "@/assets/Every service point, one queue/LABORATORY1.jpeg";
+import deptCashImage from "@/assets/Every service point, one queue/PHAMARCY1.jpeg";
 import deptPharmacyPhoto from "@/assets/Every service point, one queue/PHAMARCY.jpeg";
 import stepTriageImage from "@/assets/OTHER/Triage Tape Kit Crime Scene.jpeg";
 import stepConsultImage from "@/assets/OTHER/consultation.jpeg";
@@ -558,11 +565,17 @@ function LiveTicker() {
 const DEPT_DETAILS = {
   OPD: { icon: Stethoscope, image: deptOpdImage, body: "General outpatient consultations, follow-up clinics, and referrals.", color: "from-teal-500/20 to-teal-600/5" },
   "Casualty / Triage": { icon: Siren, image: deptTriageImage, body: "24/7 emergency assessment with four-tier priority routing.", color: "from-red-500/20 to-red-600/5" },
+  "OPD - Observation": { icon: Activity, image: deptObservationImage, body: "First OPD stop — vitals, weight, and quick nurse screening.", color: "from-teal-500/20 to-teal-600/5" },
+  "OPD - Nurse Consultation": { icon: ClipboardList, image: deptNurseImage, body: "Nurse-led consultations and routine reviews for outpatients.", color: "from-cyan-500/20 to-cyan-600/5" },
+  "OPD - Doctor Consultation": { icon: Stethoscope, image: deptOpdImage, body: "Doctor consultations, follow-up clinics, and referrals.", color: "from-indigo-500/20 to-indigo-600/5" },
   Pharmacy: { icon: Pill, image: deptPharmacyImage, body: "Prescription dispensing with WhatsApp call-up alerts.", color: "from-blue-500/20 to-blue-600/5" },
   Laboratory: { icon: FlaskConical, image: deptLabImage, body: "Blood work and diagnostic testing, tracked live from order to result.", color: "from-purple-500/20 to-purple-600/5" },
   Radiology: { icon: ScanLine, image: deptRadiologyImage, body: "Imaging orders linked to your visit, with live status updates.", color: "from-amber-500/20 to-amber-600/5" },
   "OI Clinic": { icon: HeartPulse, image: deptOiImage, body: "Opportunistic infection care with discreet follow-up queues.", color: "from-rose-500/20 to-rose-600/5" },
   "Dental Clinic": { icon: SmilePlus, image: deptDentalImage, body: "Extractions, fillings, and oral care.", color: "from-cyan-500/20 to-cyan-600/5" },
+  "Mother & Child Health": { icon: Baby, image: deptOiImage, body: "Antenatal care, immunizations, and child growth monitoring.", color: "from-pink-500/20 to-pink-600/5" },
+  "Treatment Room": { icon: Bandage, image: deptTreatmentImage, body: "Dressings, injections, and same-day minor procedures.", color: "from-emerald-500/20 to-emerald-600/5" },
+  "Cash Office": { icon: Banknote, image: deptCashImage, body: "Consultation and service payments, routed when you need them.", color: "from-yellow-500/20 to-yellow-600/5" },
 };
 
 function DepartmentsSection() {
@@ -580,7 +593,7 @@ function DepartmentsSection() {
               <span className="bg-gradient-to-r from-teal-300 to-cyan-300 bg-clip-text text-transparent">one queue</span>
             </h2>
             <p className="mt-4 text-lg text-white/50">
-              {HOSPITAL.name} runs six service points on WaitLess.
+              {HOSPITAL.name} runs {DEPARTMENTS.length} service points on WaitLess.
               Your ticket follows you, no re-joining, no lost place.
             </p>
           </div>

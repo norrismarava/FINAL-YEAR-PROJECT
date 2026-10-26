@@ -226,10 +226,17 @@ const MAX_CHATBOT_MESSAGE_LENGTH = 500;
 const MAX_CHATBOT_CONTEXT_LENGTH = 80;
 const DEPARTMENT_ALIASES = [
   ["Casualty / Triage", ["casualty", "triage", "emergency"]],
+  ["OPD - Observation", ["observation", "vitals", "opd observation"]],
+  ["OPD - Nurse Consultation", ["nurse consultation", "nurse consult"]],
+  ["OPD - Doctor Consultation", ["doctor consultation", "see a doctor", "opd doctor"]],
   ["Pharmacy", ["pharmacy", "medicine", "medication"]],
   ["Laboratory", ["laboratory", "lab"]],
   ["Radiology", ["radiology", "x-ray", "xray", "scan", "imaging"]],
-  ["OI Clinic", ["oi clinic", "oi", "arv", "hiv clinic"]],
+  ["OI Clinic", ["oi clinic", "oi", "arv", "hiv clinic", "via", "viac", "cervical screening"]],
+  ["Dental Clinic", ["dental", "tooth", "dentist"]],
+  ["Mother & Child Health", ["mother and child", "mch", "antenatal", "immunization", "baby clinic"]],
+  ["Treatment Room", ["treatment room", "dressing", "injection"]],
+  ["Cash Office", ["cash office", "cashier", "payment", "accounts"]],
 ];
 
 function normalizeTicketCode(ticketCode) {
