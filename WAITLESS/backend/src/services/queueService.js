@@ -1135,6 +1135,11 @@ export async function transferPatient(id, department, staff) {
 }
 
 export async function callNextPatient(department, staff, room) {
+  // Non-admin staff are scoped to their assigned department — a pharmacist
+  // can only call Pharmacy patients, a lab-tech Laboratory, and so on.
+  if (staff?.role !== "admin" && staff?.department?.trim()) {
+    department = staff.department;
+  }
   if (department) {
     ensureDepartment(department);
   }

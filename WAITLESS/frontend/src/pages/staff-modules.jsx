@@ -261,7 +261,7 @@ export function StaffQueueBoardPage() {
               onChange={(e) => setCallDept(e.target.value)}
               className="input-base h-9 w-auto text-xs"
             >
-              {DEPARTMENTS.map((dept) => (
+              {(auth.user?.role === "admin" ? DEPARTMENTS : DEPARTMENTS.filter((dept) => dept === staffDept)).map((dept) => (
                 <option key={dept} value={dept}>{dept}</option>
               ))}
             </select>
