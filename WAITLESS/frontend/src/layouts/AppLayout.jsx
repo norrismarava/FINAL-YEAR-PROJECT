@@ -31,7 +31,6 @@ import {
   UserRound,
   UserSearch,
   Users,
-  UsersRound,
   X,
   Youtube,
 } from "lucide-react";
@@ -155,13 +154,6 @@ const STAFF_WORKSPACE_ITEMS = [
     to: "/admin/sync",
     label: "Sync & Backup",
     icon: Database,
-    roles: ["admin"],
-  },
-  {
-    group: "Admin",
-    to: "/admin/staff",
-    label: "Staff",
-    icon: UsersRound,
     roles: ["admin"],
   },
   {

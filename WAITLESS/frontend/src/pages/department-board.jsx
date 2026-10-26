@@ -21,7 +21,7 @@ import {
 import { fetchDepartmentBoard } from "@/services/queueApi";
 import { useQueueRealtime } from "@/sockets/QueueRealtimeProvider";
 import { useApiResource } from "@/hooks/useApiResource";
-import { useAudioCall } from "@/hooks/useAudioCall";
+import { useAnnouncementQueue, useAudioCall } from "@/hooks/useAudioCall";
 import authBackground from "@/assets/BACKG.png";
 import waitlessLogoIcon from "@/assets/waitless-logo-icon.png";
 
@@ -62,7 +62,9 @@ export default function DepartmentBoardPage() {
   const realtime = useQueueRealtime();
   const audio = useAudioCall();
   const lastProcessedEventRef = useRef(null);
-  const [justCalledId, setJustCalledId] = useState(null);
+  const announcements = useAnnouncementQueue({ holdMs: 9000 });
+  const enqueueAnnouncement = announcements.enqueue;
+  const justCalledId = announcements.active?.id ?? null;
 
   const loadBoard = useCallback(() => fetchDepartmentBoard(department), [department]);
   const queueQuery = useApiResource(loadBoard, { enabled: isBrowser });
@@ -77,25 +79,32 @@ export default function DepartmentBoardPage() {
     if (lastProcessedEventRef.current === realtime.lastEvent.timestamp) return;
     lastProcessedEventRef.current = realtime.lastEvent.timestamp;
 
-    if (realtime.lastEvent.type === "ticket.called" || realtime.lastEvent.type === "ticket.recalled") {
-      const payload = realtime.lastEvent.payload ?? {};
-      const ticketCode = payload.ticket ?? "";
-      const eventDepartment = payload.department ?? "";
-      const room = payload.room ?? "";
-      if (ticketCode && eventDepartment.toLowerCase() === department.toLowerCase()) {
-        // Patients are already inside this department — announce the room only.
-        const destination = room ? `Room ${room}` : "the front desk";
-        audio.speak(`Ticket ${ticketCode}, please proceed to ${destination}`);
-        setJustCalledId(payload.id ?? null);
-      }
-    }
-  }, [realtime.lastEvent, audio, department]);
+    // Recalled tickets re-enter the queue silently — only real calls announce.
+    if (realtime.lastEvent.type !== "ticket.called") return;
 
+    const payload = realtime.lastEvent.payload ?? {};
+    const ticketCode = payload.ticket ?? "";
+    const eventDepartment = payload.department ?? "";
+    if (ticketCode && eventDepartment.toLowerCase() === department.toLowerCase()) {
+      enqueueAnnouncement({
+        id: payload.id ?? null,
+        ticket: ticketCode,
+        department: eventDepartment || null,
+        calledRoom: payload.room ?? null,
+        status: "called",
+        calledAt: payload.calledAt ?? realtime.lastEvent.timestamp ?? new Date().toISOString(),
+      });
+    }
+  }, [realtime.lastEvent, enqueueAnnouncement, department]);
+
+  // Speak each call as it becomes active — patients are already inside this
+  // department, so announce the room only.
   useEffect(() => {
-    if (!justCalledId) return undefined;
-    const id = window.setTimeout(() => setJustCalledId(null), 9000);
-    return () => window.clearTimeout(id);
-  }, [justCalledId]);
+    const call = announcements.active;
+    if (!call) return;
+    const destination = call.calledRoom ? `Room ${call.calledRoom}` : "the front desk";
+    audio.speak(`Ticket ${call.ticket}, please proceed to ${destination}`);
+  }, [announcements.active, audio]);
 
   const serving = queueQuery.data?.nowServing ?? [];
   const waiting = queueQuery.data?.waiting ?? [];

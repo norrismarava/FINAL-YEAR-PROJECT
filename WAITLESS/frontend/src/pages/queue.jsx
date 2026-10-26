@@ -30,7 +30,7 @@ import {
   priorityChipClass,
 } from "@/services/queueMeta";
 import { fetchDepartmentBoard, fetchQueueBoard } from "@/services/queueApi";
-import { useAudioCall } from "@/hooks/useAudioCall";
+import { useAnnouncementQueue, useAudioCall } from "@/hooks/useAudioCall";
 import { useQueueRealtime } from "@/sockets/QueueRealtimeProvider";
 import { useApiResource } from "@/hooks/useApiResource";
 import authBackground from "@/assets/BACKG.png";
@@ -132,8 +132,10 @@ export default function QueuePage() {
   const realtime = useQueueRealtime();
   const audio = useAudioCall();
   const lastProcessedEventRef = useRef(null);
-  const [justCalledId, setJustCalledId] = useState(null);
-  const [lastCalledTicket, setLastCalledTicket] = useState(null);
+  const announcements = useAnnouncementQueue({ holdMs: 9000 });
+  const enqueueAnnouncement = announcements.enqueue;
+  const justCalledId = announcements.active?.id ?? null;
+  const lastCalledTicket = announcements.active;
   const [searchParams, setSearchParams] = useSearchParams();
   const department = searchParams.get("dept") ?? "";
   const boardMode = searchParams.get("display") === "tv";
@@ -181,30 +183,39 @@ export default function QueuePage() {
     if (lastProcessedEventRef.current === realtime.lastEvent.timestamp) return;
     lastProcessedEventRef.current = realtime.lastEvent.timestamp;
 
-    if (realtime.lastEvent.type === "ticket.called" || realtime.lastEvent.type === "ticket.recalled") {
-      const payload = realtime.lastEvent.payload ?? {};
-      const ticketCode = payload.ticket ?? "";
-      const department = payload.department ?? "";
-      const room = payload.room ?? "";
-      if (ticketCode) {
-        // Voice mirrors the on-screen instruction exactly:
-        // "PROCEED TO ROOM 4" or "PROCEED TO LABORATORY"
-        const destination = room
-          ? `Room ${room}`
-          : department || "the service desk";
-        audio.speak(`Ticket ${ticketCode}, please proceed to ${destination}`);
-        setJustCalledId(payload.id ?? null);
-        setLastCalledTicket({
-          id: payload.id ?? null,
-          ticket: ticketCode,
-          department: department || null,
-          calledRoom: room || null,
-          status: "called",
-          calledAt: payload.calledAt ?? realtime.lastEvent.timestamp ?? new Date().toISOString(),
-        });
-      }
-    }
-  }, [realtime.lastEvent, audio]);
+    // Recalled tickets just re-enter the waiting list — they are announced
+    // again when actually called, so only real calls queue for the board.
+    if (realtime.lastEvent.type !== "ticket.called") return;
+
+    const payload = realtime.lastEvent.payload ?? {};
+    const ticketCode = payload.ticket ?? "";
+    const eventDepartment = payload.department ?? "";
+    const room = payload.room ?? "";
+    if (!ticketCode) return;
+    if (department && eventDepartment.toLowerCase() !== department.toLowerCase()) return;
+
+    enqueueAnnouncement({
+      id: payload.id ?? null,
+      ticket: ticketCode,
+      department: eventDepartment || null,
+      calledRoom: room || null,
+      status: "called",
+      calledAt: payload.calledAt ?? realtime.lastEvent.timestamp ?? new Date().toISOString(),
+    });
+  }, [realtime.lastEvent, enqueueAnnouncement, department]);
+
+  // Speak each call as it takes over the screen — queued calls play in order
+  // instead of cutting each other off.
+  useEffect(() => {
+    const call = announcements.active;
+    if (!call) return;
+    // Voice mirrors the on-screen instruction exactly:
+    // "PROCEED TO ROOM 4" or "PROCEED TO LABORATORY"
+    const destination = call.calledRoom
+      ? `Room ${call.calledRoom}`
+      : call.department || "the service desk";
+    audio.speak(`Ticket ${call.ticket}, please proceed to ${destination}`);
+  }, [announcements.active, audio]);
 
   // TV board: auto-enable spoken announcements (Google US English) so
   // the display works without any manual setup
@@ -217,11 +228,7 @@ export default function QueuePage() {
     }
   }, [boardMode, audio]);
 
-  useEffect(() => {
-    if (!justCalledId) return undefined;
-    const id = window.setTimeout(() => setJustCalledId(null), 9000);
-    return () => window.clearTimeout(id);
-  }, [justCalledId]);
+
 
   // Esc exits TV board mode
   useEffect(() => {
