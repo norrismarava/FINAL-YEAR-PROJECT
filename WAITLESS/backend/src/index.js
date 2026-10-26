@@ -307,7 +307,7 @@ router.register(
   withStaffAuth(["triage", "clinician", "lab-tech", "pharmacist", "radiologist"], callNextController),
 );
 router.register("GET", "/api/queue/board", queueBoardController);
-router.register("GET", "/api/queue/staff-board", withStaffAuth(["reception", "triage", "clinician", "admin"], queueBoardController));
+router.register("GET", "/api/queue/staff-board", withStaffAuth(["reception", "triage", "clinician", "pharmacist", "lab-tech", "radiologist", "admin"], queueBoardController));
 router.register("GET", "/api/eta/estimates", etaEstimatesController);
 router.register("GET", "/api/tickets/:id/eta", ticketETAController);
 router.register("GET", "/api/prescriptions", withStaffAuth(["clinician", "triage", "pharmacist"], prescriptionsListController));
