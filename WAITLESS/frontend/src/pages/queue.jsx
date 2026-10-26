@@ -205,7 +205,10 @@ export default function QueuePage() {
   }, [realtime.lastEvent, enqueueAnnouncement, department]);
 
   // Speak each call as it takes over the screen — queued calls play in order
-  // instead of cutting each other off.
+  // instead of cutting each other off. Depend on the stable `speak` callback,
+  // not the `audio` object — it is recreated every render and would retrigger
+  // (and cancel) the utterance on every clock tick.
+  const speak = audio.speak;
   useEffect(() => {
     const call = announcements.active;
     if (!call) return;
@@ -214,8 +217,8 @@ export default function QueuePage() {
     const destination = call.calledRoom
       ? `Room ${call.calledRoom}`
       : call.department || "the service desk";
-    audio.speak(`Ticket ${call.ticket}, please proceed to ${destination}`);
-  }, [announcements.active, audio]);
+    speak(`Ticket ${call.ticket}, please proceed to ${destination}`);
+  }, [announcements.active, speak]);
 
   // TV board: auto-enable spoken announcements (Google US English) so
   // the display works without any manual setup

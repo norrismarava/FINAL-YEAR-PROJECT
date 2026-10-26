@@ -98,13 +98,16 @@ export default function DepartmentBoardPage() {
   }, [realtime.lastEvent, enqueueAnnouncement, department]);
 
   // Speak each call as it becomes active — patients are already inside this
-  // department, so announce the room only.
+  // department, so announce the room only. Depend on the stable `speak`
+  // callback, not the `audio` object — it is recreated every render and would
+  // retrigger (and cancel) the utterance on every clock tick.
+  const speak = audio.speak;
   useEffect(() => {
     const call = announcements.active;
     if (!call) return;
     const destination = call.calledRoom ? `Room ${call.calledRoom}` : "the front desk";
-    audio.speak(`Ticket ${call.ticket}, please proceed to ${destination}`);
-  }, [announcements.active, audio]);
+    speak(`Ticket ${call.ticket}, please proceed to ${destination}`);
+  }, [announcements.active, speak]);
 
   const serving = queueQuery.data?.nowServing ?? [];
   const waiting = queueQuery.data?.waiting ?? [];
