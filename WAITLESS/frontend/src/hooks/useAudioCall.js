@@ -46,6 +46,8 @@ export function useAudioCall() {
   const [volume, setVolume] = useState(initial.volume);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const settingsRef = useRef(initial);
+  const audioCtxRef = useRef(null);
+  const utteranceRef = useRef(null);
 
   useEffect(() => {
     settingsRef.current = { enabled, voiceURI: selectedVoiceURI, rate, volume };
@@ -87,7 +89,13 @@ export function useAudioCall() {
     try {
       const Ctx = window.AudioContext || window.webkitAudioContext;
       if (!Ctx) return 0;
-      const ctx = new Ctx();
+      // Reuse one AudioContext — a fresh context created outside a user
+      // gesture can stay suspended (silent chime), and repeated contexts leak.
+      if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
+        audioCtxRef.current = new Ctx();
+      }
+      const ctx = audioCtxRef.current;
+      ctx.resume?.();
       const master = ctx.createGain();
       master.gain.value = 0.22 * (settingsRef.current.volume ?? 1);
       master.connect(ctx.destination);
@@ -104,7 +112,6 @@ export function useAudioCall() {
         osc.start(ctx.currentTime + i * 0.18);
         osc.stop(ctx.currentTime + i * 0.18 + 0.18);
       });
-      window.setTimeout(() => ctx.close().catch(() => {}), 900);
       return 480; // ms before speech starts
     } catch {
       return 0;
@@ -132,6 +139,8 @@ export function useAudioCall() {
       window.speechSynthesis.cancel();
       const delay = playChime();
       const utterance = buildUtterance(text);
+      // Chrome GC's unreferenced utterances mid-speech — keep a ref alive.
+      utteranceRef.current = utterance;
       // Chrome silently drops utterances queued synchronously after cancel().
       window.setTimeout(() => {
         window.speechSynthesis.resume();
