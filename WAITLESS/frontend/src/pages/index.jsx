@@ -563,7 +563,7 @@ function LiveTicker() {
    DEPARTMENTS
    ═══════════════════════════════════════════════ */
 const DEPT_DETAILS = {
-  OPD: { icon: Stethoscope, image: deptOpdImage, body: "General outpatient consultations, follow-up clinics, and referrals.", color: "from-teal-500/20 to-teal-600/5" },
+  OPD: { icon: Stethoscope, image: deptOpdImage, body: "One connected outpatient journey — observation, nurse consultation, and doctor consultation.", color: "from-teal-500/20 to-teal-600/5" },
   "Casualty / Triage": { icon: Siren, image: deptTriageImage, body: "24/7 emergency assessment with four-tier priority routing.", color: "from-red-500/20 to-red-600/5" },
   "OPD - Observation": { icon: Activity, image: deptObservationImage, body: "First OPD stop — vitals, weight, and quick nurse screening.", color: "from-teal-500/20 to-teal-600/5" },
   "OPD - Nurse Consultation": { icon: ClipboardList, image: deptNurseImage, body: "Nurse-led consultations and routine reviews for outpatients.", color: "from-cyan-500/20 to-cyan-600/5" },
@@ -600,12 +600,12 @@ function DepartmentsSection() {
         </Reveal>
 
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {DEPARTMENTS.map((dept, index) => {
+          {[...new Set(DEPARTMENTS.map((dept) => (dept.startsWith("OPD -") ? "OPD" : dept)))].map((dept, index) => {
             const detail = DEPT_DETAILS[dept];
             return (
               <Reveal key={dept} delay={(index % 3) * 100} scale className="h-full">
                 <Link
-                  to={`/department-board?dept=${encodeURIComponent(dept)}`}
+                  to={`/department-board?dept=${encodeURIComponent(dept === "OPD" ? "OPD - Doctor Consultation" : dept)}`}
                   className={`group relative flex h-full flex-col overflow-hidden rounded-[1.8rem] border border-white/[0.06] bg-gradient-to-br ${detail.color} p-6 backdrop-blur transition-all duration-500 hover:-translate-y-1.5 hover:border-teal-400/20 hover:shadow-[0_30px_80px_-30px_rgba(20,184,166,0.2)]`}
                 >
                   <div className="flex items-center justify-between gap-3">
