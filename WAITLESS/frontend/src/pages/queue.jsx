@@ -133,6 +133,7 @@ export default function QueuePage() {
   const audio = useAudioCall();
   const lastProcessedEventRef = useRef(null);
   const [justCalledId, setJustCalledId] = useState(null);
+  const [lastCalledTicket, setLastCalledTicket] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
   const department = searchParams.get("dept") ?? "";
   const boardMode = searchParams.get("display") === "tv";
@@ -195,6 +196,14 @@ export default function QueuePage() {
         const prefix = attempt > 1 ? `Second call. ` : "";
         audio.speak(`${prefix}Ticket ${ticketCode}, please proceed to ${destination}`);
         setJustCalledId(payload.id ?? null);
+        setLastCalledTicket({
+          id: payload.id ?? null,
+          ticket: ticketCode,
+          department: department || null,
+          calledRoom: room || null,
+          status: "called",
+          calledAt: payload.calledAt ?? realtime.lastEvent.timestamp ?? new Date().toISOString(),
+        });
       }
     }
   }, [realtime.lastEvent, audio]);
@@ -657,6 +666,7 @@ export default function QueuePage() {
           waiting={waiting}
           missed={missed}
           justCalledId={justCalledId}
+          lastCalledTicket={lastCalledTicket}
           now={now}
           totalWaiting={isDemo ? waiting.length : (queueQuery.data?.totalWaiting ?? waiting.length)}
           avgServiceTimeMinutes={isDemo ? 11 : (queueQuery.data?.avgServiceTimeMinutes ?? null)}
@@ -673,7 +683,7 @@ export default function QueuePage() {
    TV BOARD DISPLAY — fullscreen waiting-area signage (Qmatic-style).
    Giant "now calling" panel + serving/next lists + missed ticker.
    ================================================================ */
-function QueueBoardDisplay({ audio, serving, waiting, missed, justCalledId, now, totalWaiting, avgServiceTimeMinutes, department, onDepartmentChange, onExit }) {
+function QueueBoardDisplay({ audio, serving, waiting, missed, justCalledId, lastCalledTicket, now, totalWaiting, avgServiceTimeMinutes, department, onDepartmentChange, onExit }) {
   const [tipIndex, setTipIndex] = useState(0);
   const [qrDataUrl, setQrDataUrl] = useState(null);
 
@@ -696,8 +706,10 @@ function QueueBoardDisplay({ audio, serving, waiting, missed, justCalledId, now,
   // Most recently called ticket wins the hero panel
   const nowCalling =
     serving.find((t) => t.id === justCalledId) ??
+    (justCalledId ? lastCalledTicket : null) ??
     [...serving].sort((a, b) => new Date(b.calledAt ?? 0) - new Date(a.calledAt ?? 0))[0] ??
     null;
+  const nowServing = nowCalling?.status === "in-service";
   const otherServing = serving.filter((t) => t.id !== nowCalling?.id);
   const upNext = waiting.slice(0, 6);
   const tip = HEALTH_TIPS[tipIndex];
@@ -784,19 +796,21 @@ function QueueBoardDisplay({ audio, serving, waiting, missed, justCalledId, now,
         <div className="flex min-h-0 flex-col border-b border-white/10 lg:border-b-0 lg:border-r">
           <div className="flex min-h-0 flex-1 flex-col items-center justify-center p-8 pb-3">
             <div className="flex items-center gap-3 text-sm font-bold uppercase tracking-[0.35em] text-teal-300">
-              <span className="h-2.5 w-2.5 rounded-full bg-teal-400" style={{ animation: "boardDot 1.6s ease-in-out infinite" }} />
-              Now calling · Ticket number
+              <span className={`h-2.5 w-2.5 rounded-full ${nowServing ? "bg-amber-400" : "bg-teal-400"}`} style={{ animation: "boardDot 1.6s ease-in-out infinite" }} />
+              {nowServing ? "Now serving" : "Now calling"} · Ticket number
             </div>
           {nowCalling ? (
             <>
               <div
                 key={nowCalling.id}
                 className={`mt-6 rounded-[2rem] border-2 px-14 py-7 text-center transition-[border-color,background-color,box-shadow] duration-700 ${
-                  justCalledId === nowCalling.id
+                  justCalledId === nowCalling.id && !nowServing
                     ? "border-teal-300/70 bg-teal-400/10 shadow-[0_0_60px_-10px_rgba(45,212,191,0.5),inset_0_0_40px_-20px_rgba(45,212,191,0.4)]"
-                    : "border-white/10 bg-white/[0.04]"
+                    : nowServing
+                      ? "border-amber-300/50 bg-amber-400/10 shadow-[0_0_50px_-12px_rgba(251,191,36,0.35)]"
+                      : "border-white/10 bg-white/[0.04]"
                 }`}
-                style={justCalledId === nowCalling.id ? { animation: "boardFlash 1.8s ease-in-out infinite" } : { animation: "boardHeroIn .55s cubic-bezier(.22,1,.36,1) both" }}
+                style={justCalledId === nowCalling.id && !nowServing ? { animation: "boardFlash 1.8s ease-in-out infinite" } : { animation: "boardHeroIn .55s cubic-bezier(.22,1,.36,1) both" }}
               >
                 <div className="font-display font-bold leading-none tracking-tight text-teal-100" style={{ fontSize: "clamp(5rem, 12vw, 11rem)" }}>
                   {nowCalling.ticket}
@@ -807,7 +821,7 @@ function QueueBoardDisplay({ audio, serving, waiting, missed, justCalledId, now,
                     strokeWidth={3}
                   />
                   <span className="uppercase tracking-wide">
-                    Proceed to{" "}
+                    {nowServing ? "Now serving in " : "Proceed to "}
                     {nowCalling.calledRoom ? (
                       <span className="text-amber-300">Room {nowCalling.calledRoom}</span>
                     ) : (
@@ -831,7 +845,7 @@ function QueueBoardDisplay({ audio, serving, waiting, missed, justCalledId, now,
                 ) : null}
               </div>
               <div className="mt-6 max-w-xl text-center text-lg text-slate-400">
-                Please proceed to the service point now
+                {nowServing ? "Patient is being served — next tickets coming up" : "Please proceed to the service point now"}
               </div>
             </>
           ) : (

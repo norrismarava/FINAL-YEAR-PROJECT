@@ -521,7 +521,7 @@ function ServingTile({ ticket, onStatus, onTransfer, pending }) {
                 className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-primary px-3 text-[11px] font-bold uppercase tracking-wider text-primary-foreground transition hover:brightness-110 disabled:opacity-50"
               >
                 <Activity className="h-3 w-3" />
-                Start service
+                Now serving
               </button>
               <button
                 type="button"
