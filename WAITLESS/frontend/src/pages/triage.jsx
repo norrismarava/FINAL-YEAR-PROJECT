@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import { LoadingPanel } from "@/components/ui/system-loader";
+import { useAuth } from "@/auth/AuthProvider";
 import { useLiveRefresh } from "@/context/LiveRefreshContext";
 import { useApiAction, useApiResource } from "@/hooks/useApiResource";
 import { PRIORITY_META, priorityChipClass } from "@/services/queueMeta";
@@ -74,6 +75,9 @@ export default function TriagePage() {
   const realtime = useQueueRealtime();
   const [selectedId, setSelectedId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const auth = useAuth();
+  const canTriage = auth.hasRole(["triage"]);
+  const canPrescribe = auth.hasRole(["clinician"]);
 
   const loadWaitingTickets = useCallback(() => fetchTickets({ status: "waiting" }), []);
   const ticketsQuery = useApiResource(loadWaitingTickets, { enabled: isBrowser });
@@ -465,6 +469,8 @@ export default function TriagePage() {
                   </div>
                 ) : null}
 
+                {canTriage ? (
+                <>
                 {/* Vitals intake */}
                 <div className="mt-5">
                   <SectionLabel
@@ -652,9 +658,11 @@ export default function TriagePage() {
                     {assessmentMutation.error.message}
                   </div>
                 ) : null}
+                </>
+                ) : null}
 
-                <PrescriptionPanel ticketId={selected.id} />
-                <TestOrderPanel ticketId={selected.id} />
+                <PrescriptionPanel ticketId={selected.id} canCreate={canPrescribe} />
+                <TestOrderPanel ticketId={selected.id} canCreate={canPrescribe} />
                 <RoutingSuggestionBanner ticketId={selected.id} />
               </div>
             </>
@@ -772,7 +780,7 @@ function TriageField({ label, unit, full, children }) {
   );
 }
 
-function PrescriptionPanel({ ticketId }) {
+function PrescriptionPanel({ ticketId, canCreate = false }) {
   const { refreshToken } = useLiveRefresh();
   const [items, setItems] = useState([{ drugName: "", dosage: "", quantity: "", instructions: "" }]);
   const [notes, setNotes] = useState("");
@@ -934,7 +942,7 @@ function PrescriptionPanel({ ticketId }) {
             <p className="text-xs text-destructive">{createMut.error.message}</p>
           )}
         </div>
-      ) : (
+      ) : canCreate ? (
         <button
           type="button"
           onClick={() => setShowForm(true)}
@@ -943,7 +951,7 @@ function PrescriptionPanel({ ticketId }) {
           <Pill className="h-4 w-4" />
           New prescription
         </button>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -961,7 +969,7 @@ const TEST_TYPE_OPTIONS = [
   { value: "other", label: "Other" },
 ];
 
-function TestOrderPanel({ ticketId }) {
+function TestOrderPanel({ ticketId, canCreate = false }) {
   const { refreshToken } = useLiveRefresh();
   const [testType, setTestType] = useState("");
   const [priority, setPriority] = useState("routine");
@@ -1084,7 +1092,7 @@ function TestOrderPanel({ ticketId }) {
             <p className="text-xs text-destructive">{createMut.error.message}</p>
           )}
         </div>
-      ) : (
+      ) : canCreate ? (
         <button
           type="button"
           onClick={() => setShowForm(true)}
@@ -1093,7 +1101,7 @@ function TestOrderPanel({ ticketId }) {
           <FlaskConical className="h-4 w-4" />
           New test order
         </button>
-      )}
+      ) : null}
     </div>
   );
 }

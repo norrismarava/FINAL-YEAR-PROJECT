@@ -112,7 +112,7 @@ export default function UsersPage() {
               <span className="h-px w-9 bg-gradient-to-l from-transparent to-teal-300/60" />
             </div>
             <h1 className="mt-3 inline-flex items-center gap-4 font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">
-              Users
+              Staff
               <span className="mt-1 h-px w-10 bg-gradient-to-l from-transparent to-teal-300/50" />
             </h1>
             <p className="mt-3 text-sm leading-6 text-white/45 sm:text-base">

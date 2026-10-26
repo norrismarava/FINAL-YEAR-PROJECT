@@ -202,8 +202,8 @@ export function StaffQueueBoardPage() {
     {
       onSuccess: (res) => {
         refreshLiveData();
-        const roomSuffix = res?.ticket?.calledRoom ? ` — Room ${res.ticket.calledRoom}` : "";
-        toast.success(`${res?.ticket?.ticket ?? "Ticket"} called to ${res?.ticket?.department ?? callDept}${roomSuffix}.`);
+        const roomSuffix = res?.calledRoom ? ` — Room ${res.calledRoom}` : "";
+        toast.success(`${res?.ticket ?? "Ticket"} called to ${res?.department ?? callDept}${roomSuffix}.`);
       },
     },
   );
@@ -212,8 +212,8 @@ export function StaffQueueBoardPage() {
     {
       onSuccess: (res) => {
         refreshLiveData();
-        const ticketCode = res?.ticket?.ticket ?? "Ticket";
-        const nextStatus = res?.ticket?.status;
+        const ticketCode = res?.ticket ?? "Ticket";
+        const nextStatus = res?.status;
         const message =
           nextStatus === "completed"
             ? `Visit completed for ${ticketCode}.`
@@ -229,9 +229,9 @@ export function StaffQueueBoardPage() {
   const transferMutation = useApiAction(
     ({ id, department }) => transferTicket(id, department),
     {
-      onSuccess: (res) => {
+      onSuccess: (res, vars) => {
         refreshLiveData();
-        toast.success(`${res?.ticket?.ticket ?? "Ticket"} successfully transferred to ${res?.ticket?.department}.`);
+        toast.success(`${res?.ticket ?? "Ticket"} successfully transferred to ${vars?.department ?? res?.department}.`);
       },
     },
   );
@@ -258,7 +258,7 @@ export function StaffQueueBoardPage() {
     {
       onSuccess: (res) => {
         refreshLiveData();
-        toast.success(`${res?.ticket?.ticket ?? "Ticket"} sent back in the queue.`);
+        toast.success(`${res?.ticket ?? "Ticket"} sent back in the queue.`);
       },
     },
   );
@@ -705,7 +705,7 @@ function MissedRecallRow({ ticket }) {
     {
       onSuccess: (res) => {
         refreshLiveData();
-        toast.success(`${res?.ticket?.ticket ?? ticket.ticket ?? "Ticket"} successfully recalled into the queue.`);
+        toast.success(`${res?.ticket ?? ticket.ticket ?? "Ticket"} successfully recalled into the queue.`);
       },
     },
   );
