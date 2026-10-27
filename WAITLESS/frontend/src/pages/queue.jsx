@@ -201,6 +201,7 @@ export default function QueuePage() {
       calledRoom: room || null,
       status: "called",
       calledAt: payload.calledAt ?? realtime.lastEvent.timestamp ?? new Date().toISOString(),
+      holdMs: (payload.attempt ?? 1) > 1 ? 4000 : undefined,
     });
   }, [realtime.lastEvent, enqueueAnnouncement, department]);
 
@@ -988,6 +989,19 @@ function QueueBoardDisplay({ audio, serving, waiting, missed, justCalledId, last
           </div>
         </div>
       </footer>
+
+      {/* Sound blocked by browser autoplay policy — one tap unlocks it and
+          replays the missed announcement (handled by the unlock listener). */}
+      {audio?.audioBlocked ? (
+        <button
+          type="button"
+          onClick={audio.enableAudio}
+          className="fixed bottom-8 right-8 z-[120] flex items-center gap-3 rounded-full bg-amber-400 px-6 py-4 font-display text-base font-bold text-slate-950 shadow-2xl shadow-amber-500/30 transition hover:bg-amber-300"
+        >
+          <Volume2 className="h-5 w-5" />
+          Tap to enable audio announcements
+        </button>
+      ) : null}
     </div>,
     document.body,
   );

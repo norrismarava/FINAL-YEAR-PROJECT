@@ -45,9 +45,11 @@ export function useAudioCall() {
   const [rate, setRate] = useState(initial.rate);
   const [volume, setVolume] = useState(initial.volume);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [audioBlocked, setAudioBlocked] = useState(false);
   const settingsRef = useRef(initial);
   const audioCtxRef = useRef(null);
   const utteranceRef = useRef(null);
+  const blockedTextRef = useRef(null);
 
   useEffect(() => {
     settingsRef.current = { enabled, voiceURI: selectedVoiceURI, rate, volume };
@@ -112,7 +114,7 @@ export function useAudioCall() {
         osc.start(ctx.currentTime + i * 0.18);
         osc.stop(ctx.currentTime + i * 0.18 + 0.18);
       });
-      return 480; // ms before speech starts
+      return 300; // ms before speech starts — overlaps the second chime tone
     } catch {
       return 0;
     }
@@ -127,7 +129,16 @@ export function useAudioCall() {
       utterance.volume = volume;
       utterance.onstart = () => setIsSpeaking(true);
       utterance.onend = () => setIsSpeaking(false);
-      utterance.onerror = () => setIsSpeaking(false);
+      utterance.onerror = (event) => {
+        setIsSpeaking(false);
+        // Chrome rejects speech without a prior user gesture ('not-allowed')
+        // and drops the utterance entirely — remember it so the first real
+        // interaction can replay it instead of losing the call.
+        if (event?.error === "not-allowed") {
+          blockedTextRef.current = text;
+          setAudioBlocked(true);
+        }
+      };
       return utterance;
     },
     [voices, selectedVoiceURI, rate, volume],
@@ -183,12 +194,19 @@ export function useAudioCall() {
   }, [stop]);
 
   // Browsers gate speech/AudioContext playback behind a user gesture, so the
-  // engine warms up on the first real interaction with the board page.
+  // engine warms up on the first real interaction with the board page. Any
+  // announcement that was rejected while locked replays right after unlock.
   useEffect(() => {
     if (!supported) return undefined;
     const events = ["pointerdown", "keydown", "touchstart"];
     const unlock = () => {
       enableAudio();
+      const blockedText = blockedTextRef.current;
+      if (blockedText) {
+        blockedTextRef.current = null;
+        setAudioBlocked(false);
+        window.setTimeout(() => speak(blockedText), 150);
+      }
       events.forEach((type) => window.removeEventListener(type, unlock));
     };
     events.forEach((type) =>
@@ -197,7 +215,7 @@ export function useAudioCall() {
     return () => {
       events.forEach((type) => window.removeEventListener(type, unlock));
     };
-  }, [supported, enableAudio]);
+  }, [supported, enableAudio, speak]);
 
   // Chrome silently pauses speechSynthesis on idle/hidden tabs — queued calls
   // then play minutes late. Nudge resume() regularly so calls stay instant.
@@ -220,6 +238,7 @@ export function useAudioCall() {
     volume,
     setVolume,
     isSpeaking,
+    audioBlocked,
     speak,
     preview,
     stop,
@@ -244,14 +263,23 @@ export function useAnnouncementQueue({ holdMs = 9000 } = {}) {
     setActive(null);
   }, []);
 
+  // Promote the next pending item whenever the slot is free.
   useEffect(() => {
-    if (active || pending.length === 0) return undefined;
+    if (active || pending.length === 0) return;
     const [next, ...rest] = pending;
     setPending(rest);
     setActive(next);
-    const id = setTimeout(() => setActive(null), holdMs);
+  }, [active, pending]);
+
+  // Clear the active item once its hold expires. Kept separate from the
+  // promotion effect — scheduling the timeout there meant the effect's own
+  // cleanup (triggered by setActive) cancelled it instantly, so `active`
+  // never cleared and every call after the first queued forever.
+  useEffect(() => {
+    if (!active) return undefined;
+    const id = setTimeout(() => setActive(null), active.holdMs ?? holdMs);
     return () => clearTimeout(id);
-  }, [active, pending, holdMs]);
+  }, [active, holdMs]);
 
   return { active, pending, enqueue, clear };
 }

@@ -1,4 +1,4 @@
-const CACHE_NAME = "waitless-v12";
+const CACHE_NAME = "waitless-v13";
 const STATIC_ASSETS = ["/", "/index.html"];
 const IS_DEV_HOST = ["localhost", "127.0.0.1"].includes(self.location.hostname);
 

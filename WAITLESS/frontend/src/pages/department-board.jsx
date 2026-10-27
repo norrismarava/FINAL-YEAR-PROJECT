@@ -93,6 +93,7 @@ export default function DepartmentBoardPage() {
         calledRoom: payload.room ?? null,
         status: "called",
         calledAt: payload.calledAt ?? realtime.lastEvent.timestamp ?? new Date().toISOString(),
+        holdMs: (payload.attempt ?? 1) > 1 ? 4000 : undefined,
       });
     }
   }, [realtime.lastEvent, enqueueAnnouncement, department]);
