@@ -236,7 +236,7 @@ export default function ProfilePage() {
                   type="button"
                   onClick={handleAvatarRemove}
                   title="Remove photo"
-                  className="absolute -right-1 -top-1 z-10 grid h-7 w-7 place-items-center rounded-full border-2 border-[#0b1a26] bg-rose-500 text-white shadow-lg transition hover:bg-rose-400"
+                  className="absolute left-1/2 top-1/2 z-10 grid h-10 w-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 border-[#0b1a26] bg-rose-500/90 text-white shadow-lg transition hover:bg-rose-400"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
