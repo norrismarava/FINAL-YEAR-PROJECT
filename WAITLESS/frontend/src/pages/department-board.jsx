@@ -108,7 +108,7 @@ export default function DepartmentBoardPage() {
     const call = announcements.active;
     if (!call) return;
     const destination = call.calledRoom ? `Room ${call.calledRoom}` : "the front desk";
-    speak(`Ticket ${call.ticket}, please proceed to ${destination}`);
+    speak(`Ticket ${call.ticket}, please proceed to ${destination}. I repeat, ticket ${call.ticket}, please proceed to ${destination}.`);
   }, [announcements.active, speak]);
 
   const serving = queueQuery.data?.nowServing ?? [];
