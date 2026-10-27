@@ -12,6 +12,7 @@ const DashboardPage = lazy(() => import("@/pages/dashboard"));
 const AuditTrailPage = lazy(() => import("@/pages/audit-trail"));
 const ForgotPasswordPage = lazy(() => import("@/pages/forgot-password"));
 const LoginChooserPage = lazy(() => import("@/pages/login-chooser"));
+const PatientsPage = lazy(() => import("@/pages/patients"));
 const ProfilePage = lazy(() => import("@/pages/profile"));
 const QueuePage = lazy(() => import("@/pages/queue"));
 const RegisterPage = lazy(() => import("@/pages/register"));
@@ -222,7 +223,7 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="patients" element={<Navigate to="/admin/dashboard" replace />} />
+          <Route path="patients" element={<PatientsPage />} />
           <Route
             path="access-codes"
             element={
