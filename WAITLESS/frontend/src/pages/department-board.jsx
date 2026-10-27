@@ -183,6 +183,14 @@ export default function DepartmentBoardPage() {
               </div>
             </header>
 
+            {audio.supported && !audio.unlocked ? (
+              <div className="pointer-events-none fixed inset-x-0 top-24 z-50 flex justify-center">
+                <span className="animate-pulse rounded-full border border-amber-300/40 bg-amber-500/15 px-5 py-2 text-xs font-bold uppercase tracking-[0.2em] text-amber-200">
+                  Tap anywhere to enable audio announcements
+                </span>
+              </div>
+            ) : null}
+
             {/* Now Serving */}
             <div className="mt-6 page-section-rise page-section-rise-delay-1 px-5 sm:px-8">
               <div className="flex flex-wrap items-end justify-between gap-4">

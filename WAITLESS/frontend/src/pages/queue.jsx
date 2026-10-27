@@ -801,6 +801,14 @@ function QueueBoardDisplay({ audio, serving, waiting, missed, justCalledId, last
         </div>
       </header>
 
+      {audio.supported && !audio.unlocked ? (
+        <div className="pointer-events-none fixed inset-x-0 top-24 z-50 flex justify-center">
+          <span className="animate-pulse rounded-full border border-amber-300/40 bg-amber-500/15 px-5 py-2 text-xs font-bold uppercase tracking-[0.2em] text-amber-200">
+            Tap anywhere to enable audio announcements
+          </span>
+        </div>
+      ) : null}
+
       {/* ── Main grid ── */}
       <div className="grid min-h-0 flex-1 gap-0 lg:grid-cols-[1.6fr_1fr]">
         {/* NOW CALLING hero + health tip */}

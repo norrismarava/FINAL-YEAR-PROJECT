@@ -46,6 +46,7 @@ export function useAudioCall() {
   const [volume, setVolume] = useState(initial.volume);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [audioBlocked, setAudioBlocked] = useState(false);
+  const [unlocked, setUnlocked] = useState(false);
   const settingsRef = useRef(initial);
   const audioCtxRef = useRef(null);
   const utteranceRef = useRef(null);
@@ -207,6 +208,7 @@ export function useAudioCall() {
         setAudioBlocked(false);
         window.setTimeout(() => speak(blockedText), 150);
       }
+      setUnlocked(true);
       events.forEach((type) => window.removeEventListener(type, unlock));
     };
     events.forEach((type) =>
@@ -239,6 +241,7 @@ export function useAudioCall() {
     setVolume,
     isSpeaking,
     audioBlocked,
+    unlocked,
     speak,
     preview,
     stop,
