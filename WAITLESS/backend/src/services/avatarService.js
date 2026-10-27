@@ -51,7 +51,9 @@ export function saveAvatarImage(userId, avatarBase64) {
   fs.mkdirSync(avatarsDirectory, { recursive: true });
   fs.writeFileSync(avatarFilePath(userId), buffer);
 
-  return buildAvatarUrl(userId);
+  // Persist the image inline as well — deployed filesystems are ephemeral,
+  // so the DB copy is what keeps avatars alive across restarts/redeploys.
+  return `data:image/jpeg;base64,${normalizedBase64}`;
 }
 
 export function readAvatarImage(userId) {
