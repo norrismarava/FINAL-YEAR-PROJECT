@@ -228,7 +228,7 @@ export default function ProfilePage() {
                 initials={getStaffInitials(displayName)}
                 onImageReady={handleAvatarChange}
                 label="Change profile photo"
-                cropSource={user.avatarUrl}
+                cropSource={resolveProfileImageUrl(user.avatarUrl)}
                 showHint={false}
               />
               {avatarPreview ? (
