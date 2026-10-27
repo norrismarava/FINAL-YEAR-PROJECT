@@ -1,0 +1,678 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>WaitLess System Guide</title>
+<style>
+body{font-family:Segoe UI,Arial,sans-serif;max-width:800px;margin:0 auto;padding:40px;color:#1a2233;line-height:1.55;font-size:13.5px}
+h1{color:#0f766e;border-bottom:3px solid #14b8a6;padding-bottom:8px;font-size:26px}
+h2{color:#0f766e;margin-top:28px;font-size:19px}
+h3{color:#134e4a;font-size:15px}
+h4{font-size:13px}
+code{background:#f0fdfa;padding:1px 5px;border-radius:4px;font-size:12px}
+pre{background:#f0fdfa;padding:12px;border-radius:8px;overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th,td{border:1px solid #99f6e4;padding:6px 10px;text-align:left}
+th{background:#f0fdfa}
+blockquote{border-left:3px solid #14b8a6;margin:0;padding-left:14px;color:#475569}
+ul,ol{padding-left:22px}
+hr{border:none;border-top:1px solid #cbd5e1;margin:24px 0}
+</style></head><body><h1 id="waitless-digital-hospital-queue-management-system">WaitLess — Digital Hospital Queue Management System</h1>
+<h2 id="complete-system-guide-user-manual-problem-statement">Complete System Guide, User Manual &amp; Problem Statement</h2>
+<hr />
+<h1 id="table-of-contents">TABLE OF CONTENTS</h1>
+<ol>
+<li><a href="#1-problem-solved">Problem Solved</a></li>
+<li><a href="#2-how-the-system-works--end-to-end">How the System Works — End to End</a></li>
+<li><a href="#3-screens-displayed-at-each-department">Screens Displayed at Each Department</a></li>
+<li><a href="#4-patient-guide--step-by-step">Patient Guide — Step by Step</a></li>
+<li><a href="#5-staff-guide--step-by-step">Staff Guide — Step by Step</a></li>
+<li><a href="#6-roadmap-verification--all-7-phases-implemented">Roadmap Verification — All 7 Phases Implemented</a></li>
+<li><a href="#7-unique-features-that-make-this-world-class">Unique Features That Make This World-Class</a></li>
+<li><a href="#8-deployment-guide">Deployment Guide</a></li>
+</ol>
+<hr />
+<h1 id="1-problem-solved">1. Problem Solved</h1>
+<h2 id="the-crisis-in-public-hospital-queues">The Crisis in Public Hospital Queues</h2>
+<p>Public hospitals in Zimbabwe — and across Sub-Saharan Africa — face a daily crisis in patient flow management. The current paper-based queue system at Chinhoyi Provincial Hospital creates suffering, inefficiency, and clinical danger. WaitLess was built to solve these specific, observed problems:</p>
+<h3 id="problem-1-patients-wait-blindly-for-hours">Problem 1: Patients Wait Blindly for Hours</h3>
+<p><strong>Before:</strong> Patients arrive at 6 AM, take a paper number, and sit in crowded corridors with no idea when they will be seen. A patient with a green (non-urgent) priority might wait 4–6 hours next to someone with a life-threatening condition. There is no visibility into queue position, no estimate of wait time, and no way to know if they are next or twenty patients away.</p>
+<p><strong>After WaitLess:</strong> Patients receive a digital ticket (e.g., <code>OPD-205</code>) and can track their live queue position on their phone at <code>/track</code>. They see exactly how many patients are ahead, their estimated wait time, and their current department. They can leave the waiting area and return when their turn approaches — they get a WhatsApp message before it is their turn.</p>
+<h3 id="problem-2-triage-priority-is-not-enforced">Problem 2: Triage Priority Is Not Enforced</h3>
+<p><strong>Before:</strong> Paper queues operate on a first-come, first-served basis. A patient arriving with chest pain at 10 AM is placed behind 40 patients who arrived at 6 AM for routine checkups. Nurses try to physically identify urgent cases by walking through the corridor, but this is unreliable and dangerous.</p>
+<p><strong>After WaitLess:</strong> The four-tier triage system (Red / Yellow / Green / Black) is digitally enforced. When a triage nurse assigns a Red priority, the patient automatically jumps to the front of the queue. The system continuously monitors wait times and triggers <strong>reassessment alerts</strong> for Red and Yellow patients who have been waiting too long, ensuring no critical patient is forgotten.</p>
+<h3 id="problem-3-no-communication-between-hospital-and-patient">Problem 3: No Communication Between Hospital and Patient</h3>
+<p><strong>Before:</strong> Once a patient takes a paper ticket, there is zero communication until a nurse shouts a number. If a patient steps outside for fresh air, uses the restroom, or goes to buy food, they risk missing their turn and losing their place in the queue entirely.</p>
+<p><strong>After WaitLess:</strong> Patients receive WhatsApp notifications at key moments:
+- <strong>Registration confirmation</strong> — "You are registered. Your ticket is OPD-205. Track at waitless.app/track"
+- <strong>Near-turn alert</strong> — "Your turn is approaching. Please return to the OPD waiting area."
+- <strong>Called notification</strong> — "OPD-205, please proceed to Room 3."
+- <strong>Missed turn</strong> — "You missed your turn. Please see the reception desk."
+- <strong>Transfer</strong> — "You have been moved to the Laboratory queue. Your new ticket is LAB-206."
+- <strong>Prescription ready</strong> — "Your prescription is ready at the Pharmacy window."
+- <strong>Test results ready</strong> — "Your lab results are ready. Please return to the doctor."</p>
+<h3 id="problem-4-staff-cannot-see-the-whole-hospital">Problem 4: Staff Cannot See the Whole Hospital</h3>
+<p><strong>Before:</strong> Each department operates in isolation. The OPD nurse does not know that 30 patients are backed up in the Laboratory. The hospital administrator has no real-time view of where bottlenecks are forming. Decisions are made reactively, after complaints.</p>
+<p><strong>After WaitLess:</strong> The staff dashboard provides a real-time command center showing:
+- Live queue counts per department
+- Patients currently being served
+- Wait time metrics and trends
+- Bottleneck detection alerts
+- Reassessment alerts for at-risk patients
+- Notification delivery status
+- AI-powered wait time predictions and bottleneck analysis</p>
+<h3 id="problem-5-no-data-for-hospital-management">Problem 5: No Data for Hospital Management</h3>
+<p><strong>Before:</strong> At the end of each day, someone manually counts paper tickets. There is no record of how long patients waited, which departments were slowest, or how many patients were seen vs. missed. Reports are estimates at best.</p>
+<p><strong>After WaitLess:</strong> The system automatically generates:
+- <strong>Daily patient reports</strong> by department, gender, age, and triage priority
+- <strong>Average waiting time</strong> per department with historical trends
+- <strong>Department performance</strong> reports (patients served, service time, queue length)
+- <strong>No-show reports</strong> correlating missed turns with notification delivery
+- <strong>Triage reports</strong> with timing, outcomes, and override tracking
+- <strong>Lab turnaround time</strong> reports
+- <strong>Staff workload</strong> reports
+- <strong>Peak hours analysis</strong> for resource planning
+- <strong>Queue congestion prediction</strong> using AI
+- <strong>Resource allocation suggestions</strong> using AI
+- All exportable to <strong>CSV, Excel, and PDF</strong></p>
+<h3 id="problem-6-paper-systems-fail-silently">Problem 6: Paper Systems Fail Silently</h3>
+<p><strong>Before:</strong> If the paper ticket book runs out, or gets wet, or is misnumbered, the system breaks. There is no backup. There is no recovery.</p>
+<p><strong>After WaitLess:</strong> The system runs on the hospital LAN with MySQL persistence. If the internet goes down, core queue operations continue. WhatsApp messages queue and send automatically when connectivity returns. Form data auto-saves so staff never lose a half-completed registration. A service worker caches the frontend for offline access.</p>
+<h3 id="problem-7-vulnerable-patients-are-disadvantaged">Problem 7: Vulnerable Patients Are Disadvantaged</h3>
+<p><strong>Before:</strong> Elderly patients, pregnant women, disabled persons, and children wait alongside everyone else. There is no systematic way to identify or prioritize vulnerable categories.</p>
+<p><strong>After WaitLess:</strong> Patient categories (Walk-in, Referred, Emergency, Elderly, Pregnant, Child, Disabled, Chronic) are captured at registration and visible to triage staff. The system supports confidential handling for OI Clinic patients (ART, TB, viral load, counselling, screening) with masked routing and restricted data views.</p>
+<hr />
+<h1 id="2-how-the-system-works-end-to-end">2. How the System Works — End to End</h1>
+<h2 id="architecture-overview">Architecture Overview</h2>
+<pre><code>┌─────────────────────────────────────────────────────────┐
+│                    PATIENT JOURNEY                        │
+│                                                          │
+│  Register → Triage → Queue → Called → Served → Complete  │
+│                                                          │
+│  At every step: WhatsApp + Push + Audio notifications    │
+└─────────────────────────────────────────────────────────┘
+         │              │              │
+         ▼              ▼              ▼
+┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+│  Reception   │ │  Triage     │ │  Clinician  │
+│  Desk        │ │  Station    │ │  Rooms      │
+└─────────────┘ └─────────────┘ └─────────────┘
+         │              │              │
+         ▼              ▼              ▼
+┌─────────────────────────────────────────────────────────┐
+│              BACKEND (Node.js + MySQL)                   │
+│                                                          │
+│  • Queue Service (registration, priority, calling)       │
+│  • Notification Service (WhatsApp, push, retry queue)     │
+│  • Triage Assessment (vitals, symptoms, emergency rules)  │
+│  • Department Modules (pharmacy, lab, OI clinic)          │
+│  • Reports &amp; Analytics (10 report types + AI insights)    │
+│  • Audit Trail (SHA-256 hash-chained, tamper-evident)     │
+│  • SSE Real-time Events (live updates to all screens)     │
+│  • Appointment System (booking, slots, reminders)         │
+│  • AI Service (wait prediction, bottleneck, chatbot)      │
+└─────────────────────────────────────────────────────────┘
+         │              │              │
+         ▼              ▼              ▼
+┌─────────────┐ ┌─────────────┐ ┌─────────────┐
+│  Public      │ │  Staff      │ │  Display    │
+│  Queue Board │ │  Dashboard  │ │  Boards     │
+│  (TV/Monitor)│ │  (Desktop)  │ │  (Per Dept) │
+└─────────────┘ └─────────────┘ └─────────────┘
+</code></pre>
+<h2 id="the-complete-patient-flow">The Complete Patient Flow</h2>
+<h3 id="step-1-registration-reception-desk-or-self-service">Step 1: Registration (Reception Desk or Self-Service)</h3>
+<p>A patient arrives at the hospital. They can be registered in three ways:</p>
+<p><strong>Option A — Staff Registration (Reception Desk):</strong>
+1. Reception staff log in at <code>/admin/register</code>
+2. Search for returning patients by name, phone, national ID, patient number, or QR code scan
+3. If new, capture: full name, national ID, phone number, address, date of birth, gender, patient category, next of kin name and phone, chief complaint, target department, WhatsApp notification consent
+4. System generates a unique ticket (e.g., <code>OPD-205</code>) with a QR code
+5. Patient receives a printed 80mm ticket with QR code and tracking URL
+6. WhatsApp registration confirmation sent immediately
+7. Patient appears in the department queue in real time</p>
+<p><strong>Option B — Self-Registration (Phone):</strong>
+1. Patient visits <code>/self-register</code> on their phone browser
+2. Fills in demographics and selects department
+3. Receives digital ticket number and tracking link
+4. Arrives at hospital and proceeds directly to triage</p>
+<p><strong>Option C — Kiosk Check-In (Hospital Entrance):</strong>
+1. Patient approaches the kiosk tablet at <code>/kiosk</code>
+2. Scans their patient QR code (camera-based) or enters phone number
+3. Selects department and visit reason
+4. Kiosk prints/ displays ticket number
+5. Patient proceeds to waiting area</p>
+<h3 id="step-2-triage-assessment">Step 2: Triage Assessment</h3>
+<ol>
+<li>Triage nurse logs in at <code>/admin/triage</code></li>
+<li>Sees all waiting patients sorted by arrival time</li>
+<li>Opens a patient's triage assessment form</li>
+<li>Captures: chief complaint, symptoms, vital signs (BP, pulse, temperature, respiratory rate, oxygen saturation), pain level (0–10), severity, emergency indicators</li>
+<li>System <strong>automatically detects emergency triggers</strong> based on vital signs thresholds</li>
+<li>Nurse assigns priority: <strong>Red</strong> (resuscitation), <strong>Yellow</strong> (urgent), <strong>Green</strong> (standard), <strong>Black</strong> (deceased/expectant)</li>
+<li>If Red is assigned, patient immediately jumps to front of queue</li>
+<li>System broadcasts real-time event — all screens update instantly</li>
+<li>If Red/Yellow patient waits too long, <strong>reassessment alert</strong> appears on dashboard</li>
+</ol>
+<h3 id="step-3-queue-waiting">Step 3: Queue Waiting</h3>
+<ol>
+<li>Patient waits in the waiting area or anywhere with phone access</li>
+<li>Public queue board displays on TV screens: "Now Serving: OPD-203 | Next: OPD-204, OPD-205..."</li>
+<li>Patient tracks position at <code>/track</code> by entering ticket code</li>
+<li>System sends WhatsApp <strong>near-turn notification</strong> when patient is 2–3 positions away</li>
+<li>Patient returns to waiting area</li>
+</ol>
+<h3 id="step-4-called-and-served">Step 4: Called and Served</h3>
+<ol>
+<li>Clinician clicks "Call Next" on the staff dashboard</li>
+<li>System calls the highest-priority, longest-waiting patient</li>
+<li>Patient's ticket appears on the public board as "Now Serving"</li>
+<li><strong>Audio announcement</strong> calls the ticket number (if audio enabled)</li>
+<li>WhatsApp "called" notification sent to patient</li>
+<li>Patient proceeds to consultation room</li>
+<li>After consultation, clinician can:</li>
+<li><strong>Complete the visit</strong> — patient is marked as served</li>
+<li><strong>Transfer to another department</strong> — patient moves to Lab/Pharmacy/Radiology queue</li>
+<li><strong>Order tests</strong> — lab/radiology orders created with lifecycle tracking</li>
+<li><strong>Prescribe medication</strong> — prescription routed to pharmacy</li>
+</ol>
+<h3 id="step-5-department-handoff-if-transferred">Step 5: Department Handoff (if transferred)</h3>
+<ol>
+<li>If transferred to Laboratory: patient appears in Lab queue, gets new ticket (e.g., <code>LAB-206</code>)</li>
+<li>Lab technician processes sample, tracks lifecycle: Pending → Sample Collected → In Progress → Completed</li>
+<li>When results are ready: <strong>test result notification</strong> sent, patient routed back to doctor</li>
+<li>If transferred to Pharmacy: patient appears in Pharmacy queue</li>
+<li>Pharmacist dispenses medication, marks prescription ready</li>
+<li><strong>Prescription ready notification</strong> sent to patient</li>
+<li>If out-of-stock: <strong>stock flag</strong> raised, patient notified</li>
+</ol>
+<h3 id="step-6-completion-and-feedback">Step 6: Completion and Feedback</h3>
+<ol>
+<li>Patient's visit is marked complete</li>
+<li>Patient can submit <strong>feedback</strong> via the patient portal (satisfaction, cleanliness, communication, wait time ratings)</li>
+<li>Hospital management views feedback in reports and analytics</li>
+</ol>
+<hr />
+<h1 id="3-screens-displayed-at-each-department">3. Screens Displayed at Each Department</h1>
+<h2 id="public-queue-board-queue">Public Queue Board (<code>/queue</code>)</h2>
+<p><strong>Displayed on:</strong> Large TV screens in the main waiting area</p>
+<p>Shows three columns:
+- <strong>Now Serving</strong> — Currently called ticket numbers per department (no patient names)
+- <strong>Waiting</strong> — Upcoming ticket numbers in queue order
+- <strong>Missed</strong> — Patients who missed their turn, eligible for recall</p>
+<p>Updated in real time via Server-Sent Events. No patient names shown — only ticket codes for privacy.</p>
+<h2 id="department-display-board-department-board">Department Display Board (<code>/department-board</code>)</h2>
+<p><strong>Displayed on:</strong> TV screens at each department's waiting area</p>
+<p>Shows:
+- Department-specific queue (e.g., Pharmacy only shows Pharmacy tickets)
+- Now serving ticket for that department
+- Next 5–10 patients in that department's queue
+- QR code for patients to scan and track on their phone
+- Department name and hospital branding</p>
+<h2 id="patient-tracking-page-track">Patient Tracking Page (<code>/track</code>)</h2>
+<p><strong>Displayed on:</strong> Patient's phone browser</p>
+<p>Shows:
+- Ticket code and department
+- Current position in queue
+- Number of patients ahead
+- Estimated wait time
+- Progress timeline (Registered → Triage → Waiting → Called → Served)
+- Notification history (what messages were sent)
+- Department directions (where to go next)</p>
+<h2 id="staff-dashboard-admindashboard">Staff Dashboard (<code>/admin/dashboard</code>)</h2>
+<p><strong>Displayed on:</strong> Staff desktop computers / tablets</p>
+<p>Shows:
+- Live metrics: total waiting, in service, transferred, completed today
+- Real-time queue table with priority colors, wait times, department filters
+- Action buttons: Call Next, Mark Missed, Recall, Transfer, Complete
+- Safety alerts: reassessment alerts for long-waiting Red/Yellow patients
+- Bottleneck alerts: departments with unusual load
+- Notification panel: recent WhatsApp/push delivery status
+- Analytics charts: queue trends, department load, priority distribution</p>
+<h2 id="triage-console-admintriage">Triage Console (<code>/admin/triage</code>)</h2>
+<p><strong>Displayed on:</strong> Triage nurse's desktop/tablet</p>
+<p>Shows:
+- List of waiting patients sorted by arrival time
+- Triage assessment form with vitals, symptoms, pain scale, emergency indicators
+- Priority assignment buttons (Red/Yellow/Green/Black)
+- Emergency fast-track trigger
+- Patient category badges (Elderly, Pregnant, Child, etc.)</p>
+<h2 id="pharmacy-module-adminpharmacy">Pharmacy Module (<code>/admin/pharmacy</code>)</h2>
+<p><strong>Displayed on:</strong> Pharmacist's desktop</p>
+<p>Shows:
+- Pharmacy queue with prescription status
+- Prescription details per patient
+- Stock availability flags
+- Dispensing workflow: Pending → Ready → Collected
+- Out-of-stock flagging with patient notification</p>
+<h2 id="laboratory-module-adminlaboratory">Laboratory Module (<code>/admin/laboratory</code>)</h2>
+<p><strong>Displayed on:</strong> Lab technician's desktop</p>
+<p>Shows:
+- Lab queue with test order details
+- Test lifecycle tracking: Pending → Sample Collected → In Progress → Completed
+- Turnaround time per test
+- Result-ready notifications and route-back to doctor</p>
+<h2 id="oi-clinic-module-adminoi-clinic">OI Clinic Module (<code>/admin/oi-clinic</code>)</h2>
+<p><strong>Displayed on:</strong> OI Clinic staff desktop</p>
+<p>Shows:
+- OI service streams: ART, TB, Viral Load, Counselling, Cervical Screening
+- Confidential patient handling with masked display
+- Visit tracking per service stream
+- OI summary dashboard</p>
+<h2 id="admin-dashboard-adminadmin-dashboard">Admin Dashboard (<code>/admin/admin-dashboard</code>)</h2>
+<p><strong>Displayed on:</strong> Hospital administrator's desktop</p>
+<p>Shows:
+- Hospital-wide overview with all departments
+- AI-powered wait time predictions
+- AI bottleneck analysis with recommendations
+- Resource allocation suggestions
+- Hospital configuration (name, departments, contact info)
+- Multi-hospital management (for hospital networks)
+- Sync/export/import controls for backup</p>
+<h2 id="reports-analytics-adminreports-adminanalytics">Reports &amp; Analytics (<code>/admin/reports</code>, <code>/admin/analytics</code>)</h2>
+<p><strong>Displayed on:</strong> Management desktop</p>
+<p>Shows:
+- 10 report types: Average Wait, Department Performance, No-Show, Triage, Lab Turnaround, Staff Workload, Out-of-Stock, Peak Hours, Congestion, Resource Allocation
+- Date range filters
+- Charts and tables
+- Export buttons: CSV, Excel (XLSX), PDF</p>
+<h2 id="patient-portal-patient">Patient Portal (<code>/patient/*</code>)</h2>
+<p><strong>Displayed on:</strong> Patient's phone browser</p>
+<p>Pages:
+- <strong>Dashboard</strong> (<code>/patient/dashboard</code>) — Active tickets, visit history, status timeline
+- <strong>Book Appointment</strong> (<code>/patient/bookings</code>) — View available slots, book/cancel appointments
+- <strong>Feedback</strong> (<code>/patient/feedback</code>) — Rate completed visits
+- <strong>Profile</strong> (<code>/patient/profile</code>) — View/edit personal info, change password
+- <strong>Settings</strong> (<code>/patient/settings</code>) — Notification preferences, push notification toggle</p>
+<hr />
+<h1 id="4-patient-guide-step-by-step">4. Patient Guide — Step by Step</h1>
+<h2 id="getting-started">Getting Started</h2>
+<h3 id="how-to-register">How to Register</h3>
+<ol>
+<li><strong>At the hospital:</strong> Go to the reception desk. The receptionist will capture your details and give you a ticket number (e.g., <code>OPD-205</code>) with a QR code.</li>
+<li><strong>From your phone:</strong> Visit the hospital's WaitLess app URL, tap "Get started today", fill in your details, and receive a digital ticket.</li>
+<li><strong>At the kiosk:</strong> Scan your patient QR code or enter your phone number at the kiosk tablet near the hospital entrance.</li>
+</ol>
+<h3 id="how-to-track-your-queue-position">How to Track Your Queue Position</h3>
+<ol>
+<li>Go to the tracking page (URL on your ticket or hospital website)</li>
+<li>Enter your ticket code (e.g., <code>OPD-205</code>)</li>
+<li>You will see:</li>
+<li>Your current position in the queue</li>
+<li>How many patients are ahead of you</li>
+<li>Estimated wait time</li>
+<li>What stage you are at (Registered, Triage, Waiting, Called)</li>
+<li>Where to go next</li>
+</ol>
+<h3 id="how-to-get-whatsapp-updates">How to Get WhatsApp Updates</h3>
+<ol>
+<li>When registering, provide your WhatsApp number and give consent</li>
+<li>You will automatically receive:</li>
+<li>A confirmation message with your ticket number</li>
+<li>A reminder when your turn is approaching</li>
+<li>A "please proceed" message when called</li>
+<li>A notification if you missed your turn</li>
+<li>Updates if you are transferred to another department</li>
+<li>A message when your prescription is ready at pharmacy</li>
+<li>A message when your lab results are ready</li>
+</ol>
+<h3 id="how-to-book-an-appointment">How to Book an Appointment</h3>
+<ol>
+<li>Log in to the patient portal</li>
+<li>Go to "Book Appointment"</li>
+<li>Select a date and service category</li>
+<li>View available time slots</li>
+<li>Book your slot</li>
+<li>You will receive a reminder before your appointment</li>
+</ol>
+<h3 id="how-to-leave-and-return">How to Leave and Return</h3>
+<ol>
+<li>You do not need to stay in the waiting area the entire time</li>
+<li>Track your position on your phone</li>
+<li>When you receive the "near-turn" WhatsApp message, return to the waiting area</li>
+<li>If you miss your turn, go to the reception desk — you will be recalled fairly</li>
+</ol>
+<h3 id="how-to-give-feedback">How to Give Feedback</h3>
+<ol>
+<li>After your visit is complete, log in to the patient portal</li>
+<li>Go to "Feedback"</li>
+<li>Rate your experience: satisfaction, cleanliness, communication, wait time</li>
+<li>Submit — your feedback helps improve the hospital</li>
+</ol>
+<h3 id="changing-language">Changing Language</h3>
+<ol>
+<li>Tap the language selector in the top navigation</li>
+<li>Choose: English, chiShona, or isiNdebele</li>
+<li>The entire interface switches to your language</li>
+</ol>
+<hr />
+<h1 id="5-staff-guide-step-by-step">5. Staff Guide — Step by Step</h1>
+<h2 id="for-reception-staff">For Reception Staff</h2>
+<h3 id="logging-in">Logging In</h3>
+<ol>
+<li>Go to <code>/admin/login</code></li>
+<li>Enter your username or email and password</li>
+<li>You will be redirected to the registration desk</li>
+</ol>
+<h3 id="registering-a-patient">Registering a Patient</h3>
+<ol>
+<li>Click "Register" in the sidebar</li>
+<li><strong>Returning patient?</strong> Search by name, phone, national ID, patient number, or scan their QR code</li>
+<li><strong>New patient?</strong> Fill in all required fields:</li>
+<li>Full name, national ID, date of birth, gender</li>
+<li>Phone number (for WhatsApp notifications)</li>
+<li>Address</li>
+<li>Patient category (Walk-in, Referred, Emergency, Elderly, Pregnant, Child, Disabled, Chronic)</li>
+<li>Next of kin name and phone</li>
+<li>Chief complaint</li>
+<li>Target department (OPD, Casualty, Pharmacy, Lab, Radiology, OI Clinic)</li>
+<li>Notification consent checkbox</li>
+<li>Click "Register Patient"</li>
+<li>A ticket is generated (e.g., <code>OPD-205</code>)</li>
+<li>Print the ticket or share to the patient's phone</li>
+<li>Patient appears in the queue immediately</li>
+</ol>
+<h3 id="managing-patient-search">Managing Patient Search</h3>
+<ul>
+<li>Use the search bar to find any patient by various identifiers</li>
+<li>Click on a patient to see their visit history and current tickets</li>
+<li>Reuse existing patient profiles — no duplicates</li>
+</ul>
+<h2 id="for-triage-nurses">For Triage Nurses</h2>
+<h3 id="performing-triage-assessment">Performing Triage Assessment</h3>
+<ol>
+<li>Click "Triage" in the sidebar</li>
+<li>You see all waiting patients, sorted by arrival time</li>
+<li>Click on a patient to open the triage form</li>
+<li>Capture:</li>
+<li><strong>Chief complaint</strong> (what the patient says is wrong)</li>
+<li><strong>Vital signs:</strong> Blood pressure, pulse, temperature, respiratory rate, oxygen saturation</li>
+<li><strong>Pain level:</strong> 0–10 scale</li>
+<li><strong>Symptoms and severity</strong></li>
+<li><strong>Emergency indicators:</strong> The system auto-detects critical thresholds</li>
+<li>Assign a priority:</li>
+<li><strong>Red</strong> — Resuscitation (immediate, life-threatening)</li>
+<li><strong>Yellow</strong> — Urgent (should be seen within 60 minutes)</li>
+<li><strong>Green</strong> — Standard (routine queue order)</li>
+<li><strong>Black</strong> — Deceased/expectant</li>
+<li>The system automatically re-sorts the queue by priority</li>
+<li>Red patients jump to the front immediately</li>
+</ol>
+<h3 id="responding-to-reassessment-alerts">Responding to Reassessment Alerts</h3>
+<ul>
+<li>If a Red or Yellow patient has been waiting too long, an alert appears on the dashboard</li>
+<li>Click the alert to re-evaluate the patient's condition</li>
+<li>You can upgrade priority if their condition has worsened</li>
+</ul>
+<h2 id="for-clinicians">For Clinicians</h2>
+<h3 id="calling-the-next-patient">Calling the Next Patient</h3>
+<ol>
+<li>Open the staff dashboard at <code>/admin/dashboard</code></li>
+<li>Click "Call Next" for your department</li>
+<li>The system calls the highest-priority, longest-waiting patient</li>
+<li>The patient's ticket appears on the public board</li>
+<li>WhatsApp notification is sent to the patient</li>
+<li>When the patient arrives, conduct the consultation</li>
+</ol>
+<h3 id="after-consultation">After Consultation</h3>
+<p>You can:
+- <strong>Mark as Complete</strong> — Patient visit is finished
+- <strong>Transfer to Department</strong> — Move patient to Lab, Pharmacy, Radiology, or OI Clinic
+- <strong>Order Tests</strong> — Create lab or radiology orders with test type and priority
+- <strong>Prescribe</strong> — Route prescription to pharmacy</p>
+<h3 id="managing-missed-patients">Managing Missed Patients</h3>
+<ol>
+<li>If a patient does not respond when called, click "Mark as Missed"</li>
+<li>The patient moves to the "Missed" lane on the board</li>
+<li>A missed-turn WhatsApp notification is sent</li>
+<li>When the patient returns, click "Recall" to reinsert them fairly</li>
+</ol>
+<h2 id="for-pharmacists">For Pharmacists</h2>
+<h3 id="pharmacy-workflow">Pharmacy Workflow</h3>
+<ol>
+<li>Open the Pharmacy module at <code>/admin/pharmacy</code></li>
+<li>See all patients in the pharmacy queue with prescription status</li>
+<li>Process each prescription:</li>
+<li>Check stock availability</li>
+<li>If out of stock, flag it — patient is automatically notified</li>
+<li>Dispense medication</li>
+<li>Mark as "Ready" — patient receives WhatsApp notification</li>
+<li>Mark as "Collected" when patient picks up</li>
+</ol>
+<h2 id="for-lab-technicians">For Lab Technicians</h2>
+<h3 id="laboratory-workflow">Laboratory Workflow</h3>
+<ol>
+<li>Open the Laboratory module at <code>/admin/laboratory</code></li>
+<li>See all pending test orders with details</li>
+<li>Update test lifecycle:</li>
+<li><strong>Pending</strong> → Order received</li>
+<li><strong>Sample Collected</strong> → Specimen obtained</li>
+<li><strong>In Progress</strong> → Test running</li>
+<li><strong>Completed</strong> → Results available</li>
+<li>When results are ready, the system:</li>
+<li>Sends a notification to the patient</li>
+<li>Routes the patient back to the doctor's queue</li>
+</ol>
+<h2 id="for-administrators">For Administrators</h2>
+<h3 id="managing-staff">Managing Staff</h3>
+<ol>
+<li>Go to <code>/admin/staff</code> (admin only)</li>
+<li>Create new staff accounts with appropriate roles</li>
+<li>Assign departments to staff</li>
+<li>Reset passwords if needed</li>
+</ol>
+<h3 id="viewing-audit-trail">Viewing Audit Trail</h3>
+<ol>
+<li>Go to <code>/admin/audit</code> (admin only)</li>
+<li>See every action taken in the system, with:</li>
+<li>Who did it (staff identity)</li>
+<li>When (timestamp)</li>
+<li>What changed (before/after values)</li>
+<li>Tamper-evident SHA-256 hash chain</li>
+</ol>
+<h3 id="generating-reports">Generating Reports</h3>
+<ol>
+<li>Go to <code>/admin/reports</code></li>
+<li>Select report type and date range</li>
+<li>View results in tables and charts</li>
+<li>Export to CSV, Excel, or PDF</li>
+</ol>
+<h3 id="viewing-analytics">Viewing Analytics</h3>
+<ol>
+<li>Go to <code>/admin/analytics</code></li>
+<li>See peak hours analysis, congestion prediction, resource allocation suggestions</li>
+<li>Use AI insights to optimize staffing and department capacity</li>
+</ol>
+<h3 id="configuring-the-system">Configuring the System</h3>
+<ol>
+<li>Go to <code>/admin/settings</code></li>
+<li>Configure hospital information, departments, triage thresholds</li>
+<li>Manage notification settings</li>
+<li>Configure multi-hospital settings if managing a network</li>
+</ol>
+<h3 id="managing-appointments">Managing Appointments</h3>
+<ol>
+<li>Go to <code>/admin/appointments</code></li>
+<li>View all appointments across departments</li>
+<li>See follow-up schedules</li>
+<li>Track appointment reminders</li>
+</ol>
+<hr />
+<h1 id="6-roadmap-verification-all-7-phases-implemented">6. Roadmap Verification — All 7 Phases Implemented</h1>
+<h2 id="phase-1-patient-intake-and-privacy">Phase 1: Patient Intake and Privacy ✅</h2>
+<ul>
+<li>✅ Electronic patient registration with full demographics</li>
+<li>✅ Returning patient search (name, phone, national ID, patient number, QR code)</li>
+<li>✅ Patient category identification (8 categories)</li>
+<li>✅ Next of kin capture (name and phone)</li>
+<li>✅ Notification consent capture</li>
+<li>✅ Anonymous public token display (no patient names on boards)</li>
+<li>✅ QR code patient/visit card</li>
+</ul>
+<h2 id="phase-2-triage-and-safety">Phase 2: Triage and Safety ✅</h2>
+<ul>
+<li>✅ Digital triage assessment with symptoms, vitals, pain level, risk indicators</li>
+<li>✅ Colour-coded priority assignment (Red/Yellow/Green/Black) with manual nurse override</li>
+<li>✅ Emergency fast-tracking for Red cases (auto-sort to front)</li>
+<li>✅ Reassessment alerts for long-waiting Red/Yellow patients</li>
+</ul>
+<h2 id="phase-3-queue-workflow">Phase 3: Queue Workflow ✅</h2>
+<ul>
+<li>✅ Department-specific queues (6 departments)</li>
+<li>✅ Call next patient by department and priority</li>
+<li>✅ Missed turn and recall handling</li>
+<li>✅ Queue transfer between OPD, Lab, Radiology, Pharmacy, OI Clinic, and Review</li>
+<li>✅ Waiting time estimation and bottleneck detection</li>
+</ul>
+<h2 id="phase-4-department-modules">Phase 4: Department Modules ✅</h2>
+<ul>
+<li>✅ Doctor-to-lab routing with test order lifecycle (Pending → Sample Collected → In Progress → Completed)</li>
+<li>✅ Doctor-to-pharmacy routing with prescription-ready notifications</li>
+<li>✅ Pharmacy stock issue flags with patient notification</li>
+<li>✅ OI Clinic service streams (ART, TB, Viral Load, Counselling, Screening)</li>
+</ul>
+<h2 id="phase-5-dashboards-and-reporting">Phase 5: Dashboards and Reporting ✅</h2>
+<ul>
+<li>✅ Department dashboards</li>
+<li>✅ Admin and hospital manager dashboards</li>
+<li>✅ Daily patient report</li>
+<li>✅ Waiting time report</li>
+<li>✅ Department performance report</li>
+<li>✅ No-show report</li>
+<li>✅ Triage report</li>
+<li>✅ Lab turnaround report</li>
+<li>✅ Staff workload report</li>
+<li>✅ Out-of-stock report</li>
+<li>✅ Peak hours report</li>
+<li>✅ Congestion report</li>
+<li>✅ Resource allocation report</li>
+<li>✅ CSV, Excel (XLSX), and PDF exports</li>
+</ul>
+<h2 id="phase-6-notifications-and-display-boards">Phase 6: Notifications and Display Boards ✅</h2>
+<ul>
+<li>✅ WhatsApp queue notifications (registration, near-turn, called, missed, transfer, prescription ready, test results)</li>
+<li>✅ Web push notifications (browser-based, patient opt-in)</li>
+<li>✅ Notification retry queue with automatic and manual retry</li>
+<li>✅ Notification audit log with delivery status and attempt tracking</li>
+<li>✅ Waiting-area display board (public, anonymous)</li>
+<li>✅ Department-specific display boards</li>
+<li>✅ Audio calling for token numbers</li>
+</ul>
+<h2 id="phase-7-advanced-readiness">Phase 7: Advanced Readiness ✅</h2>
+<ul>
+<li>✅ Low-bandwidth/local network operation (service worker caching, offline indicator)</li>
+<li>✅ Auto-save forms (form draft recovery for registration and triage)</li>
+<li>✅ Appointment booking and reminders (patient portal + staff management)</li>
+<li>✅ Multi-hospital configuration (hospital entity, per-facility settings)</li>
+<li>✅ Multi-language support (English, chiShona, isiNdebele)</li>
+<li>✅ Predictive waiting time (AI-powered wait time prediction)</li>
+<li>✅ Bottleneck detection (AI-powered congestion analysis)</li>
+<li>✅ Patient chatbot (AI assistant widget)</li>
+<li>✅ Idle logout (automatic session timeout for security)</li>
+<li>✅ Sync/backup/restore (export, import, backup controls)</li>
+<li>✅ Action-attributed audit trail (SHA-256 hash-chained, tamper-evident)</li>
+<li>✅ bcrypt password hashing (12 rounds for staff, secure hashing for patients)</li>
+<li>✅ Role-based access control (admin, reception, triage, clinician)</li>
+<li>✅ Code-splitting and lazy loading for performance</li>
+</ul>
+<hr />
+<h1 id="7-unique-features-that-make-this-world-class">7. Unique Features That Make This World-Class</h1>
+<h2 id="what-sets-waitless-apart-from-other-queue-systems">What Sets WaitLess Apart from Other Queue Systems</h2>
+<h3 id="1-triage-aware-queue-engine">1. Triage-Aware Queue Engine</h3>
+<p>Most queue systems are first-come, first-served. WaitLess enforces clinical triage priority — a Red patient who arrives at noon jumps ahead of 40 Green patients who arrived at 6 AM. The system continuously monitors and alerts if critical patients wait too long.</p>
+<h3 id="2-zero-cost-whatsapp-integration">2. Zero-Cost WhatsApp Integration</h3>
+<p>Uses Meta's WhatsApp Cloud API service conversation window — patients receive updates at no per-message cost to the hospital. Messages queue when the internet is down and send automatically when connectivity returns.</p>
+<h3 id="3-ai-powered-insights">3. AI-Powered Insights</h3>
+<ul>
+<li><strong>Wait time prediction</strong> — Uses historical data to predict how long a patient will wait</li>
+<li><strong>Bottleneck analysis</strong> — Identifies which departments are congested and why</li>
+<li><strong>Resource allocation</strong> — Suggests where to deploy staff for maximum impact</li>
+<li><strong>Patient chatbot</strong> — AI assistant answers common patient questions</li>
+</ul>
+<h3 id="4-offline-first-architecture">4. Offline-First Architecture</h3>
+<p>The system runs on the hospital LAN. A service worker caches the frontend. Core queue operations work without internet. WhatsApp messages queue and dispatch when connectivity returns. Form data auto-saves so staff never lose work.</p>
+<h3 id="5-multi-language-support">5. Multi-Language Support</h3>
+<p>Full interface translations in English, chiShona, and isiNdebele — the three main languages of Zimbabwe. Patients who cannot read English can navigate the system in their mother tongue.</p>
+<h3 id="6-tamper-evident-audit-trail">6. Tamper-Evident Audit Trail</h3>
+<p>Every action is recorded in a SHA-256 hash-chained audit log. Any tampering with historical records is mathematically detectable. This meets medical-legal compliance requirements.</p>
+<h3 id="7-confidential-oi-clinic-mode">7. Confidential OI Clinic Mode</h3>
+<p>Special handling for HIV/TB patients with masked routing and restricted data views — protecting patient privacy in stigmatized services.</p>
+<h3 id="8-three-registration-channels">8. Three Registration Channels</h3>
+<p>Staff desk registration, patient self-registration from phone, and kiosk check-in with QR scanning — covering every patient scenario from tech-savvy to elderly.</p>
+<h3 id="9-real-time-everything">9. Real-Time Everything</h3>
+<p>Server-Sent Events push updates to all screens instantly — no page refresh needed. The public board, staff dashboard, and patient tracking page all update simultaneously.</p>
+<h3 id="10-comprehensive-reporting-suite">10. Comprehensive Reporting Suite</h3>
+<p>10 different report types with CSV, Excel, and PDF export — giving hospital management the data they need to optimize operations, plan staffing, and demonstrate performance to regulators.</p>
+<h3 id="11-patient-portal-with-full-self-service">11. Patient Portal with Full Self-Service</h3>
+<p>Patients can register, track, book appointments, give feedback, manage their profile, and control notification preferences — all from their phone, without staff assistance.</p>
+<h3 id="12-multi-hospital-ready">12. Multi-Hospital Ready</h3>
+<p>The system supports hospital networks with per-facility configuration, making it scalable from a single clinic to a national hospital network.</p>
+<hr />
+<h1 id="8-deployment-guide">8. Deployment Guide</h1>
+<h2 id="prerequisites">Prerequisites</h2>
+<ul>
+<li>Node.js 18+ </li>
+<li>MySQL 8+ (or use file-based storage for development)</li>
+<li>WhatsApp Business API credentials (for live notifications)</li>
+</ul>
+<h2 id="environment-variables">Environment Variables</h2>
+<h3 id="backend">Backend</h3>
+<pre><code>PORT=4242
+DB_PROVIDER=mysql          # or 'file' for development
+DB_HOST=localhost
+DB_USER=waitless
+DB_PASSWORD=your_password
+DB_NAME=waitless_app
+JWT_SECRET=your_secret
+WHATSAPP_TOKEN=your_token
+WHATSAPP_PHONE_NUMBER_ID=your_phone_id
+INITIAL_ADMIN_PASSWORD=secure_password
+CORS_ORIGIN=https://your-domain.com
+</code></pre>
+<h3 id="frontend">Frontend</h3>
+<pre><code>VITE_API_BASE_URL=https://api.your-domain.com
+</code></pre>
+<h2 id="steps">Steps</h2>
+<ol>
+<li>
+<p><strong>Database Setup</strong>
+   <code>bash
+   mysql -u root -p &lt; backend/db/schema.sql</code></p>
+</li>
+<li>
+<p><strong>Backend</strong>
+   <code>bash
+   cd WAITLESS/backend
+   npm install
+   npm start</code></p>
+</li>
+<li>
+<p><strong>Frontend</strong>
+   <code>bash
+   cd WAITLESS/frontend
+   npm install
+   npm run build
+   # Serve dist/ with nginx or similar</code></p>
+</li>
+<li>
+<p><strong>Production</strong></p>
+</li>
+<li>Run backend behind a reverse proxy (nginx)</li>
+<li>Enable HTTPS (required for service worker, push notifications, WhatsApp webhooks)</li>
+<li>Set up WhatsApp webhook to point to <code>https://api.your-domain.com/api/integrations/whatsapp/webhook</code></li>
+<li>Configure CORS_ORIGIN to your frontend domain</li>
+<li>
+<p>Seed initial admin account via INITIAL_ADMIN_PASSWORD</p>
+</li>
+<li>
+<p><strong>Display Boards</strong></p>
+</li>
+<li>Mount TVs in waiting areas, open browser to <code>/queue</code> (main board) and <code>/department-board</code> (per department)</li>
+<li>
+<p>Set to kiosk mode (full screen, no address bar)</p>
+</li>
+<li>
+<p><strong>Staff Access</strong></p>
+</li>
+<li>Staff access via desktop browsers at <code>/admin/login</code></li>
+<li>Create staff accounts via admin panel at <code>/admin/staff</code></li>
+</ol>
+<hr />
+<p><em>WaitLess — Replacing confusion with a queue patients can trust.</em>
+<em>Built for Chinhoyi Provincial Hospital. Ready for the world.</em></p></body></html>

@@ -145,6 +145,7 @@ import { withChatbotRateLimit } from "./middleware/chatbotRateLimit.js";
 import { withRateLimit } from "./middleware/requestRateLimit.js";
 import { initializeQueueRepository } from "./repositories/queueRepository.js";
 import { initializeNotificationDeliveryService } from "./services/notificationService.js";
+import { initWhatsAppSession } from "./services/whatsAppProvider.js";
 import { startAutoMissSweeper } from "./services/autoMissService.js";
 import { seedDefaultAdmin } from "./db/seedAdmin.js";
 import { HttpError, sendJson } from "./utils/http.js";
@@ -618,6 +619,7 @@ async function startServer() {
   });
 
   console.log(`WaitLess backend listening on http://localhost:${env.port}`);
+  initWhatsAppSession();
 }
 
 startServer().catch((error) => {
