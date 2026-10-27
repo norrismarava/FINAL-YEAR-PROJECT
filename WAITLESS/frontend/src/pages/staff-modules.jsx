@@ -31,7 +31,7 @@ import {
   TrendingUp,
   Upload,
   Users,
-  Wifi,
+
   XCircle,
   X,
 } from "lucide-react";
@@ -302,7 +302,7 @@ export function StaffQueueBoardPage() {
             label="Now serving"
             value={serving.length}
             detail="Patients at a service desk"
-            icon={Wifi}
+            icon={Activity}
             accent="text-priority-green bg-priority-green/15"
           />
           <AdminMetricTile
