@@ -536,7 +536,7 @@ function ServingTile({ ticket, onStatus, onTransfer, onSendBack, pending }) {
         >
           {ticket.ticket}
         </span>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-priority-green/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-priority-green">
+        <span className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-priority-green/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-priority-green">
           <span className="h-1.5 w-1.5 rounded-full bg-priority-green" />
           {STATUS_META[ticket.status]?.label ?? ticket.status}
         </span>
