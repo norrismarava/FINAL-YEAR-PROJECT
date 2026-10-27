@@ -528,6 +528,8 @@ function ServingTile({ ticket, onStatus, onTransfer, onSendBack, pending }) {
       <div
         className={`absolute inset-x-0 top-0 h-0.5 ${PRIORITY_TOP_BAR[ticket.priority] ?? "bg-primary"}`}
       />
+      <div className="flex flex-col gap-4 sm:flex-row">
+        <div className="min-w-0 flex-1">
       <div className="flex items-start justify-between gap-2">
         <span
           className={`inline-grid h-10 w-16 place-items-center rounded-lg font-display text-sm font-bold ${priorityChipClass[ticket.priority]}`}
@@ -559,8 +561,9 @@ function ServingTile({ ticket, onStatus, onTransfer, onSendBack, pending }) {
           </span>
         ) : null}
       </div>
+        </div>
       {onStatus ? (
-        <div className="mt-3 flex flex-wrap gap-2">
+        <div className="mt-3 flex w-full flex-col gap-2 sm:mt-0 sm:w-56 sm:shrink-0">
           {isCalled ? (
             <>
               <button
@@ -623,6 +626,7 @@ function ServingTile({ ticket, onStatus, onTransfer, onSendBack, pending }) {
           ) : null}
         </div>
       ) : null}
+      </div>
     </article>
   );
 }
