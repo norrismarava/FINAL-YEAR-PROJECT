@@ -8,6 +8,7 @@ export function ProfilePhotoPicker({
   value,
   initials = "WL",
   onImageReady,
+  onRemove,
   disabled = false,
   label = "Choose profile photo",
   size = "large",
@@ -139,6 +140,7 @@ export function ProfilePhotoPicker({
           title={cropSrc ? "Reposition profile photo" : label}
           onConfirm={handleCropConfirm}
           onCancel={handleCropCancel}
+          onRemove={onRemove ? () => { handleCropCancel(); onRemove(); } : undefined}
         />
       ) : null}
     </div>

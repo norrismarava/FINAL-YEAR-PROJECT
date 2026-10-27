@@ -222,26 +222,15 @@ export default function ProfilePage() {
       <header className="surface-panel p-6 sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div className="flex min-w-0 flex-wrap items-start gap-5">
-            <div className="relative shrink-0">
-              <ProfilePhotoPicker
-                value={avatarPreview}
-                initials={getStaffInitials(displayName)}
-                onImageReady={handleAvatarChange}
-                label="Change profile photo"
-                cropSource={resolveProfileImageUrl(user.avatarUrl)}
-                showHint={false}
-              />
-              {avatarPreview ? (
-                <button
-                  type="button"
-                  onClick={handleAvatarRemove}
-                  title="Remove photo"
-                  className="absolute left-1/2 top-1/2 z-10 grid h-10 w-10 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 border-[#0b1a26] bg-rose-500/90 text-white shadow-lg transition hover:bg-rose-400"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              ) : null}
-            </div>
+            <ProfilePhotoPicker
+              value={avatarPreview}
+              initials={getStaffInitials(displayName)}
+              onImageReady={handleAvatarChange}
+              onRemove={avatarPreview ? handleAvatarRemove : undefined}
+              label="Change profile photo"
+              cropSource={resolveProfileImageUrl(user.avatarUrl)}
+              showHint={false}
+            />
             <div className="min-w-0">
               <div className="eyebrow">Staff profile</div>
               <div className="mt-2 flex flex-wrap items-center gap-2.5">

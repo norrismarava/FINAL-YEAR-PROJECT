@@ -15,7 +15,7 @@ function clampZoom(value) {
   return Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, value));
 }
 
-export function ImageCropDialog({ file, src, title = "Adjust profile photo", onConfirm, onCancel }) {
+export function ImageCropDialog({ file, src, title = "Adjust profile photo", onConfirm, onCancel, onRemove }) {
   const [image, setImage] = useState(null);
   const [error, setError] = useState("");
   const [dragging, setDragging] = useState(false);
@@ -335,6 +335,15 @@ export function ImageCropDialog({ file, src, title = "Adjust profile photo", onC
             Reset
           </button>
           <div className="flex items-center gap-2">
+            {onRemove ? (
+              <button
+                type="button"
+                onClick={onRemove}
+                className="rounded-lg border border-rose-300/30 bg-rose-500/15 px-4 py-2 text-xs font-semibold text-rose-300 transition hover:bg-rose-500/25"
+              >
+                Remove photo
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={onCancel}
