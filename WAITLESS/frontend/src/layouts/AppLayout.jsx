@@ -1033,9 +1033,12 @@ function StaffAccountMenu({ auth, displayName }) {
         aria-haspopup="menu"
         className="inline-flex h-11 items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.05] py-1.5 pl-1.5 pr-3 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-xl transition-all hover:border-teal-300/30 hover:bg-white/[0.08] hover:shadow-[0_0_0_3px_rgba(45,212,191,0.08)]"
       >
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[linear-gradient(135deg,rgba(13,148,136,0.55),rgba(34,211,238,0.35))]">
-          <UserRound className="h-4 w-4 text-white" />
-        </span>
+        <StaffAvatar
+          user={auth.user}
+          displayName={displayName}
+          className="grid h-8 w-8 place-items-center rounded-full bg-[linear-gradient(135deg,rgba(13,148,136,0.55),rgba(34,211,238,0.35))]"
+          fallbackClassName="text-xs font-bold text-white"
+        />
         <span className="hidden min-w-0 text-left sm:flex sm:flex-col sm:justify-center">
           <span className="truncate text-sm font-semibold leading-none text-white">
             {accountName}
