@@ -87,7 +87,7 @@ export default function App() {
           <Route
             path="triage"
             element={
-              <ProtectedRoute roles={["triage", "clinician"]}>
+              <ProtectedRoute roles={["triage", "clinician", "reception"]}>
                 <TriagePage />
               </ProtectedRoute>
             }

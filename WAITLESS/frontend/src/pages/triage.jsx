@@ -77,6 +77,7 @@ export default function TriagePage() {
   const [searchTerm, setSearchTerm] = useState("");
   const auth = useAuth();
   const canTriage = auth.hasRole(["triage"]);
+  const canAssignSeverity = auth.hasRole(["triage", "reception"]);
   const canPrescribe = auth.hasRole(["clinician"]);
 
   const loadWaitingTickets = useCallback(() => fetchTickets({ status: "waiting" }), []);
@@ -569,7 +570,11 @@ export default function TriagePage() {
                     </div>
                   </div>
                 ) : null}
+                </>
+                ) : null}
 
+                {canAssignSeverity ? (
+                <>
                 {/* Assign severity */}
                 <div className="mt-6">
                   <SectionLabel

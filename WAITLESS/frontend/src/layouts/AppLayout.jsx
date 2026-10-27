@@ -78,7 +78,7 @@ const navItems = [
   { to: "/", label: "Home", icon: House },
   { to: "/admin/register", label: "Register", roles: ["reception", "receptionist"], icon: ShieldPlus },
   { to: "/track", label: "Track Ticket", icon: Ticket },
-  { to: "/admin/triage", label: "Triage", roles: ["triage", "clinician"], icon: Stethoscope },
+  { to: "/admin/triage", label: "Triage", roles: ["triage", "clinician", "reception"], icon: Stethoscope },
   { to: "/queue", label: "Queue Board", icon: Search },
   {
     to: "/admin/settings",
@@ -115,7 +115,7 @@ const STAFF_WORKSPACE_ITEMS = [
     to: "/admin/triage",
     label: "Triage",
     icon: Stethoscope,
-    roles: ["triage", "clinician"],
+    roles: ["triage", "clinician", "reception"],
   },
   { group: "Clinical", to: "/admin/departments", label: "Departments", icon: Building2 },
   { group: "Clinical", to: "/admin/appointments", label: "Appointments", icon: CalendarDays },

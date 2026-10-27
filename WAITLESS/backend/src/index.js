@@ -280,12 +280,12 @@ router.register(
 router.register(
   "PATCH",
   "/api/tickets/:id/priority",
-  withStaffAuth(["triage"], assignPriorityController),
+  withStaffAuth(["triage", "reception"], assignPriorityController),
 );
 router.register(
   "POST",
   "/api/tickets/:id/triage-assessment",
-  withStaffAuth(["triage"], triageAssessmentController),
+  withStaffAuth(["triage", "reception"], triageAssessmentController),
 );
 router.register(
   "PATCH",
