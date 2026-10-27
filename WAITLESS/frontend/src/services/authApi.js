@@ -74,6 +74,10 @@ export async function uploadStaffAvatar(avatarBase64) {
   });
 }
 
+export async function removeStaffAvatar() {
+  return apiRequest("/api/profile/avatar", { method: "DELETE" });
+}
+
 export async function saveStaffProfile(payload) {
   return apiRequest("/api/profile", {
     method: "POST",

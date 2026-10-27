@@ -21,7 +21,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { ProfilePhotoPicker } from "@/components/ProfilePhotoPicker";
 import { LoadingPanel } from "@/components/ui/system-loader";
-import { changeStaffPassword, uploadStaffAvatar } from "@/services/authApi";
+import { changeStaffPassword, removeStaffAvatar, uploadStaffAvatar } from "@/services/authApi";
 import {
   formatStaffRoleLabel,
   getAvailableLandingPages,
@@ -151,6 +151,17 @@ export default function ProfilePage() {
     }
   }
 
+  async function handleAvatarRemove() {
+    try {
+      await removeStaffAvatar();
+      auth.updateAvatar(null);
+      setAvatarPreview("");
+      toast.success("Profile photo removed — back to the default avatar.");
+    } catch (error) {
+      toast.error(error.message ?? "Could not remove the profile photo.");
+    }
+  }
+
   function startEditRecord() {
     setRecordForm({
       fullName: user.name ?? "",
@@ -219,6 +230,15 @@ export default function ProfilePage() {
               cropSource={user.avatarUrl}
               showHint={false}
             />
+            {avatarPreview ? (
+              <button
+                type="button"
+                onClick={handleAvatarRemove}
+                className="mt-3 self-start rounded-lg border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-semibold text-slate-300 transition hover:border-rose-300/40 hover:text-rose-200"
+              >
+                Remove photo
+              </button>
+            ) : null}
             <div className="min-w-0">
               <div className="eyebrow">Staff profile</div>
               <div className="mt-2 flex flex-wrap items-center gap-2.5">

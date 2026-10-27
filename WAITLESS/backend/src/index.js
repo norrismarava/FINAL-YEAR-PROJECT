@@ -27,6 +27,7 @@ import {
   getAvatarController,
   getMeController,
   saveAvatarController,
+  removeAvatarController,
   saveProfileController,
 } from "./controllers/profileController.js";
 
@@ -183,6 +184,7 @@ router.register("POST", "/api/auth/login", loginRateLimit(loginController));
 router.register("GET", "/api/auth/me", getMeController);
 router.register("POST", "/api/profile", saveProfileController);
 router.register("POST", "/api/profile/avatar", saveAvatarController);
+router.register("DELETE", "/api/profile/avatar", removeAvatarController);
 router.register("GET", "/api/profile/avatar/:userId", getAvatarController);
 
 router.register("POST", "/api/auth/forgot-password", passwordResetRateLimit(forgotPasswordController));
