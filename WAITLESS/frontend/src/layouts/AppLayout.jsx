@@ -150,6 +150,13 @@ const STAFF_WORKSPACE_ITEMS = [
   },
   {
     group: "Admin",
+    to: "/admin/patients",
+    label: "Patients",
+    icon: UserRound,
+    roles: ["admin", "reception", "clinician", "triage"],
+  },
+  {
+    group: "Admin",
     to: "/admin/sync",
     label: "Sync & Backup",
     icon: Database,
