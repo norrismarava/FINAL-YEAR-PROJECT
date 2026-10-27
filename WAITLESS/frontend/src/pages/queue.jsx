@@ -219,7 +219,7 @@ export default function QueuePage() {
     const destination = call.calledRoom
       ? `Room ${call.calledRoom}`
       : call.department || "the service desk";
-    speak(`Ticket ${call.ticket}, please proceed to ${destination}. I repeat, ticket ${call.ticket}, please proceed to ${destination}.`);
+    speak(`Ticket ${call.ticket}, please proceed to ${destination}. Ticket ${call.ticket}, please proceed to ${destination}.`);
   }, [announcements.active, speak]);
 
   // TV board: auto-enable spoken announcements (Google US English) so
