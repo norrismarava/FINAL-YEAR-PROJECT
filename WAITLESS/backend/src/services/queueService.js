@@ -1289,6 +1289,10 @@ export async function updatePatientStatus(id, status, staff, room) {
   );
 
   if (status === "called") {
+    broadcastQueueEvent("ticket.called", createTicketEventPayload(updatedTicket));
+  }
+
+  if (status === "called") {
     await dispatchCallNotifications(updatedTicket);
   }
 
