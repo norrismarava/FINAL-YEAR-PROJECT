@@ -145,6 +145,7 @@ export default function ProfilePage() {
       auth.updateAvatar(response.avatarUrl);
       setAvatarPreview(resolveProfileImageUrl(response.avatarUrl));
       setSaved(true);
+      toast.success("Profile photo updated successfully.");
     } catch (error) {
       setAvatarPreview(previousAvatar);
       throw error;
@@ -156,7 +157,7 @@ export default function ProfilePage() {
       await removeStaffAvatar();
       auth.updateAvatar(null);
       setAvatarPreview("");
-      toast.success("Profile photo removed — back to the default avatar.");
+      toast.success("Profile photo removed, back to the default avatar.");
     } catch (error) {
       toast.error(error.message ?? "Could not remove the profile photo.");
     }
