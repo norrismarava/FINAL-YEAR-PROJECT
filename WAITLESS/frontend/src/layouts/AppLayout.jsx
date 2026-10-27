@@ -78,6 +78,7 @@ const navItems = [
   { to: "/", label: "Home", icon: House },
   { to: "/admin/register", label: "Register", roles: ["reception", "receptionist"], icon: ShieldPlus },
   { to: "/track", label: "Track Ticket", icon: Ticket },
+  { to: "/admin/patients", label: "Patients", roles: ["admin", "reception", "clinician", "triage"], icon: UserRound },
   { to: "/admin/triage", label: "Triage", roles: ["triage", "clinician", "reception"], icon: Stethoscope },
   { to: "/queue", label: "Queue Board", icon: Search },
   {
