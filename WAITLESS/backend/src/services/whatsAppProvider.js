@@ -202,8 +202,10 @@ async function getWebClient() {
   if (webClientPromise) return webClientPromise;
 
   webClientPromise = (async () => {
-    const { Client, LocalAuth } = await import("whatsapp-web.js");
-    const qrcode = await import("qrcode-terminal");
+    const wwebjs = await import("whatsapp-web.js");
+    const { Client, LocalAuth } = wwebjs.default ?? wwebjs;
+    const qrcodeMod = await import("qrcode-terminal");
+    const qrcode = qrcodeMod.default ?? qrcodeMod;
 
     const client = new Client({
       authStrategy: new LocalAuth({ dataPath: ".wwebjs_auth" }),
@@ -217,6 +219,10 @@ async function getWebClient() {
       client.on("qr", (qr) => {
         console.log("[whatsapp] Scan this QR code in WhatsApp > Linked devices:");
         qrcode.generate(qr, { small: true });
+        import("qrcode")
+          .then((QRCode) => QRCode.toFile("whatsapp-qr.png", qr, { width: 480, margin: 3 }))
+          .then(() => console.log("[whatsapp] QR also saved to backend/whatsapp-qr.png"))
+          .catch(() => {});
       });
       client.on("ready", () => {
         console.log("[whatsapp] whatsapp-web.js session ready — sending from your number.");
@@ -266,6 +272,14 @@ async function sendViaWhatsAppWeb(notification) {
       code: "WWEBJS_DELIVERY_FAILED",
     });
   }
+}
+
+export function initWhatsAppSession() {
+  if (env.whatsAppProvider !== "whatsapp-web") return;
+  getWebClient().catch((error) => {
+    console.warn(`[whatsapp] Failed to start session: ${error.message}`);
+    webClientPromise = null;
+  });
 }
 
 export async function sendWhatsAppMessage(notification) {
