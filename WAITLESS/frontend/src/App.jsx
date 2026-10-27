@@ -223,7 +223,14 @@ export default function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="patients" element={<PatientsPage />} />
+          <Route
+            path="patients"
+            element={
+              <ProtectedRoute roles={["admin"]}>
+                <PatientsPage />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="access-codes"
             element={
