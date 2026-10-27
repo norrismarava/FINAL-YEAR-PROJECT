@@ -1107,7 +1107,7 @@ function NotificationsBell() {
   const query = useApiResource(loader);
   const notifications = query.data?.notifications ?? [];
   const attentionCount = notifications.filter((n) =>
-    ["failed", "retrying"].includes(n.status),
+    ["queued", "failed", "retrying"].includes(n.status),
   ).length;
   const latest = notifications.slice(0, 7);
 

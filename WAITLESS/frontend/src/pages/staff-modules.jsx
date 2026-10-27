@@ -2,6 +2,9 @@ import { useCallback, useMemo, useState } from "react";
 import {
   Activity,
   AlertTriangle,
+  Baby,
+  Bandage,
+  Banknote,
   BellRing,
   Brain,
   Building2,
@@ -25,11 +28,13 @@ import {
   Send,
   ShieldCheck,
   Siren,
+  Smile,
   Sparkles,
   Stethoscope,
   Timer,
   TrendingUp,
   Upload,
+  UserRound,
   Users,
 
   XCircle,
@@ -92,11 +97,16 @@ import { useAuth } from "@/auth/AuthProvider";
 import { useQueueRealtime } from "@/sockets/QueueRealtimeProvider";
 import { exportCSV, exportPDF, exportXLSX } from "@/utils/reportExport";
 import deptOpdImage from "@/assets/Every service point, one queue/TRY OPD.jpeg";
+import deptObservationImage from "@/assets/Every service point, one queue/OPD.jpeg";
+import deptNurseImage from "@/assets/Every service point, one queue/TRIAGE1.jpg";
 import deptTriageImage from "@/assets/Every service point, one queue/TRIAGE.jpg";
 import deptPharmacyImage from "@/assets/Every service point, one queue/PHAMARCY.jpeg";
 import deptLabImage from "@/assets/Every service point, one queue/LABORATORY.jpeg";
 import deptRadiologyImage from "@/assets/Every service point, one queue/RADIOLOGY.jpg";
 import deptOiImage from "@/assets/Every service point, one queue/OI CLINIC.jpg";
+import deptDentalImage from "@/assets/Every service point, one queue/DENTAL.jpg";
+import deptTreatmentImage from "@/assets/Every service point, one queue/LABORATORY1.jpeg";
+import deptCashImage from "@/assets/Every service point, one queue/PHAMARCY1.jpeg";
 
 const isBrowser = typeof window !== "undefined";
 const EMPTY_LIST = [];
@@ -794,7 +804,7 @@ function MissedRecallRow({ ticket }) {
 
 
 const DEPT_CARD_META = {
-  OPD: {
+  "OPD - Doctor Consultation": {
     icon: Stethoscope,
     image: deptOpdImage,
     body: "General outpatient consultations, follow-up clinics, and referrals.",
@@ -803,6 +813,66 @@ const DEPT_CARD_META = {
     chip: "bg-teal-400/15 text-teal-200 ring-teal-300/25",
     stat: "border-teal-300/15 bg-teal-400/[0.06]",
     overlay: "from-teal-500/50",
+  },
+  "OPD - Observation": {
+    icon: Activity,
+    image: deptObservationImage,
+    body: "Short-stay observation beds for monitored outpatients.",
+    tint: "#2dd4bf",
+    text: "text-teal-200",
+    chip: "bg-teal-400/15 text-teal-100 ring-teal-300/25",
+    stat: "border-teal-300/15 bg-teal-400/[0.06]",
+    overlay: "from-teal-500/50",
+  },
+  "OPD - Nurse Consultation": {
+    icon: UserRound,
+    image: deptNurseImage,
+    body: "Nurse-led reviews, dressings, and routine outpatient care.",
+    tint: "#22d3ee",
+    text: "text-cyan-300",
+    chip: "bg-cyan-400/15 text-cyan-200 ring-cyan-300/25",
+    stat: "border-cyan-300/15 bg-cyan-400/[0.06]",
+    overlay: "from-cyan-500/50",
+  },
+  "Dental Clinic": {
+    icon: Smile,
+    image: deptDentalImage,
+    body: "Dental consultations, extractions, and oral health clinics.",
+    tint: "#34d399",
+    text: "text-emerald-300",
+    chip: "bg-emerald-400/15 text-emerald-200 ring-emerald-300/25",
+    stat: "border-emerald-300/15 bg-emerald-400/[0.06]",
+    overlay: "from-emerald-500/50",
+  },
+  "Mother & Child Health": {
+    icon: Baby,
+    image: deptObservationImage,
+    body: "Maternal care, immunisations, and child health clinics.",
+    tint: "#e879f9",
+    text: "text-fuchsia-300",
+    chip: "bg-fuchsia-400/15 text-fuchsia-200 ring-fuchsia-300/25",
+    stat: "border-fuchsia-300/15 bg-fuchsia-400/[0.06]",
+    overlay: "from-fuchsia-500/50",
+  },
+  "Treatment Room": {
+    icon: Bandage,
+    image: deptTreatmentImage,
+    body: "Procedures, injections, and wound care outside theatres.",
+    tint: "#4ade80",
+    text: "text-green-300",
+    chip: "bg-green-400/15 text-green-200 ring-green-300/25",
+    stat: "border-green-300/15 bg-green-400/[0.06]",
+    overlay: "from-green-500/50",
+  },
+  "Cash Office": {
+    icon: Banknote,
+    image: deptCashImage,
+    body: "Billing, receipts, and payment assistance for patients.",
+    tint: "#facc15",
+    text: "text-yellow-300",
+    chip: "bg-yellow-400/15 text-yellow-200 ring-yellow-300/25",
+    stat: "border-yellow-300/15 bg-yellow-400/[0.06]",
+    overlay: "from-yellow-500/50",
   },
   "Casualty / Triage": {
     icon: Siren,
