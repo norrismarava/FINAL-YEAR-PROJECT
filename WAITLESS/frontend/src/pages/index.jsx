@@ -478,23 +478,19 @@ function Hero() {
             </p>
           ) : null}
 
-          {/* Mini stats strip */}
-          <div
-            className="mt-10 flex max-w-xl divide-x divide-white/10 rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur"
-            style={{ animation: "hero-text-rise 0.9s cubic-bezier(0.16,1,0.3,1) 0.8s both" }}
-          >
+          {/* Mini stats row */}
+          <div className="mt-10 flex flex-wrap items-center gap-6" style={{ animation: "hero-text-rise 0.9s cubic-bezier(0.16,1,0.3,1) 0.8s both" }}>
             {[
-              { value: "247", label: "Patients today", dot: true },
+              { value: "247", label: "Patients today" },
               { value: "23m", label: "Median wait" },
               { value: "97%", label: "Uptime" },
             ].map((item) => (
-              <div key={item.label} className="flex-1 px-6 py-5">
-                <div className="text-2xl font-bold tracking-tight text-white" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
-                  {item.value}
-                </div>
-                <div className="mt-1 flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-[0.18em] text-white/45">
-                  {item.dot ? <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" /> : null}
-                  {item.label}
+              <div key={item.label} className="flex items-center gap-3">
+                <div>
+                  <div className="text-xl font-bold tracking-tight text-white" style={{ fontFamily: "Manrope, system-ui, sans-serif" }}>
+                    {item.value}
+                  </div>
+                  <div className="text-[11px] font-medium text-white/40">{item.label}</div>
                 </div>
               </div>
             ))}
