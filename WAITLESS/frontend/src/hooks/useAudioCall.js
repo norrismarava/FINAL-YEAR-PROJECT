@@ -154,6 +154,7 @@ export function useAudioCall() {
       // Chrome GC's unreferenced utterances mid-speech — keep a ref alive.
       utteranceRef.current = utterance;
       // Chrome silently drops utterances queued synchronously after cancel().
+      window.speechSynthesis.resume();
       window.setTimeout(() => {
         window.speechSynthesis.resume();
         window.speechSynthesis.speak(utterance);
@@ -225,7 +226,7 @@ export function useAudioCall() {
     if (!supported || !enabled) return undefined;
     const id = window.setInterval(() => {
       window.speechSynthesis.resume();
-    }, 5000);
+    }, 1500);
     return () => window.clearInterval(id);
   }, [supported, enabled]);
 
