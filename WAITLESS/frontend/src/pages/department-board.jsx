@@ -8,6 +8,7 @@ import {
   ShieldCheck,
   UserCheck,
   Users,
+  VolumeX,
   Wifi,
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
@@ -184,10 +185,11 @@ export default function DepartmentBoardPage() {
             </header>
 
             {audio.supported && !audio.unlocked ? (
-              <div className="pointer-events-none fixed inset-x-0 top-24 z-50 flex justify-center">
-                <span className="animate-pulse rounded-full border border-amber-300/40 bg-amber-500/15 px-5 py-2 text-xs font-bold uppercase tracking-[0.2em] text-amber-200">
-                  Tap anywhere to enable audio announcements
-                </span>
+              <div
+                className="pointer-events-none fixed bottom-5 right-5 z-50 flex h-11 w-11 items-center justify-center rounded-full border border-amber-300/40 bg-amber-500/15 text-amber-200 shadow-lg shadow-amber-500/10 animate-pulse"
+                title="Tap anywhere to enable audio announcements"
+              >
+                <VolumeX className="h-5 w-5" />
               </div>
             ) : null}
 
