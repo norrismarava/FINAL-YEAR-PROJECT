@@ -363,16 +363,39 @@ export function StaffQueueBoardPage() {
               count={serving.length}
             />
             {serving.length ? (
-              <div className="grid gap-3 p-5 sm:grid-cols-2">
-                {serving.map((ticket) => (
-                  <ServingTile
-                    key={ticket.id}
-                    ticket={ticket}
-                    pending={statusMutation.isPending || transferMutation.isPending}
-                    onStatus={setTicketStatus}
-                    onTransfer={transferTicketTo}
-                  />
-                ))}
+              <div className="space-y-5 p-5">
+                {serving.filter((t) => t.status === "called").length ? (
+                  <div>
+                    <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-400/80">Called — patient on the way</div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {serving.filter((t) => t.status === "called").map((ticket) => (
+                        <ServingTile
+                          key={ticket.id}
+                          ticket={ticket}
+                          pending={statusMutation.isPending || transferMutation.isPending}
+                          onStatus={setTicketStatus}
+                          onTransfer={transferTicketTo}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
+                {serving.filter((t) => t.status === "in-service").length ? (
+                  <div>
+                    <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-teal-300/80">Now serving — at the desk</div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {serving.filter((t) => t.status === "in-service").map((ticket) => (
+                        <ServingTile
+                          key={ticket.id}
+                          ticket={ticket}
+                          pending={statusMutation.isPending || transferMutation.isPending}
+                          onStatus={setTicketStatus}
+                          onTransfer={transferTicketTo}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             ) : (
               <AdminEmptyState message="No patients are currently being served." />
@@ -518,7 +541,7 @@ function ServingTile({ ticket, onStatus, onTransfer, pending }) {
                 type="button"
                 disabled={pending}
                 onClick={() => onStatus(ticket, "in-service")}
-                className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-primary px-3 text-[11px] font-bold uppercase tracking-wider text-primary-foreground transition hover:brightness-110 disabled:opacity-50"
+                className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-3 text-xs font-bold uppercase tracking-wider text-primary-foreground transition hover:brightness-110 disabled:opacity-50"
               >
                 <Activity className="h-3 w-3" />
                 Now serving
@@ -527,7 +550,7 @@ function ServingTile({ ticket, onStatus, onTransfer, pending }) {
                 type="button"
                 disabled={pending}
                 onClick={() => onStatus(ticket, "missed")}
-                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-destructive/40 px-3 text-[11px] font-bold uppercase tracking-wider text-destructive transition hover:bg-destructive/10 disabled:opacity-50"
+                className="inline-flex h-10 items-center gap-2 rounded-lg border border-destructive/40 px-3 text-xs font-bold uppercase tracking-wider text-destructive transition hover:bg-destructive/10 disabled:opacity-50"
               >
                 <XCircle className="h-3 w-3" />
                 Mark missed
@@ -539,7 +562,7 @@ function ServingTile({ ticket, onStatus, onTransfer, pending }) {
               type="button"
               disabled={pending}
               onClick={() => onStatus(ticket, "completed")}
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-emerald-600 px-3 text-[11px] font-bold uppercase tracking-wider text-white transition hover:brightness-110 disabled:opacity-50"
+              className="inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-600 px-3 text-xs font-bold uppercase tracking-wider text-white transition hover:brightness-110 disabled:opacity-50"
             >
               <CheckCircle2 className="h-3 w-3" />
               Complete visit
@@ -553,7 +576,7 @@ function ServingTile({ ticket, onStatus, onTransfer, pending }) {
                 if (e.target.value) onTransfer(ticket, e.target.value);
                 e.target.value = "";
               }}
-              className="input-base h-8 w-auto cursor-pointer text-[11px] font-semibold text-muted-foreground"
+              className="input-base h-10 w-auto cursor-pointer text-xs font-semibold text-muted-foreground"
             >
               <option value="" disabled>
                 Transfer to…
@@ -625,7 +648,7 @@ function WaitingQueueRow({ ticket, position, onCall, pending }) {
             type="button"
             disabled={pending}
             onClick={() => onCall(ticket)}
-            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-primary/40 px-3 text-[11px] font-bold uppercase tracking-wider text-primary transition hover:bg-primary/10 disabled:opacity-50"
+            className="inline-flex h-10 items-center gap-2 rounded-lg border border-primary/40 px-3 text-xs font-bold uppercase tracking-wider text-primary transition hover:bg-primary/10 disabled:opacity-50"
           >
             <BellRing className="h-3 w-3" />
             Call
@@ -2201,7 +2224,7 @@ export function NotificationsPage() {
                         type="button"
                         onClick={() => retryMutation.mutate(notification.id)}
                         disabled={retryMutation.isPending}
-                        className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-xs font-semibold hover:bg-muted disabled:opacity-60"
+                        className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-background px-3 text-xs font-semibold hover:bg-muted disabled:opacity-60"
                       >
                         {retryMutation.isPending && retryMutation.variables === notification.id ? (
                           <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
