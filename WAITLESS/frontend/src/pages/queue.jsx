@@ -694,7 +694,8 @@ function QueueBoardDisplay({ audio, serving, waiting, missed, justCalledId, last
 
   // QR to the public tracking page — patients scan and follow on their phone
   useEffect(() => {
-    QRCode.toDataURL(`${window.location.origin}/track`, {
+    const trackBase = (import.meta.env.VITE_PUBLIC_APP_URL ?? window.location.origin).replace(/\/$/, "");
+    QRCode.toDataURL(`${trackBase}/track`, {
       width: 160,
       margin: 1,
       color: { dark: "#5eead4", light: "#00000000" },

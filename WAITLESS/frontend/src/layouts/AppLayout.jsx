@@ -1058,7 +1058,7 @@ function StaffAccountMenu({ auth, displayName }) {
       {isOpen ? (
         <div className="absolute right-0 top-[calc(100%+0.75rem)] z-50 w-[min(15rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-cyan-200/12 bg-[linear-gradient(180deg,rgba(8,22,38,0.98),rgba(5,17,30,0.98))] text-white shadow-[0_28px_80px_-28px_rgba(2,6,23,0.8),0_0_0_1px_rgba(34,211,238,0.04)] backdrop-blur-2xl">
           {/* Account header */}
-          <div className="border-b border-white/10 px-4 pb-3.5 pt-4">
+          <div className="px-4 pb-3.5 pt-4">
             <div className="text-sm font-bold text-white">{displayName}</div>
             <div className="mt-0.5 truncate text-xs text-slate-400">
               {auth.user?.email ?? ""}
@@ -1084,8 +1084,6 @@ function StaffAccountMenu({ auth, displayName }) {
               Settings
             </Link>
           </div>
-
-          <div className="my-1.5 border-t border-white/10" />
 
           <div className="px-2 pb-2">
             <button

@@ -190,6 +190,16 @@ export function useAudioCall() {
     };
   }, [supported, enableAudio]);
 
+  // Chrome silently pauses speechSynthesis on idle/hidden tabs — queued calls
+  // then play minutes late. Nudge resume() regularly so calls stay instant.
+  useEffect(() => {
+    if (!supported || !enabled) return undefined;
+    const id = window.setInterval(() => {
+      window.speechSynthesis.resume();
+    }, 5000);
+    return () => window.clearInterval(id);
+  }, [supported, enabled]);
+
   return {
     supported,
     enabled,

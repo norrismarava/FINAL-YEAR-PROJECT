@@ -196,7 +196,7 @@ export function StaffQueueBoardPage() {
     ? auth.user.department
     : DEPARTMENTS[0];
   const [callDept, setCallDept] = useState(staffDept);
-  const [callRoom, setCallRoom] = useState(auth.user?.roomNumber ?? "");
+  const [callRoom, setCallRoom] = useState(() => window.localStorage.getItem("waitless_call_room") ?? auth.user?.roomNumber ?? "");
   const callMutation = useApiAction(
     ({ department, room }) => callNextPatient(department, room),
     {
@@ -278,6 +278,13 @@ export function StaffQueueBoardPage() {
               placeholder="e.g. 405"
               className="input-base h-9 w-20 text-xs"
             />
+            <button
+              type="button"
+              onClick={() => { window.localStorage.setItem("waitless_call_room", callRoom); toast.success(callRoom ? `Calls will announce Room ${callRoom}.` : "Room cleared — calls will announce the department."); }}
+              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-teal-400/40 px-3 text-xs font-bold uppercase tracking-wider text-teal-300 transition hover:bg-teal-400/10"
+            >
+              Update
+            </button>
           </label>
           <button
             type="button"
@@ -541,7 +548,7 @@ function ServingTile({ ticket, onStatus, onTransfer, pending }) {
                 type="button"
                 disabled={pending}
                 onClick={() => onStatus(ticket, "in-service")}
-                className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-3 text-xs font-bold uppercase tracking-wider text-primary-foreground transition hover:brightness-110 disabled:opacity-50"
+                className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-3 text-xs font-bold uppercase tracking-wider text-primary-foreground transition hover:brightness-110 disabled:opacity-50"
               >
                 <Activity className="h-3 w-3" />
                 Now serving
@@ -550,7 +557,7 @@ function ServingTile({ ticket, onStatus, onTransfer, pending }) {
                 type="button"
                 disabled={pending}
                 onClick={() => onStatus(ticket, "missed")}
-                className="inline-flex h-10 items-center gap-2 rounded-lg border border-destructive/40 px-3 text-xs font-bold uppercase tracking-wider text-destructive transition hover:bg-destructive/10 disabled:opacity-50"
+                className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-destructive/40 px-3 text-xs font-bold uppercase tracking-wider text-destructive transition hover:bg-destructive/10 disabled:opacity-50"
               >
                 <XCircle className="h-3 w-3" />
                 Mark missed
@@ -562,7 +569,7 @@ function ServingTile({ ticket, onStatus, onTransfer, pending }) {
               type="button"
               disabled={pending}
               onClick={() => onStatus(ticket, "completed")}
-              className="inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-600 px-3 text-xs font-bold uppercase tracking-wider text-white transition hover:brightness-110 disabled:opacity-50"
+              className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg bg-emerald-600 px-3 text-xs font-bold uppercase tracking-wider text-white transition hover:brightness-110 disabled:opacity-50"
             >
               <CheckCircle2 className="h-3 w-3" />
               Complete visit
@@ -576,7 +583,7 @@ function ServingTile({ ticket, onStatus, onTransfer, pending }) {
                 if (e.target.value) onTransfer(ticket, e.target.value);
                 e.target.value = "";
               }}
-              className="input-base h-10 w-auto cursor-pointer text-xs font-semibold text-muted-foreground"
+              className="input-base h-10 flex-1 cursor-pointer text-xs font-semibold text-muted-foreground"
             >
               <option value="" disabled>
                 Transfer to…
@@ -648,7 +655,7 @@ function WaitingQueueRow({ ticket, position, onCall, pending }) {
             type="button"
             disabled={pending}
             onClick={() => onCall(ticket)}
-            className="inline-flex h-10 items-center gap-2 rounded-lg border border-primary/40 px-3 text-xs font-bold uppercase tracking-wider text-primary transition hover:bg-primary/10 disabled:opacity-50"
+            className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-primary/40 px-3 text-xs font-bold uppercase tracking-wider text-primary transition hover:bg-primary/10 disabled:opacity-50"
           >
             <BellRing className="h-3 w-3" />
             Call
@@ -2224,7 +2231,7 @@ export function NotificationsPage() {
                         type="button"
                         onClick={() => retryMutation.mutate(notification.id)}
                         disabled={retryMutation.isPending}
-                        className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-background px-3 text-xs font-semibold hover:bg-muted disabled:opacity-60"
+                        className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-border bg-background px-3 text-xs font-semibold hover:bg-muted disabled:opacity-60"
                       >
                         {retryMutation.isPending && retryMutation.variables === notification.id ? (
                           <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
