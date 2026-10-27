@@ -128,7 +128,10 @@ export function useAudioCall() {
       if (voice) utterance.voice = voice;
       utterance.rate = rate;
       utterance.volume = volume;
-      utterance.onstart = () => setIsSpeaking(true);
+      utterance.onstart = () => {
+        setIsSpeaking(true);
+        setUnlocked(true);
+      };
       utterance.onend = () => setIsSpeaking(false);
       utterance.onerror = (event) => {
         setIsSpeaking(false);
