@@ -240,6 +240,23 @@ export function StaffQueueBoardPage() {
     });
   }
 
+  const sendBackMutation = useApiAction(
+    async ({ id, places }) => {
+      await updateTicketStatus(id, "missed");
+      return recallTicket(id, { reinsertionPosition: "places", places });
+    },
+    {
+      onSuccess: (res) => {
+        refreshLiveData();
+        toast.success(`${res?.ticket?.ticket ?? "Ticket"} sent back in the queue.`);
+      },
+    },
+  );
+
+  function sendBackInQueue(ticket, places) {
+    sendBackMutation.mutate({ id: ticket.id, places });
+  }
+
   function transferTicketTo(ticket, department) {
     transferMutation.mutate({ id: ticket.id, department });
   }
@@ -374,14 +391,15 @@ export function StaffQueueBoardPage() {
                 {serving.filter((t) => t.status === "called").length ? (
                   <div>
                     <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-amber-400/80">Called — patient on the way</div>
-                    <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="grid gap-3">
                       {serving.filter((t) => t.status === "called").map((ticket) => (
                         <ServingTile
                           key={ticket.id}
                           ticket={ticket}
-                          pending={statusMutation.isPending || transferMutation.isPending}
+                          pending={statusMutation.isPending || transferMutation.isPending || sendBackMutation.isPending}
                           onStatus={setTicketStatus}
                           onTransfer={transferTicketTo}
+                          onSendBack={sendBackInQueue}
                         />
                       ))}
                     </div>
@@ -390,14 +408,15 @@ export function StaffQueueBoardPage() {
                 {serving.filter((t) => t.status === "in-service").length ? (
                   <div>
                     <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.2em] text-teal-300/80">Now serving — at the desk</div>
-                    <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="grid gap-3">
                       {serving.filter((t) => t.status === "in-service").map((ticket) => (
                         <ServingTile
                           key={ticket.id}
                           ticket={ticket}
-                          pending={statusMutation.isPending || transferMutation.isPending}
+                          pending={statusMutation.isPending || transferMutation.isPending || sendBackMutation.isPending}
                           onStatus={setTicketStatus}
                           onTransfer={transferTicketTo}
+                          onSendBack={sendBackInQueue}
                         />
                       ))}
                     </div>
@@ -500,7 +519,7 @@ const PRIORITY_TOP_BAR = {
   black: "bg-priority-black",
 };
 
-function ServingTile({ ticket, onStatus, onTransfer, pending }) {
+function ServingTile({ ticket, onStatus, onTransfer, onSendBack, pending }) {
   const isCalled = ticket.status === "called";
   const inService = ticket.status === "in-service";
   const isUrgent = ticket.priority === "red";
@@ -553,15 +572,22 @@ function ServingTile({ ticket, onStatus, onTransfer, pending }) {
                 <Activity className="h-3 w-3" />
                 Now serving
               </button>
-              <button
-                type="button"
+              <select
                 disabled={pending}
-                onClick={() => onStatus(ticket, "missed")}
-                className="flex h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-destructive/40 px-3 text-xs font-bold uppercase tracking-wider text-destructive transition hover:bg-destructive/10 disabled:opacity-50"
+                value=""
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === "missed") onStatus(ticket, "missed");
+                  else if (v) onSendBack(ticket, Number(v));
+                  e.target.value = "";
+                }}
+                className="flex h-10 flex-1 cursor-pointer items-center justify-center rounded-lg border border-destructive/40 bg-background px-3 text-xs font-bold uppercase tracking-wider text-destructive transition hover:bg-destructive/10 disabled:opacity-50"
               >
-                <XCircle className="h-3 w-3" />
-                Mark missed
-              </button>
+                <option value="">Missed / send back…</option>
+                <option value="missed">To missed list</option>
+                <option value="2">Back 2 places</option>
+                <option value="3">Back 3 places</option>
+              </select>
             </>
           ) : null}
           {inService ? (

@@ -186,15 +186,13 @@ export default function QueuePage() {
       const ticketCode = payload.ticket ?? "";
       const department = payload.department ?? "";
       const room = payload.room ?? "";
-      const attempt = Number(payload.attempt ?? 1);
       if (ticketCode) {
         // Voice mirrors the on-screen instruction exactly:
         // "PROCEED TO ROOM 4" or "PROCEED TO LABORATORY"
         const destination = room
           ? `Room ${room}`
           : department || "the service desk";
-        const prefix = attempt > 1 ? `Second call. ` : "";
-        audio.speak(`${prefix}Ticket ${ticketCode}, please proceed to ${destination}`);
+        audio.speak(`Ticket ${ticketCode}, please proceed to ${destination}`);
         setJustCalledId(payload.id ?? null);
         setLastCalledTicket({
           id: payload.id ?? null,

@@ -82,12 +82,10 @@ export default function DepartmentBoardPage() {
       const ticketCode = payload.ticket ?? "";
       const eventDepartment = payload.department ?? "";
       const room = payload.room ?? "";
-      const attempt = Number(payload.attempt ?? 1);
       if (ticketCode && eventDepartment.toLowerCase() === department.toLowerCase()) {
         // Patients are already inside this department — announce the room only.
         const destination = room ? `Room ${room}` : "the front desk";
-        const prefix = attempt > 1 ? `Second call. ` : "";
-        audio.speak(`${prefix}Ticket ${ticketCode}, please proceed to ${destination}`);
+        audio.speak(`Ticket ${ticketCode}, please proceed to ${destination}`);
         setJustCalledId(payload.id ?? null);
       }
     }
