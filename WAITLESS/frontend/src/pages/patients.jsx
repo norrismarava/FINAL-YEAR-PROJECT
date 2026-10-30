@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { LoaderCircle, Search, Users } from "lucide-react";
+import { LoaderCircle, Search, Users, UserRound } from "lucide-react";
 
 import { useApiResource } from "@/hooks/useApiResource";
 import { searchPatientDirectory } from "@/services/authApi";
@@ -36,17 +36,22 @@ export default function PatientsPage() {
   return (
     <section className="space-y-5">
       <header className="surface-card flex flex-wrap items-center justify-between gap-4 rounded-2xl p-6">
-        <div>
-          <p className="text-[0.7rem] font-bold uppercase tracking-[0.24em] text-teal-300">
-            Patient records
-          </p>
-          <h1 className="mt-2 font-display text-2xl font-bold text-white sm:text-3xl">
-            Patients directory
-          </h1>
-          <p className="mt-1 text-sm text-slate-400">
-            Every registered patient profile and account. Search by name,
-            phone, national ID, or WL-P number.
-          </p>
+        <div className="flex items-center gap-4">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-400/20 to-sky-400/20">
+            <Users className="h-8 w-8 text-teal-300" />
+          </div>
+          <div>
+            <p className="text-[0.7rem] font-bold uppercase tracking-[0.24em] text-teal-300">
+              Patient records
+            </p>
+            <h1 className="mt-2 font-display text-2xl font-bold text-white sm:text-3xl">
+              Patients directory
+            </h1>
+            <p className="mt-1 text-sm text-slate-400">
+              Every registered patient profile and account. Search by name,
+              phone, national ID, or WL-P number.
+            </p>
+          </div>
         </div>
         <div className="relative w-full max-w-xs">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
@@ -94,8 +99,15 @@ export default function PatientsPage() {
               <tbody className="divide-y divide-white/10">
                 {entries.map((p) => (
                   <tr key={p.id} className="hover:bg-white/[0.03]">
-                    <td className="px-5 py-3 font-mono font-semibold text-teal-300">
-                      {p.patientNumber ?? "—"}
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-teal-400/20 to-sky-400/20">
+                          <UserRound className="h-5 w-5 text-teal-300" />
+                        </div>
+                        <span className="font-mono font-semibold text-teal-300">
+                          {p.patientNumber ?? "—"}
+                        </span>
+                      </div>
                     </td>
                     <td className="px-5 py-3 font-medium text-white">
                       {p.name ?? "—"}
@@ -129,10 +141,20 @@ export default function PatientsPage() {
             </table>
           </div>
         ) : (
-          <div className="px-5 py-10 text-center text-sm text-slate-400">
-            {debounced
-              ? "No patients match this search."
-              : "No patients registered yet."}
+          <div className="px-5 py-16 text-center">
+            <div className="mx-auto mb-4 flex h-20 w-20 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-400/10 to-sky-400/10">
+              <Users className="h-10 w-10 text-slate-500" />
+            </div>
+            <p className="text-sm font-medium text-slate-300">
+              {debounced
+                ? "No patients match this search."
+                : "No patients registered yet."}
+            </p>
+            <p className="mt-1 text-xs text-slate-500">
+              {debounced
+                ? "Try a different search term."
+                : "Patient profiles will appear here once registered."}
+            </p>
           </div>
         )}
       </div>
