@@ -668,6 +668,7 @@ export default function DashboardPage() {
           <RecentActivity
             activity={recentActivity}
             onRefresh={refreshLiveData}
+            refreshing={dashboardQuery.isLoading}
           />
 
           <SystemAlerts
@@ -1283,7 +1284,7 @@ function ChartLegend({ color, label }) {
   );
 }
 
-function RecentActivity({ activity, onRefresh }) {
+function RecentActivity({ activity, onRefresh, refreshing = false }) {
   return (
     <article className="rounded-2xl border border-white/[0.08] bg-[#111827] shadow-[0_12px_40px_rgba(0,0,0,0.18)] p-5 sm:p-6">
       <div className="flex items-center justify-between border-b border-white/[0.05] pb-4">
@@ -1300,10 +1301,11 @@ function RecentActivity({ activity, onRefresh }) {
         <button
           type="button"
           onClick={onRefresh}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500/20 bg-teal-500/10 px-3 py-1.5 text-xs font-medium text-teal-300 transition hover:bg-teal-500/20 hover:text-teal-200"
+          disabled={refreshing}
+          className="inline-flex items-center gap-1.5 rounded-lg border border-teal-500/20 bg-teal-500/10 px-3 py-1.5 text-xs font-medium text-teal-300 transition hover:bg-teal-500/20 hover:text-teal-200 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <RefreshCw className="h-3.5 w-3.5" />
-          Refresh
+          <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
+          {refreshing ? "Refreshing…" : "Refresh"}
         </button>
       </div>
 

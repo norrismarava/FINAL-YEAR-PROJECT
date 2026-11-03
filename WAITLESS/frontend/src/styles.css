@@ -1536,6 +1536,12 @@
   background-position: right 0.7rem center;
 }
 
+/* auth-glass-select draws its own chevron icon — suppress the CSS one */
+.staff-dashboard select.auth-glass-select,
+.dashboard-workspace-shell select.auth-glass-select {
+  background-image: none;
+}
+
 /* Calendar / clock picker glyphs read better slightly muted */
 .staff-dashboard input[type="date"]::-webkit-calendar-picker-indicator,
 .staff-dashboard input[type="time"]::-webkit-calendar-picker-indicator,
