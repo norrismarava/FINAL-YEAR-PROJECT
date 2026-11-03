@@ -721,3 +721,43 @@ VITE_API_BASE_URL=https://api.your-domain.com
 
 *WaitLess — Replacing confusion with a queue patients can trust.*
 *Built for Chinhoyi Provincial Hospital. Ready for the world.*
+
+---
+
+# System Updates — October 2026 (current state)
+
+This section reflects the system as deployed after the October stabilization pass.
+
+## Queue announcements & audio
+- Calls are **serialized FIFO**: each call holds the hero panel + speaker ~9s, then the next queued call takes over. Back-to-back calls no longer cut each other off.
+- Per-item `holdMs` supported; board announcements are scoped to their department.
+- **Recalls are silent** — returning a missed ticket to waiting is not announced; it is announced only when actually called again.
+- Both "Call next patient" and per-ticket **CALL** emit `ticket.called` — identical display + audio on every call path.
+- **Autoplay handling**: browsers require one user gesture before audio. Boards show a pulsing muted-volume icon (bottom-right) until speech is unlocked; a blocked first announcement replays automatically ~150ms after the first tap. For unattended TV displays, launch Chrome with `--autoplay-policy=no-user-gesture-required`.
+- Speech engine is nudged every 1.5s (`resume()`) and resumed immediately before each utterance, so calls no longer land seconds late.
+- Shared `AudioContext` (no per-call context leaks) and utterances are held in a ref to prevent Chrome GC cutting speech mid-word.
+
+## Roles & navigation
+- **Dentist** is a first-class staff role (clinician alias) — creation, permissions, navigation, landing.
+- Sidebar shows **Dashboard, Triage, Pharmacy, Laboratory, OI Clinic, Staff, Patients** filtered per role; `/admin/staff` redirects to `/admin/users`; Users renamed to **Staff**.
+- **Patients directory** (`/admin/patients`): searchable list of all `WL-P` profiles + patient accounts — accessible to admin, reception, clinician, triage.
+- Staff dashboard/workspace is uniform across staff roles.
+
+## Triage & severity
+- **Reception** can assign the severity color (Red/Yellow/Green/Black) at the Triage page; vitals intake remains nurse-only. Priority chips recolor the queue everywhere.
+- Clinicians (doctor + dentist) create **prescriptions and test orders** on the Triage page; the **Pharmacy** kanban lists every prescription across prescribers.
+- `/admin/triage` is open to triage, clinician, and reception with role-scoped sections.
+
+## Notifications (WhatsApp)
+- Provider `whatsapp-web` (`WHATSAPP_PROVIDER`) sends from a linked WhatsApp account via whatsapp-web.js; session persists in `backend/.wwebjs_auth`, QR also written to `backend/whatsapp-qr.png` for easy scanning. Requires the backend host to stay online — run locally for demos; Render's ephemeral filesystem doesn't retain the session.
+- Flow: self-register/pre-register sends **no** message. The `queue-registered` message (styled `*WaitLess — You're in the Queue*` with department, ticket, tracking link) fires on **confirm arrival** into a department queue; `queue-called` includes department + room.
+- Meta Cloud API provider remains for production; `WHATSAPP_DEFAULT_COUNTRY_CODE=263` normalizes Zim numbers.
+
+## Accounts & avatars
+- Staff/patient avatars are stored **in the database** (`avatar_url MEDIUMTEXT`, data URLs) — they survive Render's ephemeral filesystem. A "Remove photo" action resets to the default initials avatar (`DELETE /api/profile/avatar`).
+- Staff session TTL is 8h fixed (`AUTH_SESSION_TTL_MS`) — no idle logout.
+
+## Operations notes
+- Service worker (`public/sw.js`) uses stale-while-revalidate — bump `CACHE_NAME` after frontend changes if stale screens appear.
+- Render free tier sleeps after ~15 min idle; keeping a board open prevents it (boards poll).
+- `WAITLESS-OS` branch mirrors `main` as a backup snapshot.

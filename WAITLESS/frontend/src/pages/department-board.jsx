@@ -8,6 +8,7 @@ import {
   ShieldCheck,
   UserCheck,
   Users,
+  VolumeX,
   Wifi,
 } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
@@ -93,18 +94,22 @@ export default function DepartmentBoardPage() {
         calledRoom: payload.room ?? null,
         status: "called",
         calledAt: payload.calledAt ?? realtime.lastEvent.timestamp ?? new Date().toISOString(),
+        holdMs: (payload.attempt ?? 1) > 1 ? 4000 : undefined,
       });
     }
   }, [realtime.lastEvent, enqueueAnnouncement, department]);
 
   // Speak each call as it becomes active — patients are already inside this
-  // department, so announce the room only.
+  // department, so announce the room only. Depend on the stable `speak`
+  // callback, not the `audio` object — it is recreated every render and would
+  // retrigger (and cancel) the utterance on every clock tick.
+  const speak = audio.speak;
   useEffect(() => {
     const call = announcements.active;
     if (!call) return;
     const destination = call.calledRoom ? `Room ${call.calledRoom}` : "the front desk";
-    audio.speak(`Ticket ${call.ticket}, please proceed to ${destination}`);
-  }, [announcements.active, audio]);
+    speak(`Ticket ${call.ticket}, please proceed to ${destination}. Ticket ${call.ticket}, please proceed to ${destination}.`);
+  }, [announcements.active, speak]);
 
   const serving = queueQuery.data?.nowServing ?? [];
   const waiting = queueQuery.data?.waiting ?? [];
@@ -178,6 +183,15 @@ export default function DepartmentBoardPage() {
                 </div>
               </div>
             </header>
+
+            {audio.supported && !audio.unlocked ? (
+              <div
+                className="pointer-events-none fixed bottom-5 right-5 z-50 flex h-11 w-11 items-center justify-center rounded-full border border-amber-300/40 bg-amber-500/15 text-amber-200 shadow-lg shadow-amber-500/10 animate-pulse"
+                title="Tap anywhere to enable audio announcements"
+              >
+                <VolumeX className="h-5 w-5" />
+              </div>
+            ) : null}
 
             {/* Now Serving */}
             <div className="mt-6 page-section-rise page-section-rise-delay-1 px-5 sm:px-8">

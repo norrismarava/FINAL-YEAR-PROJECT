@@ -124,6 +124,32 @@ export async function saveAvatarController({ req, body }) {
   };
 }
 
+export async function removeAvatarController({ req }) {
+  const session = requireStaffSession(req);
+
+  const users = await getStoredStaffUsers();
+  const existing = users.find((u) => u.id === session.user.id);
+  if (!existing) {
+    return { status: 404, body: { message: "User not found." } };
+  }
+
+  await updateStaffUserAvatar(existing.id, { avatarUrl: null });
+
+  await recordAuditEventSafely({
+    actor: session.user,
+    action: "profile.avatar-removed",
+    entityType: "staff",
+    entityId: existing.id,
+    entityLabel: existing.username,
+    metadata: { hadAvatar: Boolean(existing.avatar_url) },
+  });
+
+  return {
+    status: 200,
+    body: { message: "Avatar removed", avatarUrl: null },
+  };
+}
+
 export async function getAvatarController({ params, res }) {
   const image = readAvatarImage(params.userId);
 

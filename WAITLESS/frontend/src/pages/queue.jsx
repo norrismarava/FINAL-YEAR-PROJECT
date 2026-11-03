@@ -20,6 +20,7 @@ import {
   UserCheck,
   Users,
   Volume2,
+  VolumeX,
 } from "lucide-react";
 
 import { LoadingPanel } from "@/components/ui/system-loader";
@@ -201,11 +202,15 @@ export default function QueuePage() {
       calledRoom: room || null,
       status: "called",
       calledAt: payload.calledAt ?? realtime.lastEvent.timestamp ?? new Date().toISOString(),
+      holdMs: (payload.attempt ?? 1) > 1 ? 4000 : undefined,
     });
   }, [realtime.lastEvent, enqueueAnnouncement, department]);
 
   // Speak each call as it takes over the screen — queued calls play in order
-  // instead of cutting each other off.
+  // instead of cutting each other off. Depend on the stable `speak` callback,
+  // not the `audio` object — it is recreated every render and would retrigger
+  // (and cancel) the utterance on every clock tick.
+  const speak = audio.speak;
   useEffect(() => {
     const call = announcements.active;
     if (!call) return;
@@ -214,8 +219,8 @@ export default function QueuePage() {
     const destination = call.calledRoom
       ? `Room ${call.calledRoom}`
       : call.department || "the service desk";
-    audio.speak(`Ticket ${call.ticket}, please proceed to ${destination}`);
-  }, [announcements.active, audio]);
+    speak(`Ticket ${call.ticket}, please proceed to ${destination}. Ticket ${call.ticket}, please proceed to ${destination}.`);
+  }, [announcements.active, speak]);
 
   // TV board: auto-enable spoken announcements (Google US English) so
   // the display works without any manual setup
@@ -797,6 +802,15 @@ function QueueBoardDisplay({ audio, serving, waiting, missed, justCalledId, last
         </div>
       </header>
 
+      {audio.supported && !audio.unlocked ? (
+        <div
+          className="pointer-events-none fixed bottom-5 right-5 z-50 flex h-11 w-11 items-center justify-center rounded-full border border-amber-300/40 bg-amber-500/15 text-amber-200 shadow-lg shadow-amber-500/10 animate-pulse"
+          title="Tap anywhere to enable audio announcements"
+        >
+          <VolumeX className="h-5 w-5" />
+        </div>
+      ) : null}
+
       {/* ── Main grid ── */}
       <div className="grid min-h-0 flex-1 gap-0 lg:grid-cols-[1.6fr_1fr]">
         {/* NOW CALLING hero + health tip */}
@@ -985,6 +999,19 @@ function QueueBoardDisplay({ audio, serving, waiting, missed, justCalledId, last
           </div>
         </div>
       </footer>
+
+      {/* Sound blocked by browser autoplay policy — one tap unlocks it and
+          replays the missed announcement (handled by the unlock listener). */}
+      {audio?.audioBlocked ? (
+        <button
+          type="button"
+          onClick={audio.enableAudio}
+          className="fixed bottom-8 right-8 z-[120] flex items-center gap-3 rounded-full bg-amber-400 px-6 py-4 font-display text-base font-bold text-slate-950 shadow-2xl shadow-amber-500/30 transition hover:bg-amber-300"
+        >
+          <Volume2 className="h-5 w-5" />
+          Tap to enable audio announcements
+        </button>
+      ) : null}
     </div>,
     document.body,
   );

@@ -29,7 +29,6 @@ import {
   Stethoscope,
   Ticket,
   UserRound,
-  UserSearch,
   Users,
   X,
   Youtube,
@@ -79,7 +78,8 @@ const navItems = [
   { to: "/", label: "Home", icon: House },
   { to: "/admin/register", label: "Register", roles: ["reception", "receptionist"], icon: ShieldPlus },
   { to: "/track", label: "Track Ticket", icon: Ticket },
-  { to: "/admin/triage", label: "Triage", roles: ["triage"], icon: Stethoscope },
+  { to: "/admin/patients", label: "Patients", roles: ["admin", "reception", "clinician", "triage"], icon: UserRound },
+  { to: "/admin/triage", label: "Triage", roles: ["triage", "clinician", "reception"], icon: Stethoscope },
   { to: "/queue", label: "Queue Board", icon: Search },
   {
     to: "/admin/settings",
@@ -116,9 +116,8 @@ const STAFF_WORKSPACE_ITEMS = [
     to: "/admin/triage",
     label: "Triage",
     icon: Stethoscope,
-    roles: ["triage"],
+    roles: ["triage", "clinician", "reception"],
   },
-  { group: "Clinical", to: "/admin/patients", label: "Patients", icon: UserSearch },
   { group: "Clinical", to: "/admin/departments", label: "Departments", icon: Building2 },
   { group: "Clinical", to: "/admin/appointments", label: "Appointments", icon: CalendarDays },
   { group: "Clinical", to: "/admin/follow-ups", label: "Follow-ups", icon: CalendarDays },
@@ -151,6 +150,13 @@ const STAFF_WORKSPACE_ITEMS = [
   },
   {
     group: "Admin",
+    to: "/admin/patients",
+    label: "Patients",
+    icon: UserRound,
+    roles: ["admin", "reception", "clinician", "triage"],
+  },
+  {
+    group: "Admin",
     to: "/admin/sync",
     label: "Sync & Backup",
     icon: Database,
@@ -159,7 +165,7 @@ const STAFF_WORKSPACE_ITEMS = [
   {
     group: "Admin",
     to: "/admin/users",
-    label: "Users",
+    label: "Staff",
     icon: Users,
     roles: ["admin"],
   },
@@ -1034,9 +1040,12 @@ function StaffAccountMenu({ auth, displayName }) {
         aria-haspopup="menu"
         className="inline-flex h-11 items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.05] py-1.5 pl-1.5 pr-3 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-xl transition-all hover:border-teal-300/30 hover:bg-white/[0.08] hover:shadow-[0_0_0_3px_rgba(45,212,191,0.08)]"
       >
-        <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[linear-gradient(135deg,rgba(13,148,136,0.55),rgba(34,211,238,0.35))]">
-          <UserRound className="h-4 w-4 text-white" />
-        </span>
+        <StaffAvatar
+          user={auth.user}
+          displayName={displayName}
+          className="grid h-8 w-8 place-items-center rounded-full bg-[linear-gradient(135deg,rgba(13,148,136,0.55),rgba(34,211,238,0.35))]"
+          fallbackClassName="text-xs font-bold text-white"
+        />
         <span className="hidden min-w-0 text-left sm:flex sm:flex-col sm:justify-center">
           <span className="truncate text-sm font-semibold leading-none text-white">
             {accountName}
@@ -1108,7 +1117,7 @@ function NotificationsBell() {
   const query = useApiResource(loader);
   const notifications = query.data?.notifications ?? [];
   const attentionCount = notifications.filter((n) =>
-    ["failed", "retrying"].includes(n.status),
+    ["queued", "failed", "retrying"].includes(n.status),
   ).length;
   const latest = notifications.slice(0, 7);
 

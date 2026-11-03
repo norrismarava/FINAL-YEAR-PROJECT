@@ -27,6 +27,7 @@ import {
   getAvatarController,
   getMeController,
   saveAvatarController,
+  removeAvatarController,
   saveProfileController,
 } from "./controllers/profileController.js";
 
@@ -145,6 +146,7 @@ import { withChatbotRateLimit } from "./middleware/chatbotRateLimit.js";
 import { withRateLimit } from "./middleware/requestRateLimit.js";
 import { initializeQueueRepository } from "./repositories/queueRepository.js";
 import { initializeNotificationDeliveryService } from "./services/notificationService.js";
+import { initWhatsAppSession } from "./services/whatsAppProvider.js";
 import { startAutoMissSweeper } from "./services/autoMissService.js";
 import { seedDefaultAdmin } from "./db/seedAdmin.js";
 import { HttpError, sendJson } from "./utils/http.js";
@@ -182,6 +184,7 @@ router.register("POST", "/api/auth/login", loginRateLimit(loginController));
 router.register("GET", "/api/auth/me", getMeController);
 router.register("POST", "/api/profile", saveProfileController);
 router.register("POST", "/api/profile/avatar", saveAvatarController);
+router.register("DELETE", "/api/profile/avatar", removeAvatarController);
 router.register("GET", "/api/profile/avatar/:userId", getAvatarController);
 
 router.register("POST", "/api/auth/forgot-password", passwordResetRateLimit(forgotPasswordController));
@@ -279,12 +282,12 @@ router.register(
 router.register(
   "PATCH",
   "/api/tickets/:id/priority",
-  withStaffAuth(["triage"], assignPriorityController),
+  withStaffAuth(["triage", "reception"], assignPriorityController),
 );
 router.register(
   "POST",
   "/api/tickets/:id/triage-assessment",
-  withStaffAuth(["triage"], triageAssessmentController),
+  withStaffAuth(["triage", "reception"], triageAssessmentController),
 );
 router.register(
   "PATCH",
@@ -618,6 +621,7 @@ async function startServer() {
   });
 
   console.log(`WaitLess backend listening on http://localhost:${env.port}`);
+  initWhatsAppSession();
 }
 
 startServer().catch((error) => {

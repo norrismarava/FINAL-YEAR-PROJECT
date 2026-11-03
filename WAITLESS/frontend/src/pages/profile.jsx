@@ -21,7 +21,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/auth/AuthProvider";
 import { ProfilePhotoPicker } from "@/components/ProfilePhotoPicker";
 import { LoadingPanel } from "@/components/ui/system-loader";
-import { changeStaffPassword, uploadStaffAvatar } from "@/services/authApi";
+import { changeStaffPassword, removeStaffAvatar, uploadStaffAvatar } from "@/services/authApi";
 import {
   formatStaffRoleLabel,
   getAvailableLandingPages,
@@ -145,9 +145,21 @@ export default function ProfilePage() {
       auth.updateAvatar(response.avatarUrl);
       setAvatarPreview(resolveProfileImageUrl(response.avatarUrl));
       setSaved(true);
+      toast.success("Profile photo updated successfully.");
     } catch (error) {
       setAvatarPreview(previousAvatar);
       throw error;
+    }
+  }
+
+  async function handleAvatarRemove() {
+    try {
+      await removeStaffAvatar();
+      auth.updateAvatar(null);
+      setAvatarPreview("");
+      toast.success("Profile photo removed, back to the default avatar.");
+    } catch (error) {
+      toast.error(error.message ?? "Could not remove the profile photo.");
     }
   }
 
@@ -215,8 +227,9 @@ export default function ProfilePage() {
               value={avatarPreview}
               initials={getStaffInitials(displayName)}
               onImageReady={handleAvatarChange}
+              onRemove={avatarPreview ? handleAvatarRemove : undefined}
               label="Change profile photo"
-              cropSource={user.avatarUrl}
+              cropSource={resolveProfileImageUrl(user.avatarUrl)}
               showHint={false}
             />
             <div className="min-w-0">

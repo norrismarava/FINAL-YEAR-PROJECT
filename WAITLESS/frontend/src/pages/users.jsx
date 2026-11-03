@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { LoaderCircle, Plus, Search, Trash2, Users, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -112,7 +113,7 @@ export default function UsersPage() {
               <span className="h-px w-9 bg-gradient-to-l from-transparent to-teal-300/60" />
             </div>
             <h1 className="mt-3 inline-flex items-center gap-4 font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">
-              Users
+              Staff
               <span className="mt-1 h-px w-10 bg-gradient-to-l from-transparent to-teal-300/50" />
             </h1>
             <p className="mt-3 text-sm leading-6 text-white/45 sm:text-base">
@@ -130,6 +131,14 @@ export default function UsersPage() {
             <Users className="h-3.5 w-3.5 text-teal-300" />
             {staff.length} staff member{staff.length === 1 ? "" : "s"}
           </span>
+
+          <Link
+            to="/admin/patients"
+            className="inline-flex items-center gap-2 rounded-full border border-teal-300/25 bg-teal-400/10 px-4 py-2 text-xs font-semibold text-teal-200 transition hover:bg-teal-400/20"
+          >
+            <Users className="h-3.5 w-3.5" />
+            Patients directory
+          </Link>
 
           <label className="relative min-w-56 flex-1 sm:max-w-sm">
             <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-white/35" />

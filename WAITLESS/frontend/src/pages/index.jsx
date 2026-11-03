@@ -457,17 +457,26 @@ function Hero() {
               <>
                 <Link
                   to="/self-register"
-                  className="group inline-flex min-h-[3.25rem] items-center gap-2.5 rounded-2xl bg-gradient-to-r from-teal-600 to-cyan-600 px-7 py-3.5 text-sm font-bold text-white shadow-[0_12px_36px_-12px_rgba(20,184,166,0.5)] transition-all hover:-translate-y-1 hover:shadow-[0_18px_44px_-14px_rgba(20,184,166,0.6)]"
+                  className="group inline-flex min-h-[3.25rem] items-center gap-2.5 rounded-full bg-teal-500 px-7 py-3.5 text-sm font-bold text-white shadow-[0_12px_36px_-12px_rgba(20,184,166,0.55)] transition-all hover:-translate-y-0.5 hover:bg-teal-400 hover:shadow-[0_18px_44px_-14px_rgba(20,184,166,0.65)]"
                 >
-                  Check in now, no account needed.
+                  Check in now
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </Link>
-                <Link to="/queue" className="inline-flex min-h-[3.25rem] items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.06] px-6 py-3.5 text-sm font-semibold text-white backdrop-blur transition-all hover:bg-white/[0.1]">
-                  <MonitorSmartphone className="h-4 w-4" />
+                <Link to="/queue" className="inline-flex min-h-[3.25rem] items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.06] px-6 py-3.5 text-sm font-semibold text-white backdrop-blur transition-all hover:bg-white/[0.1]">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                    <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                  </span>
                   View live queue
                 </Link>
               </>
             )}
           </div>
+          {!isStaff ? (
+            <p className="mt-4 text-sm text-white/50" style={{ animation: "hero-text-rise 0.9s cubic-bezier(0.16,1,0.3,1) 0.65s both" }}>
+              No account needed. Takes under a minute.
+            </p>
+          ) : null}
 
           {/* Mini stats row */}
           <div className="mt-10 flex flex-wrap items-center gap-6" style={{ animation: "hero-text-rise 0.9s cubic-bezier(0.16,1,0.3,1) 0.8s both" }}>

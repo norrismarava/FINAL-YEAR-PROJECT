@@ -12,6 +12,7 @@ const DashboardPage = lazy(() => import("@/pages/dashboard"));
 const AuditTrailPage = lazy(() => import("@/pages/audit-trail"));
 const ForgotPasswordPage = lazy(() => import("@/pages/forgot-password"));
 const LoginChooserPage = lazy(() => import("@/pages/login-chooser"));
+const PatientsPage = lazy(() => import("@/pages/patients"));
 const ProfilePage = lazy(() => import("@/pages/profile"));
 const QueuePage = lazy(() => import("@/pages/queue"));
 const RegisterPage = lazy(() => import("@/pages/register"));
@@ -22,7 +23,6 @@ const SettingsPage = lazy(() => import("@/pages/settings"));
 const StaffSignupPage = lazy(() => import("@/pages/staff-signup"));
 const UsersPage = lazy(() => import("@/pages/users"));
 const StaffAccessCodesPage = lazy(() => import("@/pages/staff-access-codes"));
-const PatientsPage = lazy(() => import("@/pages/patients"));
 const TrackPage = lazy(() => import("@/pages/track"));
 const TriagePage = lazy(() => import("@/pages/triage"));
 const DepartmentBoardPage = lazy(() => import("@/pages/department-board"));
@@ -88,7 +88,7 @@ export default function App() {
           <Route
             path="triage"
             element={
-              <ProtectedRoute roles={["triage"]}>
+              <ProtectedRoute roles={["triage", "clinician", "reception"]}>
                 <TriagePage />
               </ProtectedRoute>
             }
@@ -226,7 +226,7 @@ export default function App() {
           <Route
             path="patients"
             element={
-              <ProtectedRoute>
+              <ProtectedRoute roles={["admin", "reception", "clinician", "triage"]}>
                 <PatientsPage />
               </ProtectedRoute>
             }
