@@ -34,6 +34,7 @@ import {
 import {
   assignPriorityController,
   callNextController,
+  reannounceTicketController,
   dashboardController,
   etaEstimatesController,
   healthController,
@@ -147,7 +148,6 @@ import { withRateLimit } from "./middleware/requestRateLimit.js";
 import { initializeQueueRepository } from "./repositories/queueRepository.js";
 import { initializeNotificationDeliveryService } from "./services/notificationService.js";
 import { initWhatsAppSession } from "./services/whatsAppProvider.js";
-import { startAutoMissSweeper } from "./services/autoMissService.js";
 import { seedDefaultAdmin } from "./db/seedAdmin.js";
 import { HttpError, sendJson } from "./utils/http.js";
 import { createRouter } from "./utils/router.js";
@@ -303,6 +303,11 @@ router.register(
   "PATCH",
   "/api/tickets/:id/transfer",
   withStaffAuth(["triage", "clinician", "lab-tech", "pharmacist", "radiologist"], transferTicketController),
+);
+router.register(
+  "POST",
+  "/api/tickets/:id/reannounce",
+  withStaffAuth(["triage", "clinician", "lab-tech", "pharmacist", "radiologist"], reannounceTicketController),
 );
 router.register(
   "POST",
@@ -599,7 +604,6 @@ async function startServer() {
   await verifyPortAvailable(env.port);
   await initializeWithRetry();
   await initializeNotificationDeliveryService();
-  startAutoMissSweeper();
   if (env.databaseProvider === "mysql") {
     await seedDefaultAdmin();
   }

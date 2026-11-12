@@ -24,7 +24,6 @@ const StaffSignupPage = lazy(() => import("@/pages/staff-signup"));
 const UsersPage = lazy(() => import("@/pages/users"));
 const StaffAccessCodesPage = lazy(() => import("@/pages/staff-access-codes"));
 const TrackPage = lazy(() => import("@/pages/track"));
-const TriagePage = lazy(() => import("@/pages/triage"));
 const DepartmentBoardPage = lazy(() => import("@/pages/department-board"));
 
 const AppointmentsPage = lazy(() => import("@/pages/appointments"));
@@ -37,11 +36,9 @@ const staffModuleExtra = (exportName) =>
 
 const AdminDashboardPage = staffModule("AdminDashboardPage");
 const DepartmentsPage = staffModule("DepartmentsPage");
-const LabPage = staffModule("LabPage");
 const NotificationsPage = staffModule("NotificationsPage");
-const OIClinicPage = staffModule("OIClinicPage");
-const PharmacyPage = staffModule("PharmacyPage");
 const QueueAnalyticsPage = staffModule("QueueAnalyticsPage");
+const TriagePage = lazy(() => import("@/pages/triage"));
 const ReportsPage = staffModule("ReportsPage");
 const StaffQueueBoardPage = staffModule("StaffQueueBoardPage");
 const HospitalsPage = staffModuleExtra("HospitalsPage");
@@ -88,7 +85,7 @@ export default function App() {
           <Route
             path="triage"
             element={
-              <ProtectedRoute roles={["triage", "clinician", "reception"]}>
+              <ProtectedRoute roles={["triage", "clinician"]}>
                 <TriagePage />
               </ProtectedRoute>
             }
@@ -115,30 +112,6 @@ export default function App() {
             element={
               <ProtectedRoute>
                 <AppointmentsPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="pharmacy"
-            element={
-              <ProtectedRoute roles={["clinician", "triage", "pharmacist"]}>
-                <PharmacyPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="laboratory"
-            element={
-              <ProtectedRoute roles={["clinician", "triage", "lab-tech", "radiologist"]}>
-                <LabPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="oi-clinic"
-            element={
-              <ProtectedRoute roles={["clinician", "triage"]}>
-                <OIClinicPage />
               </ProtectedRoute>
             }
           />

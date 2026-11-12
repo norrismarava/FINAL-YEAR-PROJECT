@@ -574,7 +574,7 @@ function LiveTicker() {
 const DEPT_DETAILS = {
   OPD: { icon: Stethoscope, image: deptOpdImage, body: "One connected outpatient journey — observation, nurse consultation, and doctor consultation.", color: "from-teal-500/20 to-teal-600/5" },
   "Casualty / Triage": { icon: Siren, image: deptTriageImage, body: "24/7 emergency assessment with four-tier priority routing.", color: "from-red-500/20 to-red-600/5" },
-  "OPD - Observation": { icon: Activity, image: deptObservationImage, body: "First OPD stop — vitals, weight, and quick nurse screening.", color: "from-teal-500/20 to-teal-600/5" },
+  "OPD - Observation": { icon: Activity, image: deptObservationImage, body: "First OPD stop — initial review and routing to the right clinician.", color: "from-teal-500/20 to-teal-600/5" },
   "OPD - Nurse Consultation": { icon: ClipboardList, image: deptNurseImage, body: "Nurse-led consultations and routine reviews for outpatients.", color: "from-cyan-500/20 to-cyan-600/5" },
   "OPD - Doctor Consultation": { icon: Stethoscope, image: deptOpdImage, body: "Doctor consultations, follow-up clinics, and referrals.", color: "from-indigo-500/20 to-indigo-600/5" },
   Pharmacy: { icon: Pill, image: deptPharmacyImage, body: "Prescription dispensing with WhatsApp call-up alerts.", color: "from-blue-500/20 to-blue-600/5" },
@@ -761,10 +761,10 @@ function TriageSection() {
           </div>
           <div className="mt-10 flex justify-center">
             <Link
-              to={canTriage ? "/admin/triage" : "/track"}
+              to={canTriage ? "/admin/queue" : "/track"}
               className="inline-flex items-center gap-2 rounded-2xl bg-teal-600 px-6 py-3 text-sm font-bold text-white shadow-[0_12px_30px_-10px_rgba(20,184,166,0.4)] transition-all hover:-translate-y-0.5 hover:bg-teal-500"
             >
-              {canTriage ? "Open triage console" : "Track a ticket"}
+              {canTriage ? "Open queue board" : "Track a ticket"}
               <ArrowRight className="h-4 w-4" />
             </Link>
           </div>

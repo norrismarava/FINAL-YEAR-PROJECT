@@ -931,6 +931,7 @@ export async function registerPatient(payload) {
       pendingPreRegistered.id,
       actor ?? { role: "reception", fullName: "Front desk" },
       department,
+      payload.priority,
     );
     return { ...confirmed, reusedPreRegisteredTicket: true };
   }
@@ -945,6 +946,8 @@ export async function registerPatient(payload) {
 
   const sequence = await getNextSequence();
   const notificationConsent = Boolean(payload.notificationConsent);
+  const requestedPriority = payload.priority ?? "green";
+  ensurePriority(requestedPriority);
   const ticket = {
     id: crypto.randomUUID(),
     ticket: createTicketCode(sequence),
@@ -962,7 +965,7 @@ export async function registerPatient(payload) {
     notificationConsent,
     department,
     chiefComplaint: payload.chiefComplaint?.trim() ?? "",
-    priority: "green",
+    priority: requestedPriority,
     status: "waiting",
     registeredAt,
     triagedAt: null,
@@ -1209,52 +1212,38 @@ export async function callNextPatient(department, staff, room) {
   return updatedTicket;
 }
 
-const secondCallAnnounced = new Set();
-
-// Periodic sweep: re-announce unanswered calls once ("second call"), then
-// park them as missed so the board keeps flowing without manual cleanup.
-export async function sweepUnansweredCalls({
-  secondCallAfterMs = 45_000,
-  autoMissAfterMs = 90_000,
-} = {}) {
-  const now = Date.now();
-  const live = await getLiveTickets();
-
-  for (const ticket of live) {
-    if (ticket.status !== "called" || !ticket.calledAt) {
-      secondCallAnnounced.delete(ticket.id);
-      continue;
-    }
-
-    const elapsed = now - new Date(ticket.calledAt).getTime();
-
-    if (elapsed >= autoMissAfterMs) {
-      const missed = enrichTicket(
-        await updateTicket(ticket.id, (current) =>
-          applyStatusTransition(current, "missed"),
-        ),
-      );
-      secondCallAnnounced.delete(ticket.id);
-      await recordTicketAudit("ticket.auto-missed", ticket, missed, null, {
-        unansweredMs: autoMissAfterMs,
-      });
-      broadcastQueueEvent(
-        "ticket.status-updated",
-        createTicketEventPayload(missed),
-      );
-      broadcastQueueEvent("ticket.missed", createTicketEventPayload(missed));
-      await dispatchMissedTurnNotification(missed);
-      continue;
-    }
-
-    if (elapsed >= secondCallAfterMs && !secondCallAnnounced.has(ticket.id)) {
-      secondCallAnnounced.add(ticket.id);
-      broadcastQueueEvent("ticket.called", {
-        ...createTicketEventPayload(ticket),
-        attempt: 2,
-      });
-    }
+// Re-broadcasts the call for a ticket already in "called" status so staff can
+// re-announce as many times as needed. No auto-miss: staff mark no-shows manually.
+export async function reannouncePatient(id, staff) {
+  const existing = await findTicketById(id);
+  if (!existing) {
+    throw new HttpError(404, "Ticket not found.");
   }
+  if (existing.status !== "called") {
+    throw new HttpError(409, "Only a called patient can be re-announced.");
+  }
+
+  const attempt = (existing.callAttempts ?? 0) + 1;
+  const updatedTicket = enrichTicket(
+    await updateTicket(id, (ticket) => ({
+      ...ticket,
+      callAttempts: attempt,
+      lastAnnouncedAt: new Date().toISOString(),
+    })),
+  );
+
+  await recordTicketAudit("ticket.re-announced", existing, updatedTicket, staff, {
+    attempt,
+  });
+
+  broadcastQueueEvent("ticket.called", {
+    ...createTicketEventPayload(updatedTicket),
+    attempt,
+    reannounced: true,
+  });
+  await dispatchCallNotifications(updatedTicket);
+
+  return updatedTicket;
 }
 
 export async function updatePatientStatus(id, status, staff, room) {
@@ -1904,11 +1893,14 @@ export async function preRegisterPatient(payload) {
   return createdTicket;
 }
 
-export async function confirmArrival(ticketId, staff, department) {
+export async function confirmArrival(ticketId, staff, department, priority) {
   if (!department) {
     throw new HttpError(400, "Select the department this patient is going to.");
   }
   ensureDepartment(department);
+  if (priority) {
+    ensurePriority(priority);
+  }
 
   const existing = await findTicketById(ticketId);
   if (!existing) {
@@ -1923,6 +1915,7 @@ export async function confirmArrival(ticketId, staff, department) {
     await updateTicket(ticketId, (ticket) => ({
       ...applyStatusTransition(ticket, "waiting"),
       department,
+      ...(priority ? { priority } : {}),
       registeredAt: new Date().toISOString(),
     })),
   );

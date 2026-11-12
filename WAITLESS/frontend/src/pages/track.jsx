@@ -800,17 +800,6 @@ function TrackingResults({ data }) {
         />
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[0.98fr_1.02fr]">
-        <PatientPassCard
-          latestStatusTimestamp={latestStatusTimestamp}
-          queue={queue}
-          statusLabel={statusLabel}
-          ticket={ticket}
-        />
-
-        <ActiveNowCard activeEntries={activeEntries} queue={queue} ticket={ticket} />
-      </div>
-
       <FeedbackForm ticket={ticket} />
 
       <PortalFooter />
@@ -890,6 +879,11 @@ function NotificationsCard({
   retryingNotifications,
   whatsApp,
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const visibleNotifications = expanded
+    ? notifications
+    : notifications.slice(0, 1);
+
   return (
     <PortalCard
       icon={BellRing}
@@ -899,11 +893,11 @@ function NotificationsCard({
     >
       <div className="space-y-5">
         {notifications.length ? (
-          notifications.map((notification, index) => (
+          visibleNotifications.map((notification, index) => (
             <PortalNotificationRow
               key={notification.id}
               notification={notification}
-              isLast={index === notifications.length - 1}
+              isLast={index === visibleNotifications.length - 1}
             />
           ))
         ) : (
@@ -912,6 +906,16 @@ function NotificationsCard({
           </div>
         )}
       </div>
+
+      {notifications.length > 1 ? (
+        <button
+          type="button"
+          onClick={() => setExpanded((current) => !current)}
+          className="mt-4 w-full rounded-[1.1rem] border border-white/15 bg-white/[0.05] px-4 py-3 text-sm font-semibold text-teal-200 transition hover:border-teal-300/40 hover:bg-teal-500/10"
+        >
+          {expanded ? "Show less" : "Show more"}
+        </button>
+      ) : null}
 
       <div className="mt-6 grid gap-3 sm:grid-cols-3">
         <SummaryMiniCard label="Sent" value={`${notifications.length}`} centered />
@@ -936,126 +940,6 @@ function NotificationsCard({
     </PortalCard>
   );
 }
-
-function PatientPassCard({ latestStatusTimestamp, queue, statusLabel, ticket }) {
-  const [actionState, setActionState] = useState("");
-  const trackingUrl = buildTrackingUrl(ticket.ticket);
-  const canShare =
-    typeof navigator !== "undefined" && typeof navigator.share === "function";
-
-  async function handleCopy(value, successLabel) {
-    try {
-      await copyTextToClipboard(value);
-      setActionState(successLabel);
-      window.setTimeout(() => setActionState(""), 2200);
-    } catch (error) {
-      setActionState("Copy is not available on this device yet.");
-      window.setTimeout(() => setActionState(""), 2600);
-    }
-  }
-
-  async function handleShare() {
-    if (!canShare) {
-      handleCopy(trackingUrl, "Tracking link copied.");
-      return;
-    }
-
-    try {
-      await navigator.share({
-        title: `WaitLess ticket ${ticket.ticket}`,
-        text: `Track queue progress for ticket ${ticket.ticket} in ${ticket.department}.`,
-        url: trackingUrl,
-      });
-      setActionState("Tracking link shared.");
-      window.setTimeout(() => setActionState(""), 2200);
-    } catch (error) {
-      if (error?.name === "AbortError") {
-        return;
-      }
-
-      setActionState("Share could not be completed.");
-      window.setTimeout(() => setActionState(""), 2600);
-    }
-  }
-
-  function handlePrint() {
-    window.print();
-  }
-
-  return (
-    <PortalCard icon={IdCard} eyebrow="Patient pass" title="Portable patient view">
-      <div className="track-patient-pass overflow-hidden rounded-[1.45rem] bg-[linear-gradient(135deg,rgba(4,20,31,0.88),rgba(6,42,53,0.78)_54%,rgba(10,31,46,0.84))] p-6 text-white shadow-[0_30px_70px_-44px_rgba(3,41,68,0.72)]">
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <div className="text-[0.8rem] font-semibold uppercase tracking-[0.34em] text-slate-400">
-              Ticket code
-            </div>
-            <div className="mt-4 font-display text-[3rem] font-bold leading-none tracking-tight">
-              {ticket.ticket}
-            </div>
-          </div>
-
-          <div className="text-right">
-            <span className="rounded-full bg-teal-50 px-3 py-1.5 text-xs font-bold tracking-[0.14em] text-[#0f766e]">
-              {statusLabel.toUpperCase()}
-            </span>
-            <div className="mt-3 text-sm text-slate-400">
-              Since {formatTime(latestStatusTimestamp)}
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-5 font-serif text-[2rem] italic leading-none text-white">
-          Ticket {ticket.ticket}
-        </div>
-        <div className="mt-3 text-[1.1rem] text-slate-400">{ticket.department}</div>
-
-        <div className="mt-6 border-t border-white/8 pt-5 text-sm text-slate-400">
-          Position #{queue.departmentPosition}
-          <span className="mx-3 text-slate-600">·</span>~{queue.estimatedWaitMinutes}m
-          wait
-          <span className="mx-3 text-slate-600">·</span>
-          {ticket.whatsApp ? "WhatsApp on" : "Board only"}
-        </div>
-      </div>
-
-      <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <PortalActionButton
-          icon={Copy}
-          label="Copy code"
-          onClick={() => handleCopy(ticket.ticket, "Ticket code copied.")}
-        />
-        <PortalActionButton
-          icon={Copy}
-          label="Copy link"
-          onClick={() => handleCopy(trackingUrl, "Tracking link copied.")}
-        />
-        <PortalActionButton icon={Printer} label="Print" onClick={handlePrint} />
-        <PortalActionButton icon={Share2} label="Share" onClick={handleShare} />
-      </div>
-
-      <div className="mt-3 min-h-6 text-sm font-medium text-teal-300">
-        {actionState}
-      </div>
-
-      <div className="mt-3 rounded-[1.3rem] border border-white/10 bg-white/[0.04] px-5 py-4">
-        <div className="text-[0.8rem] font-semibold uppercase tracking-[0.34em] text-slate-400">
-          Next step
-        </div>
-        <p className="mt-3 text-[1.05rem] leading-8 text-slate-300">
-          {getNextStepCopy(ticket, queue)}
-        </p>
-      </div>
-
-      <div className="mt-4 space-y-3">
-        {PATIENT_SUPPORT_CONTACTS.map((item) => (
-          <SupportContactCard key={item.label} {...item} />
-        ))}
-      </div>
-    </PortalCard>
-  );
-}
-
 function PortalActionButton({ icon: Icon, label, onClick }) {
   return (
     <button
@@ -1096,60 +980,6 @@ function SupportContactCard({ icon: Icon, label, detail, href }) {
     >
       {content}
     </a>
-  );
-}
-
-function ActiveNowCard({ activeEntries, queue, ticket }) {
-  return (
-    <PortalCard
-      icon={UserRound}
-      eyebrow={`Active now · ${ticket.department}`}
-      title="Department movement"
-    >
-      {activeEntries.length ? (
-        <div className="space-y-3">
-          {activeEntries.map((entry) => (
-            <div
-              key={entry.id}
-              className="flex flex-wrap items-center justify-between gap-3 rounded-[1.15rem] border border-white/10 bg-white/[0.04] px-4 py-4 transition hover:border-teal-300/40 hover:shadow-[0_16px_34px_-30px_rgba(14,116,144,0.28)]"
-            >
-              <div className="flex min-w-0 items-center gap-4">
-                <span
-                  className={`inline-grid h-11 w-[4.15rem] place-items-center rounded-xl font-display text-sm font-bold ${priorityChipClass[entry.priority]}`}
-                >
-                  {entry.ticket}
-                </span>
-                <div className="min-w-0">
-                  <div className="truncate text-[1.05rem] font-medium text-white">
-                    {entry.status === "called" ? "Called — please proceed" : "In service"}
-                  </div>
-                </div>
-              </div>
-
-              <span
-                className={`rounded-full px-3 py-1.5 text-xs font-bold uppercase tracking-[0.24em] ${getDepartmentStatusClass(entry.status)}`}
-              >
-                {STATUS_META[entry.status]?.label ?? entry.status}
-              </span>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="rounded-[1.3rem] border border-dashed border-white/15 bg-white/[0.04] px-4 py-4 text-sm text-slate-400">
-          No patient is currently active in this department.
-        </div>
-      )}
-
-      <div className="mt-5 rounded-[1.15rem] border border-white/10 bg-white/[0.04] px-4 py-4 text-[1.05rem] text-slate-300">
-        <span className="font-semibold text-white">
-          {queue.totalWaitingInDepartment}
-        </span>{" "}
-        waiting in {ticket.department}
-        <span className="mx-2 text-slate-500">·</span>
-        <span className="font-semibold text-white">{queue.totalWaitingOverall}</span>{" "}
-        hospital-wide
-      </div>
-    </PortalCard>
   );
 }
 

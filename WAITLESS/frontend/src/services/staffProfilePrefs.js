@@ -58,16 +58,6 @@ const LANDING_PAGE_META = {
     path: "/admin/queue",
     roles: ALL_STAFF_ROLES,
   },
-  laboratory: {
-    label: "Laboratory & Radiology",
-    path: "/admin/laboratory",
-    roles: ["admin", "clinician", "doctor", "dentist", "lab-tech", "radiologist"],
-  },
-  pharmacy: {
-    label: "Pharmacy",
-    path: "/admin/pharmacy",
-    roles: ["admin", "clinician", "doctor", "dentist", "pharmacist"],
-  },
 };
 
 function profileStorageKey(userId) {
@@ -164,12 +154,8 @@ export function resolveStaffLandingPath(user) {
     return "/admin/triage";
   }
 
-  if (user.role === "lab-tech" || user.role === "radiologist") {
-    return "/admin/laboratory";
-  }
-
-  if (user.role === "pharmacist") {
-    return "/admin/pharmacy";
+  if (user.role === "lab-tech" || user.role === "radiologist" || user.role === "pharmacist") {
+    return "/admin/queue";
   }
 
   return "/admin/dashboard";

@@ -17,7 +17,7 @@ import {
   X,
 } from "lucide-react";
 
-import { DEPARTMENTS } from "@/services/queueMeta";
+import { DEPARTMENTS, PRIORITY_META } from "@/services/queueMeta";
 import {
   confirmArrival,
   fetchPatientMatches,
@@ -41,6 +41,7 @@ const INITIAL_FORM = {
   nationalId: "",
   phone: "",
   dept: "",
+  priority: "green",
   notificationConsent: true,
   whatsApp: true,
 };
@@ -76,7 +77,7 @@ export default function RegisterPage() {
     enabled: false,
   });
     const confirmArrivalMutation = useApiAction(
-    ({ id, department }) => confirmArrival(id, department),
+    ({ id, department, priority }) => confirmArrival(id, department, priority),
     {
       onSuccess: () => {
         refreshLiveData();
@@ -354,8 +355,8 @@ export default function RegisterPage() {
           tickets={preRegisteredQuery.data ?? []}
           departments={departments}
           loading={preRegisteredQuery.loading}
-          onConfirm={(id, department) =>
-            confirmArrivalMutation.mutate({ id, department })
+          onConfirm={(id, department, priority) =>
+            confirmArrivalMutation.mutate({ id, department, priority })
           }
           confirmingId={confirmArrivalMutation.variables?.id}
           error={confirmArrivalMutation.error?.message}
@@ -509,6 +510,19 @@ export default function RegisterPage() {
                 {departments.map((department) => (
                   <option key={department} value={department}>
                     {department}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label="Priority" full>
+              <select
+                value={form.priority}
+                onChange={(event) => setForm({ ...form, priority: event.target.value })}
+                className="input-base h-9 text-sm"
+              >
+                {["green", "yellow", "red"].map((priority) => (
+                  <option key={priority} value={priority}>
+                    {PRIORITY_META[priority].label}
                   </option>
                 ))}
               </select>
@@ -885,6 +899,7 @@ async function copyTextToClipboard(value) {
 
 function PreRegisteredRow({ ticket, departments, onConfirm, confirmingId }) {
   const [dept, setDept] = useState("");
+  const [priority, setPriority] = useState("green");
   const [rowError, setRowError] = useState("");
 
   return (
@@ -916,6 +931,17 @@ function PreRegisteredRow({ ticket, departments, onConfirm, confirmingId }) {
             </option>
           ))}
         </select>
+        <select
+          value={priority}
+          onChange={(e) => setPriority(e.target.value)}
+          className="h-9 min-w-36 rounded-lg border border-border/60 bg-background px-3 text-xs font-medium focus:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/20"
+        >
+          {["green", "yellow", "red"].map((priorityOption) => (
+            <option key={priorityOption} value={priorityOption}>
+              {PRIORITY_META[priorityOption].label}
+            </option>
+          ))}
+        </select>
         <button
           type="button"
           onClick={() => {
@@ -923,7 +949,7 @@ function PreRegisteredRow({ ticket, departments, onConfirm, confirmingId }) {
               setRowError("Pick the department first.");
               return;
             }
-            onConfirm(ticket.id, dept);
+            onConfirm(ticket.id, dept, priority);
           }}
           disabled={confirmingId === ticket.id}
           className="rounded-lg gradient-primary px-3.5 py-2 text-xs font-semibold text-primary-foreground shadow-elegant disabled:opacity-60"

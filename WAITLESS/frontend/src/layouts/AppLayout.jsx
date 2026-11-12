@@ -79,7 +79,7 @@ const navItems = [
   { to: "/admin/register", label: "Register", roles: ["reception", "receptionist"], icon: ShieldPlus },
   { to: "/track", label: "Track Ticket", icon: Ticket },
   { to: "/admin/patients", label: "Patients", roles: ["admin", "reception", "clinician", "triage"], icon: UserRound },
-  { to: "/admin/triage", label: "Triage", roles: ["triage", "clinician", "reception"], icon: Stethoscope },
+  { to: "/admin/triage", label: "Triage", roles: ["triage", "clinician"], icon: Stethoscope },
   { to: "/queue", label: "Queue Board", icon: Search },
   {
     to: "/admin/settings",
@@ -110,21 +110,24 @@ const STAFF_WORKSPACE_ITEMS = [
     roles: ["reception", "receptionist"],
   },
 
-  { group: "Main", to: "/admin/queue", label: "Queue Board", icon: Search },
+  {
+    group: "Main",
+    to: "/admin/queue",
+    label: "Queue Board",
+    icon: Search,
+    excludeRoles: ["triage", "nurse"],
+  },
   {
     group: "Clinical",
     to: "/admin/triage",
     label: "Triage",
     icon: Stethoscope,
-    roles: ["triage", "clinician", "reception"],
+    roles: ["triage", "clinician"],
   },
   { group: "Clinical", to: "/admin/departments", label: "Departments", icon: Building2 },
   { group: "Clinical", to: "/admin/appointments", label: "Appointments", icon: CalendarDays },
   { group: "Clinical", to: "/admin/follow-ups", label: "Follow-ups", icon: CalendarDays },
   { group: "Clinical", to: "/admin/reminders", label: "Reminders", icon: Send },
-  { group: "Clinical", to: "/admin/pharmacy", label: "Pharmacy", icon: Pill, roles: ["clinician", "triage", "pharmacist"] },
-  { group: "Clinical", to: "/admin/laboratory", label: "Laboratory", icon: FlaskConical, roles: ["clinician", "triage", "lab-tech", "radiologist"] },
-  { group: "Clinical", to: "/admin/oi-clinic", label: "OI Clinic", icon: HeartPulse, roles: ["clinician", "triage"] },
   { group: "Insights", to: "/admin/reports", label: "Reports", icon: FileChartColumn },
   {
     group: "Insights",
@@ -483,6 +486,7 @@ function Header({ onOpenMobileNav }) {
   const visibleNavItems = navItems.filter(
     (item) =>
       (!item.roles || auth.hasRole(item.roles)) &&
+      (!item.excludeRoles || !auth.hasRole(item.excludeRoles)) &&
       (!item.staffOnly || auth.isAuthenticated),
   );
 
@@ -1256,7 +1260,9 @@ function StaffWorkspaceShell({
   const canRegisterPatient = auth.hasRole(["reception", "receptionist"]);
   const preferredLandingPath = resolveStaffLandingPath(user);
   const workspaceLinks = STAFF_WORKSPACE_ITEMS.filter(
-    (item) => !item.roles || auth.hasRole(item.roles),
+    (item) =>
+      (!item.roles || auth.hasRole(item.roles)) &&
+      (!item.excludeRoles || !auth.hasRole(item.excludeRoles)),
   );
   const preferredLandingLabel =
     workspaceLinks.find((item) => item.to === preferredLandingPath)?.label ?? "Dashboard";

@@ -49,15 +49,8 @@ import { DEPARTMENTS, PRIORITY_META, STATUS_META, priorityChipClass } from "@/se
 import {
   fetchDashboardSummary,
   fetchETAEstimates,
-  fetchPrescriptions,
-  fetchPrescriptionSummary,
-  fetchPrescriptionsWithStock,
-  fetchStockSummary,
-  flagPrescriptionItem,
   fetchQueueBoard,
   fetchStaffQueueBoard,
-  fetchTestOrders,
-  fetchTestOrderSummary,
   fetchAverageWaitReport,
   fetchDepartmentPerformanceReport,
   fetchNoShowReport,
@@ -74,16 +67,10 @@ import {
   fetchBottleneckAnalysis,
   recallTicket,
   callNextPatient,
+  reannounceTicket,
   updateTicketStatus,
   transferTicket,
   retryNotificationDelivery,
-  updatePrescriptionState,
-  updateTestOrderState,
-  fetchOIClinicStreams,
-  fetchOIClinicVisits,
-  fetchOIClinicSummary,
-  createOIClinicVisit,
-  updateOIClinicVisitState,
   fetchHospitals,
   createHospital,
   updateHospital,
@@ -246,11 +233,22 @@ export function StaffQueueBoardPage() {
     },
   );
 
+  const reannounceMutation = useApiAction(
+    ({ id }) => reannounceTicket(id),
+    {
+      onSuccess: (res) => {
+        refreshLiveData();
+        toast.success(`${res?.ticket ?? "Ticket"} re-announced (attempt ${res?.callAttempts ?? "?"}).`);
+      },
+    },
+  );
+
   const deptWaitingCount = waiting.filter((t) => t.department === callDept).length;
   const mutationError =
     callMutation.error?.message ??
     statusMutation.error?.message ??
-    transferMutation.error?.message;
+    transferMutation.error?.message ??
+    reannounceMutation.error?.message;
 
   function setTicketStatus(ticket, status) {
     statusMutation.mutate({
@@ -279,6 +277,10 @@ export function StaffQueueBoardPage() {
 
   function transferTicketTo(ticket, department) {
     transferMutation.mutate({ id: ticket.id, department });
+  }
+
+  function reannounce(ticket) {
+    reannounceMutation.mutate({ id: ticket.id });
   }
 
   return (
@@ -416,10 +418,11 @@ export function StaffQueueBoardPage() {
                         <ServingTile
                           key={ticket.id}
                           ticket={ticket}
-                          pending={statusMutation.isPending || transferMutation.isPending || sendBackMutation.isPending}
+                          pending={statusMutation.isPending || transferMutation.isPending || sendBackMutation.isPending || reannounceMutation.isPending}
                           onStatus={setTicketStatus}
                           onTransfer={transferTicketTo}
                           onSendBack={sendBackInQueue}
+                          onReannounce={reannounce}
                         />
                       ))}
                     </div>
@@ -539,7 +542,7 @@ const PRIORITY_TOP_BAR = {
   black: "bg-priority-black",
 };
 
-function ServingTile({ ticket, onStatus, onTransfer, onSendBack, pending }) {
+export function ServingTile({ ticket, onStatus, onTransfer, onSendBack, onReannounce, onPriority, pending }) {
   const isCalled = ticket.status === "called";
   const inService = ticket.status === "in-service";
   const isUrgent = ticket.priority === "red";
@@ -586,6 +589,17 @@ function ServingTile({ ticket, onStatus, onTransfer, onSendBack, pending }) {
                 <Activity className="h-4 w-4" />
                 Now serving
               </button>
+              {onReannounce ? (
+                <button
+                  type="button"
+                  disabled={pending}
+                  onClick={() => onReannounce(ticket)}
+                  className="flex h-10 items-center justify-center gap-2 rounded-lg border border-amber-500/50 bg-amber-500/10 px-3 text-xs font-bold uppercase tracking-wider text-amber-600 transition hover:bg-amber-500/20 disabled:opacity-50 dark:text-amber-300"
+                >
+                  <BellRing className="h-4 w-4" />
+                  Re-announce{ticket.callAttempts ? ` (${ticket.callAttempts + 1})` : ""}
+                </button>
+              ) : null}
               <select
                 disabled={pending}
                 value=""
@@ -615,6 +629,26 @@ function ServingTile({ ticket, onStatus, onTransfer, onSendBack, pending }) {
               Complete visit
             </button>
           ) : null}
+          {onPriority ? (
+            <div className="grid grid-cols-4 gap-1.5">
+              {Object.keys(PRIORITY_META).map((priority) => (
+                <button
+                  key={priority}
+                  type="button"
+                  disabled={pending}
+                  onClick={() => onPriority(ticket, priority)}
+                  title={PRIORITY_META[priority]?.label ?? priority}
+                  className={`h-9 rounded-lg text-[10px] font-bold uppercase tracking-wider transition disabled:opacity-50 ${
+                    ticket.priority === priority
+                      ? `${priorityChipClass[priority] ?? ""} ring-2 ring-foreground/50`
+                      : `${priorityChipClass[priority] ?? "bg-muted text-muted-foreground"} opacity-70 hover:opacity-100`
+                  }`}
+                >
+                  {PRIORITY_META[priority]?.short ?? priority}
+                </button>
+              ))}
+            </div>
+          ) : null}
           {onTransfer ? (
             <select
               disabled={pending}
@@ -641,7 +675,7 @@ function ServingTile({ ticket, onStatus, onTransfer, onSendBack, pending }) {
   );
 }
 
-function WaitingQueueRow({ ticket, position, onCall, pending }) {
+export function WaitingQueueRow({ ticket, position, onCall, pending }) {
   const isUrgent = ticket.priority === "red";
   const isSerious = ticket.priority === "yellow";
   return (
@@ -706,7 +740,7 @@ function WaitingQueueRow({ ticket, position, onCall, pending }) {
   );
 }
 
-function MissedRecallRow({ ticket }) {
+export function MissedRecallRow({ ticket }) {
   const { refreshLiveData } = useLiveRefresh();
   const [position, setPosition] = useState("places");
   const [offsetMinutes, setOffsetMinutes] = useState("");
@@ -2387,999 +2421,6 @@ function EmptyMessage({ children }) {
   );
 }
 
-const PRESCRIPTION_COLUMNS = [
-  { state: "prescribed", label: "Prescribed", badge: "bg-sky-400/15 text-sky-300 ring-sky-300/25", accent: "text-sky-300 bg-sky-400/15", tint: "#38bdf8" },
-  { state: "dispensing", label: "Dispensing", badge: "bg-amber-400/15 text-amber-300 ring-amber-300/25", accent: "text-amber-300 bg-amber-400/15", tint: "#fbbf24" },
-  { state: "ready", label: "Ready for Collection", badge: "bg-emerald-400/15 text-emerald-300 ring-emerald-300/25", accent: "text-emerald-300 bg-emerald-400/15", tint: "#34d399" },
-  { state: "collected", label: "Collected", badge: "bg-zinc-400/15 text-zinc-300 ring-zinc-300/25", accent: "text-zinc-300 bg-zinc-400/15", tint: "#a1a1aa" },
-];
-
-const NEXT_STATE_MAP = {
-  prescribed: "dispensing",
-  dispensing: "ready",
-  ready: "collected",
-};
-
-const NEXT_STATE_LABEL = {
-  prescribed: "Start dispensing",
-  dispensing: "Mark ready",
-  ready: "Mark collected",
-};
-
-export function PharmacyPage() {
-  const { refreshToken } = useLiveRefresh();
-  const [search, setSearch] = useState("");
-  const [advancing, setAdvancing] = useState(null);
-  const [flagging, setFlagging] = useState(null);
-
-  const summaryLoader = useCallback(() => fetchPrescriptionSummary(), []);
-  const summaryQuery = useApiResource(summaryLoader, { enabled: isBrowser, refreshToken });
-
-  const stockSummaryLoader = useCallback(() => fetchStockSummary(), []);
-  const stockSummaryQuery = useApiResource(stockSummaryLoader, { enabled: isBrowser, refreshToken });
-
-  const prescriptionsLoader = useCallback(() => fetchPrescriptionsWithStock(), []);
-  const prescriptionsQuery = useApiResource(prescriptionsLoader, {
-    enabled: isBrowser,
-    refreshToken,
-  });
-
-  const advanceState = useApiAction(updatePrescriptionState, {
-    onSuccess: (prescription) => {
-      prescriptionsQuery.refetch();
-      summaryQuery.refetch();
-      toast.success(`Prescription ${prescription?.ticketCode ?? ""} advanced to ${prescription?.state}.`);
-    },
-    onError: (error) => toast.error(error.message),
-  });
-
-  const prescriptions = prescriptionsQuery.data ?? [];
-  const summary = summaryQuery.data;
-  const stockSummary = stockSummaryQuery.data;
-
-  const filtered = useMemo(() => {
-    if (!search.trim()) return prescriptions;
-    const q = search.toLowerCase();
-    return prescriptions.filter(
-      (p) =>
-        p.ticketCode?.toLowerCase().includes(q) ||
-        p.patientName?.toLowerCase().includes(q),
-    );
-  }, [prescriptions, search]);
-
-  const byState = useMemo(() => {
-    const map = {};
-    for (const col of PRESCRIPTION_COLUMNS) {
-      map[col.state] = filtered.filter((p) => p.state === col.state);
-    }
-    return map;
-  }, [filtered]);
-
-  async function handleAdvance(prescription) {
-    const next = NEXT_STATE_MAP[prescription.state];
-    if (!next) return;
-    setAdvancing(prescription.id);
-    try {
-      await advanceState.mutate(prescription.id, next);
-    } finally {
-      setAdvancing(null);
-    }
-  }
-
-  async function handleStockFlag(prescription, item, inStock) {
-    setFlagging(item.id);
-    try {
-      await flagPrescriptionItem(prescription.id, item.id, inStock);
-      prescriptionsQuery.refetch();
-      stockSummaryQuery.refetch();
-    } finally {
-      setFlagging(null);
-    }
-  }
-
-  const isLoading = prescriptionsQuery.loading && !prescriptionsQuery.data;
-
-  return (
-    <ModulePage
-      eyebrow="Clinical workflow"
-      title="Pharmacy"
-      description="Manage prescriptions from prescribed to collection — live queue updates flow in automatically."
-      icon={Pill}
-    >
-      {/* Toolbar */}
-      <div className="surface-panel flex flex-wrap items-center gap-3 p-3">
-        <label className="relative min-w-56 flex-1">
-          <span className="sr-only">Search prescriptions</span>
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search ticket or patient…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="input-base h-9 pl-9 text-sm"
-          />
-        </label>
-        <button
-          type="button"
-          onClick={() => {
-            prescriptionsQuery.refetch();
-            summaryQuery.refetch();
-            stockSummaryQuery.refetch();
-          }}
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-xs font-semibold text-muted-foreground hover:text-foreground"
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-          Refresh
-        </button>
-      </div>
-
-      {isLoading ? (
-        <LoadingPanel className="mt-5" title="Loading prescriptions" message="Fetching the live pharmacy queue." />
-      ) : (
-        <>
-          {/* State summary */}
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {PRESCRIPTION_COLUMNS.map((col) => (
-              <AdminMetricTile
-                key={col.state}
-                label={col.label}
-                value={summary?.byState?.[col.state] ?? byState[col.state]?.length ?? 0}
-                icon={Pill}
-                accent={col.accent}
-                tint={col.tint}
-              />
-            ))}
-          </div>
-
-          {/* Out-of-stock alert */}
-          {stockSummary && stockSummary.outOfStockCount > 0 ? (
-            <div className="mt-4 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-destructive" />
-                <span className="text-sm font-semibold text-destructive">
-                  {stockSummary.outOfStockCount} medication(s) out of stock
-                </span>
-              </div>
-              <div className="mt-2 flex flex-wrap gap-2">
-                {stockSummary.outOfStockItems.map((item) => (
-                  <span key={item.id} className="rounded-full bg-destructive/15 px-2.5 py-1 text-xs font-medium text-destructive">
-                    {item.drugName}
-                  </span>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          {/* Kanban columns */}
-          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {PRESCRIPTION_COLUMNS.map((col) => (
-              <div
-                key={col.state}
-                className="relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-[#111827] p-3 shadow-[0_12px_40px_rgba(0,0,0,0.18)]"
-              >
-                <span
-                  className="absolute inset-x-0 top-0 h-0.5"
-                  style={{ background: `linear-gradient(90deg, ${col.tint}00, ${col.tint}, ${col.tint}00)` }}
-                />
-                <div className="flex items-center justify-between px-2 pb-3 pt-1">
-                  <span
-                    className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ring-1 ring-inset ${col.badge}`}
-                  >
-                    {col.label}
-                  </span>
-                  <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-xs font-bold tabular-nums text-white/70 ring-1 ring-inset ring-white/10">
-                    {byState[col.state]?.length ?? 0}
-                  </span>
-                </div>
-                <div className="mt-1 space-y-2">
-                  {byState[col.state]?.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-white/10 px-3 py-6 text-center text-xs text-white/30">
-                      No prescriptions
-                    </div>
-                  ) : (
-                    byState[col.state].map((rx) => (
-                      <PrescriptionCard
-                        key={rx.id}
-                        prescription={rx}
-                        canAdvance={!!NEXT_STATE_MAP[rx.state]}
-                        onAdvance={() => handleAdvance(rx)}
-                        advancing={advancing === rx.id}
-                        onStockFlag={handleStockFlag}
-                        flagging={flagging}
-                        tint={col.tint}
-                      />
-                    ))
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-    </ModulePage>
-  );
-}
-
-function PrescriptionCard({ prescription, canAdvance, onAdvance, advancing, onStockFlag, flagging, tint = "#38bdf8" }) {
-  const hasOutOfStock = prescription.hasOutOfStockItems || (prescription.items ?? []).some((i) => i.inStock === false);
-  return (
-    <div className={`relative overflow-hidden rounded-xl border bg-white/[0.03] p-3 pl-4 transition-colors hover:bg-white/[0.05] ${hasOutOfStock ? "border-destructive/40" : "border-white/[0.08]"}`}>
-      <span
-        className="absolute inset-y-0 left-0 w-0.5"
-        style={{ background: `linear-gradient(180deg, ${hasOutOfStock ? "#f43f5e" : tint}, ${hasOutOfStock ? "#f43f5e" : tint}33)` }}
-      />
-      <div className="flex items-center justify-between">
-        <span className="font-mono text-sm font-bold text-white">{prescription.ticketCode}</span>
-        <div className="flex items-center gap-1.5">
-          {hasOutOfStock && (
-            <span className="rounded-full bg-rose-500/15 px-2 py-0.5 text-[10px] font-bold text-rose-300 ring-1 ring-inset ring-rose-400/25">
-              STOCK ISSUE
-            </span>
-          )}
-          <Pill className="h-4 w-4 text-white/40" />
-        </div>
-      </div>
-      <p className="mt-1 text-sm font-medium text-white/85">{prescription.patientName}</p>
-      <p className="text-xs text-sky-300/90">{prescription.department}</p>
-
-      {prescription.items?.length > 0 && (
-        <ul className="mt-2 space-y-1.5">
-          {prescription.items.map((item) => (
-            <li key={item.id} className="flex items-center justify-between text-xs">
-              <div className="min-w-0">
-                <span className={`font-medium ${item.inStock === false ? "text-rose-300" : "text-white/80"}`}>
-                  {item.drugName}
-                </span>
-                {", "}
-                <span className="text-white/45">{item.dosage}</span>
-                {item.quantity && (
-                  <span className="text-white/45"> ({item.quantity})</span>
-                )}
-                {item.stockNotes && (
-                  <span className="block text-[10px] italic text-rose-300">{item.stockNotes}</span>
-                )}
-              </div>
-              {onStockFlag && (
-                <button
-                  onClick={() => onStockFlag(prescription, item, item.inStock !== false ? false : true)}
-                  disabled={flagging === item.id}
-                  className={`ml-2 shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold transition-colors ${
-                    item.inStock === false
-                      ? "bg-priority-green/15 text-priority-green hover:bg-priority-green/25"
-                      : "bg-destructive/10 text-destructive hover:bg-destructive/20"
-                  }`}
-                  title={item.inStock === false ? "Mark in stock" : "Flag as out of stock"}
-                >
-                  {flagging === item.id ? (
-                    <LoaderCircle className="h-3 w-3 animate-spin" />
-                  ) : item.inStock === false ? (
-                    "In Stock"
-                  ) : (
-                    "Out of Stock"
-                  )}
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {prescription.notes && (
-        <p className="mt-2 text-xs italic text-white/40">
-          "{prescription.notes}"
-        </p>
-      )}
-
-      {prescription.prescribedBy && (
-        <p className="mt-2 text-[10px] text-white/35">
-          Prescribed by {prescription.prescribedBy.name}
-        </p>
-      )}
-
-      {canAdvance && (
-        <button
-          onClick={onAdvance}
-          disabled={advancing}
-          className="mt-2 inline-flex h-9 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-[linear-gradient(135deg,#0f766e,#14b8a6)] px-3 text-xs font-semibold text-white shadow-[0_6px_16px_-6px_rgba(20,184,166,0.5)] transition-transform hover:-translate-y-px disabled:opacity-50"
-        >
-          {advancing ? (
-            <LoaderCircle className="h-3 w-3 animate-spin" />
-          ) : (
-            <>
-              <CheckCircle2 className="h-3 w-3" />
-              {NEXT_STATE_LABEL[prescription.state] ?? `Advance to ${NEXT_STATE_MAP[prescription.state]}`}
-            </>
-          )}
-        </button>
-      )}
-    </div>
-  );
-}
-
-const TEST_ORDER_COLUMNS = [
-  { state: "ordered", label: "Ordered", badge: "bg-sky-400/15 text-sky-300 ring-sky-300/25", accent: "text-sky-300 bg-sky-400/15", tint: "#38bdf8" },
-  { state: "sample-collected", label: "Sample Collected", badge: "bg-cyan-400/15 text-cyan-300 ring-cyan-300/25", accent: "text-cyan-300 bg-cyan-400/15", tint: "#22d3ee" },
-  { state: "in-progress", label: "In Progress", badge: "bg-amber-400/15 text-amber-300 ring-amber-300/25", accent: "text-amber-300 bg-amber-400/15", tint: "#fbbf24" },
-  { state: "completed", label: "Completed", badge: "bg-violet-400/15 text-violet-300 ring-violet-300/25", accent: "text-violet-300 bg-violet-400/15", tint: "#a78bfa" },
-  { state: "result-ready", label: "Result Ready", badge: "bg-emerald-400/15 text-emerald-300 ring-emerald-300/25", accent: "text-emerald-300 bg-emerald-400/15", tint: "#34d399" },
-];
-
-const TEST_NEXT_STATE = {
-  ordered: "sample-collected",
-  "sample-collected": "in-progress",
-  "in-progress": "completed",
-  completed: "result-ready",
-};
-
-const TEST_NEXT_LABEL = {
-  ordered: "Collect sample",
-  "sample-collected": "Start processing",
-  "in-progress": "Complete test",
-  completed: "Release results",
-};
-
-const TEST_TYPE_LABELS = {
-  "blood-count": "Full Blood Count",
-  "urinalysis": "Urinalysis",
-  "blood-glucose": "Blood Glucose",
-  "malaria-smear": "Malaria Smear",
-  "hiv-test": "HIV Test",
-  "tb-sputum": "TB Sputum",
-  "x-ray-chest": "Chest X-Ray",
-  "ultrasound": "Ultrasound",
-  "ct-scan": "CT Scan",
-  "other": "Other",
-};
-
-export function LabPage() {
-  const { refreshToken } = useLiveRefresh();
-  const [search, setSearch] = useState("");
-  const [advancing, setAdvancing] = useState(null);
-
-  const summaryLoader = useCallback(() => fetchTestOrderSummary(), []);
-  const summaryQuery = useApiResource(summaryLoader, { enabled: isBrowser, refreshToken });
-
-  const ordersLoader = useCallback(() => fetchTestOrders(), []);
-  const ordersQuery = useApiResource(ordersLoader, { enabled: isBrowser, refreshToken });
-
-  const advanceState = useApiAction(updateTestOrderState, {
-    onSuccess: (order) => {
-      ordersQuery.refetch();
-      summaryQuery.refetch();
-      toast.success(`Test order ${order?.ticketCode ?? ""} advanced to ${order?.state}.`);
-    },
-    onError: (error) => toast.error(error.message),
-  });
-
-  const orders = ordersQuery.data ?? [];
-  const summary = summaryQuery.data;
-
-  const filtered = useMemo(() => {
-    if (!search.trim()) return orders;
-    const q = search.toLowerCase();
-    return orders.filter(
-      (o) =>
-        o.ticketCode?.toLowerCase().includes(q) ||
-        o.patientName?.toLowerCase().includes(q) ||
-        TEST_TYPE_LABELS[o.testType]?.toLowerCase().includes(q),
-    );
-  }, [orders, search]);
-
-  const byState = useMemo(() => {
-    const map = {};
-    for (const col of TEST_ORDER_COLUMNS) {
-      map[col.state] = filtered.filter((o) => o.state === col.state);
-    }
-    return map;
-  }, [filtered]);
-
-  async function handleAdvance(order) {
-    const next = TEST_NEXT_STATE[order.state];
-    if (!next) return;
-    setAdvancing(order.id);
-    try {
-      await advanceState.mutate(order.id, next);
-    } finally {
-      setAdvancing(null);
-    }
-  }
-
-  const isLoading = ordersQuery.loading && !ordersQuery.data;
-
-  return (
-    <ModulePage
-      eyebrow="Clinical workflow"
-      title="Laboratory &amp; Radiology"
-      description="Track test orders from collection to result readiness — updates arrive in real time."
-      icon={FlaskConical}
-    >
-      {/* Toolbar */}
-      <div className="surface-panel flex flex-wrap items-center gap-3 p-3">
-        <label className="relative min-w-56 flex-1">
-          <span className="sr-only">Search test orders</span>
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search ticket, patient, test…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="input-base h-9 pl-9 text-sm"
-          />
-        </label>
-        <button
-          type="button"
-          onClick={() => {
-            ordersQuery.refetch();
-            summaryQuery.refetch();
-          }}
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-xs font-semibold text-muted-foreground hover:text-foreground"
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-          Refresh
-        </button>
-      </div>
-
-      {isLoading ? (
-        <LoadingPanel className="mt-5" title="Loading test orders" message="Fetching the live lab queue." />
-      ) : (
-        <>
-          {/* State summary */}
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-            {TEST_ORDER_COLUMNS.map((col) => (
-              <AdminMetricTile
-                key={col.state}
-                label={col.label}
-                value={summary?.byState?.[col.state] ?? byState[col.state]?.length ?? 0}
-                icon={FlaskConical}
-                accent={col.accent}
-                tint={col.tint}
-              />
-            ))}
-          </div>
-
-          {/* Results-ready alert */}
-          {(byState["result-ready"]?.length ?? 0) > 0 ? (
-            <div className="mt-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3">
-              <div className="flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                <span className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-                  {byState["result-ready"].length} result{byState["result-ready"].length !== 1 ? "s" : ""} ready for clinician review
-                </span>
-              </div>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Patients have been notified via display board and WhatsApp to return for results.
-              </p>
-            </div>
-          ) : null}
-
-          {/* Kanban columns */}
-          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-            {TEST_ORDER_COLUMNS.map((col) => (
-              <div
-                key={col.state}
-                className="relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-[#111827] p-3 shadow-[0_12px_40px_rgba(0,0,0,0.18)]"
-              >
-                <span
-                  className="absolute inset-x-0 top-0 h-0.5"
-                  style={{ background: `linear-gradient(90deg, ${col.tint}00, ${col.tint}, ${col.tint}00)` }}
-                />
-                <div className="flex items-center justify-between px-2 pb-3 pt-1">
-                  <span
-                    className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ring-1 ring-inset ${col.badge}`}
-                  >
-                    {col.label}
-                  </span>
-                  <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-xs font-bold tabular-nums text-white/70 ring-1 ring-inset ring-white/10">
-                    {byState[col.state]?.length ?? 0}
-                  </span>
-                </div>
-                <div className="mt-1 space-y-2">
-                  {byState[col.state]?.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-white/10 px-3 py-6 text-center text-xs text-white/30">
-                      No orders
-                    </div>
-                  ) : (
-                    byState[col.state].map((order) => (
-                      <TestOrderCard
-                        key={order.id}
-                        order={order}
-                        canAdvance={!!TEST_NEXT_STATE[order.state]}
-                        onAdvance={() => handleAdvance(order)}
-                        advancing={advancing === order.id}
-                        tint={col.tint}
-                      />
-                    ))
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-    </ModulePage>
-  );
-}
-
-function TestOrderCard({ order, canAdvance, onAdvance, advancing, tint = "#a78bfa" }) {
-  const isResultReady = order.state === "result-ready";
-  return (
-    <div className={`relative overflow-hidden rounded-xl border bg-white/[0.03] p-3 pl-4 transition-colors hover:bg-white/[0.05] ${isResultReady ? "border-emerald-400/40" : "border-white/[0.08]"}`}>
-      <span
-        className="absolute inset-y-0 left-0 w-0.5"
-        style={{ background: `linear-gradient(180deg, ${isResultReady ? "#34d399" : tint}, ${isResultReady ? "#34d399" : tint}33)` }}
-      />
-      <div className="flex items-center justify-between">
-        <span className="font-mono text-sm font-bold text-white">{order.ticketCode}</span>
-        <FlaskConical className={`h-4 w-4 ${isResultReady ? "text-emerald-300" : "text-white/40"}`} />
-      </div>
-      <p className="mt-1 text-sm font-medium text-white/85">{order.patientName}</p>
-      <p className="text-xs font-medium text-violet-300/90">
-        {TEST_TYPE_LABELS[order.testType] ?? order.testType}
-      </p>
-      {order.priority && order.priority !== "routine" && (
-        <span className="mt-1 inline-block rounded-full bg-amber-400/15 px-2 py-0.5 text-[10px] font-bold uppercase text-amber-300 ring-1 ring-inset ring-amber-300/25">
-          {order.priority}
-        </span>
-      )}
-      {order.notes && (
-        <p className="mt-1 text-xs italic text-white/40">"{order.notes}"</p>
-      )}
-      {order.orderedBy && (
-        <p className="mt-2 text-[10px] text-white/35">
-          Ordered by {order.orderedBy.name}
-        </p>
-      )}
-      {isResultReady && (
-        <div className="mt-2 rounded-md bg-emerald-400/10 px-2.5 py-2 text-xs ring-1 ring-inset ring-emerald-400/20">
-          <div className="flex items-center gap-1.5 font-semibold text-emerald-300">
-            <CheckCircle2 className="h-3 w-3" />
-            Results ready
-          </div>
-          <p className="mt-0.5 text-white/45">
-            Patient notified. Return to {order.orderingDepartment ?? "Casualty / Triage"} for clinician review.
-          </p>
-        </div>
-      )}
-      {canAdvance && (
-        <button
-          onClick={onAdvance}
-          disabled={advancing}
-          className="mt-2 inline-flex h-9 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-[linear-gradient(135deg,#0f766e,#14b8a6)] px-3 text-xs font-semibold text-white shadow-[0_6px_16px_-6px_rgba(20,184,166,0.5)] transition-transform hover:-translate-y-px disabled:opacity-50"
-        >
-          {advancing ? (
-            <LoaderCircle className="h-3 w-3 animate-spin" />
-          ) : (
-            <>
-              <CheckCircle2 className="h-3 w-3" />
-              {TEST_NEXT_LABEL[order.state] ?? `Advance to ${TEST_NEXT_STATE[order.state]}`}
-            </>
-          )}
-        </button>
-      )}
-    </div>
-  );
-}
-
-const OI_STREAM_COLORS = {
-  waiting: "bg-blue-500/10 border-blue-500/30",
-  "in-session": "bg-amber-500/10 border-amber-500/30",
-  completed: "bg-emerald-500/10 border-emerald-500/30",
-  referred: "bg-purple-500/10 border-purple-500/30",
-};
-
-const OI_STREAM_BADGE = {
-  waiting: "bg-blue-500/15 text-blue-700 dark:text-blue-300",
-  "in-session": "bg-amber-500/15 text-amber-700 dark:text-amber-300",
-  completed: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
-  referred: "bg-purple-500/15 text-purple-700 dark:text-purple-300",
-};
-
-const OI_NEXT_STATE = {
-  waiting: "in-session",
-  "in-session": "completed",
-};
-
-const OI_NEXT_LABEL = {
-  waiting: "Start session",
-  "in-session": "Complete visit",
-};
-
-const OI_STATE_META = {
-  waiting: { tint: "#38bdf8", badge: "bg-sky-400/15 text-sky-300 ring-sky-300/25" },
-  "in-session": { tint: "#fbbf24", badge: "bg-amber-400/15 text-amber-300 ring-amber-300/25" },
-  completed: { tint: "#34d399", badge: "bg-emerald-400/15 text-emerald-300 ring-emerald-300/25" },
-  referred: { tint: "#a78bfa", badge: "bg-violet-400/15 text-violet-300 ring-violet-300/25" },
-};
-
-const OI_STREAM_ACCENTS = [
-  { tint: "#fb7185", text: "text-pink-300" },
-  { tint: "#5eead4", text: "text-teal-300" },
-  { tint: "#a78bfa", text: "text-violet-300" },
-  { tint: "#fbbf24", text: "text-amber-300" },
-  { tint: "#38bdf8", text: "text-sky-300" },
-];
-
-export function OIClinicPage() {
-  const { refreshToken } = useLiveRefresh();
-  const [search, setSearch] = useState("");
-  const [advancing, setAdvancing] = useState(null);
-  const [selectedStream, setSelectedStream] = useState("all");
-  const [showVisitForm, setShowVisitForm] = useState(false);
-  const [visitForm, setVisitForm] = useState({ ticketCode: "", streamId: "", notes: "" });
-
-  const streamsLoader = useCallback(() => fetchOIClinicStreams(), []);
-  const streamsQuery = useApiResource(streamsLoader, { enabled: isBrowser, refreshToken });
-
-  const summaryLoader = useCallback(() => fetchOIClinicSummary(), []);
-  const summaryQuery = useApiResource(summaryLoader, { enabled: isBrowser, refreshToken });
-
-  const visitsLoader = useCallback(() => fetchOIClinicVisits(), []);
-  const visitsQuery = useApiResource(visitsLoader, { enabled: isBrowser, refreshToken });
-
-  const advanceState = useApiAction(updateOIClinicVisitState, {
-    onSuccess: (visit) => {
-      visitsQuery.refetch();
-      summaryQuery.refetch();
-      toast.success(
-        visit?.state === "referred"
-          ? `${visit.ticketCode ?? "Visit"} referred to ${visit.referredTo}.`
-          : `${visit?.ticketCode ?? "Visit"} advanced to ${visit?.state}.`,
-      );
-    },
-    onError: (error) => toast.error(error.message),
-  });
-  const createVisitMut = useApiAction(createOIClinicVisit, {
-    onSuccess: (visit) => {
-      visitsQuery.refetch();
-      summaryQuery.refetch();
-      setShowVisitForm(false);
-      setVisitForm({ ticketCode: "", streamId: "", notes: "" });
-      toast.success(`OI clinic visit created for ${visit?.ticketCode ?? "patient"}.`);
-    },
-    onError: (error) => toast.error(error.message),
-  });
-
-  const streams = streamsQuery.data?.streams ?? [];
-  const visits = visitsQuery.data ?? [];
-  const summary = summaryQuery.data;
-
-  function handleCreateVisit() {
-    if (!visitForm.ticketCode.trim() || !visitForm.streamId) return;
-    createVisitMut.mutate(visitForm.ticketCode.trim(), visitForm.streamId, visitForm.notes.trim());
-  }
-
-  const filtered = useMemo(() => {
-    let result = visits;
-    if (selectedStream !== "all") {
-      result = result.filter((v) => v.streamId === selectedStream);
-    }
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter(
-        (v) =>
-          v.ticketCode?.toLowerCase().includes(q) ||
-          v.patientName?.toLowerCase().includes(q),
-      );
-    }
-    return result;
-  }, [visits, search, selectedStream]);
-
-  const byState = useMemo(() => {
-    const states = ["waiting", "in-session", "completed", "referred"];
-    const map = {};
-    for (const state of states) {
-      map[state] = filtered.filter((v) => v.state === state);
-    }
-    return map;
-  }, [filtered]);
-
-  async function handleAdvance(visit) {
-    const next = OI_NEXT_STATE[visit.state];
-    if (!next) return;
-    setAdvancing(visit.id);
-    try {
-      await advanceState.mutate(visit.id, next);
-    } finally {
-      setAdvancing(null);
-    }
-  }
-
-  async function handleRefer(visit) {
-    setAdvancing(visit.id);
-    try {
-      await advanceState.mutate(visit.id, "referred", "Casualty / Triage");
-    } finally {
-      setAdvancing(null);
-    }
-  }
-
-  const isLoading = visitsQuery.loading && !visitsQuery.data;
-
-  return (
-    <ModulePage
-      eyebrow="Clinical workflow"
-      title="OI Clinic"
-      description="Manage ART, TB, viral load, counselling, and screening service streams — live updates flow in automatically."
-      icon={Stethoscope}
-    >
-      {/* Toolbar */}
-      <div className="surface-panel flex flex-wrap items-center gap-3 p-3">
-        <select
-          value={selectedStream}
-          onChange={(e) => setSelectedStream(e.target.value)}
-          className="input-base h-9 w-auto text-sm"
-          aria-label="Filter by stream"
-        >
-          <option value="all">All streams</option>
-          {streams.map((s) => (
-            <option key={s.id} value={s.id}>{s.label}</option>
-          ))}
-        </select>
-        <label className="relative min-w-56 flex-1">
-          <span className="sr-only">Search OI Clinic visits</span>
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search ticket or patient…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="input-base h-9 pl-9 text-sm"
-          />
-        </label>
-        <button
-          type="button"
-          onClick={() => {
-            visitsQuery.refetch();
-            summaryQuery.refetch();
-            streamsQuery.refetch();
-          }}
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-xs font-semibold text-muted-foreground hover:text-foreground"
-        >
-          <RefreshCw className="h-3.5 w-3.5" />
-          Refresh
-        </button>
-        <button
-          type="button"
-          onClick={() => setShowVisitForm((v) => !v)}
-          className="inline-flex h-9 items-center gap-1.5 rounded-lg gradient-primary px-4 text-xs font-semibold text-primary-foreground"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          New visit
-        </button>
-      </div>
-
-      {showVisitForm ? (
-        <div className="surface-panel mt-4 p-5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/15 text-primary">
-                <Stethoscope className="h-4 w-4" />
-              </span>
-              <h3 className="font-display text-base font-bold">Create OI Clinic visit</h3>
-            </div>
-            <button
-              type="button"
-              onClick={() => setShowVisitForm(false)}
-              className="rounded-lg border border-border p-1.5 text-muted-foreground hover:bg-muted"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-          <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <div>
-              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Ticket code</label>
-              <input
-                type="text"
-                placeholder="e.g. OPD-001"
-                value={visitForm.ticketCode}
-                onChange={(e) => setVisitForm((p) => ({ ...p, ticketCode: e.target.value }))}
-                className="input-base h-9 text-sm"
-              />
-            </div>
-            <div>
-              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Service stream</label>
-              <select
-                value={visitForm.streamId}
-                onChange={(e) => setVisitForm((p) => ({ ...p, streamId: e.target.value }))}
-                className="input-base h-9 text-sm"
-              >
-                <option value="">Select stream…</option>
-                {streams.map((s) => (
-                  <option key={s.id} value={s.id}>{s.label}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="mb-1.5 block text-[10px] font-bold uppercase tracking-[0.18em] text-muted-foreground">Notes</label>
-              <input
-                type="text"
-                placeholder="Optional notes"
-                value={visitForm.notes}
-                onChange={(e) => setVisitForm((p) => ({ ...p, notes: e.target.value }))}
-                className="input-base h-9 text-sm"
-              />
-            </div>
-          </div>
-          {createVisitMut.isError && (
-            <p className="mt-3 text-xs text-destructive">{createVisitMut.error.message}</p>
-          )}
-          <div className="mt-4 flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handleCreateVisit}
-              disabled={createVisitMut.isPending || !visitForm.ticketCode.trim() || !visitForm.streamId}
-              className="inline-flex h-9 items-center gap-1.5 rounded-lg gradient-primary px-4 text-sm font-semibold text-primary-foreground disabled:opacity-50"
-            >
-              {createVisitMut.isPending ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <Stethoscope className="h-4 w-4" />}
-              Create visit
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowVisitForm(false)}
-              className="inline-flex h-9 items-center rounded-lg border border-border px-3 text-sm hover:bg-muted"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : null}
-
-      {isLoading ? (
-        <LoadingPanel className="mt-5" title="Loading OI Clinic visits" message="Fetching live service streams." />
-      ) : (
-        <>
-          {/* Per-stream summary */}
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            {streams.map((stream, index) => {
-              const accent = OI_STREAM_ACCENTS[index % OI_STREAM_ACCENTS.length];
-              return (
-                <div
-                  key={stream.id}
-                  className="group relative overflow-hidden rounded-2xl border border-white/[0.08] bg-[#111827] p-5 shadow-[0_12px_40px_rgba(0,0,0,0.18)] transition-all duration-300 hover:-translate-y-1 hover:border-white/[0.16]"
-                >
-                  <span
-                    className="absolute inset-x-0 top-0 h-0.5"
-                    style={{ background: `linear-gradient(90deg, ${accent.tint}00, ${accent.tint}, ${accent.tint}00)` }}
-                  />
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="text-[10px] font-bold uppercase tracking-[0.22em] text-white/40">
-                        {stream.label}
-                      </div>
-                      <div className="mt-3 font-display text-4xl font-bold tracking-tight text-white">
-                        {summary?.byStream?.[stream.id]?.total ?? 0}
-                      </div>
-                      <p className="mt-1.5 text-xs leading-5 text-white/40">
-                        <span className={accent.text}>
-                          {summary?.byStream?.[stream.id]?.waiting ?? 0}
-                        </span>{" "}
-                        waiting
-                      </p>
-                    </div>
-                    <span
-                      className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-white/10"
-                      style={{
-                        background: `linear-gradient(135deg, ${accent.tint}33, ${accent.tint}14)`,
-                      }}
-                    >
-                      <Activity className={`h-5 w-5 ${accent.text}`} />
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Kanban columns */}
-          <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {Object.entries(byState).map(([state, stateVisits]) => {
-              const stateMeta = OI_STATE_META[state] ?? OI_STATE_META.waiting;
-              return (
-                <div
-                  key={state}
-                  className="relative flex flex-col overflow-hidden rounded-2xl border border-white/[0.08] bg-[#111827] p-3 shadow-[0_12px_40px_rgba(0,0,0,0.18)]"
-                >
-                  <span
-                    className="absolute inset-x-0 top-0 h-0.5"
-                    style={{ background: `linear-gradient(90deg, ${stateMeta.tint}00, ${stateMeta.tint}, ${stateMeta.tint}00)` }}
-                  />
-                  <div className="flex items-center justify-between px-2 pb-3 pt-1">
-                    <span
-                      className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.16em] ring-1 ring-inset ${stateMeta.badge}`}
-                    >
-                      {state.replace(/-/g, " ")}
-                    </span>
-                    <span className="rounded-full bg-white/[0.06] px-2 py-0.5 text-xs font-bold tabular-nums text-white/70 ring-1 ring-inset ring-white/10">
-                      {stateVisits.length}
-                    </span>
-                  </div>
-                  <div className="mt-1 space-y-2">
-                    {stateVisits.length === 0 ? (
-                      <div className="rounded-xl border border-dashed border-white/10 px-3 py-6 text-center text-xs text-white/30">
-                        No visits
-                      </div>
-                    ) : (
-                      stateVisits.map((visit) => (
-                        <OIClinicVisitCard
-                          key={visit.id}
-                          visit={visit}
-                          streamLabel={streams.find((s) => s.id === visit.streamId)?.label ?? visit.streamLabel}
-                          canAdvance={!!OI_NEXT_STATE[visit.state]}
-                          canRefer={visit.state === "waiting" || visit.state === "in-session"}
-                          onAdvance={() => handleAdvance(visit)}
-                          onRefer={() => handleRefer(visit)}
-                          advancing={advancing === visit.id}
-                          tint={stateMeta.tint}
-                        />
-                      ))
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </>
-      )}
-    </ModulePage>
-  );
-}
-
-function OIClinicVisitCard({ visit, streamLabel, canAdvance, canRefer, onAdvance, onRefer, advancing, tint = "#fb7185" }) {
-  return (
-    <div className="relative overflow-hidden rounded-xl border border-white/[0.08] bg-white/[0.03] p-3 pl-4 transition-colors hover:bg-white/[0.05]">
-      <span
-        className="absolute inset-y-0 left-0 w-0.5"
-        style={{ background: `linear-gradient(180deg, ${tint}, ${tint}33)` }}
-      />
-      <div className="flex items-center justify-between">
-        <span className="font-mono text-sm font-bold text-white">{visit.ticketCode}</span>
-      </div>
-      <p className="mt-1 text-sm font-medium text-white/85">{visit.patientName}</p>
-      <p className="text-xs font-semibold text-pink-300/90">{streamLabel}</p>
-      {visit.notes && (
-        <p className="mt-1 text-xs italic text-white/40">"{visit.notes}"</p>
-      )}
-      {visit.referredTo && (
-        <p className="mt-1 text-xs text-violet-300">
-          Referred to: {visit.referredTo}
-        </p>
-      )}
-      {visit.createdBy && (
-        <p className="mt-2 text-[10px] text-white/35">
-          Created by {visit.createdBy.name}
-        </p>
-      )}
-      <div className="mt-2 flex gap-2">
-        {canAdvance && (
-          <button
-            onClick={onAdvance}
-            disabled={advancing}
-            className="inline-flex h-9 flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md bg-[linear-gradient(135deg,#0f766e,#14b8a6)] px-3 text-xs font-semibold text-white shadow-[0_6px_16px_-6px_rgba(20,184,166,0.5)] transition-transform hover:-translate-y-px disabled:opacity-50"
-          >
-            {advancing ? (
-              <LoaderCircle className="h-3 w-3 animate-spin" />
-            ) : (
-              <>
-                <CheckCircle2 className="h-3 w-3" />
-                {OI_NEXT_LABEL[visit.state] ?? `Advance to ${OI_NEXT_STATE[visit.state]}`}
-              </>
-            )}
-          </button>
-        )}
-        {canRefer && (
-          <button
-            onClick={onRefer}
-            disabled={advancing}
-            className="inline-flex h-9 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-md border border-violet-400/30 bg-violet-400/10 px-3 text-xs font-semibold text-violet-300 transition-colors hover:bg-violet-400/20 disabled:opacity-50"
-          >
-            Refer
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
 const ADMIN_PRIORITY_ORDER = ["red", "yellow", "green", "black"];
 
 const ADMIN_PRIORITY_BAR = {
@@ -3465,6 +2506,7 @@ function AdminEmptyState({ message }) {
     </div>
   );
 }
+
 
 export function AdminDashboardPage() {
   const { refreshLiveData } = useLiveRefresh();

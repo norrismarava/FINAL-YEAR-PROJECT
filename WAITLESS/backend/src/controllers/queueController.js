@@ -23,6 +23,7 @@ import {
   preRegisterPatient,
   searchPatients,
   recallMissedPatient,
+  reannouncePatient,
   saveTriageAssessment,
   registerPatient,
   transferPatient,
@@ -228,6 +229,15 @@ export async function queueBoardController({ staff, query }) {
   };
 }
 
+export async function reannounceTicketController({ params, staff }) {
+  return {
+    status: 200,
+    body: {
+      ticket: await reannouncePatient(params.id, staff),
+    },
+  };
+}
+
 export async function callNextController({ body, staff }) {
   return {
     status: 200,
@@ -364,7 +374,7 @@ export async function confirmArrivalController({ params, staff, body }) {
       body: { message: "Ticket ID is required." },
     };
   }
-  const ticket = await confirmArrival(ticketId, staff, body?.department);
+  const ticket = await confirmArrival(ticketId, staff, body?.department, body?.priority);
   return {
     status: 200,
     body: { ticket },

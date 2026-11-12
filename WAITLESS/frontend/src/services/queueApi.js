@@ -69,6 +69,14 @@ export async function recallTicket(id, options = {}) {
   return response.ticket;
 }
 
+export async function reannounceTicket(id) {
+  const response = await apiRequest(`/api/tickets/${id}/reannounce`, {
+    method: "POST",
+  });
+
+  return response.ticket;
+}
+
 export async function transferTicket(id, department) {
   const response = await apiRequest(`/api/tickets/${id}/transfer`, {
     method: "PATCH",
@@ -158,10 +166,10 @@ export async function preRegisterPatient(payload) {
   return response.ticket;
 }
 
-export async function confirmArrival(ticketId, department) {
+export async function confirmArrival(ticketId, department, priority) {
   const response = await apiRequest(`/api/tickets/${ticketId}/confirm-arrival`, {
     method: "POST",
-    body: { department },
+    body: { department, priority },
   });
   return response.ticket;
 }
