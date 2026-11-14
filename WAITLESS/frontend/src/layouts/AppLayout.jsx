@@ -115,7 +115,6 @@ const STAFF_WORKSPACE_ITEMS = [
     to: "/admin/queue",
     label: "Queue Board",
     icon: Search,
-    excludeRoles: ["triage", "nurse"],
   },
   {
     group: "Clinical",
